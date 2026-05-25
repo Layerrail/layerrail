@@ -1,0 +1,7 @@
+*.sh text eol=lf
+bin/* text eol=lf
+rhizome/**/bin/* text eol=lf
+prog/* text eol=lf
+Procfile text eol=lf
+demo/generate_env text eol=lf
+demo/cloudify_server text eol=lf
