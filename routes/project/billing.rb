@@ -101,6 +101,7 @@ class Clover
             if e.status == 404 || e.body.to_s.include?("Customer does not exist")
               DB.transaction do
                 @project.update(billing_info_id: nil)
+                billing_info.payment_methods.each(&:destroy)
                 billing_info.destroy
               end
               flash["notice"] = "Your billing details were not found on Polar. Please reconnect your billing."
@@ -174,6 +175,7 @@ class Clover
             DB.transaction do
               billing_info = @project.billing_info
               @project.update(billing_info_id: nil)
+              billing_info.payment_methods.each(&:destroy)
               billing_info.destroy
             end
             flash["notice"] = "Your billing details were not found on Polar. Please reconnect your billing."
