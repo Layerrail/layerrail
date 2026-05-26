@@ -15,7 +15,8 @@ class Clover
 
       r.get "create" do
         authorize("Vm:create", @project)
-        if typecast_params.bool("show_gpu") && !@project.get_ff_gpu_vm
+        linode_gpu_enabled = Config.compute_provider == "linode"
+        if typecast_params.bool("show_gpu") && !@project.get_ff_gpu_vm && !linode_gpu_enabled
           view "vm/create_gpu_request_access"
         else
           view "vm/create"

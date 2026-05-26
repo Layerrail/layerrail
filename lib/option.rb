@@ -47,6 +47,8 @@ module Option
     LinodePlan.new("g7-dedicated-16-8", "Dedicated 16GB", "standard", 8, 16, 320, 173, 0.2595, 0, nil),
     LinodePlan.new("g7-dedicated-32-16", "Dedicated 32GB", "standard", 16, 32, 640, 346, 0.519, 0, nil),
     LinodePlan.new("g2-gpu-rtx4000a1-s", "RTX 4000 Ada Small", "standard", 4, 16, 512, 350, 0.52, 1, LINODE_GPU_DEVICE),
+    LinodePlan.new("g2-gpu-rtx4000a1-m", "RTX 4000 Ada Medium", "standard", 8, 32, 512, 446, 0.67, 1, LINODE_GPU_DEVICE),
+    LinodePlan.new("g2-gpu-rtx4000a1-l", "RTX 4000 Ada Large", "standard", 16, 64, 512, 638, 0.96, 1, LINODE_GPU_DEVICE),
   ].freeze
   LINODE_BOOT_IMAGES = {
     "ubuntu-noble" => "linode/ubuntu24.04",

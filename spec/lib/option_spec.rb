@@ -19,6 +19,14 @@ RSpec.describe Option do
     end
   end
 
+  describe ".linode_plan" do
+    it "maps visible GPU sizes to real Linode RTX 4000 Ada plans" do
+      expect(described_class.linode_plan("standard", 4, gpu_count: 1, gpu_device: described_class::LINODE_GPU_DEVICE).id).to eq("g2-gpu-rtx4000a1-s")
+      expect(described_class.linode_plan("standard", 8, gpu_count: 1, gpu_device: described_class::LINODE_GPU_DEVICE).id).to eq("g2-gpu-rtx4000a1-m")
+      expect(described_class.linode_plan("standard", 16, gpu_count: 1, gpu_device: described_class::LINODE_GPU_DEVICE).id).to eq("g2-gpu-rtx4000a1-l")
+    end
+  end
+
   describe "GCP Postgres options" do
     it "defines all GCP family options" do
       expect(Option::GCP_FAMILY_OPTIONS).to eq(["c4a-standard", "c4a-highmem"])
