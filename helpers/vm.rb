@@ -137,6 +137,7 @@ class Clover
 
     @show_gpu = typecast_params.bool("show_gpu")
     @show_gpu = false unless @project.get_ff_gpu_vm
+    @show_gpu = false if Config.compute_provider == "linode" && @show_gpu.nil?
     # @show_gpu:
     # true: Only show options valid for GPU configurations
     # false: Do not show GPU options

@@ -117,14 +117,14 @@ class CloverAdmin < Roda
     if (ubid = request.path.split("/").find { UBID_REGEXP.match?(it) })
       view(content: "<p>Try <a href=\"/archived-record-by-id?id=#{h ubid}\">searching archived records</a></p>")
     else
-      view(content: "")
+      view(content: "<p class=\"empty-state\">That admin page does not exist.</p>")
     end
   end
 
   plugin :route_csrf do |token|
     flash.now["error"] = "An invalid security token submitted with this request, please try again"
     @page_title = "Invalid Security Token"
-    view(content: "")
+    view(content: "<p class=\"empty-state\">Refresh the page and submit the form again.</p>")
   end
 
   plugin :error_handler do |e|
@@ -140,7 +140,7 @@ class CloverAdmin < Roda
     else
       "Internal Server Error"
     end
-    view(content: "")
+    view(content: "<p class=\"empty-state\">The admin request could not be completed. Check the app logs for details.</p>")
   end
 
   plugin :forme_route_csrf

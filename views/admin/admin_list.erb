@@ -1,12 +1,18 @@
 <% @page_title = "Admin List" %>
 
-<ul id="admin-list">
-  <% @admins.each do |login| %>
-    <li><%= login %></li>
-  <% end %>
-</ul>
+<% if @admins.empty? %>
+  <p class="empty-state">No admin accounts found.</p>
+<% else %>
+  <ul id="admin-list">
+    <% @admins.each do |login| %>
+      <li><%= login %></li>
+    <% end %>
+  </ul>
+<% end %>
 
-<h2>Close Admin Account</h2>
-<% form({action: "/close-admin-account", method: "POST"}, button: "Close Admin Account") do |f| %>
-  <%== f.input(:select, key: "login", label: "Account", options: @admins, add_blank: "Select Account", required: true) %>
+<% unless @admins.empty? %>
+  <h2>Close Admin Account</h2>
+  <% form({action: "/close-admin-account", method: "POST"}, button: "Close Admin Account") do |f| %>
+    <%== f.input(:select, key: "login", label: "Account", options: @admins, add_blank: "Select Account", required: true) %>
+  <% end %>
 <% end %>

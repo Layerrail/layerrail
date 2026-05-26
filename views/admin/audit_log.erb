@@ -20,14 +20,18 @@
     </tr>
   </thead>
   <tbody>
-    <% @audit_logs.each do %>
-      <tr>
-        <td><%= it[:at].getutc.strftime("%F %T") %></td>
-        <td><%== linkify_ubids(UBID.to_ubid(it[:project_id])) %></td>
-        <td><%= it[:ubid_type] %>/<%= it[:action] %></td>
-        <td><%== linkify_ubids(UBID.to_ubid(it[:subject_id])) %></td>
-        <td><%== linkify_ubids(it[:object_ids].map { |id| UBID.to_ubid(id) }.join(", ")) %></td>
-      </tr>
+    <% if @audit_logs.empty? %>
+      <tr><td colspan="5" class="empty-table-cell">No audit log entries found.</td></tr>
+    <% else %>
+      <% @audit_logs.each do %>
+        <tr>
+          <td><%= it[:at].getutc.strftime("%F %T") %></td>
+          <td><%== linkify_ubids(UBID.to_ubid(it[:project_id])) %></td>
+          <td><%= it[:ubid_type] %>/<%= it[:action] %></td>
+          <td><%== linkify_ubids(UBID.to_ubid(it[:subject_id])) %></td>
+          <td><%== linkify_ubids(it[:object_ids].map { |id| UBID.to_ubid(id) }.join(", ")) %></td>
+        </tr>
+      <% end %>
     <% end %>
     <% if link_text = audit_log_paginate %>
       <tr><td colspan="5"><a href="?<%= to_query_string(@next_page_params) %>"><%= link_text %></a></td></tr>

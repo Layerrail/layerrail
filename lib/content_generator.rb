@@ -34,8 +34,7 @@ module ContentGenerator
       unit_price = BillingRate.unit_price_from_resource_properties("VmVCpu", family, location.name)
       memory_gib = if location.linode?
         plan = Option.linode_plan(family, size.vcpus)
-        gpu_plan = Option::LINODE_PLANS.find { it.family == family && it.vcpus == size.vcpus && it.gpu_count.positive? }
-        gpu_plan ? "#{plan.memory_gib} GB RAM / #{gpu_plan.memory_gib} GB with GPU" : "#{plan.memory_gib} GB RAM"
+        "#{plan.memory_gib} GB RAM"
       else
         "#{size.memory_gib} GB RAM"
       end
@@ -45,6 +44,20 @@ module ContentGenerator
         "#{size.vcpus} vCPUs / #{memory_gib}",
         "$#{"%.2f" % (size.vcpus * unit_price * 60 * 672)}/mo",
         "$#{"%.3f" % (size.vcpus * unit_price * 60)}/hour",
+      ]
+    end
+
+    def self.linode_gpu_size(location, family, size)
+      size = Option::VmSizes.find { it.display_name == size }
+      return self.size(location, family, size.display_name) unless location.linode?
+
+      plan = Option.linode_plan(family, size.vcpus, gpu_count: 1, gpu_device: Option::LINODE_GPU_DEVICE)
+
+      [
+        plan.label,
+        "#{plan.vcpus} vCPUs / #{plan.memory_gib} GB RAM / #{plan.disk_gib} GB storage",
+        "$#{"%.2f" % (plan.monthly_price * Option::LINODE_MARKUP)}/mo",
+        "$#{"%.3f" % (plan.hourly_price * Option::LINODE_MARKUP)}/hour",
       ]
     end
 
@@ -73,6 +86,21 @@ module ContentGenerator
         nil,
         "$#{"%.2f" % (gpu_count * unit_price * 60 * 672)}/mo",
         "$#{"%.3f" % (gpu_count * unit_price * 60)}/hour",
+      ]
+    end
+
+    def self.linode_gpu(location, family, gpu)
+      gpu_count, device = gpu.split(":", 2)
+      gpu_count = gpu_count.to_i
+      return self.gpu(location, family, gpu) unless location.linode? && gpu_count.positive?
+
+      plan = Option::LINODE_PLANS.find { it.family == family && it.gpu_count == gpu_count && it.gpu_device == device }
+
+      [
+        "#{gpu_count}x NVIDIA RTX 4000 Ada",
+        plan ? "Bundled with #{plan.label}" : "Bundled with selected GPU VM",
+        "Included",
+        "",
       ]
     end
 

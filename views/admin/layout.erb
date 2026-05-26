@@ -43,11 +43,11 @@
       <div class="container">
         <span><%= Time.now.utc %></span>
         <% if Config.staging %>
-          <span>clover-staging</span>
+          <span>layerrail-staging</span>
         <% elsif Config.production? %>
-          <span class="env-production">clover-<%= Config.rack_env %></span>
+          <span class="env-production">layerrail-<%= Config.rack_env %></span>
         <% else %>
-          <span>clover-<%= Config.rack_env %></span>
+          <span>layerrail-<%= Config.rack_env %></span>
         <% end %>
         <% if commit = Config.git_commit_hash %>
           <span>commit: <%= commit %></span>

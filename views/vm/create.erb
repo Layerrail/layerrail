@@ -32,13 +32,16 @@ current_usage = @project.current_resource_usage("VmVCpu")
     {name: "family", type: "radio_small_cards", label: "Server family", required: "required", content_generator: ContentGenerator::Vm.method(:family)}
   ]
 
+  size_content_generator = (@show_gpu && Config.compute_provider == "linode") ? ContentGenerator::Vm.method(:linode_gpu_size) : ContentGenerator::Vm.method(:size)
+  gpu_content_generator = (@show_gpu && Config.compute_provider == "linode") ? ContentGenerator::Vm.method(:linode_gpu) : ContentGenerator::Vm.method(:gpu)
+
   elements = [
-    {name: "size", type: "radio_small_cards", label: "Server size", required: "required", content_generator: ContentGenerator::Vm.method(:size)},
+    {name: "size", type: "radio_small_cards", label: "Server size", required: "required", content_generator: size_content_generator},
     {name: "storage_size", type: "radio_small_cards", label: "Storage size", required: "required", content_generator: ContentGenerator::Vm.method(:storage_size)}
   ]
 
   if @show_gpu != false
-    gpu = {name: "gpu", type: "radio_small_cards", label: "GPU", required: "required", content_generator: ContentGenerator::Vm.method(:gpu)}
+    gpu = {name: "gpu", type: "radio_small_cards", label: "GPU", required: "required", content_generator: gpu_content_generator}
     if @show_gpu
       elements.unshift gpu
     else
