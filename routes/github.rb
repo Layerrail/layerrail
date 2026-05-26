@@ -72,9 +72,28 @@ class Clover
       end
 
       begin
-        installation_response = Octokit::Client.new(access_token:).get("/user/installations")[:installations].find { it[:id].to_s == installation_id }
+        user_installations = Octokit::Client.new(access_token:).get("/user/installations")[:installations]
       rescue Octokit::Unauthorized => e
         installation_octokit_error = e
+      end
+
+      installation_response = if installation_id
+        user_installations&.find { it[:id].to_s == installation_id }
+      else
+        unclaimed_installations = user_installations&.select do |it|
+          next false if Config.github_app_id && it[:app_id].to_s != Config.github_app_id.to_s
+
+          !GithubInstallation.with_github_installation_id(it[:id].to_s)
+        end
+
+        if unclaimed_installations&.one?
+          installation_id = unclaimed_installations.first[:id].to_s
+          unclaimed_installations.first
+        elsif unclaimed_installations&.any?
+          flash["error"] = "LayerRail found multiple unlinked GitHub App installations for your GitHub user. Please reconnect from GitHub and choose the account again."
+          Clog.emit("GitHub callback failed due to ambiguous installation", {installation_failed: {count: unclaimed_installations.count, account_ubid: current_account.ubid}})
+          r.redirect project, "/github"
+        end
       end
 
       unless installation_response

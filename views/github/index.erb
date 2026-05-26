@@ -17,7 +17,9 @@
     icon: "github",
     title: "No Connected Accounts",
     description: "Get started by installing our GitHub app to your user or organization account.",
-    button_link: "#{@project.path}/github/create",
-    button_title: "Connect New Account"
+    buttons: [
+      ["Connect New Account", "#{@project.path}/github/create"],
+      ["Finish Existing Install", "#{@project.path}/github/finish"]
+    ]
   ) %>
 <% end %>

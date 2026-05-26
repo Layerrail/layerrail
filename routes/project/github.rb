@@ -36,7 +36,25 @@ class Clover
       session["github_installation_state"] = state
 
       query = URI.encode_www_form(state:)
-      r.redirect "https://github.com/apps/#{Config.github_app_name}/installations/new?#{query}", 302
+      r.redirect "https://github.com/apps/#{Config.github_app_name}/installations/select_target?#{query}", 302
+    end
+
+    r.get web?, "finish" do
+      handle_validation_failure("github/index")
+      raise_web_error("GitHub App OAuth client ID is not configured") unless Config.github_app_client_id
+      unless @project.has_valid_payment_method?
+        raise_web_error("Project doesn't have valid billing information")
+      end
+      session["github_installation_project_id"] = @project.id
+      state = SecureRandom.urlsafe_base64(24)
+      session["github_installation_state"] = state
+
+      query = URI.encode_www_form(
+        client_id: Config.github_app_client_id,
+        redirect_uri: "#{Config.base_url}/github/callback",
+        state:
+      )
+      r.redirect "https://github.com/login/oauth/authorize?#{query}", 302
     end
 
     r.on GITHUB_INSTALLATION_NAME_OR_UBID do |installation_name, installation_id|
