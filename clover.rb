@@ -6,6 +6,7 @@ require "committee"
 require "roda"
 require "tilt"
 require "tilt/erubi"
+require "uri"
 
 class Clover < Roda
   # :nocov:
@@ -149,9 +150,13 @@ class Clover < Roda
   plugin :host_routing, scope_predicates: true do |hosts|
     hosts.register :api, :web, :runtime, :admin
     hosts.default :web do |host|
-      if host.start_with?("api.")
+      configured_admin_host = URI(Config.admin_url).host&.downcase
+      configured_api_host = Config.api_url && URI(Config.api_url).host&.downcase
+      request_host = host.downcase
+
+      if request_host == configured_api_host || request_host.start_with?("api.")
         :api
-      elsif host.start_with?("admin.")
+      elsif request_host == configured_admin_host || request_host.start_with?("admin.")
         :admin
       elsif request.path_info.start_with?("/runtime")
         :runtime

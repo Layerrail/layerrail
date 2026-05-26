@@ -89,6 +89,7 @@ module Config
 
   override :base_url, "http://localhost:9292", string
   override :admin_url, "http://admin.localhost:9292", string
+  optional :api_url, string
   override :database_timeout, 10, int
   override :database_timeout_web, Config.database_timeout, int
   override :database_timeout_respirate, Config.database_timeout, int
