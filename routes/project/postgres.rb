@@ -17,6 +17,8 @@ class Clover
       end
 
       r.get "create" do
+        raise CloverError.new(404, "NotFound", "PostgreSQL is not enabled for this LayerRail deployment") unless Config.postgres_enabled
+
         authorize("Postgres:create", @project)
         view "postgres/create"
       end

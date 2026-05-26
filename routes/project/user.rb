@@ -52,7 +52,7 @@ class Clover
               greeting: "Hello,",
               body: ["You're invited by '#{current_account.name}' to join the '#{@project.name}' project on LayerRail.",
                 msg,
-                "For any questions or assistance, reach out to our team at support@layerrail.dev."],
+                "For any questions or assistance, reach out to our team at support@layerrail.com."],
               button_title: "Join Project",
               button_link: "#{Config.base_url}/#{link}")
           end

@@ -71,9 +71,13 @@ module Config
   override :clover_freeze, false, bool
   optional :override_dir, string
 
+  optional :resend_api_key, string, clear: true
+  optional :resend_from_email, string
+  optional :resend_webhook_secret, string, clear: true
   # :nocov:
-  override :mail_driver, (production? ? :smtp : :logger), symbol
-  override :mail_from, (production? ? nil : "dev@example.com"), string
+  override :mail_driver, (resend_api_key ? :resend : (production? ? :smtp : :logger)), symbol
+  override :mail_from, (resend_from_email || (production? ? nil : "dev@example.com")), string
+  override :account_verification_enabled, (!development? || mail_driver == :resend), bool
   # :nocov:
   # Some email services use a secret token for both user and password,
   # so clear them both.
@@ -103,6 +107,9 @@ module Config
   override :provider_resource_tag_value, (development? ? ENV.fetch("USER", "true") : "true"), string
   # :nocov:
   override :clover_database_rds_iam_auth_enabled, false, bool
+  optional :linode_access_token, string, clear: true
+  override :linode_api_base_url, "https://api.linode.com/v4", string
+  override :compute_provider, "linode", string
   optional :hetzner_user, string, clear: true
   optional :hetzner_password, string, clear: true
   override :hetzner_connection_string, "https://robot-ws.your-server.de", string
@@ -143,19 +150,19 @@ module Config
   override :github_cache_blob_storage_use_account_token, false, bool
 
   # Minio
-  override :minio_host_name, "minio.ubicloud.com", string
+  override :minio_host_name, "minio.layerrail.com", string
   optional :minio_service_project_id, uuid
   override :minio_version, "minio_20250723155402.0.0_amd64", string
 
   # Parseable
   optional :parseable_service_project_id, uuid
-  override :parseable_host_name, "logs.ubicloud.com", string
+  override :parseable_host_name, "logs.layerrail.com", string
   override :parseable_version, "v2.6.5", string
   optional :parseable_endpoint_override, string
 
   # VictoriaMetrics
   optional :victoria_metrics_service_project_id, uuid
-  override :victoria_metrics_host_name, "metrics.ubicloud.com", string
+  override :victoria_metrics_host_name, "metrics.layerrail.com", string
   override :victoria_metrics_version, "v1.113.0", string
   optional :victoria_metrics_endpoint_override, string
 
@@ -181,8 +188,9 @@ module Config
   optional :incidentio_alert_source_config_id, string
 
   # Postgres
+  override :postgres_enabled, true, bool
   optional :postgres_service_project_id, uuid
-  override :postgres_service_hostname, "postgres.ubicloud.com", string
+  override :postgres_service_hostname, "postgres.layerrail.com", string
   override :postgres_monitor_database_url, Config.clover_database_url, string
   optional :postgres_monitor_database_root_certs, string
   optional :postgres_paradedb_notification_email, string
@@ -197,14 +205,14 @@ module Config
   optional :otel_exporter_otlp_endpoint, string
   override :pry_logger_truncate_limit, 500, int
 
-  # Ubicloud Images (Minio)
-  override :ubicloud_images_bucket_name, "ubicloud-images", string
+  # LayerRail Images (Minio)
+  override :ubicloud_images_bucket_name, "layerrail-images", string
   optional :ubicloud_images_blob_storage_endpoint, string
   optional :ubicloud_images_blob_storage_access_key, string, clear: true
   optional :ubicloud_images_blob_storage_secret_key, string, clear: true
   optional :ubicloud_images_blob_storage_certs, string
 
-  # Ubicloud Images (R2)
+  # LayerRail Images (R2)
   optional :ubicloud_images_r2_bucket_name, string
   optional :ubicloud_images_r2_endpoint, string
   optional :ubicloud_images_r2_access_key, string, clear: true
@@ -214,7 +222,7 @@ module Config
   override :github_ubuntu_2404_x64_aws_ami_version, "ami-092dab75acd086240", string
   override :github_ubuntu_2204_arm64_aws_ami_version, "ami-02d3ba0a683f05899", string
   override :github_ubuntu_2404_arm64_aws_ami_version, "ami-08b8e7b576e356f54", string
-  override :postgres_gce_image_gcp_project_id, "ubicloud-images", string
+  override :postgres_gce_image_gcp_project_id, "layerrail-images", string
 
   # Allocator
   override :allocator_target_host_utilization, 0.72, float
@@ -250,10 +258,11 @@ module Config
   optional :acme_eab_hmac_key, string, clear: true
 
   # AI
+  override :ai_inference_enabled, false, bool
   optional :inference_endpoint_service_project_id, uuid
   optional :runpod_api_key, string, clear: true
   optional :huggingface_token, string, clear: true
-  override :inference_dns_zone, "ai.ubicloud.com", string
+  override :inference_dns_zone, "ai.layerrail.com", string
   optional :inference_router_access_token, string, clear: true
   override :inference_router_release_tag, "v0.1.8", string
 
@@ -261,14 +270,20 @@ module Config
   optional :dns_service_project_id, uuid
 
   # Kubernetes
+  override :kubernetes_enabled, true, bool
   optional :kubernetes_service_project_id, uuid
   optional :kubernetes_service_hostname, string
 
   # Billing
+  optional :polar_access_token, string, clear: true
+  override :polar_api_base_url, "https://api.polar.sh/v1", string
+  optional :polar_verification_product_id, uuid
+  optional :polar_checkout_product_id, uuid
+  optional :polar_invoice_product_id, uuid
   optional :stripe_secret_key, string, clear: true
   override :annual_non_dutch_eu_sales_exceed_threshold, false, bool
   optional :invalid_vat_notification_email, string
-  override :invoices_bucket_name, "ubicloud-invoices", string
+  override :invoices_bucket_name, "layerrail-invoices", string
   optional :invoices_blob_storage_endpoint, string
   optional :invoices_blob_storage_access_key, string, clear: true
   optional :invoices_blob_storage_secret_key, string, clear: true

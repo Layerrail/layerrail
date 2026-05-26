@@ -29,9 +29,8 @@ class Clover
       end
 
       unless @project.billing_info
-        stripe_customer = StripeClient.customers.create(name: current_account.name, email: current_account.email)
         DB.transaction do
-          billing_info = BillingInfo.create(stripe_id: stripe_customer["id"])
+          billing_info = BillingInfo.create(stripe_id: "polar:#{@project.ubid}")
           @project.update(billing_info_id: billing_info.id)
         end
       end

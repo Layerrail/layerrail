@@ -5,7 +5,7 @@ require "google/cloud/compute/v1"
 module GcpFirewallPolicy
   V1 = Google::Cloud::Compute::V1
 
-  # Short name for the single tag value under every tag key Ubicloud
+  # Short name for the single tag value under every LayerRail tag key
   # creates - both subnet membership tags and per-firewall tags carry
   # this value. Each tag value is namespaced under its tag key, so the
   # short name is just an identifier slot, not a relationship label.

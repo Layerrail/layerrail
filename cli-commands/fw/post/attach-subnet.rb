@@ -3,7 +3,7 @@
 UbiCli.on("fw").run_on("attach-subnet") do
   desc "Attach a private subnet to a firewall"
 
-  banner "ubi fw (location/fw-name | fw-id) attach-subnet (ps-name | ps-id)"
+  banner "lr fw (location/fw-name | fw-id) attach-subnet (ps-name | ps-id)"
 
   args 1
 

@@ -5,7 +5,7 @@ UbiCli.on("gh", "installation", "list") do
 
   key = :github_installations_list
 
-  options("ubi gh installation list [options]", key:) do
+  options("lr gh installation list [options]", key:) do
     on("-N", "--no-headers", "do not show headers")
   end
 

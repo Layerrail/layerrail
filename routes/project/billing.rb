@@ -5,13 +5,34 @@ require "countries"
 class Clover
   hash_branch(:project_prefix, "billing") do |r|
     r.web do
-      unless Config.stripe_secret_key
+      unless PolarClient.configured_for_checkout?
         response.status = 501
         response.content_type = :text
-        next "Billing is not enabled. Set STRIPE_SECRET_KEY to enable billing."
+        next "Billing is not enabled. Set POLAR_ACCESS_TOKEN and POLAR_VERIFICATION_PRODUCT_ID to enable Polar billing."
       end
 
       authorize("Project:billing", @project)
+
+      polar_customer_id = @project.ubid
+      polar_checkout = lambda do |kind, product_id, success_path, metadata = {}|
+        PolarClient.create_checkout({
+          products: [product_id],
+          external_customer_id: polar_customer_id,
+          customer_name: current_account.name,
+          customer_email: current_account.email,
+          customer_metadata: {
+            project_id: @project.ubid,
+            account_id: current_account.ubid
+          },
+          metadata: {
+            kind:,
+            project_id: @project.ubid
+          }.merge(metadata),
+          require_billing_address: true,
+          success_url: "#{Config.base_url}#{success_path}?checkout_id={CHECKOUT_ID}",
+          return_url: "#{Config.base_url}#{billing_path}"
+        })
+      end
 
       r.get true do
         view "project/billing"
@@ -20,26 +41,28 @@ class Clover
       r.post true do
         if (billing_info = @project.billing_info)
           handle_validation_failure("project/billing")
-          current_tax_id = billing_info.stripe_data["tax_id"].to_s
+          current_tax_id = billing_info.billing_data["tax_id"].to_s
           tp = typecast_params
           new_tax_id = tp.str("tax_id").gsub(/[^a-zA-Z0-9]/, "")
+
           begin
-            StripeClient.customers.update(billing_info.stripe_id, {
+            PolarClient.update_customer_by_external_id(polar_customer_id, {
               name: tp.str!("name"),
               email: tp.str!("email").strip,
-              address: {
+              billing_address: {
                 country: tp.str!("country"),
                 state: tp.nonempty_str("state"),
                 city: tp.nonempty_str("city"),
                 postal_code: tp.nonempty_str("postal_code"),
                 line1: tp.str!("address"),
-                line2: nil,
+                line2: nil
               },
+              tax_id: new_tax_id.empty? ? nil : new_tax_id,
               metadata: {
-                tax_id: new_tax_id,
                 company_name: tp.str("company_name"),
                 note: tp.str("note"),
-              },
+                project_id: @project.ubid
+              }
             })
             if new_tax_id != current_tax_id
               DB.transaction do
@@ -50,7 +73,7 @@ class Clover
               end
             end
             audit_log(@project, "update_billing")
-          rescue Stripe::InvalidRequestError => e
+          rescue PolarAPIError => e
             raise_web_error(e.message)
           end
 
@@ -60,93 +83,63 @@ class Clover
           no_audit_log
         end
 
-        checkout = StripeClient.checkout.sessions.create(
-          payment_method_types: ["card"],
-          mode: "setup",
-          customer_creation: "always",
-          billing_address_collection: "required",
-          success_url: "#{Config.base_url}#{@project.path}/billing/success?session_id={CHECKOUT_SESSION_ID}",
-          cancel_url: "#{Config.base_url}#{@project.path}/billing",
-        )
-
-        r.redirect checkout.url, 303
+        checkout = polar_checkout.call("project_billing_setup", PolarClient.verification_product_id, "#{@project.path}/billing/success")
+        r.redirect checkout.fetch("url"), 303
       end
 
       r.get "success" do
         handle_validation_failure("project/billing")
-        checkout_session = StripeClient.checkout.sessions.retrieve(typecast_params.str!("session_id"))
-        setup_intent = StripeClient.setup_intents.retrieve(checkout_session["setup_intent"])
+        checkout_id = typecast_params.nonempty_str("checkout_id") || typecast_params.nonempty_str("session_id")
+        raise_web_error("Missing Polar checkout id") unless checkout_id
 
-        stripe_id = setup_intent["payment_method"]
-        stripe_payment_method = StripeClient.payment_methods.retrieve(stripe_id)
-        card_fingerprint = stripe_payment_method["card"]["fingerprint"]
-        if PaymentMethod.fraud?(card_fingerprint)
-          raise_web_error("Payment method you added is labeled as fraud. Please contact support.")
+        begin
+          checkout_session = PolarClient.get_checkout(checkout_id)
+        rescue PolarAPIError => e
+          Clog.emit("invalid Polar checkout", {invalid_polar_checkout: {project_id: @project.id, checkout_id:, message: e.message}})
+          raise_web_error("We couldn't validate your Polar checkout. If you think this is a mistake, please contact support@layerrail.com.")
         end
 
-        # Pre-authorize card to check if it is valid, if so
-        # authorization won't be captured and will be refunded immediately
-        begin
-          customer_stripe_id = setup_intent["customer"]
-
-          # Pre-authorizing random amount to verify card. As it is
-          # commonly done with other companies, apparently it is
-          # better to detect fraud then pre-authorizing fixed amount.
-          # That money will be kept until next billing period and if
-          # it's not a fraud, it will be applied to the invoice.
-          preauth_amount = [100, 200, 300, 400, 500].sample
-          payment_intent = StripeClient.payment_intents.create({
-            amount: preauth_amount,
-            currency: "usd",
-            confirm: true,
-            off_session: true,
-            capture_method: "manual",
-            customer: customer_stripe_id,
-            payment_method: stripe_id,
-          })
-
-          if payment_intent.status != "requires_capture"
-            raise "Authorization failed"
-          end
-        rescue
-          # Log and redirect if Stripe card error or our manual raise
-          Clog.emit("Couldn't pre-authorize card", {card_authorization: {project_id: @project.id, customer_stripe_id:}})
-          raise_web_error("We couldn't pre-authorize your card for verification. Please make sure it can be pre-authorized up to $5 or contact our support team at support@layerrail.dev.")
+        metadata = checkout_session["metadata"] || {}
+        unless checkout_session["status"] == "succeeded" &&
+            checkout_session["external_customer_id"] == polar_customer_id &&
+            metadata["project_id"] == @project.ubid
+          Clog.emit("unsuccessful Polar checkout", {unsuccessful_polar_checkout: {project_id: @project.id, checkout_id:}})
+          raise_web_error("Polar checkout was not successful")
         end
 
         DB.transaction do
           unless (billing_info = @project.billing_info)
-            billing_info = BillingInfo.create(stripe_id: customer_stripe_id)
+            billing_info = BillingInfo.create(stripe_id: checkout_session["customer_id"] || "polar:#{polar_customer_id}")
             @project.update(billing_info_id: billing_info.id)
           end
 
-          PaymentMethod.create(billing_info_id: billing_info.id, stripe_id:, card_fingerprint:, preauth_intent_id: payment_intent.id, preauth_amount:)
+          polar_payment_id = "polar:checkout:#{checkout_id}"
+          unless billing_info.payment_methods_dataset[stripe_id: polar_payment_id]
+            PaymentMethod.create(
+              billing_info_id: billing_info.id,
+              stripe_id: polar_payment_id,
+              card_fingerprint: "polar:#{polar_customer_id}"
+            )
+          end
         end
 
-        unless @project.billing_info.has_address?
-          StripeClient.customers.update(@project.billing_info.stripe_id, {
-            address: stripe_payment_method["billing_details"]["address"].to_hash,
-          })
-        end
-
-        flash["notice"] = "Payment method added successfully. $#{preauth_amount / 100} is authorized on your card for verification purposes. It's canceled already and depending on your bank, it may take up to two weeks to refund the money."
+        flash["notice"] = "Polar billing connected successfully."
         r.redirect billing_path
+      end
+
+      r.get "portal" do
+        next unless @project.billing_info
+
+        session = PolarClient.create_customer_session(
+          polar_customer_id,
+          return_url: "#{Config.base_url}#{billing_path}"
+        )
+        r.redirect session.fetch("customer_portal_url"), 303
       end
 
       r.on "payment-method" do
         r.get "create" do
-          next unless (billing_info = @project.billing_info)
-
-          checkout = StripeClient.checkout.sessions.create(
-            payment_method_types: ["card"],
-            mode: "setup",
-            customer: billing_info.stripe_id,
-            billing_address_collection: billing_info.has_address? ? "auto" : "required",
-            success_url: "#{Config.base_url}#{@project.path}/billing/success?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url: "#{Config.base_url}#{@project.path}/billing",
-          )
-
-          r.redirect checkout.url, 303
+          r.redirect "#{billing_path}/portal"
         end
 
         r.delete :ubid_uuid do |id|
@@ -189,49 +182,39 @@ class Clover
           no_audit_log
           handle_validation_failure("project/billing")
           raise_web_error("Invoice is not payable") unless invoice.payable?
-          bi = invoice.project.billing_info
-          checkout = StripeClient.checkout.sessions.create(
-            payment_method_types: ["card"],
-            mode: "payment",
-            line_items: [{
-              price_data: {
-                currency: "usd",
-                product_data: {
-                  name: "Invoice Payment",
-                  description: invoice.invoice_number,
-                },
-                unit_amount: (invoice.cost.to_f * 100).to_i,  # Stripe expects amount in cents
-              },
-              quantity: 1,
-            }],
-            payment_intent_data: {
-              capture_method: "automatic",
-            },
-            customer: bi.stripe_id,
-            metadata: {
-              invoice: invoice.ubid,
-            },
-            billing_address_collection: "auto",
-            success_url: "#{Config.base_url}#{path(invoice)}/success?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url: "#{Config.base_url}#{billing_path}",
+          raise_web_error("Polar invoice checkout is not configured. Set POLAR_INVOICE_PRODUCT_ID.") unless Config.polar_invoice_product_id
+
+          checkout = polar_checkout.call(
+            "invoice_payment",
+            Config.polar_invoice_product_id,
+            "#{path(invoice)}/success",
+            invoice: invoice.ubid,
+            invoice_number: invoice.invoice_number
           )
 
-          r.redirect checkout.url, 303
+          r.redirect checkout.fetch("url"), 303
         end
 
         r.get "success" do
           handle_validation_failure("project/billing")
-          session_id = typecast_params.str!("session_id")
+          checkout_id = typecast_params.nonempty_str("checkout_id") || typecast_params.nonempty_str("session_id")
+          raise_web_error("Missing Polar checkout id") unless checkout_id
+
           begin
-            checkout_session = StripeClient.checkout.sessions.retrieve(session_id)
-          rescue Stripe::InvalidRequestError => e
-            Clog.emit("invalid invoice payment", {unsuccessful_invoice_payment: {invoice_ubid: invoice.ubid, session_id:, message: e.message}})
-            raise_web_error("We couldn't validate your payment. If you think this is a mistake, please reach out to our support team at support@layerrail.dev")
+            checkout_session = PolarClient.get_checkout(checkout_id)
+          rescue PolarAPIError => e
+            Clog.emit("invalid invoice payment", {unsuccessful_invoice_payment: {invoice_ubid: invoice.ubid, checkout_id:, message: e.message}})
+            raise_web_error("We couldn't validate your payment. If you think this is a mistake, please contact support@layerrail.com")
           end
-          unless checkout_session["customer"] == @project.billing_info.stripe_id && checkout_session["metadata"]["invoice"] == invoice.ubid && checkout_session["payment_status"] == "paid"
-            Clog.emit("unsuccessful invoice payment", {unsuccessful_invoice_payment: {invoice_ubid: invoice.ubid, session_id:}})
+
+          metadata = checkout_session["metadata"] || {}
+          unless checkout_session["status"] == "succeeded" &&
+              checkout_session["external_customer_id"] == polar_customer_id &&
+              metadata["invoice"] == invoice.ubid
+            Clog.emit("unsuccessful invoice payment", {unsuccessful_invoice_payment: {invoice_ubid: invoice.ubid, checkout_id:}})
             raise_web_error("Invoice payment was not successful")
           end
+
           invoice.update(status: "paid")
           invoice.send_success_email
           flash["notice"] = "Invoice #{invoice.invoice_number} paid successfully"

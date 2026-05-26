@@ -1,6 +1,6 @@
-# ubi
+# lr
 
-`ubi` the command line program for interacting with Ubicloud.
+`lr` is the command line program for interacting with LayerRail.
 
 # Building
 
@@ -18,13 +18,13 @@ $ go build -ldflags "-s -w -X main.version=`cat version.txt`" -tags osusergo,net
 
 # Running
 
-First, make sure `UBI_TOKEN` in the environment is set to your Ubicloud personal
+First, make sure `LR_TOKEN` in the environment is set to your LayerRail personal
 access token. Then run it:
 
 ```
-$ ubi
+$ lr
 ```
 
 # License
 
-APGL
+AGPL

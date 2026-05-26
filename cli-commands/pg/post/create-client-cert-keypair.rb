@@ -3,7 +3,7 @@
 UbiCli.on("pg").run_on("create-client-cert-keypair") do
   desc "Create client certificate keypair with given common name, expiring after a duration of seconds"
 
-  banner "ubi pg (location/pg-name | pg-id) create-client-cert-keypair common-name duration"
+  banner "lr pg (location/pg-name | pg-id) create-client-cert-keypair common-name duration"
 
   args 2
 

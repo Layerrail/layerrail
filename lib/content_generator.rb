@@ -16,6 +16,7 @@ module ContentGenerator
 
     def self.enable_ipv4(location, value)
       unit_price = BillingRate.unit_price_from_resource_properties("IPAddress", "IPv4", location.name)
+      return "Enable Public IPv4 (included)" if unit_price.to_f.zero?
 
       "Enable Public IPv4 ($#{"%.2f" % (unit_price * 60 * 672)}/mo)"
     end
@@ -31,10 +32,17 @@ module ContentGenerator
     def self.size(location, family, size)
       size = Option::VmSizes.find { it.display_name == size }
       unit_price = BillingRate.unit_price_from_resource_properties("VmVCpu", family, location.name)
+      memory_gib = if location.linode?
+        plan = Option.linode_plan(family, size.vcpus)
+        gpu_plan = Option::LINODE_PLANS.find { it.family == family && it.vcpus == size.vcpus && it.gpu_count.positive? }
+        gpu_plan ? "#{plan.memory_gib} GB RAM / #{gpu_plan.memory_gib} GB with GPU" : "#{plan.memory_gib} GB RAM"
+      else
+        "#{size.memory_gib} GB RAM"
+      end
 
       [
         size.display_name,
-        "#{size.vcpus} vCPUs / #{size.memory_gib} GB RAM",
+        "#{size.vcpus} vCPUs / #{memory_gib}",
         "$#{"%.2f" % (size.vcpus * unit_price * 60 * 672)}/mo",
         "$#{"%.3f" % (size.vcpus * unit_price * 60)}/hour",
       ]
@@ -43,12 +51,14 @@ module ContentGenerator
     def self.storage_size(location, family, vm_size, storage_size)
       storage_size = storage_size.to_i
       unit_price = BillingRate.unit_price_from_resource_properties("VmStorage", family, location.name)
+      monthly_price = unit_price.to_f.zero? ? "Included" : "$#{"%.2f" % (storage_size * unit_price * 60 * 672)}/mo"
+      hourly_price = unit_price.to_f.zero? ? "" : "$#{"%.3f" % (storage_size * unit_price * 60)}/hour"
 
       [
         "#{storage_size}GB",
         nil,
-        "$#{"%.2f" % (storage_size * unit_price * 60 * 672)}/mo",
-        "$#{"%.3f" % (storage_size * unit_price * 60)}/hour",
+        monthly_price,
+        hourly_price,
       ]
     end
 
@@ -131,16 +141,16 @@ module ContentGenerator
       notice = {
         PostgresResource::Flavor::PARADEDB => [[
           "ParadeDB is an Elasticsearch alternative built on Postgres. ParadeDB instances are managed by the ParadeDB team and are optimal for search and analytics workloads.",
-          "You can get ParadeDB specific support via email at <a href='mailto:support@paradedb.com' class='text-orange-600 font-semibold'>support@paradedb.com</a> or via Slack at <a href='https://join.slack.com/t/paradedbcommunity/shared_invite/zt-2lkzdsetw-OiIgbyFeiibd1DG~6wFgTQ' target='_blank' class='text-orange-600 font-semibold'>ParadeDB Community Slack</a>",
+          "You can get ParadeDB specific support via email at <a href='mailto:support@paradedb.com' class='text-layerrail-600 font-semibold'>support@paradedb.com</a> or via Slack at <a href='https://join.slack.com/t/paradedbcommunity/shared_invite/zt-2lkzdsetw-OiIgbyFeiibd1DG~6wFgTQ' target='_blank' class='text-layerrail-600 font-semibold'>ParadeDB Community Slack</a>",
           "By creating a ParadeDB PostgreSQL database on LayerRail you consent to your contact information being shared with ParadeDB team.",
         ],
-          "Accept <a href='https://paradedb.notion.site/Terms-of-Use-d17c9916a5b746fab86c274feb35da75' target='_blank' class='text-orange-600 font-semibold'>Terms of Service</a> and <a href='https://paradedb.notion.site/Privacy-Policy-a7ce333c45c8478fb03250dff7e573b7?pvs=4' target='_blank' class='text-orange-600 font-semibold'> Privacy Policy</a>"],
+          "Accept <a href='https://paradedb.notion.site/Terms-of-Use-d17c9916a5b746fab86c274feb35da75' target='_blank' class='text-layerrail-600 font-semibold'>Terms of Service</a> and <a href='https://paradedb.notion.site/Privacy-Policy-a7ce333c45c8478fb03250dff7e573b7?pvs=4' target='_blank' class='text-layerrail-600 font-semibold'> Privacy Policy</a>"],
         PostgresResource::Flavor::LANTERN => [[
           "Lantern is a PostgreSQL-based vector database designed specifically for building AI applications. Lantern instances are managed by the Lantern team and are optimal for AI workloads.",
-          "You can reach to Lantern team for support at <a href='mailto:support@lantern.dev' class='text-orange-600 font-semibold'>support@lantern.dev</a>",
+          "You can reach to Lantern team for support at <a href='mailto:support@lantern.dev' class='text-layerrail-600 font-semibold'>support@lantern.dev</a>",
           "By creating a Lantern PostgreSQL database on LayerRail you consent to your contact information being shared with Lantern team.",
         ],
-          "Accept <a href='https://lantern.dev/legal/terms' target='_blank' class='text-orange-600 font-semibold'>Terms of Service</a> and <a href='https://lantern.dev/legal/privacy' target='_blank' class='text-orange-600 font-semibold'> Privacy Policy</a>"],
+          "Accept <a href='https://lantern.dev/legal/terms' target='_blank' class='text-layerrail-600 font-semibold'>Terms of Service</a> and <a href='https://lantern.dev/legal/privacy' target='_blank' class='text-layerrail-600 font-semibold'> Privacy Policy</a>"],
       }
 
       notice[flavor]

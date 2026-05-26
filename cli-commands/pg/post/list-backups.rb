@@ -5,7 +5,7 @@ UbiCli.on("pg").run_on("list-backups") do
 
   key = :backups_list
 
-  options("ubi pg (location/pg-name | pg-id) list-backups [options]", key:) do
+  options("lr pg (location/pg-name | pg-id) list-backups [options]", key:) do
     on("-N", "--no-headers", "do not show headers")
   end
 

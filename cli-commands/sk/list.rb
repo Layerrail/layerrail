@@ -5,7 +5,7 @@ UbiCli.on("sk", "list") do
 
   key = :ssh_public_key_list
 
-  options("ubi sk list [options]", key:) do
+  options("lr sk list [options]", key:) do
     on("-N", "--no-headers", "do not show headers")
   end
 

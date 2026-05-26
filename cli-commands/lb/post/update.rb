@@ -3,7 +3,7 @@
 UbiCli.on("lb").run_on("update") do
   desc "Update a load balancer"
 
-  banner "ubi lb (location/lb-name | lb-id) update algorithm src-port dst-port health-check-endpoint cert-enabled [(vm-name | vm-id) [...]]"
+  banner "lr lb (location/lb-name | lb-id) update algorithm src-port dst-port health-check-endpoint cert-enabled [(vm-name | vm-id) [...]]"
 
   args(4...)
 

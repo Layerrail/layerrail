@@ -3,7 +3,7 @@
 UbiCli.on("pg").run_on("create-read-replica") do
   desc "Create a read replica for a PostgreSQL database"
 
-  options("ubi pg (location/pg-name | pg-id) create-read-replica [options] name", key: :pg_create_read_replica) do
+  options("lr pg (location/pg-name | pg-id) create-read-replica [options] name", key: :pg_create_read_replica) do
     on("-c", "--pg-config=config", "postgres config (e.g key1=value1,key2=value2)")
     on("-u", "--pgbouncer-config=config", "pgbouncer config (e.g. key1=value1,key2=value2)")
     on("-t", "--tags=tags", "tags (e.g. key1=value1,key2=value2)")

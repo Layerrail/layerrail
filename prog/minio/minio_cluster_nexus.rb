@@ -29,6 +29,7 @@ class Prog::Minio::MinioClusterNexus < Prog::Base
         Config.minio_service_project_id,
         name: "#{cluster_name}-subnet",
         location_id: location.id,
+        allow_only_ssh: false,
       )
       minio_cluster = MinioCluster.create(
         name: cluster_name,

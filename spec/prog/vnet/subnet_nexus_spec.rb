@@ -85,6 +85,28 @@ RSpec.describe Prog::Vnet::SubnetNexus do
       expect(ps.subject.firewalls.first).to eq(fw)
     end
 
+    it "creates an ssh-only default firewall" do
+      ps = described_class.assemble(prj.id, name: "ssh-only-ps")
+      rules = ps.subject.firewalls.first.firewall_rules.map { [it.cidr.to_s, it.port_range.to_range, it.protocol] }
+
+      expect(rules).to contain_exactly(
+        ["0.0.0.0/0", 22...23, "tcp"],
+        ["::/0", 22...23, "tcp"],
+      )
+    end
+
+    it "creates an open default firewall when requested" do
+      ps = described_class.assemble(prj.id, name: "open-ps", allow_only_ssh: false)
+      rules = ps.subject.firewalls.first.firewall_rules.map { [it.cidr.to_s, it.port_range.to_range, it.protocol] }
+
+      expect(rules).to contain_exactly(
+        ["0.0.0.0/0", 0...65536, "tcp"],
+        ["::/0", 0...65536, "tcp"],
+        ["0.0.0.0/0", 0...65536, "udp"],
+        ["::/0", 0...65536, "udp"],
+      )
+    end
+
     it "fails if provided firewall does not exist" do
       expect {
         described_class.assemble(prj.id, firewall_id: "550e8400-e29b-41d4-a716-446655440000")

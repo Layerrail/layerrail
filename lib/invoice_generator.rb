@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "time"
-require "stripe"
 
 class InvoiceGenerator
   def initialize(begin_time, end_time, save_result: false, project_ids: [], eur_rate: nil)
@@ -26,7 +25,7 @@ class InvoiceGenerator
         bi = project.billing_info
         country = bi&.country
         is_eu = country&.in_eu_vat?
-        project_content[:billing_info] = bi&.stripe_data&.merge({
+        project_content[:billing_info] = bi&.billing_data&.merge({
           "id" => bi.id,
           "ubid" => bi.ubid,
           "in_eu_vat" => !!is_eu,
@@ -36,18 +35,18 @@ class InvoiceGenerator
           project_content[:due_date] = (Date.today + 30).to_s
           if is_eu
             {
-              "Beneficiary" => "Ubicloud B.V.",
+              "Beneficiary" => "LayerRail",
               "IBAN" => "NL30REVO6759811127",
               "BIC" => "REVONL22",
               "Intermediary BIC" => "CHASGB2L",
-              "Beneficiary address" => "Turfschip, 267, 1186XK, Amstelveen, Netherlands",
+              "Beneficiary address" => "Configure LayerRail billing address",
               "Bank/Payment institution" => "Revolut Bank UAB",
               "Bank address" => "Barbara Strozzilaan 201, 1083 HN, Amsterdam, Netherlands",
             }
           else
             {
-              "Beneficiary" => "Ubicloud Inc.",
-              "Beneficiary address" => "310 Santa Ana Ave, San Francisco, CA 94127",
+              "Beneficiary" => "LayerRail",
+              "Beneficiary address" => "Configure LayerRail billing address",
               "ABA/Routing number" => "121145349",
               "Account number" => "974842159957503",
               "Bank/Payment institution" => "Column NA - Brex",
@@ -55,30 +54,30 @@ class InvoiceGenerator
             }
           end
         end
-        # Invoices are issued by Ubicloud Inc. for non-EU customers without VAT applied.
-        # Invoices are issued by Ubicloud B.V. for EU customers.
+        # Invoices are issued by LayerRail for non-EU customers without VAT applied.
+        # Invoices are issued by LayerRail for EU customers.
         #   - If the customer has provided a VAT number from the Netherlands, we charge 21% VAT.
         #   - If the customer has provided a VAT number from another European country, we include a reverse charge notice along with 0% VAT.
         #   - If the customer hasn't provided a VAT number, we charge 21% VAT until non-Dutch EU sales exceed annual threshold, than we charge local VAT.
         project_content[:issuer_info] = if is_eu
           {
-            name: "Ubicloud B.V.",
-            address: "Turfschip 267",
+            name: "LayerRail",
+            address: "Configure LayerRail billing address",
             country: "NL",
-            city: "Amstelveen",
-            postal_code: "1186 XK",
-            tax_id: "NL864651442B01",
-            trade_id: "88492729",
+            city: "",
+            postal_code: "",
+            tax_id: "",
+            trade_id: "",
             in_eu_vat: true,
           }
         else
           {
-            name: "Ubicloud Inc.",
-            address: "310 Santa Ana Avenue",
+            name: "LayerRail",
+            address: "Configure LayerRail billing address",
             country: "US",
-            city: "San Francisco",
-            state: "CA",
-            postal_code: "94127",
+            city: "",
+            state: "",
+            postal_code: "",
           }
         end
         vat_info = if is_eu

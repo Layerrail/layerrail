@@ -3,7 +3,7 @@
 UbiCli.on("sk").run_on("show") do
   desc "Show details for an SSH public key"
 
-  banner "ubi sk (sk-id | sk-name) show"
+  banner "lr sk (sk-id | sk-name) show"
 
   run do
     ssh_public_key = @sdk_object

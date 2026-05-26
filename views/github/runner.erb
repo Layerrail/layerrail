@@ -25,7 +25,7 @@
   <div class="mb-3 -mt-2 rounded-md bg-red-50 p-4 flex items-center gap-3">
     <%== part("components/icon", name: "hero-squares-plus", classes: "h-5 w-5 text-red-400") %>
     <h3 class="text-sm font-medium text-red-800">
-      You've reached your vCPU concurrency limit. If you need higher limits, please contact our support team at support@layerrail.dev
+      You've reached your vCPU concurrency limit. If you need higher limits, please contact our support team at support@layerrail.com to discuss your use case and options for increasing your limits.
     </h3>
   </div>
 <% end %>
@@ -61,7 +61,7 @@
               [<<~CONTENT, {escape: false}],
                 <div class="flex gap-1">
                   <div class="rounded-md px-2 text-xs font-medium leading-5 bg-slate-100 text-slate-800">#{runner.label_data["vcpus"]} vCPU</div>
-                  <div class="rounded-md px-2 text-xs font-medium leading-5 #{(family == "premium") ? "bg-orange-100 text-orange-600" : "bg-slate-100 text-slate-800"}">#{family}</div>
+                  <div class="rounded-md px-2 text-xs font-medium leading-5 #{(family == "premium") ? "bg-layerrail-100 text-layerrail-600" : "bg-slate-100 text-slate-800"}">#{family}</div>
                   <div class="rounded-md px-2 text-xs font-medium leading-5 bg-slate-100 text-slate-800">#{runner.label_data["arch"]}</div>
                   <div class="rounded-md px-2 text-xs font-medium leading-5 bg-slate-100 text-slate-800">#{os}</div>
                 </div>
@@ -137,20 +137,20 @@
         <div class="mt-4 mx-auto max-w-sm rounded-lg bg-gray-50 p-4 text-left text-sm">
           <ol class="space-y-3 text-gray-600">
             <li class="flex gap-3">
-              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-medium text-orange-600">1</span>
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-layerrail-100 text-xs font-medium text-layerrail-600">1</span>
               <span>Change <code class="rounded bg-white px-1.5 py-0.5 text-xs font-medium text-rose-500 font-mono">runs-on</code> in your workflow file to a runner label like <code class="rounded bg-white px-1.5 py-0.5 text-xs font-medium text-rose-500 font-mono">ubicloud-standard-2</code></span>
             </li>
             <li class="flex gap-3">
-              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-medium text-orange-600">2</span>
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-layerrail-100 text-xs font-medium text-layerrail-600">2</span>
               <span>Commit and push the change to your repository</span>
             </li>
             <li class="flex gap-3">
-              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-medium text-orange-600">3</span>
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-layerrail-100 text-xs font-medium text-layerrail-600">3</span>
               <span>Trigger your workflow to start a runner</span>
             </li>
           </ol>
         </div>
-        <div class="mt-4 mx-auto max-w-sm rounded-lg border border-orange-200 bg-orange-50 px-4 py-2 flex items-center justify-between gap-3">
+        <div class="mt-4 mx-auto max-w-sm rounded-lg border border-layerrail-200 bg-layerrail-50 px-4 py-2 flex items-center justify-between gap-3">
           <div class="text-left">
             <span class="text-sm font-medium text-gray-900">Need more options?</span>
             <div class="mt-1.5 flex gap-1.5">
@@ -159,9 +159,7 @@
               <span class="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-200">Premium</span>
             </div>
           </div>
-          <a href="https://www.ubicloud.com/docs/github-actions-integration/runner-types" target="_blank" class="text-sm font-medium text-orange-600 whitespace-nowrap">
-            Explore <span aria-hidden="true">&rarr;</span>
-          </a>
+          <span class="text-sm font-medium text-layerrail-600 whitespace-nowrap">Runner tiers</span>
         </div>
         <div class="mt-3">#{free_upgrade_badge}</div>
       </div>

@@ -30,7 +30,7 @@ class Clover < Roda
   VM_STATE_LABEL_COLOR.freeze
 
   BUTTON_COLOR = Hash.new { |h, k| raise "unsupported button type: #{k}" }.merge!(
-    "primary" => "bg-orange-600 hover:bg-orange-700 focus-visible:outline-orange-600",
+    "primary" => "bg-layerrail-600 hover:bg-layerrail-700 focus-visible:outline-layerrail-600",
     "safe" => "bg-green-600 hover:bg-green-700 focus-visible:outline-green-600",
     "warning" => "bg-amber-600 hover:bg-amber-700 focus-visible:outline-amber-600",
     "danger" => "bg-rose-600 hover:bg-rose-700 focus-visible:outline-rose-600",
@@ -256,7 +256,7 @@ class Clover < Roda
     end
 
     if link_text
-      rows << [[["<a class=\"text-orange-600\" href=\"?#{h to_query_string(@next_page_params)}\">#{link_text}</a>", {escape: false}]]]
+      rows << [[["<a class=\"text-layerrail-600\" href=\"?#{h to_query_string(@next_page_params)}\">#{link_text}</a>", {escape: false}]]]
     end
   end
 

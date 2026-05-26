@@ -3,7 +3,7 @@
 UbiCli.on("al") do
   desc "View project audit log"
 
-  banner "ubi al command [...]"
+  banner "lr al command [...]"
 
   # :nocov:
   unless Config.production? || ENV["FORCE_AUTOLOAD"] == "1"

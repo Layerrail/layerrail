@@ -15,22 +15,28 @@ import (
 
 var version = "undefined"
 var allowConfirmation bool = true
-var debugEnabled = os.Getenv("UBI_DEBUG") == "1"
+var debugEnabled = os.Getenv("LR_DEBUG") == "1" || os.Getenv("UBI_DEBUG") == "1"
 
 func getToken() string {
-	token := os.Getenv("UBI_TOKEN")
+	token := os.Getenv("LR_TOKEN")
 	if token == "" {
-		fmt.Fprintln(os.Stderr, "! Personal access token must be provided in UBI_TOKEN env variable for use")
+		token = os.Getenv("UBI_TOKEN")
+	}
+	if token == "" {
+		fmt.Fprintln(os.Stderr, "! Personal access token must be provided in LR_TOKEN env variable for use")
 		os.Exit(1)
 	}
 	return token
 }
 
 func baseURL() string {
+	if url := os.Getenv("LR_URL"); url != "" {
+		return url
+	}
 	if url := os.Getenv("UBI_URL"); url != "" {
 		return url
 	}
-	return "https://api.ubicloud.com/cli"
+	return "https://api.layerrail.com/cli"
 }
 
 type Client struct {
@@ -121,7 +127,10 @@ var pgCommands = map[string]bool{
 }
 
 func getExecutablePath(prog string) string {
-	envProg := os.Getenv("UBI_" + strings.ToUpper(prog))
+	envProg := os.Getenv("LR_" + strings.ToUpper(prog))
+	if envProg == "" {
+		envProg = os.Getenv("UBI_" + strings.ToUpper(prog))
+	}
 	if envProg != "" {
 		prog = envProg
 	}

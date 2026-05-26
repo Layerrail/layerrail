@@ -2,7 +2,7 @@
   <div>
     <button
       type="button"
-      class="inline-flex w-full items-center gap-x-4 px-6 py-3 text-md font-semibold leading-6 text-white bg-orange-700 hover:bg-orange-800"
+      class="inline-flex w-full items-center gap-x-4 px-6 py-3 text-md font-semibold leading-6 text-white bg-layerrail-700 hover:bg-layerrail-800"
       id="menu-button"
     >
       <%== part("components/icon", name: "hero-folder-open", classes: "h-8 w-8 rounded-full") %>
@@ -19,7 +19,7 @@
       <% current_account.projects.each do |p| %>
         <a
           href="<%= p.path %>/dashboard"
-          class="block px-4 py-2 hover:bg-gray-100 hover:text-gray-900 <% if p.id == @project&.id %> bg-orange-50 text-orange-600 hover:bg-orange-50 hover:text-orange-700 <% end %>"
+          class="block px-4 py-2 hover:bg-gray-100 hover:text-gray-900 <% if p.id == @project&.id %> bg-layerrail-50 text-layerrail-600 hover:bg-layerrail-50 hover:text-layerrail-700 <% end %>"
           role="menuitem"
           tabindex="-1"
         ><%= p.name %></a>

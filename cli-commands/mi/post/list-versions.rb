@@ -7,7 +7,7 @@ UbiCli.on("mi").run_on("list-versions") do
 
   key = :mi_list_versions
 
-  options("ubi mi (location/mi-name | mi-id) list-versions [options]", key:) do
+  options("lr mi (location/mi-name | mi-id) list-versions [options]", key:) do
     on("-f", "--fields=fields", "show specific fields (comma separated)")
     on("-N", "--no-headers", "do not show headers")
   end

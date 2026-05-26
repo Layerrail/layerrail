@@ -3,7 +3,7 @@
 UbiCli.on("kc").run_on("resize-nodepool") do
   desc "Resize a Kubernetes cluster nodepool"
 
-  banner "ubi kc (location/kc-name | kc-id) resize-nodepool (np-name | np-id) node-count"
+  banner "lr kc (location/kc-name | kc-id) resize-nodepool (np-name | np-id) node-count"
 
   args 2
 

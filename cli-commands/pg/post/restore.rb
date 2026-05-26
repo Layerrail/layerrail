@@ -3,7 +3,7 @@
 UbiCli.on("pg").run_on("restore") do
   desc "Restore a PostgreSQL database backup to a new database"
 
-  options("ubi pg (location/pg-name | pg-id) restore [options] new-db-name restore-time", key: :pg_restore) do
+  options("lr pg (location/pg-name | pg-id) restore [options] new-db-name restore-time", key: :pg_restore) do
     on("-c", "--pg-config=config", "postgres config (e.g. key1=value1,key2=value2)")
     on("-u", "--pgbouncer-config=config", "pgbouncer config (e.g. key1=value1,key2=value2)")
     on("-t", "--tags=tags", "tags (e.g. key1=value1,key2=value2)")

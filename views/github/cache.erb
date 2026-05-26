@@ -43,7 +43,7 @@
             <% entries.each do |entry| %>
               <tr id="entry-<%= entry.ubid %>" class="hidden cache-group cache-group-<%= repository_id %>">
                 <td class="whitespace-nowrap py-3 pl-3 pr-4 text-sm text-right">
-                  <input type="checkbox" name="ubids[]" value="<%= entry.ubid %>" form="delete-selected-form" class="h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-600" id="delete-cache-entry-<%= entry.ubid %>">
+                  <input type="checkbox" name="ubids[]" value="<%= entry.ubid %>" form="delete-selected-form" class="h-4 w-4 rounded border-gray-300 text-layerrail-600 focus:ring-layerrail-600" id="delete-cache-entry-<%= entry.ubid %>">
                   <label for="delete-cache-entry-<%= entry.ubid %>" class="cache-group-overlay"></label>
                 </td>
                 <td class="py-3 pl-4 pr-3 text-sm sm:pl-6 w-full" scope="row">
@@ -75,7 +75,7 @@
               <div class="text-center py-4 px-8 lg:px-32">
                 <h3 class="text-xl leading-10 font-medium mb-3">No cache entries</h3>
                 <p class="leading-6">
-                  Check out <a href="https://www.ubicloud.com/docs/github-actions-integration/ubicloud-cache" class="text-orange-500 font-medium">our documentation</a> to use LayerRail Cache for faster caching.
+                  Enable LayerRail Cache in runner settings to speed up repeated workflow jobs.
                 </p>
               </div>
             </td>

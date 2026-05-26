@@ -3,7 +3,7 @@
 UbiCli.on("ps").run_on("connect") do
   desc "Connect a private subnet to another private subnet"
 
-  banner "ubi ps (location/ps-name | ps-id) connect (ps-name | ps-id)"
+  banner "lr ps (location/ps-name | ps-id) connect (ps-name | ps-id)"
 
   args 1
 

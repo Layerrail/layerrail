@@ -6,7 +6,7 @@ UbiCli.on("mi").run_on("show") do
   fields = %w[id name location arch latest-version created-at versions].freeze.each(&:freeze)
   version_fields = %w[version id state actual-size-mib archive-size-mib created-at].freeze.each(&:freeze)
 
-  options("ubi mi (location/mi-name | mi-id) show [options]", key: :mi_show) do
+  options("lr mi (location/mi-name | mi-id) show [options]", key: :mi_show) do
     on("-f", "--fields=fields", "show specific fields (comma separated)")
     on("-v", "--version-fields=fields", "show specific version fields (comma separated)")
   end

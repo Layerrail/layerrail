@@ -3,7 +3,12 @@
 class Prog::Vnet::SubnetNexus < Prog::Base
   subject_is :private_subnet
 
-  def self.assemble(project_id, name: nil, location_id: Location::HETZNER_FSN1_ID, ipv6_range: nil, ipv4_range: nil, allow_only_ssh: false, firewall_id: nil, firewall_name: nil, ipv4_range_size: nil, preferred_azs: [])
+  DEFAULT_FIREWALL_RULES = {
+    true => {port_range: 22..22, protocols: ["tcp"].freeze},
+    false => {port_range: 0..65535, protocols: ["tcp", "udp"].freeze},
+  }.freeze
+
+  def self.assemble(project_id, name: nil, location_id: Location::HETZNER_FSN1_ID, ipv6_range: nil, ipv4_range: nil, allow_only_ssh: nil, firewall_id: nil, firewall_name: nil, ipv4_range_size: nil, preferred_azs: [])
     unless (project = Project[project_id])
       fail "No existing project"
     end
@@ -14,6 +19,7 @@ class Prog::Vnet::SubnetNexus < Prog::Base
     if allow_only_ssh && firewall_id
       fail "Cannot specify both allow_only_ssh and firewall_id"
     end
+    allow_only_ssh = true if allow_only_ssh.nil?
 
     ubid = PrivateSubnet.generate_ubid
     id = ubid.to_uuid
@@ -32,7 +38,7 @@ class Prog::Vnet::SubnetNexus < Prog::Base
           fail "Firewall with id #{firewall_id} and location #{location.name} does not exist"
         end
       else
-        port_range = allow_only_ssh ? 22..22 : 0..65535
+        firewall_rules = DEFAULT_FIREWALL_RULES.fetch(allow_only_ssh)
 
         unless firewall_name
           firewall_name = "#{name[0, 55]}-default"
@@ -46,11 +52,10 @@ class Prog::Vnet::SubnetNexus < Prog::Base
         end
 
         firewall = Firewall.create(name: firewall_name, location_id: location.id, project_id:)
-        pg_port_range = Sequel.pg_range(port_range)
-        protocols = allow_only_ssh ? ["tcp"] : ["tcp", "udp"]
+        pg_port_range = Sequel.pg_range(firewall_rules[:port_range])
         FirewallRule.import(
           [:id, :firewall_id, :cidr, :port_range, :protocol],
-          protocols.flat_map { |protocol|
+          firewall_rules[:protocols].flat_map { |protocol|
             %w[0.0.0.0/0 ::/0].freeze.map { |cidr| [FirewallRule.generate_uuid, firewall.id, cidr, pg_port_range, protocol] }
           },
         )
@@ -64,6 +69,8 @@ class Prog::Vnet::SubnetNexus < Prog::Base
         "Vnet::Aws::VpcNexus"
       elsif location.gcp?
         "Vnet::Gcp::SubnetNexus"
+      elsif location.linode?
+        "Vnet::Linode::SubnetNexus"
       else
         "Vnet::Metal::SubnetNexus"
       end

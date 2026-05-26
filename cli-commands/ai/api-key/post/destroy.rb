@@ -3,7 +3,7 @@
 UbiCli.on("ai", "api-key").run_on("destroy") do
   desc "Destroy an inference API key"
 
-  options("ubi ai api-key api-key-id destroy [options]", key: :destroy) do
+  options("lr ai api-key api-key-id destroy [options]", key: :destroy) do
     on("-f", "--force", "do not require confirmation")
   end
 

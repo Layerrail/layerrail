@@ -3,7 +3,7 @@
 UbiCli.on("ps").run_on("create") do
   desc "Create a private subnet"
 
-  options("ubi ps location/ps-name create [options]", key: :ps_create) do
+  options("lr ps location/ps-name create [options]", key: :ps_create) do
     on("-f", "--firewall-id=fw-id-or-name", "add to given firewall")
   end
 

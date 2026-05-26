@@ -12,8 +12,9 @@ class VmStorageVolume < Sequel::Model
   many_to_one :key_encryption_key_2, class: :StorageKeyEncryptionKey
   many_to_one :boot_image, read_only: true
   many_to_one :machine_image_version, read_only: true
+  one_to_one :linode_storage_volume, key: :id, read_only: true
 
-  plugin :association_dependencies, key_encryption_key_1: :destroy, key_encryption_key_2: :destroy
+  plugin :association_dependencies, key_encryption_key_1: :destroy, key_encryption_key_2: :destroy, linode_storage_volume: :destroy
 
   plugin ResourceMethods
   plugin ProviderDispatcher, __FILE__

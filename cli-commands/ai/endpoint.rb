@@ -3,7 +3,7 @@
 UbiCli.on("ai", "endpoint") do
   desc "Manage AI inference endpoints"
 
-  banner "ubi ai endpoint [command] ..."
+  banner "lr ai endpoint [command] ..."
 
   # :nocov:
   unless Config.production? || ENV["FORCE_AUTOLOAD"] == "1"

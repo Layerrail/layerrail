@@ -32,7 +32,7 @@ class Clover
             end
           end
 
-          @last_cli = @last_cli.sub(/\A\s*ubi\s+/, "")
+          @last_cli = @last_cli.sub(/\A\s*(?:lr|ubi)\s+/, "")
           begin
             argv = @last_cli.shellsplit
           rescue ArgumentError => ex
@@ -49,7 +49,7 @@ class Clover
 
           # Need to save the host and restore it afterward for rack-test to work correctly
           host = env["HTTP_HOST"]
-          env["HTTP_HOST"] = "api.ubicloud.com"
+          env["HTTP_HOST"] = "api.layerrail.com"
           _, headers, body = UbiCli.process(argv, env)
           env["HTTP_HOST"] = host
 
@@ -69,7 +69,7 @@ class Clover
             end
             h(body).gsub(UbiCli::OBJECT_INFO_REGEXP) do
               if (obj = ubids[UBID.to_uuid(it)]) && obj.respond_to?(:path)
-                "<a class=\"text-orange-600\" href=\"#{@project.path}#{obj.path}\">#{it}</a>"
+                "<a class=\"text-layerrail-600\" href=\"#{@project.path}#{obj.path}\">#{it}</a>"
               else
                 it
               end

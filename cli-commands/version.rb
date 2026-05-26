@@ -3,7 +3,7 @@
 UbiCli.on("version") do
   desc "Display CLI program version"
 
-  banner "ubi version"
+  banner "lr version"
 
   run do
     response(client_version)

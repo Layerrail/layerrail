@@ -13,13 +13,13 @@
       <% if request.path == url %>
         <a
           href="<%= url %>"
-          class="border-orange-600 bg-orange-50 text-orange-600 hover:bg-orange-50 hover:text-orange-700 group flex items-center border-l-4 px-3 py-2 text-sm font-medium"
+          class="border-layerrail-600 bg-layerrail-50 text-layerrail-600 hover:bg-layerrail-50 hover:text-layerrail-700 group flex items-center border-l-4 px-3 py-2 text-sm font-medium"
           aria-current="page"
         >
           <%== part(
             "components/icon",
             name: icon,
-            classes: "text-orange-600 group-hover:text-orange-600 -ml-1 mr-3 h-6 w-6 flex-shrink-0"
+            classes: "text-layerrail-600 group-hover:text-layerrail-600 -ml-1 mr-3 h-6 w-6 flex-shrink-0"
           ) %>
           <span class="truncate"><%= label %></span>
         </a>

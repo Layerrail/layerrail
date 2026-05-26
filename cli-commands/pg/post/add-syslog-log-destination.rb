@@ -3,7 +3,7 @@
 UbiCli.on("pg").run_on("add-syslog-log-destination") do
   desc "Add a syslog (RFC 5424 over TLS) log destination to a PostgreSQL database"
 
-  banner "ubi pg (location/pg-name | pg-id) add-syslog-log-destination name host [port] [sd-id/key=value [...]]"
+  banner "lr pg (location/pg-name | pg-id) add-syslog-log-destination name host [port] [sd-id/key=value [...]]"
 
   args(2..)
 

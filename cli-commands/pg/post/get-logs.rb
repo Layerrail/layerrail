@@ -5,7 +5,7 @@ UbiCli.on("pg").run_on("get-logs") do
 
   key = :pg_get_logs
 
-  options("ubi pg (location/pg-name | pg-id) get-logs [options]", key:) do
+  options("lr pg (location/pg-name | pg-id) get-logs [options]", key:) do
     on("-s", "--start=time", "start time (RFC3339, default: 30 minutes ago)")
     on("-e", "--end=time", "end time (RFC3339, default: now)")
     on("--stream-name=stream", Option::POSTGRES_LOG_STREAM_OPTIONS, "filter by log stream")
@@ -25,7 +25,7 @@ UbiCli.on("pg").run_on("get-logs") do
     no_headers = o.delete(:no_headers)
     page = sdk_object.logs(**o.compact)
 
-    body = format_paginated_csv(page, "ubi pg #{@location}/#{@name} get-logs", no_headers:, header_row: "Timestamp,ServerRole,Stream,Level,Message") do |log|
+    body = format_paginated_csv(page, "lr pg #{@location}/#{@name} get-logs", no_headers:, header_row: "Timestamp,ServerRole,Stream,Level,Message") do |log|
       log.values_at(:timestamp, :server_role, :stream_name, :severity_level, :message)
     end
 

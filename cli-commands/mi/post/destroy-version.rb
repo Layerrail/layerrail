@@ -3,7 +3,7 @@
 UbiCli.on("mi").run_on("destroy-version") do
   desc "Destroy a non-latest version of a machine image"
 
-  options("ubi mi (location/mi-name | mi-id) destroy-version [options] version", key: :mi_destroy_version) do
+  options("lr mi (location/mi-name | mi-id) destroy-version [options] version", key: :mi_destroy_version) do
     on("-f", "--force", "do not require confirmation")
   end
 

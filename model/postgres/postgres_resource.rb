@@ -517,13 +517,23 @@ class PostgresResource < Sequel::Model
         ["m8gd", "i8g"].include?(family) || (Option::AWS_FAMILY_OPTIONS.include?(family) && project.send(:"get_ff_enable_#{family}"))
       elsif location.gcp?
         Option::GCP_FAMILY_OPTIONS.include?(family)
+      elsif location.linode?
+        ["standard", "hobby"].include?(family)
       else
         family == "standard" || family == "hobby"
       end
     end
 
     options.add_option(name: "size", values: Option::POSTGRES_SIZE_OPTIONS.keys, parent: "family") do |flavor, location, family, size|
-      Option::POSTGRES_SIZE_OPTIONS[size].family == family
+      pg_size = Option::POSTGRES_SIZE_OPTIONS[size]
+      next false unless pg_size.family == family
+      next true unless location.linode?
+
+      linode_family = (family == "hobby") ? "burstable" : family
+      Option.linode_plan(linode_family, pg_size.vcpu_count)
+      true
+    rescue Validation::ValidationFailed
+      false
     end
 
     storage_size_options = Option::POSTGRES_STORAGE_SIZE_OPTIONS +
@@ -538,6 +548,8 @@ class PostgresResource < Sequel::Model
         Option::AWS_STORAGE_SIZE_OPTIONS[family][vcpu_count].include?(storage_size)
       elsif location.gcp?
         Option::GCP_STORAGE_SIZE_OPTIONS[family][vcpu_count].include?(storage_size)
+      elsif location.linode?
+        [vcpu_count * 32, vcpu_count * 64, vcpu_count * 128].include?(storage_size)
       else
         min_storage = (vcpu_count >= 30) ? 1024 : vcpu_count * 32
         min_storage /= 2 if family == "hobby"
@@ -574,7 +586,11 @@ class PostgresResource < Sequel::Model
   end
 
   def self.postgres_locations(project)
-    Location.postgres_locations(project.get_ff_visible_postgres_locations) + project.locations
+    if Config.compute_provider
+      Option.locations(feature_flags: project.feature_flags) + project.locations.select { it.provider == Config.compute_provider }
+    else
+      Location.postgres_locations(project.get_ff_visible_postgres_locations) + project.locations
+    end
   end
 
   module HaType

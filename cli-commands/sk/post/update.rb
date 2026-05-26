@@ -3,9 +3,9 @@
 UbiCli.on("sk").run_on("update") do
   desc "Update an SSH public key"
 
-  banner "ubi sk (sk-id | sk-name) update public-key"
+  banner "lr sk (sk-id | sk-name) update public-key"
 
-  help_example 'ubi sk my-sk-name update "$(cat ~/.ssh/id_ed25519.pub)"'
+  help_example 'lr sk my-sk-name update "$(cat ~/.ssh/id_ed25519.pub)"'
 
   args 1
 

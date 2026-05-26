@@ -3,7 +3,7 @@
 UbiCli.on("pg").run_on("add-config-entries") do
   desc "Add configuration entries to a PostgreSQL database"
 
-  banner "ubi pg (location/pg-name | pg-id) add-config-entries key=value [...]"
+  banner "lr pg (location/pg-name | pg-id) add-config-entries key=value [...]"
 
   args(1..)
 

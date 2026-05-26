@@ -3,7 +3,7 @@
 UbiCli.on("pg").run_on("add-firewall-rule") do
   desc "Add a PostgreSQL firewall rule"
 
-  options("ubi pg (location/pg-name | pg-id) add-firewall-rule [options] cidr", key: :pg_fw_rule) do
+  options("lr pg (location/pg-name | pg-id) add-firewall-rule [options] cidr", key: :pg_fw_rule) do
     on("-d", "--description=desc", "description of rule")
   end
 

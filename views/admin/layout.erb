@@ -50,8 +50,7 @@
           <span>clover-<%= Config.rack_env %></span>
         <% end %>
         <% if commit = Config.git_commit_hash %>
-          <span>commit:
-            <a href="https://github.com/mayowaoladosu/ubicloud/commit/<%= commit %>" target="_blank"><%= commit %></a></span>
+          <span>commit: <%= commit %></span>
         <% end %>
       </div>
     </footer>

@@ -3,7 +3,7 @@
 UbiCli.on("fw").run_on("detach-subnet") do
   desc "Detach a private subnet from a firewall"
 
-  banner "ubi fw (location/fw-name | fw-id) detach-subnet (ps-name | ps-id)"
+  banner "lr fw (location/fw-name | fw-id) detach-subnet (ps-name | ps-id)"
 
   args 1
 

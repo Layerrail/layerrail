@@ -5,7 +5,7 @@ UbiCli.on("gh").run_on("list-cache-entries") do
 
   key = :cache_entries_list
 
-  options("ubi gh installation-name/repository-name list-cache-entries [options]", key:) do
+  options("lr gh installation-name/repository-name list-cache-entries [options]", key:) do
     on("-N", "--no-headers", "do not show headers")
   end
 

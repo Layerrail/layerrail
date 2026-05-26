@@ -7,11 +7,19 @@ module Option
   AI_MODELS = ai_models.select { it["enabled"] }.freeze
 
   def self.locations(only_visible: true, feature_flags: {})
-    Location.where(project_id: nil).all.select { |pl| !only_visible || (pl.visible || feature_flags["visible_locations"]&.include?(pl.name)) }
+    locs = Location.where(project_id: nil).all.select { |pl| !only_visible || (pl.visible || feature_flags["visible_locations"]&.include?(pl.name)) }
+    if Config.compute_provider
+      locs.select! { |it| it.provider == Config.compute_provider }
+    end
+    locs
   end
 
   def self.kubernetes_locations
-    Location.where(name: ["hetzner-fsn1", "leaseweb-wdc02"]).all
+    if Config.compute_provider
+      Location.where(provider: Config.compute_provider, project_id: nil, visible: true).all
+    else
+      Location.where(name: ["hetzner-fsn1", "leaseweb-wdc02"]).all
+    end
   end
 
   def self.kubernetes_versions
@@ -20,6 +28,68 @@ module Option
 
   def self.selectable_kubernetes_versions
     kubernetes_versions.first(2)
+  end
+
+  LinodePlan = Data.define(:id, :label, :family, :vcpus, :memory_gib, :disk_gib, :monthly_price, :hourly_price, :gpu_count, :gpu_device)
+  LINODE_MARKUP = 1.30
+  LINODE_GPU_DEVICE = "27b0"
+  LINODE_LOCATIONS = [
+    ["linode-de-fra-2", "de-fra-2", "Frankfurt, DE"],
+    ["linode-us-east", "us-east", "Newark, NJ"],
+    ["linode-us-lax", "us-lax", "Los Angeles, CA"],
+    ["linode-us-sea", "us-sea", "Seattle, WA"],
+  ].map(&:freeze).freeze
+  LINODE_PLANS = [
+    LinodePlan.new("g6-standard-1", "Shared 2GB", "burstable", 1, 2, 50, 12, 0.018, 0, nil),
+    LinodePlan.new("g6-standard-2", "Shared 4GB", "burstable", 2, 4, 80, 24, 0.036, 0, nil),
+    LinodePlan.new("g7-dedicated-4-2", "Dedicated 4GB", "standard", 2, 4, 80, 43, 0.0645, 0, nil),
+    LinodePlan.new("g7-dedicated-8-4", "Dedicated 8GB", "standard", 4, 8, 160, 86, 0.129, 0, nil),
+    LinodePlan.new("g7-dedicated-16-8", "Dedicated 16GB", "standard", 8, 16, 320, 173, 0.2595, 0, nil),
+    LinodePlan.new("g7-dedicated-32-16", "Dedicated 32GB", "standard", 16, 32, 640, 346, 0.519, 0, nil),
+    LinodePlan.new("g2-gpu-rtx4000a1-s", "RTX 4000 Ada Small", "standard", 4, 16, 512, 350, 0.52, 1, LINODE_GPU_DEVICE),
+  ].freeze
+  LINODE_BOOT_IMAGES = {
+    "ubuntu-noble" => "linode/ubuntu24.04",
+    "gpu-ubuntu-noble" => "linode/ubuntu24.04",
+    "debian-12" => "linode/debian12",
+    "almalinux-9" => "linode/almalinux9",
+    "rocky-9" => "linode/rocky9",
+  }.freeze
+
+  def self.linode_plan(family, vcpu_count, gpu_count: 0, gpu_device: nil)
+    LINODE_PLANS.find {
+      it.family == family &&
+        it.vcpus == vcpu_count &&
+        it.gpu_count == gpu_count.to_i &&
+        it.gpu_device == gpu_device
+    } || raise(Validation::ValidationFailed.new({size: "#{family}-#{vcpu_count} is not available on Linode"}))
+  end
+
+  def self.linode_instance_type_name(family, vcpu_count, gpu_count: 0, gpu_device: nil)
+    linode_plan(family, vcpu_count, gpu_count:, gpu_device:).id
+  rescue KeyError
+    raise Validation::ValidationFailed.new({size: "#{family}-#{vcpu_count} is not available on Linode"})
+  end
+
+  def self.linode_image_name(boot_image)
+    if boot_image.start_with?("kubernetes-")
+      env_key = "LINODE_#{boot_image.upcase.tr("-.", "__")}_IMAGE"
+      ENV.fetch(env_key, "linode/ubuntu24.04")
+    elsif boot_image == "postgres-ubuntu-2204"
+      ENV.fetch("LINODE_POSTGRES_IMAGE", "linode/ubuntu22.04")
+    else
+      LINODE_BOOT_IMAGES.fetch(boot_image)
+    end
+  rescue KeyError
+    raise Validation::ValidationFailed.new({boot_image: "#{boot_image} is not available on Linode"})
+  end
+
+  def self.linode_boot_image?(boot_image)
+    LINODE_BOOT_IMAGES.key?(boot_image) || boot_image.start_with?("kubernetes-") || boot_image == "postgres-ubuntu-2204"
+  end
+
+  def self.linode_plan_by_id(id)
+    LINODE_PLANS.find { it.id == id }
   end
 
   MACHINE_IMAGE_SEARCH_LOCATIONS = {
@@ -146,6 +216,7 @@ module Option
     ["ubuntu-jammy", "Ubuntu Jammy 22.04 LTS"],
     ["debian-12", "Debian 12"],
     ["almalinux-9", "AlmaLinux 9"],
+    ["rocky-9", "Rocky Linux 9"],
   ].map { |args| BootImage.new(*args) }.freeze
 
   VmFamily = Data.define(:name, :ui_descriptor, :visible, :require_shared_slice) do

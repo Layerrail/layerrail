@@ -15,17 +15,17 @@ RSpec.describe Location do
   it ".for_project filters dataset to given project and non-project-specific locations" do
     p1_loc
     p2_loc
-    expect(described_class.for_project(p1_id).select_order_map(:name)).to eq ["gcp-us-central1", "github-runners", "hetzner-ai", "hetzner-fsn1", "hetzner-hel1", "l1", "latitude-ai", "latitude-fra", "leaseweb-wdc02", "tr-ist-u1", "tr-ist-u1-tom", "us-east-1", "us-west-2", "us-west-u1-ps"]
-    expect(described_class.for_project(p2_id).select_order_map(:name)).to eq ["gcp-us-central1", "github-runners", "hetzner-ai", "hetzner-fsn1", "hetzner-hel1", "l2", "latitude-ai", "latitude-fra", "leaseweb-wdc02", "tr-ist-u1", "tr-ist-u1-tom", "us-east-1", "us-west-2", "us-west-u1-ps"]
+    expect(described_class.for_project(p1_id).select_order_map(:name)).to eq ["gcp-us-central1", "github-runners", "hetzner-ai", "hetzner-fsn1", "hetzner-hel1", "l1", "latitude-ai", "latitude-fra", "leaseweb-wdc02", "linode-de-fra-2", "linode-us-east", "linode-us-lax", "linode-us-sea", "tr-ist-u1", "tr-ist-u1-tom", "us-east-1", "us-west-2", "us-west-u1-ps"]
+    expect(described_class.for_project(p2_id).select_order_map(:name)).to eq ["gcp-us-central1", "github-runners", "hetzner-ai", "hetzner-fsn1", "hetzner-hel1", "l2", "latitude-ai", "latitude-fra", "leaseweb-wdc02", "linode-de-fra-2", "linode-us-east", "linode-us-lax", "linode-us-sea", "tr-ist-u1", "tr-ist-u1-tom", "us-east-1", "us-west-2", "us-west-u1-ps"]
   end
 
   it ".visible_or_for_project filters dataset to given project and visible non-project-specific locations" do
     p1_loc
     p2_loc
-    expect(described_class.visible_or_for_project(p1_id, []).select_order_map(:name)).to eq ["hetzner-fsn1", "hetzner-hel1", "l1", "leaseweb-wdc02"]
-    expect(described_class.visible_or_for_project(p2_id, []).select_order_map(:name)).to eq ["hetzner-fsn1", "hetzner-hel1", "l2", "leaseweb-wdc02"]
-    expect(described_class.visible_or_for_project(p1_id, []).select_order_map(:name)).to eq ["hetzner-fsn1", "hetzner-hel1", "l1", "leaseweb-wdc02"]
-    expect(described_class.visible_or_for_project(p1_id, ["latitude-ai"]).select_order_map(:name)).to eq ["hetzner-fsn1", "hetzner-hel1", "l1", "latitude-ai", "leaseweb-wdc02"]
+    expect(described_class.visible_or_for_project(p1_id, []).select_order_map(:name)).to eq ["hetzner-fsn1", "hetzner-hel1", "l1", "leaseweb-wdc02", "linode-de-fra-2", "linode-us-east", "linode-us-lax", "linode-us-sea"]
+    expect(described_class.visible_or_for_project(p2_id, []).select_order_map(:name)).to eq ["hetzner-fsn1", "hetzner-hel1", "l2", "leaseweb-wdc02", "linode-de-fra-2", "linode-us-east", "linode-us-lax", "linode-us-sea"]
+    expect(described_class.visible_or_for_project(p1_id, []).select_order_map(:name)).to eq ["hetzner-fsn1", "hetzner-hel1", "l1", "leaseweb-wdc02", "linode-de-fra-2", "linode-us-east", "linode-us-lax", "linode-us-sea"]
+    expect(described_class.visible_or_for_project(p1_id, ["latitude-ai"]).select_order_map(:name)).to eq ["hetzner-fsn1", "hetzner-hel1", "l1", "latitude-ai", "leaseweb-wdc02", "linode-de-fra-2", "linode-us-east", "linode-us-lax", "linode-us-sea"]
   end
 
   it "#visible_or_for_project? returns whether the location is visible or related to the given project" do
@@ -43,6 +43,8 @@ RSpec.describe Location do
     expect(p2_loc.provider_dispatcher_group_name).to eq("aws")
     p2_loc.update(provider: "hetzner")
     expect(p2_loc.provider_dispatcher_group_name).to eq("metal")
+    p2_loc.update(provider: "linode")
+    expect(p2_loc.provider_dispatcher_group_name).to eq("linode")
   end
 
   describe ".postgres_locations" do

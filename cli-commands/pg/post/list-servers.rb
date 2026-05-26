@@ -5,7 +5,7 @@ UbiCli.on("pg").run_on("list-servers") do
 
   key = :servers_list
 
-  options("ubi pg (location/pg-name | pg-id) list-servers [options]", key:) do
+  options("lr pg (location/pg-name | pg-id) list-servers [options]", key:) do
     on("-N", "--no-headers", "do not show headers")
   end
 

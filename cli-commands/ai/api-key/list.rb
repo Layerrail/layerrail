@@ -5,7 +5,7 @@ UbiCli.on("ai", "api-key", "list") do
 
   key = :api_key_list
 
-  options("ubi ai api-key list [options]", key:) do
+  options("lr ai api-key list [options]", key:) do
     on("-N", "--no-headers", "do not show headers")
   end
 

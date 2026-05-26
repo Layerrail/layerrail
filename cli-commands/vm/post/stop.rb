@@ -3,7 +3,7 @@
 UbiCli.on("vm").run_on("stop") do
   desc "Stop a virtual machine"
 
-  banner "ubi vm (location/vm-name | vm-id) stop"
+  banner "lr vm (location/vm-name | vm-id) stop"
 
   run do
     id = sdk_object.stop.id

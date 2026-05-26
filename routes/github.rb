@@ -32,7 +32,7 @@ class Clover
       end
 
       unless (access_token = code_response[:access_token])
-        flash["error"] = "GitHub App installation failed. For any questions or assistance, reach out to our team at support@layerrail.dev"
+        flash["error"] = "GitHub App installation failed. For any questions or assistance, reach out to our team at support@layerrail.com"
         Clog.emit("GitHub callback failed due to lack of permission", {installation_failed: {id: installation_id, account_ubid: current_account.ubid}})
         r.redirect project, "/github"
       end
@@ -44,7 +44,7 @@ class Clover
       end
 
       unless installation_response
-        flash["error"] = "GitHub App installation failed. For any questions or assistance, reach out to our team at support@layerrail.dev"
+        flash["error"] = "GitHub App installation failed. For any questions or assistance, reach out to our team at support@layerrail.com"
         installation_failed = {id: installation_id, account_ubid: current_account.ubid}
         if installation_octokit_error
           Util.exception_to_hash(installation_octokit_error, into: installation_failed)

@@ -28,6 +28,14 @@ class Prog::Vm::Nexus < Prog::Base
     vm_size = Validation.validate_vm_size(size, arch)
     Validation.validate_billing_rate("VmVCpu", vm_size.family, location.name)
 
+    linode_plan = nil
+    if location.linode?
+      linode_plan = Option.linode_plan(vm_size.family, vm_size.vcpus, gpu_count:, gpu_device:)
+      storage_volumes ||= [{size_gib: linode_plan.disk_gib}]
+      boot_volume = storage_volumes[boot_disk_index] || storage_volumes.first
+      boot_volume[:size_gib] = linode_plan.disk_gib
+    end
+
     storage_volumes ||= [{}]
 
     # allow missing fields to make testing during development more convenient.
@@ -115,7 +123,7 @@ class Prog::Vm::Nexus < Prog::Base
         vcpus: vm_size.vcpus,
         cpu_percent_limit: vm_size.cpu_percent_limit,
         cpu_burst_percent_limit: vm_size.cpu_burst_percent_limit,
-        memory_gib: vm_size.memory_gib,
+        memory_gib: linode_plan&.memory_gib || vm_size.memory_gib,
         location_id: location.id,
         boot_image:,
         ip4_enabled: enable_ip4,
@@ -183,6 +191,9 @@ class Prog::Vm::Nexus < Prog::Base
           end
         end
         "Vm::Gcp::Nexus"
+      elsif location.linode?
+        vm.create_storage_volumes(storage_volumes.map { |volume| volume.merge(encrypted: false, track_written: false) })
+        "Vm::Linode::Nexus"
       else
         vm.create_storage_volumes(storage_volumes)
         "Vm::Metal::Nexus"

@@ -3,7 +3,7 @@
 UbiCli.on("pg").run_on("delete-log-destination") do
   desc "Delete a PostgreSQL log destination"
 
-  banner "ubi pg (location/pg-name | pg-id) delete-log-destination ld-id"
+  banner "lr pg (location/pg-name | pg-id) delete-log-destination ld-id"
 
   args 1
 

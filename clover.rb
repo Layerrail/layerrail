@@ -182,10 +182,10 @@ class Clover < Roda
     csp.default_src :none
     csp.style_src :self, "https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css"
     csp.img_src :self, "data: image/svg+xml", "https://github.com", "https://avatars.githubusercontent.com"
-    csp.form_action :self, "https://checkout.stripe.com", "https://github.com/login/oauth/authorize", "https://accounts.google.com/o/oauth2/auth"
+    csp.form_action :self, Config.base_url, "https://checkout.stripe.com", "https://checkout.polar.sh", "https://polar.sh", "https://github.com/login/oauth/authorize", "https://accounts.google.com/o/oauth2/auth"
     csp.script_src :self, "https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js", "https://cdn.jsdelivr.net/npm/dompurify@3.4.0/dist/purify.min.js", "https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js", "https://challenges.cloudflare.com/turnstile/v0/api.js", "https://cdn.jsdelivr.net/npm/marked@15.0.5/marked.min.js", "https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"
     csp.frame_src :self, "https://challenges.cloudflare.com"
-    csp.connect_src :self
+    csp.connect_src :self, "https://cdn.jsdelivr.net"
     csp.base_uri :none
     csp.frame_ancestors :none
   end
@@ -403,7 +403,7 @@ class Clover < Roda
     audit_log_message_for(:omniauth_create_account, "create_account")
 
     # :nocov:
-    unless Config.development?
+    if Config.account_verification_enabled?
       enable :disallow_common_passwords, :verify_account,
         :reset_password_verifies_account
 
@@ -430,11 +430,11 @@ class Clover < Roda
       verify_account_resend_explanatory_text "You need to wait at least 5 minutes before sending another verification email. If you did not receive the email, please check your spam folder."
 
       send_verify_account_email do
-        Util.send_email(email_to, "Welcome to Ubicloud: Please Verify Your Account",
-          greeting: "Welcome to Ubicloud,",
+        Util.send_email(email_to, "Welcome to LayerRail: Please Verify Your Account",
+          greeting: "Welcome to LayerRail,",
           body: ["To complete your registration and activate your account, click the button below.",
             "If you did not initiate this registration process, you may disregard this message.",
-            "We're excited to serve you. Should you require any assistance, our customer support team stands ready to help at support@ubicloud.com."],
+            "We're excited to serve you. Should you require any assistance, our customer support team stands ready to help at support@layerrail.com."],
           button_title: "Verify Account",
           button_link: verify_account_email_link)
       end
@@ -511,7 +511,7 @@ class Clover < Roda
       if Account[account_session_value].suspended_at
         flash["error"] = "Your account has been suspended. " \
           "If you believe there's a mistake, or if you need further assistance, " \
-          "please reach out to our support team at support@ubicloud.com."
+          "please reach out to our support team at support@layerrail.com."
         add_audit_log(account_session_value, :login_failure, {"reason" => "account suspended"})
         forget_login
         redirect login_route
@@ -661,11 +661,11 @@ class Clover < Roda
 
     send_reset_password_email do
       user = Account[account_id]
-      Util.send_email(user.email, "Reset Ubicloud Account Password",
+      Util.send_email(user.email, "Reset LayerRail Account Password",
         greeting: "Hello #{user.name},",
         body: ["We received a request to reset your account password. To reset your password, click the button below.",
           "If you did not initiate this request, no action is needed. Your account remains secure.",
-          "For any questions or assistance, reach out to our team at support@ubicloud.com."],
+          "For any questions or assistance, reach out to our team at support@layerrail.com."],
         button_title: "Reset Password",
         button_link: reset_password_email_link)
     end
@@ -673,7 +673,7 @@ class Clover < Roda
     before_reset_password_request do
       check_locked_domain(account[:email], "Resetting passwords", :reset_password_request_failure)
       unless has_password?
-        flash["error"] = "Login with password is not enabled for this account. Please use other login methods. For any questions or assistance, reach out to our team at support@ubicloud.com"
+        flash["error"] = "Login with password is not enabled for this account. Please use other login methods. For any questions or assistance, reach out to our team at support@layerrail.com"
         redirect login_route
       end
     end
@@ -693,10 +693,10 @@ class Clover < Roda
 
     send_password_changed_email do
       user = Account[account_id]
-      Util.send_email(email_to, "Ubicloud Account Password Changed",
+      Util.send_email(email_to, "LayerRail Account Password Changed",
         greeting: "Hello #{user.name},",
         body: ["Someone has changed the password for the account associated to this email address.",
-          "If you did not initiate this request or for any questions, reach out to our team at support@ubicloud.com."])
+          "If you did not initiate this request or for any questions, reach out to our team at support@layerrail.com."])
     end
 
     before_change_login do
@@ -715,11 +715,11 @@ class Clover < Roda
     verify_login_change_view { view "auth/verify_login_change", "Verify Email Change" }
     send_verify_login_change_email do |new_login|
       user = Account[account_id]
-      Util.send_email(new_login, "Please Verify New Email Address for Ubicloud",
+      Util.send_email(new_login, "Please Verify New Email Address for LayerRail",
         greeting: "Hello #{user.name},",
         body: ["We received a request to change your account email to '#{new_login}'. To verify new email, click the button below.",
           "If you did not initiate this request, no action is needed. Current email address can be used to login your account.",
-          "For any questions or assistance, reach out to our team at support@ubicloud.com."],
+          "For any questions or assistance, reach out to our team at support@layerrail.com."],
         button_title: "Verify Email",
         button_link: verify_login_change_email_link)
     end
@@ -816,17 +816,17 @@ class Clover < Roda
     # OTP Unlock Email
     send_otp_locked_out_email do
       user = Account[account_id]
-      Util.send_email(user.email, "Ubicloud Account One-Time Password Authentication Locked Out",
+      Util.send_email(user.email, "LayerRail Account One-Time Password Authentication Locked Out",
         greeting: "Hello #{user.name},",
-        body: ["Due to repeated authentication failures, for the safety of your Ubicloud account, One-Time Password Authentication has been locked out. You can unlock it with three successful consecutive One-Time Password Authentications.",
-          "For any questions or assistance, reach out to our team at support@ubicloud.com."])
+        body: ["Due to repeated authentication failures, for the safety of your LayerRail account, One-Time Password Authentication has been locked out. You can unlock it with three successful consecutive One-Time Password Authentications.",
+          "For any questions or assistance, reach out to our team at support@layerrail.com."])
     end
     send_otp_unlocked_email do
       user = Account[account_id]
-      Util.send_email(user.email, "Ubicloud Account One-Time Password Authentication Unlocked",
+      Util.send_email(user.email, "LayerRail Account One-Time Password Authentication Unlocked",
         greeting: "Hello #{user.name},",
-        body: ["Since your Ubicloud account had three successful consecutive One-Time Password Authentications,  One-Time Password Authentication is now unlocked for your account.",
-          "For any questions or assistance, reach out to our team at support@ubicloud.com."])
+        body: ["Since your LayerRail account had three successful consecutive One-Time Password Authentications, One-Time Password Authentication is now unlocked for your account.",
+          "For any questions or assistance, reach out to our team at support@layerrail.com."])
     end
 
     # Webauthn Setup

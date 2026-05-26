@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../loader"
+
+abort "Set POLAR_ACCESS_TOKEN first." unless Config.polar_access_token
+
+amount_cents = Integer(ENV.fetch("POLAR_VERIFICATION_AMOUNT_CENTS", "400"), 10)
+currency = ENV.fetch("POLAR_VERIFICATION_CURRENCY", "usd")
+name = ENV.fetch("POLAR_VERIFICATION_PRODUCT_NAME", "LayerRail Verification Package")
+description = ENV.fetch(
+  "POLAR_VERIFICATION_PRODUCT_DESCRIPTION",
+  "One-time billing verification used to unlock a LayerRail project for paid infrastructure."
+)
+
+existing = PolarClient.list_products.fetch("items", []).find do |product|
+  metadata = product["metadata"] || {}
+  metadata["layerrail_role"] == "verification_package" && !product["is_archived"]
+end
+
+product = existing || PolarClient.create_product({
+  name:,
+  description:,
+  recurring_interval: nil,
+  prices: [{
+    amount_type: "fixed",
+    price_currency: currency,
+    price_amount: amount_cents
+  }],
+  metadata: {
+    layerrail_role: "verification_package",
+    layerrail_amount_cents: amount_cents
+  },
+  visibility: "private"
+})
+
+puts "POLAR_VERIFICATION_PRODUCT_ID=#{product.fetch("id")}"
+puts "POLAR_VERIFICATION_AMOUNT_CENTS=#{amount_cents}"

@@ -3,7 +3,7 @@
 UbiCli.on("ai", "api-key", "create") do
   desc "Create an inference API key"
 
-  banner "ubi ai api-key create"
+  banner "lr ai api-key create"
 
   run do
     iak = sdk.inference_api_key.create

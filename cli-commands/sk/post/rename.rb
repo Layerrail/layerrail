@@ -3,7 +3,7 @@
 UbiCli.on("sk").run_on("rename") do
   desc "Rename an SSH public key"
 
-  banner "ubi sk (sk-id | sk-name) rename new-name"
+  banner "lr sk (sk-id | sk-name) rename new-name"
 
   args 1
 

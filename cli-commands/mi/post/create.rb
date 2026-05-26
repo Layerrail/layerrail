@@ -3,7 +3,7 @@
 UbiCli.on("mi").run_on("create") do
   desc "Create a machine image from a stopped VM"
 
-  options("ubi mi location/mi-name create [options] (vm-name | vm-id)", key: :mi_create) do
+  options("lr mi location/mi-name create [options] (vm-name | vm-id)", key: :mi_create) do
     on("-V", "--version=version", "version label (default: timestamp)")
     on("-d", "--destroy-source", "destroy the source VM after capture")
   end

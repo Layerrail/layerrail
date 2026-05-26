@@ -35,10 +35,14 @@ class Location < Sequel::Model
   end
 
   def self.postgres_locations(visible_gcp_names = nil)
-    where(project_id: nil, name: ["hetzner-fsn1", "leaseweb-wdc02"])
-      .or(provider: "aws", project_id: nil)
-      .or(provider: "gcp", project_id: nil, name: visible_gcp_names || [])
-      .all
+    if Config.compute_provider
+      where(provider: Config.compute_provider, project_id: nil).all
+    else
+      where(project_id: nil, name: ["hetzner-fsn1", "leaseweb-wdc02"])
+        .or(provider: "aws", project_id: nil)
+        .or(provider: "gcp", project_id: nil, name: visible_gcp_names || [])
+        .all
+    end
   end
 
   def visible_or_for_project?(proj_id, project_ff_visible_locations)
@@ -62,13 +66,17 @@ class Location < Sequel::Model
     provider == "gcp"
   end
 
+  def linode?
+    provider == "linode"
+  end
+
   def metal?
-    !aws? && !gcp?
+    !aws? && !gcp? && !linode?
   end
 
   def provider_dispatcher_group_name
     case provider
-    when "aws", "gcp"
+    when "aws", "gcp", "linode"
       provider
     else
       "metal"

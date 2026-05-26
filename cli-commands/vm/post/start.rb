@@ -3,7 +3,7 @@
 UbiCli.on("vm").run_on("start") do
   desc "Start a virtual machine"
 
-  banner "ubi vm (location/vm-name | vm-id) start"
+  banner "lr vm (location/vm-name | vm-id) start"
 
   run do
     id = sdk_object.start.id

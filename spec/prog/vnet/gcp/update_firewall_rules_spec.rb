@@ -98,8 +98,8 @@ RSpec.describe Prog::Vnet::Gcp::UpdateFirewallRules do
 
   describe "#update_firewall_rules" do
     let(:fw_rule) {
-      # SubnetNexus.assemble seeds the default firewall with permit-all rules
-      # for 0.0.0.0/0 and ::/0. Clear them so each test controls its own rule set.
+      # SubnetNexus.assemble seeds a default firewall. Clear it so each test
+      # controls its own rule set.
       firewall.firewall_rules.each(&:destroy)
       FirewallRule.create(firewall_id: firewall.id,
         cidr: "0.0.0.0/0", port_range: Sequel.pg_range(22...23))

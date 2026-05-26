@@ -1,0 +1,79 @@
+<% @page_title = "LayerRail Linode Catalog" %>
+
+<div class="container">
+  <p>Markup: <%= "%.0f" % ((@linode_markup - 1) * 100) %>%</p>
+
+  <h2>Locations</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>LayerRail Location</th>
+        <th>Linode Region</th>
+        <th>Display Name</th>
+        <th>Visible</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @linode_locations.each do |location| %>
+        <tr>
+          <td><%= location[:location_name] %></td>
+          <td><%= location[:region] %></td>
+          <td><%= location[:ui_name] %></td>
+          <td><%= location[:visible] ? "Yes" : "No" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <h2>Compute Plans</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Family</th>
+        <th>LayerRail Size</th>
+        <th>Linode Type</th>
+        <th>vCPUs</th>
+        <th>RAM</th>
+        <th>Disk</th>
+        <th>GPU</th>
+        <th>Provider Monthly</th>
+        <th>LayerRail Monthly</th>
+        <th>LayerRail Hourly</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @linode_plans.each do |plan| %>
+        <tr>
+          <td><%= plan.family %></td>
+          <td><%= plan.label %></td>
+          <td><%= plan.id %></td>
+          <td><%= plan.vcpus %></td>
+          <td><%= plan.memory_gib %> GB</td>
+          <td><%= plan.disk_gib %> GB</td>
+          <td><%= plan.gpu_count.positive? ? "#{plan.gpu_count}x #{PciDevice.device_name(plan.gpu_device)}" : "None" %></td>
+          <td>$<%= "%.2f" % plan.monthly_price %></td>
+          <td>$<%= "%.2f" % (plan.monthly_price * @linode_markup) %></td>
+          <td>$<%= "%.3f" % (plan.hourly_price * @linode_markup) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <h2>Boot Images</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>LayerRail Image</th>
+        <th>Linode Image</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% Option::LINODE_BOOT_IMAGES.each do |boot_image, linode_image| %>
+        <tr>
+          <td><%= boot_image %></td>
+          <td><%= linode_image %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

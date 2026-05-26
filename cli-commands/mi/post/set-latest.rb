@@ -3,7 +3,7 @@
 UbiCli.on("mi").run_on("set-latest") do
   desc "Set the latest version of a machine image"
 
-  banner "ubi mi (location/mi-name | mi-id) set-latest version"
+  banner "lr mi (location/mi-name | mi-id) set-latest version"
 
   args 1
 

@@ -3,7 +3,7 @@
 UbiCli.on("pg").run_on("add-pgbouncer-config-entries") do
   desc "Add pgbouncer configuration entries to a PostgreSQL database"
 
-  banner "ubi pg (location/pg-name | pg-id) add-pgbouncer-config-entries key=value [...]"
+  banner "lr pg (location/pg-name | pg-id) add-pgbouncer-config-entries key=value [...]"
 
   args(1..)
 

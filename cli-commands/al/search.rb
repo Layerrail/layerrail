@@ -5,7 +5,7 @@ UbiCli.on("al", "search") do
 
   key = :audit_log_search
 
-  options("ubi al search [options]", key:) do
+  options("lr al search [options]", key:) do
     on("-N", "--no-headers", "do not show headers")
     on("-a", "--action=action", "only show entries for the given action")
     on("-e", "--end=end-date", "only show prior to end date")
@@ -20,7 +20,7 @@ UbiCli.on("al", "search") do
     no_headers = opts.delete(:no_headers)
     logs = sdk.audit_log.search(**opts)
 
-    body = format_paginated_csv(logs, "ubi al search", no_headers:, header_row: "At,Action,Account,Objects") do |log|
+    body = format_paginated_csv(logs, "lr al search", no_headers:, header_row: "At,Action,Account,Objects") do |log|
       [log.at, log.action, log.subject_name || log.subject_id, log.object_ids.join(" ")]
     end
 

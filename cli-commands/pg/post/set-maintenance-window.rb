@@ -3,11 +3,11 @@
 UbiCli.on("pg").run_on("set-maintenance-window") do
   desc "Set the maintenance window for a PostgreSQL database"
 
-  banner "ubi pg (location/pg-name | pg-id) set-maintenance-window start-hour"
+  banner "lr pg (location/pg-name | pg-id) set-maintenance-window start-hour"
 
-  help_example "ubi pg pg-id set-maintenance-window 3   #  3 am"
-  help_example "ubi pg pg-id set-maintenance-window 23  # 11 pm"
-  help_example "ubi pg pg-id set-maintenance-window \"\"  # unset"
+  help_example "lr pg pg-id set-maintenance-window 3   #  3 am"
+  help_example "lr pg pg-id set-maintenance-window 23  # 11 pm"
+  help_example "lr pg pg-id set-maintenance-window \"\"  # unset"
 
   args 1
 

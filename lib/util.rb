@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "net_ssh"
+require_relative "resend_delivery"
 require "openssl"
 require "erubi"
 require "tilt"
@@ -32,7 +33,7 @@ module Util
 
   def self.create_root_certificate(common_name:, duration:)
     create_certificate(
-      subject: "/C=US/O=Ubicloud/CN=#{common_name}",
+      subject: "/C=US/O=LayerRail/CN=#{common_name}",
       extensions: ["basicConstraints=CA:TRUE", "keyUsage=cRLSign,keyCertSign", "subjectKeyIdentifier=hash"],
       duration:,
     ).map(&:to_pem)
@@ -99,10 +100,13 @@ module Util
     EmailRenderer.sendmail("/", ...)
   rescue Net::SMTPSyntaxError
     raise CloverError.new(400, "InvalidRequest", "Invalid email address used")
+  rescue ResendDeliveryError => ex
+    Clog.emit("Email delivery failed", {email_delivery_failed: {status: ex.status, body: ex.body}})
+    raise CloverError.new(503, "ServiceUnavailable", "We couldn't send that email right now. Please try again in a few moments.")
   end
 
   def self.aws_tags(name, additional_tags = {})
-    [{key: "Ubicloud", value: Config.provider_resource_tag_value}, {key: "Name", value: name}].concat(additional_tags.map { |k, v| {key: k.to_s, value: v.to_s} })
+    [{key: "LayerRail", value: Config.provider_resource_tag_value}, {key: "Name", value: name}].concat(additional_tags.map { |k, v| {key: k.to_s, value: v.to_s} })
   end
 
   def self.aws_tag_specifications(resource_type, name, additional_tags = {})

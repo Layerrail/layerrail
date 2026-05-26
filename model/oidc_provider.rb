@@ -40,7 +40,7 @@ class OidcProvider < Sequel::Model
       response = Excon.post(config_info["registration_endpoint"],
         headers: {"Accept" => "application/json", "Content-Type" => "application/json"},
         body: {
-          client_name: "Ubicloud",
+          client_name: "LayerRail",
           redirect_uris: [oidc_provider.callback_url],
           scopes:,
         }.to_json)

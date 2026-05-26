@@ -11,14 +11,27 @@ class PaymentMethod < Sequel::Model
     !where(fraud: true, card_fingerprint:).empty?
   end
 
-  def stripe_data
-    if Config.stripe_secret_key
+  def billing_data
+    if Config.polar_access_token
+      {
+        "brand" => "Polar",
+        "last4" => nil,
+        "exp_month" => nil,
+        "exp_year" => nil,
+        "country" => nil,
+        "funding" => "customer portal",
+        "wallet" => nil,
+        "checks" => nil
+      }
+    elsif Config.stripe_secret_key
       @stripe_data ||= StripeClient.payment_methods.retrieve(stripe_id)["card"].to_h.transform_keys!(&:to_s).slice(*%w[last4 brand exp_month exp_year country funding wallet checks])
     end
   end
 
+  alias_method :stripe_data, :billing_data
+
   def after_destroy
-    if Config.stripe_secret_key
+    if Config.stripe_secret_key && !Config.polar_access_token
       StripeClient.payment_methods.detach(stripe_id)
     end
     super

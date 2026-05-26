@@ -105,6 +105,8 @@ module Prog::Vm::Aws; end
 
 module Prog::Vm::Gcp; end
 
+module Prog::Vm::Linode; end
+
 module Prog::Vm::Metal; end
 
 module Prog::Vnet; end
@@ -112,6 +114,8 @@ module Prog::Vnet; end
 module Prog::Vnet::Aws; end
 
 module Prog::Vnet::Gcp; end
+
+module Prog::Vnet::Linode; end
 
 module Prog::Vnet::Metal; end
 
@@ -123,7 +127,7 @@ module Parseable; end
 
 module VictoriaMetrics; end
 
-provider_dirs = %w[aws metal gcp]
+provider_dirs = %w[aws metal gcp linode]
 autoload_normal.call("model", flat: true, exclude_dirs: provider_dirs)
 %w[lib clover.rb clover_admin.rb].each { autoload_normal.call(it) }
 %w[scheduling prog serializers].each { autoload_normal.call(it, include_first: true) }
@@ -190,6 +194,13 @@ when :smtp
       authentication: :plain,
       enable_starttls: Config.smtp_tls,
     }
+  end
+when :resend
+  require_relative "lib/resend_delivery"
+  fail "RESEND_API_KEY is required when MAIL_DRIVER is resend" unless Config.resend_api_key
+
+  ::Mail.defaults do
+    delivery_method Mail::ResendDelivery, api_key: Config.resend_api_key
   end
 when :logger
   ::Mail.defaults do
@@ -260,10 +271,12 @@ def clover_freeze
     Prog::Vm,
     Prog::Vm::Aws,
     Prog::Vm::Gcp,
+    Prog::Vm::Linode,
     Prog::Vm::Metal,
     Prog::Vnet,
     Prog::Vnet::Aws,
     Prog::Vnet::Gcp,
+    Prog::Vnet::Linode,
     Prog::Vnet::Metal,
     Prog::Vnet::RekeyNicTunnel::Xfrm,
     ResourceMethods,

@@ -1,190 +1,90 @@
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/779e73bd-c260-4729-8430-c630628f1b6b">
-</p>
-
-
 # LayerRail
 
-LayerRail is a grant-ready cloud console and research PaaS/IaaS direction built from the Ubicloud open source infrastructure foundation.
+LayerRail is an open cloud control plane for developers, research teams, and grant-funded builders who need cloud resources with clearer budget rails, deployment evidence, and reproducible infrastructure records.
 
-This fork keeps Ubicloud's AGPL-3.0 license and upstream attribution intact while adding the LayerRail product layer: workspace budget rails, deployment passports, research evidence, and funding-aware cloud operations.
+This repository is a LayerRail fork built on the Ubicloud open source infrastructure foundation. The upstream AGPL-3.0 license and attribution remain intact; LayerRail-specific product work lives in this fork.
 
-See [LAYERRAIL.md](LAYERRAIL.md) for the LayerRail direction and fork notes.
+## What LayerRail Is
 
-## Upstream Ubicloud Foundation
+LayerRail is moving toward a practical PaaS/IaaS control plane with:
 
-## Ubicloud [![CI](https://github.com/ubicloud/ubicloud/actions/workflows/ci.yml/badge.svg)](https://github.com/ubicloud/ubicloud/actions/workflows/ci.yml) [![Build](https://github.com/ubicloud/ubicloud/actions/workflows/build.yml/badge.svg)](https://github.com/ubicloud/ubicloud/actions/workflows/build.yml) <a href="https://app.greptile.com/repo/ubicloud/ubicloud"><img src="https://img.shields.io/badge/learn_with-greptile-%091B12?color=%091B12" alt="Learn this repo using Greptile"></a>
+- Virtual machines, private networking, firewalls, load balancers, managed PostgreSQL, Kubernetes, GitHub runners, and AI inference surfaces.
+- Funding-aware workflows such as workspace budget controls, deployment passports, usage evidence, and reporting-friendly resource summaries.
+- A self-hostable control plane that can be deployed with an external Postgres database and connected to cloud or bare-metal compute providers.
 
-Ubicloud is an open source cloud that can run anywhere. Think of it as an open alternative
-to cloud providers, like what Linux is to proprietary operating systems.
+## Local Development
 
-Ubicloud provides IaaS cloud features on bare metal providers, such as Hetzner, Leaseweb,
-and AWS Bare Metal. You can set it up yourself on these providers or you can use our
-[managed service](https://console.ubicloud.com).
-
-## Quick start
-
-### Managed platform
-
-You can use Ubicloud without installing anything. When you do this, we pass along the
-underlying provider's benefits to you, such as price or location.
-
-https://console.ubicloud.com
-
-### Build your own cloud
-
-You can also build your own cloud. To do this, start up Ubicloud's control plane and
-connect to its cloud console.
-
-```
+```sh
 git clone git@github.com:mayowaoladosu/ubicloud.git
+cd ubicloud
 
-# Generate secrets for demo
 ./demo/generate_env
-
-# Run containers: db-migrator, app (web & respirate), postgresql
-docker-compose -f demo/docker-compose.yml up
-
-# Visit localhost:3000
+docker compose -f demo/docker-compose.yml up
 ```
 
-The control plane is responsible for cloudifying bare metal Linux machines.
-The easiest way to build your own cloud is to lease instances from one of those
-providers. For example: https://www.hetzner.com/sb
+Open the console at:
 
-Once you lease instance(s), update the `.env` file with the following environment
-variables:
-- `HETZNER_USER`
-- `HETZNER_PASSWORD`
-- `HETZNER_SSH_PUBLIC_KEY`
-- `HETZNER_SSH_PRIVATE_KEY`
-
-To get the user credentials, create a user according to
-[these instructions](https://robot.hetzner.com/doc/webservice/en.html#preface).
-The SSH key is the one you set when you created the robot server.
-
-The first thing to make sure is you use the hetzner robot rescue system to
-install ubuntu 24.04.
-
-Then, run the following script for each instance to cloudify it.
-Currently, the script cloudifies bare metal instances leased from Hetzner.
-After you cloudify your instances, you can provision and manage cloud
-resources on these machines.
-
-```
-# Enter hostname/IP and provider
-docker exec -it layerrail-app ./demo/cloudify_server
+```text
+http://localhost:3000
 ```
 
-Later when you create VMs, Ubicloud will assign them IPv6 addresses. If your ISP
-doesn't support IPv6, please use a VPN or tunnel broker such as Mullvad or Hurricane
-Electric's https://tunnelbroker.net/ to connect. Alternatively, you could lease
-IPv4 addresses from your provider and add them to your control plane.
+The demo stack starts:
 
-## Why use it
+- `layerrail-postgres` for the local control-plane database.
+- `layerrail-db-migrator` for database migrations.
+- `layerrail-app` for the web process and background workers.
 
-Public cloud providers like AWS, Azure, and Google Cloud have made life easier for
-start-ups and enterprises. But they are closed source, have you rent computers
-at a huge premium, and lock you in. Ubicloud offers an open source alternative,
-reduces your costs, and returns control of your infrastructure back to you. All
-without sacrificing the cloud's convenience.
+## Production Shape
 
-Today, AWS offers about two hundred cloud services. Ultimately, we will implement
-10% of the cloud services that make up 80% of that consumption.
+LayerRail's production control plane needs:
 
-Example workloads and reasons to use Ubicloud today include:
+- A Postgres database for control-plane state, such as Neon.
+- A web process running `bundle exec puma -C puma_config.rb`.
+- Background worker processes for `bin/restarter bin/respirate` and `bin/monitor`.
+- Email delivery through Resend.
+- Billing through Polar.
+- At least one configured compute provider before customer VMs, Kubernetes, managed Postgres, load balancers, or inference routers can provision real resources.
 
-* You have an ephemeral workload like a CI/CD pipeline (we're integrating with
-GitHub Actions), or you'd like to run compute/memory heavy tests. Our managed
-cloud is ~3x cheaper than AWS, so you save on costs.
+Run production migrations with:
 
-* You want a portable and simple app deployment service like
-[Kamal](https://github.com/basecamp/kamal). We're moving Ubicloud's control plane
-from Heroku to Kamal; and we want to provide open and portable services for
-Kamal's dependencies in the process.
+```sh
+RACK_ENV=production bundle exec rake prod_up
+```
 
-* You have bare metal machines sitting somewhere. You'd like to build your own
-cloud for portability, security, or compliance reasons.
+## Key Environment Areas
 
-## Status
+- Database: `CLOVER_DATABASE_URL`
+- Security: `CLOVER_SESSION_SECRET`, `CLOVER_COLUMN_ENCRYPTION_KEY`, `CLOVER_RUNTIME_TOKEN_SECRET`
+- Email: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_WEBHOOK_SECRET`
+- Billing: `POLAR_ACCESS_TOKEN`, `POLAR_VERIFICATION_PRODUCT_ID`
+- Compute: `COMPUTE_PROVIDER=linode`, `LINODE_ACCESS_TOKEN`, `LINODE_API_BASE_URL`
+- Public URL: `BASE_URL`
+- AI inference: `AI_INFERENCE_ENABLED`, `RUNPOD_API_KEY`, `HUGGINGFACE_TOKEN`, `INFERENCE_DNS_ZONE`, `INFERENCE_ROUTER_ACCESS_TOKEN`
 
-You can provide us your feedback, get help, or ask us questions regarding your
-Ubicloud installations in the [Community Forum](https://github.com/ubicloud/ubicloud/discussions).
+Provider-specific credentials are required separately for whichever compute provider LayerRail is configured to use.
 
-We follow an established architectural pattern in building public cloud services.
-A control plane manages a data plane, where the data plane leverages open source
-software.  You can find our current cloud components / services below.
+## Linode Compute
 
-* **Elastic Compute**: Our control plane communicates with Linux bare metal servers
-using SSH. We use [Cloud
-Hypervisor](https://github.com/cloud-hypervisor/cloud-hypervisor) as our virtual
-machine monitor (VMM); and each instance of the VMM is contained within Linux
-namespaces for further isolation / security.
+LayerRail currently supports Linode as the first public-cloud compute provider for VM provisioning. Set:
 
-* **Networking**: We use [IPsec](https://en.wikipedia.org/wiki/IPsec) tunneling to
-establish an encrypted and private network environment. We support IPv4 and IPv6 in
-a dual-stack setup and provide both public and private networking. For security,
-each customer’s VMs operate in their own networking namespace. For
-[firewalls](https://www.ubicloud.com/blog/ubicloud-firewalls-how-linux-nftables-enables-flexible-rules)
-and [load balancers](https://www.ubicloud.com/blog/ubicloud-load-balancer-simple-and-cost-free),
-we use Linux nftables.
+```sh
+COMPUTE_PROVIDER=linode
+LINODE_ACCESS_TOKEN=...
+```
 
-* **Block Storage, non replicated**: We use Storage Performance Development Toolkit
-([SPDK](https://spdk.io)) to provide virtualized block storage to VMs. SPDK enables
-us to add enterprise features such as snapshot and replication in the future. We
-follow security best practices and encrypt the data encryption key itself.
+The Linode catalog is intentionally narrow for launch:
 
-* **Attribute-Based Access Control (ABAC)**: With ABAC, you can define attributes,
-roles, and permissions for users and give them fine-grained access to resources. You
-can read more about our [ABAC design here](https://www.ubicloud.com/docs/architecture/attribute-based-access-control-abac#attribute-based-access-control-abac-design).
+- Locations: Frankfurt, Newark, Los Angeles, and Seattle.
+- Images: Ubuntu 24.04, Debian 12, AlmaLinux 9, and Rocky Linux 9.
+- VM sizes: Linode shared 2GB/4GB, dedicated 4GB/8GB/16GB/32GB, and one RTX 4000 Ada GPU plan.
+- Pricing: VM and GPU rates use a 30% LayerRail markup. Linode-included root storage and public IPv4 are shown as included instead of billed separately.
 
-* **What's Next?**: We're planning to work on a managed K8s or metrics/monitoring
-service next. If you have a workload that would benefit from a specific cloud
-service, please get in touch with us through our [Community
-Forum](https://github.com/ubicloud/ubicloud/discussions).
+With `COMPUTE_PROVIDER=linode`, PostgreSQL and Kubernetes are hidden unless explicitly enabled. The current PostgreSQL and Kubernetes code paths still expect LayerRail-managed infrastructure and backup/control-plane plumbing that is not fully mapped to Linode Object Storage or LKE yet.
 
-* Control plane: Manages data plane services and resources. This is a Ruby program
-that stores its data in Postgres. We use the [Roda](https://roda.jeremyevans.net/)
-framework to serve HTTP requests and [Sequel](http://sequel.jeremyevans.net/) to
-access the database. We manage web authentication with
-[Rodauth](http://rodauth.jeremyevans.net/). We communicate with data plane servers
-using SSH, via the library [net-ssh](https://github.com/net-ssh/net-ssh). For our
-tests, we use [RSpec](https://rspec.info/).
+The `/cli` page remains the built-in LayerRail CLI web shell for project commands. It is not a browser SSH terminal into customer VMs.
 
-* Cloud console: Server-side web app served by the Roda framework. For the visual
-design, we use [Tailwind CSS](https://tailwindcss.com) with components from
-[Tailwind UI](https://tailwindui.com). We also use jQuery for interactivity.
+## License And Attribution
 
-If you’d like to start hacking with Ubicloud, any method of obtaining
-Ruby and Postgres versions is acceptable. If you have no opinion on
-this, our development team uses `mise` as [documented here in
-detail](DEVELOPERS.md).
+This fork is based on Ubicloud and keeps the upstream AGPL-3.0 license. Keep the original license and notices intact, and publish source for network-accessible modifications as required by AGPL-3.0.
 
-[Greptile](https://greptile.com/) provides an AI/LLM that indexes
-Ubicloud's source code [can answer questions about
-it](https://learnthisrepo.com/ubicloud).
-
-## FAQ
-
-### Do you have any experience with building this sort of thing?
-
-Our founding team comes from Azure; and worked at Amazon and Heroku before that.
-We also have start-up experience. We were co-founders and founding team members
-at [Citus Data](https://github.com/citusdata/citus), [which got acquired by
-Microsoft](https://news.ycombinator.com/item?id=18990469).
-
-### How is this different than OpenStack?
-
-We see three differences. First, Ubicloud is available as a managed service (vs boxed
-software). This way, you can get started in minutes rather than weeks. Since Ubicloud
-is designed for multi-tenancy, it comes with built-in features such as encryption
-at rest and in transit, virtual networking, secrets rotation, etc.
-
-Second, we're initially targeting developers. This -we hope- will give us fast feedback
-cycles and enable us to have 6 key services in GA form in the next two years. OpenStack
-is still primarily used for 3 cloud services.
-
-Last, we're designing for simplicity. With OpenStack, you pick between 10 hypervisors,
-10 S3 implementations, and 5 block storage implementations. The software needs to work
-in a way where all of these implementations are compatible with each other. That leads
-to consultant-ware. We'll take a more opinionated approach with Ubicloud.
+See [LAYERRAIL.md](LAYERRAIL.md) for fork notes and upstream remote guidance.

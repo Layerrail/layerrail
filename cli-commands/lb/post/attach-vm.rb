@@ -3,7 +3,7 @@
 UbiCli.on("lb").run_on("attach-vm") do
   desc "Attach a virtual machine to a load balancer"
 
-  banner "ubi lb (location/lb-name | lb-id) attach-vm (vm-name | vm-id)"
+  banner "lr lb (location/lb-name | lb-id) attach-vm (vm-name | vm-id)"
 
   args 1
 

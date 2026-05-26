@@ -14,6 +14,8 @@ class Clover
       end
 
       r.get "create" do
+        raise CloverError.new(404, "NotFound", "Kubernetes is not enabled for this LayerRail deployment") unless Config.kubernetes_enabled
+
         authorize("KubernetesCluster:create", @project)
         view "kubernetes-cluster/create"
       end

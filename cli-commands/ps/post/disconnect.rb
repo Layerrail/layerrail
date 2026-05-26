@@ -3,7 +3,7 @@
 UbiCli.on("ps").run_on("disconnect") do
   desc "Disconnect a private subnet from another private subnet"
 
-  banner "ubi ps (location/ps-name | ps-id) disconnect (ps-name | ps-id)"
+  banner "lr ps (location/ps-name | ps-id) disconnect (ps-name | ps-id)"
 
   args 1
 

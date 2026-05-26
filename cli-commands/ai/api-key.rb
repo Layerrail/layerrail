@@ -3,8 +3,8 @@
 UbiCli.on("ai", "api-key") do
   desc "Manage AI inference API keys"
 
-  banner "ubi ai api-key [command] ..."
-  post_banner "ubi ai api-key api-key-id [post-command] ..."
+  banner "lr ai api-key [command] ..."
+  post_banner "lr ai api-key api-key-id [post-command] ..."
 
   # :nocov:
   unless Config.production? || ENV["FORCE_AUTOLOAD"] == "1"

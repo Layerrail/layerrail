@@ -7,7 +7,7 @@ UbiCli.on("kc").run_on("show") do
   nodepool_fields = %w[id name node-count node-size vms].freeze.each(&:freeze)
   vm_fields = %w[id name state location size unix-user storage-size-gib ip6 ip4-enabled ip4].freeze.each(&:freeze)
 
-  options("ubi kc (location/kc-name | kc-id) show [options]", key: :kc_show) do
+  options("lr kc (location/kc-name | kc-id) show [options]", key: :kc_show) do
     on("-f", "--fields=fields", "show specific fields (comma separated)")
     on("-n", "--nodepool-fields=fields", "show specific nodepool fields (comma separated)")
     on("-v", "--vm-fields=fields", "show specific virtual machine fields (comma separated)")

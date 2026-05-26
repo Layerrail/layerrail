@@ -3,7 +3,7 @@
 UbiCli.on("sk").run_on("destroy") do
   desc "Destroy an SSH public key"
 
-  options("ubi sk (sk-name | sk-id) destroy [options]", key: :destroy) do
+  options("lr sk (sk-name | sk-id) destroy [options]", key: :destroy) do
     on("-f", "--force", "do not require confirmation")
   end
 

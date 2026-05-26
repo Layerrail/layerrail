@@ -37,7 +37,7 @@ end
       </dl>
     </div>
     <!-- Billing Info Update Card -->
-    <% stripe_data = billing_info.stripe_data %>
+    <% billing_data = billing_info.billing_data || {} %>
     <div class="md:flex md:items-center md:justify-between pb-1 lg:pb-2">
       <div class="min-w-0 flex-1">
         <h3 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-2xl sm:tracking-tight">
@@ -56,7 +56,7 @@ end
                     "components/form/text",
                     name: "name",
                     label: "Billing Name",
-                    value: stripe_data["name"],
+                    value: billing_data["name"],
                     attributes: {
                       required: true
                     }
@@ -67,7 +67,7 @@ end
                     "components/form/text",
                     name: "email",
                     label: "Billing Email",
-                    value: stripe_data["email"],
+                    value: billing_data["email"],
                     attributes: {
                       required: true
                     }
@@ -79,7 +79,7 @@ end
                     name: "country",
                     label: "Country",
                     placeholder: "Select a Country",
-                    selected: stripe_data["country"],
+                    selected: billing_data["country"],
                     options:
                       ISO3166::Country
                         .all
@@ -92,20 +92,20 @@ end
                   ) %>
                 </div>
                 <div class="sm:col-span-4 md:col-span-2">
-                  <%== part("components/form/text", name: "state", label: "State", value: stripe_data["state"]) %>
+                  <%== part("components/form/text", name: "state", label: "State", value: billing_data["state"]) %>
                 </div>
                 <div class="sm:col-span-4 md:col-span-2">
-                  <%== part("components/form/text", name: "city", label: "City", value: stripe_data["city"]) %>
+                  <%== part("components/form/text", name: "city", label: "City", value: billing_data["city"]) %>
                 </div>
                 <div class="sm:col-span-4 md:col-span-2">
-                  <%== part("components/form/text", name: "postal_code", label: "Postal Code", value: stripe_data["postal_code"]) %>
+                  <%== part("components/form/text", name: "postal_code", label: "Postal Code", value: billing_data["postal_code"]) %>
                 </div>
                 <div class="col-span-full">
                   <%== part(
                     "components/form/textarea",
                     name: "address",
                     label: "Address",
-                    value: stripe_data["address"],
+                    value: billing_data["address"],
                     attributes: {
                       required: true
                     }
@@ -116,13 +116,13 @@ end
                     "components/form/text",
                     name: "tax_id",
                     label: billing_info.country&.in_eu_vat? ? "VAT ID" : "Tax ID",
-                    value: stripe_data["tax_id"]
+                    value: billing_data["tax_id"]
                   ) %>
                   <% if billing_info.country&.in_eu_vat? %>
                     <div class="mt-2 text-sm text-gray-500">
                       <% if billing_info.country.alpha2 == "NL" %>
                         21% VAT is collected from customers located in the Netherlands.
-                      <% elsif stripe_data["tax_id"].to_s.strip.empty? %>
+                      <% elsif billing_data["tax_id"].to_s.strip.empty? %>
                         EU registered business can enter their VAT ID to remove VAT from future invoices.
                       <% else %>
                         VAT subject to reverse charge.
@@ -131,14 +131,14 @@ end
                   <% end %>
                 </div>
                 <div class="sm:col-span-4">
-                  <%== part("components/form/text", name: "company_name", label: "Company Name", value: stripe_data["company_name"]) %>
+                  <%== part("components/form/text", name: "company_name", label: "Company Name", value: billing_data["company_name"]) %>
                 </div>
                 <div class="col-span-full">
                   <%== part(
                     "components/form/textarea",
                     name: "note",
                     label: "Invoice Note",
-                    value: stripe_data["note"],
+                    value: billing_data["note"],
                     attributes: {
                       placeholder: "Enter details for your invoices, such as a PO number, tax information, or special instructions"
                     }
@@ -161,14 +161,25 @@ end
       "components/table_card",
       title: "Payment Methods",
       right_items: [
-        part("components/button", text: "Add Payment Method", link: "#{billing_path}/payment-method/create")
+        part("components/button", text: "Open Polar Portal", link: "#{billing_path}/portal")
       ],
       rows:
         billing_info.payment_methods.map do |pm|
+          payment_data = pm.billing_data || {}
+          payment_title = if payment_data["last4"]
+            "#{payment_data["brand"].capitalize} ending in #{payment_data["last4"]}"
+          else
+            "#{payment_data["brand"] || "Polar"} billing"
+          end
+          payment_subtitle = if payment_data["exp_month"] && payment_data["exp_year"]
+            "Expires #{payment_data["exp_month"]}/#{payment_data["exp_year"]}"
+          else
+            "Managed in the Polar customer portal"
+          end
           [
             [
-              "#{pm.stripe_data["brand"].capitalize} ending in #{pm.stripe_data["last4"]}",
-              "Expires #{pm.stripe_data["exp_month"]}/#{pm.stripe_data["exp_year"]}",
+              payment_title,
+              payment_subtitle,
               "Added on #{pm.created_at.strftime("%B %d, %Y")}",
               [
                 "delete_button",
@@ -176,7 +187,7 @@ end
                   component: {
                     url: path(pm),
                     hidden_inputs: { project_id: @project.ubid },
-                    confirmation: pm.stripe_data["last4"]
+                    confirmation: payment_data["last4"] || "Polar"
                   },
                   extra_class: "flex justify-end"
                 }
@@ -185,7 +196,7 @@ end
             { id: "payment-method-#{pm.ubid}" }
           ]
         end,
-      empty_state: "No payment methods. Add new payment method to able create resources in project."
+      empty_state: "No Polar billing method connected. Complete checkout to create resources in this project."
     ) %>
     <%== part("components/discount_code") %>
     <!-- Invoices -->
@@ -211,7 +222,7 @@ end
               <% @invoices.each do |inv| %>
                 <tr id="invoice-<%= inv.path_id %>">
                   <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6" scope="row">
-                    <a href="<%= path(inv) %>" target="_blank" class="text-orange-600 hover:text-orange-700">
+                    <a href="<%= path(inv) %>" target="_blank" class="text-layerrail-600 hover:text-layerrail-700">
                       <%= inv.name %>
                     </a>
                     <span class="text-xs text-gray-400 italic">
@@ -258,8 +269,8 @@ end
       "components/empty_state",
       icon: "hero-banknotes",
       title: "No billing information",
-      description: "Get started by adding new billing information.",
-      button_title: "Add new billing information"
+      description: "Connect Polar billing to create paid resources in this project.",
+      button_title: "Connect Polar billing"
     ) %>
   <% end %>
   <br/>

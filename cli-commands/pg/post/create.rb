@@ -3,7 +3,7 @@
 UbiCli.on("pg").run_on("create") do
   desc "Create a PostgreSQL database"
 
-  options("ubi pg location/pg-name create [options]", key: :pg_create) do
+  options("lr pg location/pg-name create [options]", key: :pg_create) do
     on("-f", "--flavor=type", Option::POSTGRES_FLAVOR_OPTIONS.keys, "flavor")
     on("-h", "--ha-type=type", Option::POSTGRES_HA_OPTIONS.keys, "replication type")
     on("-s", "--size=size", Option::POSTGRES_LEGACY_SIZE_OPTIONS.keys, "server size")

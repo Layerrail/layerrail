@@ -3,7 +3,7 @@
 UbiCli.on("fw").run_on("update-description") do
   desc "Update the description for a firewall"
 
-  banner "ubi fw (location/fw-name | fw-id) update-description new-description"
+  banner "lr fw (location/fw-name | fw-id) update-description new-description"
 
   args 1
 

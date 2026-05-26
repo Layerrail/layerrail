@@ -3,7 +3,7 @@
 UbiCli.on("kc").run_on("create") do
   desc "Create a Kubernetes cluster"
 
-  options("ubi kc location/kc-name create [options]", key: :kc_create) do
+  options("lr kc location/kc-name create [options]", key: :kc_create) do
     on("-v", "--version=version", "Kubernetes version")
     on("-c", "--cp-node-count=count", Integer, "Control plane node count")
     on("-w", "--worker-node-count=count", Integer, "Worker node count")

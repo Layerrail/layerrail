@@ -3,7 +3,7 @@
 UbiCli.on("ai") do
   desc "Manage AI features"
 
-  banner "ubi ai [command] ..."
+  banner "lr ai [command] ..."
 
   # :nocov:
   unless Config.production? || ENV["FORCE_AUTOLOAD"] == "1"

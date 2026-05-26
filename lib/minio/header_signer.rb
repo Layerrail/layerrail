@@ -18,7 +18,7 @@ class Minio::HeaderSigner
     date = Time.now.utc
     @headers = {}
     @headers["Host"] = uri.host + ":" + uri.port.to_s
-    @headers["User-Agent"] = "MinIO Ubicloud"
+    @headers["User-Agent"] = "MinIO LayerRail"
     @headers["Content-Type"] = "application/octet-stream"
     @headers["x-amz-content-sha256"] = sha256_hash(body)
     @headers["x-amz-date"] = time_to_amz_date(date)

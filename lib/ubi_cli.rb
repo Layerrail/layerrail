@@ -50,14 +50,14 @@ class UbiCli
   on do
     desc "CLI to interact with LayerRail"
 
-    options("ubi command [command-options] ...") do
+    options("lr command [command-options] ...") do
       on("--confirm=confirmation", "confirmation value")
     end
 
     help_order(:desc, :banner, :examples, :commands)
 
-    help_example "ubi vm list    # List virtual machines"
-    help_example "ubi help vm    # Get help for vm subcommand"
+    help_example "lr vm list    # List virtual machines"
+    help_example "lr help vm    # Get help for vm subcommand"
 
     # :nocov:
     autoload_subcommand_dir("cli-commands") unless force_autoload
@@ -145,7 +145,7 @@ class UbiCli
     on(cmd, "list") do
       desc "List #{LOWERCASE_LABELS[cmd]}s"
 
-      options("ubi #{cmd} list [options]", key:) do
+      options("lr #{cmd} list [options]", key:) do
         on("-f", "--fields=fields", "show specific fields (comma separated)")
         on("-l", "--location=location", "only show #{LOWERCASE_LABELS[cmd]}s in given location")
         on("-N", "--no-headers", "do not show headers")
@@ -171,7 +171,7 @@ class UbiCli
     on(cmd).run_on("rename") do
       desc "Rename a #{LOWERCASE_LABELS[cmd]}"
 
-      banner "ubi #{cmd} (location/#{cmd}-name | #{cmd}-id) rename new-name"
+      banner "lr #{cmd} (location/#{cmd}-name | #{cmd}-id) rename new-name"
 
       args 1
 
@@ -186,7 +186,7 @@ class UbiCli
     on(cmd).run_on("destroy") do
       desc "Destroy a #{LOWERCASE_LABELS[cmd]}"
 
-      options("ubi #{cmd} (location/#{cmd}-name | #{cmd}-id) destroy [options]", key: :destroy) do
+      options("lr #{cmd} (location/#{cmd}-name | #{cmd}-id) destroy [options]", key: :destroy) do
         on("-f", "--force", "do not require confirmation")
       end
 
@@ -213,7 +213,7 @@ class UbiCli
     on("pg").run_on(cmd) do
       desc(desc)
 
-      skip_option_parsing("ubi pg (location/pg-name | pg-id) [options] #{cmd} [#{cmd}-options]")
+      skip_option_parsing("lr pg (location/pg-name | pg-id) [options] #{cmd} [#{cmd}-options]")
 
       args(0...)
 

@@ -24,6 +24,9 @@ class Clover
     project = @project
     authorize("Vm:create", project)
     fail Validation::ValidationFailed.new({billing_info: "Project doesn't have valid billing information"}) unless project.has_valid_payment_method?
+    if Config.compute_provider && @location.provider != Config.compute_provider
+      fail Validation::ValidationFailed.new({location: "LayerRail compute is configured for #{Config.compute_provider}, but #{@location.display_name} uses #{@location.provider}."})
+    end
 
     if api?
       public_key = typecast_params.nonempty_str!("public_key")
@@ -44,6 +47,9 @@ class Clover
       tp.bool("enable_ip4")
     end
     assemble_params.compact!
+    parsed_size = nil
+    gpu_count = 0
+    gpu_device = nil
 
     # Generally parameter validation is handled in progs while creating resources.
     # Since Vm::Nexus both handles VM creation requests from user and also Postgres
@@ -51,6 +57,7 @@ class Clover
     # postgres image as boot image while creating a VM.
     if assemble_params[:boot_image]
       Validation.validate_boot_image(assemble_params[:boot_image])
+      Option.linode_image_name(assemble_params[:boot_image]) if @location.linode?
     end
 
     # Same as above, moved the size validation here to not allow users to
@@ -59,17 +66,30 @@ class Clover
       parsed_size = Validation.validate_vm_size(assemble_params[:size], "x64", only_visible: true)
     end
 
-    if assemble_params[:storage_size]
-      storage_size = Validation.validate_vm_storage_size(assemble_params[:size] || Prog::Vm::Nexus::DEFAULT_SIZE, "x64", assemble_params[:storage_size])
-      assemble_params[:storage_volumes] = [{size_gib: storage_size, encrypted: true}]
-      assemble_params.delete(:storage_size)
-    end
-
     if assemble_params[:gpu]
       gpu_count, gpu_device = Validation.validate_vm_gpu(assemble_params[:gpu], @location.name, project, parsed_size)
       assemble_params[:gpu_count] = gpu_count
       assemble_params[:gpu_device] = gpu_device
       assemble_params.delete(:gpu)
+    end
+
+    if @location.linode?
+      plan = Option.linode_plan(
+        (parsed_size || Validation.validate_vm_size(Prog::Vm::Nexus::DEFAULT_SIZE, "x64", only_visible: true)).family,
+        (parsed_size || Validation.validate_vm_size(Prog::Vm::Nexus::DEFAULT_SIZE, "x64", only_visible: true)).vcpus,
+        gpu_count:,
+        gpu_device:,
+      )
+
+      if assemble_params[:storage_size] && assemble_params[:storage_size] != plan.disk_gib
+        fail Validation::ValidationFailed.new({storage_size: "Linode #{plan.label} includes #{plan.disk_gib} GB storage. Custom root disk sizes are not enabled yet."})
+      end
+      assemble_params[:storage_volumes] = [{size_gib: plan.disk_gib, encrypted: true}]
+      assemble_params.delete(:storage_size)
+    elsif assemble_params[:storage_size]
+      storage_size = Validation.validate_vm_storage_size(assemble_params[:size] || Prog::Vm::Nexus::DEFAULT_SIZE, "x64", assemble_params[:storage_size])
+      assemble_params[:storage_volumes] = [{size_gib: storage_size, encrypted: true}]
+      assemble_params.delete(:storage_size)
     end
 
     if (ps_id = assemble_params[:private_subnet_id])
@@ -87,6 +107,7 @@ class Clover
         fail Validation::ValidationFailed.new({private_subnet_id: "Private subnet with the given id \"#{ps_id}\" is not found in the location \"#{@location.display_name}\""})
       end
     end
+    assemble_params[:unix_user] ||= "lr"
 
     requested_vm_vcpu_count = parsed_size.nil? ? 2 : parsed_size.vcpus
     Validation.validate_vcpu_quota(project, "VmVCpu", requested_vm_vcpu_count)
@@ -134,7 +155,18 @@ class Clover
         .select_append { max(:count).as(:max_count) }
         .all.filter { !!BillingRate.from_resource_properties("Gpu", it[:device], it[:location_name]) }
 
-      gpu_counts = [1, 2, 4, 8]
+      if Config.compute_provider == "linode"
+        linode_gpu_locations = Option.locations(feature_flags: @project.feature_flags)
+          .select { it.linode? }
+          .map(&:name)
+        available_gpus.concat(
+          linode_gpu_locations.map {
+            {location_name: it, device: Option::LINODE_GPU_DEVICE, max_count: 1}
+          },
+        )
+      end
+
+      gpu_counts = (Config.compute_provider == "linode") ? [1] : [1, 2, 4, 8]
       gpu_options = available_gpus.map { it[:device] }.uniq.flat_map { |x| gpu_counts.map { |i| "#{i}:#{x}" } }
       gpu_availability = available_gpus.each_with_object({}) do |entry, hash|
         hash[entry[:location_name]] ||= {}
@@ -155,7 +187,10 @@ class Clover
     end
 
     options.add_option(name: "name")
-    options.add_option(name: "location", values: Option.locations(feature_flags: @project.feature_flags)) do |location|
+    locations = Option.locations(feature_flags: @project.feature_flags)
+    locations = locations.select { it.provider == Config.compute_provider } if Config.compute_provider
+
+    options.add_option(name: "location", values: locations) do |location|
       !@show_gpu || gpu_locations.include?(location.name)
     end
 
@@ -166,7 +201,7 @@ class Clover
         display_name: it.name,
       }
     }
-    Option.locations(feature_flags: @project.feature_flags).each do |location|
+    locations.each do |location|
       subnets << {
         location_id: location.id,
         value: "new-#{location.ubid}",
@@ -187,12 +222,39 @@ class Clover
 
     options.add_option(name: "size", values: Option::VmSizes.select(&:visible).map(&:display_name), parent: "family") do |location, family, size|
       vm_size = Option::VmSizes.find { it.display_name == size && it.arch == "x64" }
-      vm_size.family == family
+      next false unless vm_size.family == family
+      if location.linode?
+        begin
+          if @show_gpu
+            Option.linode_instance_type_name(family, vm_size.vcpus, gpu_count: 1, gpu_device: Option::LINODE_GPU_DEVICE)
+          else
+            Option.linode_instance_type_name(family, vm_size.vcpus)
+          end
+          true
+        rescue Validation::ValidationFailed
+          false
+        end
+      else
+        true
+      end
     end
 
-    options.add_option(name: "storage_size", values: ["10", "20", "40", "80", "160", "320", "600", "640", "1200", "2400"], parent: "size") do |location, family, size, storage_size|
+    options.add_option(name: "storage_size", values: ["10", "20", "40", "50", "80", "160", "320", "512", "600", "640", "1200", "2400"], parent: "size") do |location, family, size, storage_size|
       vm_size = Option::VmSizes.find { it.display_name == size && it.arch == "x64" }
-      vm_size.storage_size_options.include?(storage_size.to_i)
+      if location.linode?
+        begin
+          plan = if @show_gpu
+            Option.linode_plan(family, vm_size.vcpus, gpu_count: 1, gpu_device: Option::LINODE_GPU_DEVICE)
+          else
+            Option.linode_plan(family, vm_size.vcpus)
+          end
+          plan.disk_gib == storage_size.to_i
+        rescue Validation::ValidationFailed
+          false
+        end
+      else
+        vm_size.storage_size_options.include?(storage_size.to_i)
+      end
     end
 
     if @show_gpu != false
@@ -212,6 +274,7 @@ class Clover
 
     boot_images = Option::BootImages.map(&:name)
     boot_images.reject! { |name| name == "gpu-ubuntu-noble" } unless @show_gpu != false
+    boot_images.select! { Option.linode_boot_image?(it) } if locations.any?(&:linode?)
     options.add_option(name: "boot_image", values: boot_images)
     options.add_option(name: "unix_user")
     options.add_option(name: "ssh_public_key", values: @project.ssh_public_keys)

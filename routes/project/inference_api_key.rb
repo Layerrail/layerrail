@@ -2,6 +2,12 @@
 
 class Clover
   hash_branch(:project_prefix, "inference-api-key") do |r|
+    unless Config.ai_inference_enabled
+      response.status = 501
+      response.content_type = :text
+      next "AI Inference is not enabled. Set AI_INFERENCE_ENABLED=true after configuring the inference provider."
+    end
+
     r.is do
       r.get do
         @inference_api_keys = inference_api_key_ds.all

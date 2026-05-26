@@ -3,7 +3,7 @@
 UbiCli.on("kc").run_on("upgrade") do
   desc "Upgrade a Kubernetes cluster to the next supported version"
 
-  banner "ubi kc (location/kc-name | kc-id) upgrade"
+  banner "lr kc (location/kc-name | kc-id) upgrade"
 
   run do |opts, cmd|
     data = sdk_object.upgrade

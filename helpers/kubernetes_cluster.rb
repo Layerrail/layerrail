@@ -2,6 +2,8 @@
 
 class Clover
   def kubernetes_cluster_post(name)
+    raise CloverError.new(404, "NotFound", "Kubernetes is not enabled for this LayerRail deployment") unless Config.kubernetes_enabled
+
     authorize("KubernetesCluster:create", @project)
     fail Validation::ValidationFailed.new({billing_info: "Project doesn't have valid billing information"}) unless @project.has_valid_payment_method?
 
@@ -41,6 +43,8 @@ class Clover
   end
 
   def kubernetes_cluster_list
+    raise CloverError.new(404, "NotFound", "Kubernetes is not enabled for this LayerRail deployment") unless Config.kubernetes_enabled
+
     dataset = @project.kubernetes_clusters_dataset
     dataset = dataset.where(location_id: @location.id) if @location
     dataset = dataset_authorize(dataset, "KubernetesCluster:view")
@@ -53,6 +57,8 @@ class Clover
   end
 
   def generate_kubernetes_cluster_options
+    raise CloverError.new(404, "NotFound", "Kubernetes is not enabled for this LayerRail deployment") unless Config.kubernetes_enabled
+
     options = OptionTreeGenerator.new
 
     options.add_option(name: "name")
@@ -61,7 +67,13 @@ class Clover
     options.add_option(name: "cp_nodes", values: Option::KubernetesCPOptions.map(&:cp_node_count), parent: "location")
     options.add_option(name: "worker_size", values: Option::VmSizes.select { it.visible && it.vcpus <= 16 }.map { it.display_name }, parent: "location") do |location, size|
       vm_size = Option::VmSizes.find { it.display_name == size && it.arch == "x64" }
-      vm_size.family == "standard"
+      next false unless vm_size.family == "standard"
+      next true unless location.linode?
+
+      Option.linode_plan("standard", vm_size.vcpus)
+      true
+    rescue Validation::ValidationFailed
+      false
     end
     options.add_option(name: "worker_nodes", values: (1..10).map { {value: it, display_name: "#{it} Node#{"s" unless it == 1}"} }, parent: "worker_size")
 

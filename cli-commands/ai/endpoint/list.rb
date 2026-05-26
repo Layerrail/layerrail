@@ -8,7 +8,7 @@ UbiCli.on("ai", "endpoint", "list") do
 
   key = :endpoint_list
 
-  options("ubi ai endpoint list [options]", key:) do
+  options("lr ai endpoint list [options]", key:) do
     on("-f", "--fields=fields", "show specific fields (comma separated)")
     on("-N", "--no-headers", "do not show headers")
   end

@@ -1,4 +1,4 @@
-<div class="flex grow flex-col gap-y-5 overflow-y-auto bg-orange-600 px-6">
+<div class="flex grow flex-col gap-y-5 overflow-y-auto bg-layerrail-600 px-6">
   <div class="flex h-16 shrink-0 items-center">
     <a href="<%= @project_permissions ? "#{@project.path}/dashboard" : "/project" %>">
       <%== part("components/brand_mark", variant: "white") %>
@@ -33,27 +33,33 @@
                 request.path.start_with?("#{@project.path}/load-balancer"),
               icon: "hero-globe-alt"
             ) %>
-            <%== part(
-              "layouts/sidebar/item",
-              name: "PostgreSQL",
-              url: "#{@project.path}/postgres",
-              is_active: request.path.start_with?("#{@project.path}/postgres"),
-              icon: "hero-circle-stack"
-            ) %>
-            <%== part(
-              "layouts/sidebar/item",
-              name: "AI Inference",
-              url: "#{@project.path}/inference-endpoint",
-              is_active: request.path.start_with?("#{@project.path}/inference"),
-              icon: "tabler-robot"
-            ) %>
-            <%== part(
-              "layouts/sidebar/item",
-              name: "Kubernetes",
-              url: "#{@project.path}/kubernetes-cluster",
-              is_active: request.path.start_with?("#{@project.path}/kubernetes-cluster"),
-              icon: "kubernetes"
-            ) %>
+            <% if Config.postgres_enabled %>
+              <%== part(
+                "layouts/sidebar/item",
+                name: "PostgreSQL",
+                url: "#{@project.path}/postgres",
+                is_active: request.path.start_with?("#{@project.path}/postgres"),
+                icon: "hero-circle-stack"
+              ) %>
+            <% end %>
+            <% if Config.ai_inference_enabled %>
+              <%== part(
+                "layouts/sidebar/item",
+                name: "AI Inference",
+                url: "#{@project.path}/inference-endpoint",
+                is_active: request.path.start_with?("#{@project.path}/inference"),
+                icon: "tabler-robot"
+              ) %>
+            <% end %>
+            <% if Config.kubernetes_enabled %>
+              <%== part(
+                "layouts/sidebar/item",
+                name: "Kubernetes",
+                url: "#{@project.path}/kubernetes-cluster",
+                is_active: request.path.start_with?("#{@project.path}/kubernetes-cluster"),
+                icon: "kubernetes"
+              ) %>
+            <% end %>
             <%== part(
               "layouts/sidebar/item",
               name: "Web Shell",
@@ -81,7 +87,7 @@
       </li>
       <% if @project_permissions && has_project_permission(["Project:user", "Project:billing", "Project:view", "Project:viewaccess", "Project:token"]) %>
         <li>
-          <div class="text-xs font-semibold leading-6 text-orange-200">Workspace Details</div>
+          <div class="text-xs font-semibold leading-6 text-layerrail-200">Workspace Details</div>
           <ul role="list" class="-mx-2 mt-2 space-y-1">
             <% if has_project_permission("Project:user")
                    users_url = "#{@project.path}/user"
@@ -108,7 +114,7 @@
               icon: "hero-key",
               has_permission: has_project_permission("Project:token")
             ) %>
-            <% if Config.stripe_secret_key %>
+            <% if Config.stripe_secret_key || Config.polar_verification_product_id || Config.polar_checkout_product_id %>
               <%== part(
                 "layouts/sidebar/item",
                 name: "Billing",
@@ -142,7 +148,7 @@
       <% end %>
       <% if @project_permissions && has_project_permission("Project:github") && Config.github_app_name %>
         <li>
-          <div class="text-xs font-semibold leading-6 text-orange-200">Integrations</div>
+          <div class="text-xs font-semibold leading-6 text-layerrail-200">Integrations</div>
           <ul role="list" class="-mx-2 mt-2 space-y-1">
             <%== part(
               "layouts/sidebar/item",

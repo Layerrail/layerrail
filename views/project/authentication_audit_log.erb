@@ -75,7 +75,7 @@
           [entry[:message], {link: "?#{to_query_string("end" => end_date, "action" => entry[:message])}"}],
           [
             entry[:metadata].map do |k, v|
-              "<a class=\"text-orange-600\" href=\"?#{h to_query_string("end" => end_date, "metadata" => "#{k}=#{v}")}\">#{h k}: #{h v}</a>"
+              "<a class=\"text-layerrail-600\" href=\"?#{h to_query_string("end" => end_date, "metadata" => "#{k}=#{v}")}\">#{h k}: #{h v}</a>"
             end.join(", "),
             {escape: false}
           ]

@@ -3,7 +3,7 @@
 UbiCli.on("pg").run_on("restart") do
   desc "Restart a PostgreSQL database cluster"
 
-  banner "ubi pg (location/pg-name | pg-id) restart"
+  banner "lr pg (location/pg-name | pg-id) restart"
 
   run do
     id = sdk_object.restart.id

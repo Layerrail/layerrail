@@ -3,8 +3,8 @@
 UbiCli.on("sk") do
   desc "Manage SSH public keys"
 
-  banner "ubi sk command [...]"
-  post_banner "ubi sk (sk-name | sk-id) post-command [...]"
+  banner "lr sk command [...]"
+  post_banner "lr sk (sk-name | sk-id) post-command [...]"
 
   # :nocov:
   unless Config.production? || ENV["FORCE_AUTOLOAD"] == "1"

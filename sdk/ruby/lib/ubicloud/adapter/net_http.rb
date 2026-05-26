@@ -10,7 +10,7 @@ module Ubicloud
     # Set the token and project_id to use for requests.  The base_uri argument
     # can be used to access a self-hosted Ubicloud instance (or other Ubicloud
     # instance not hosted by Ubicloud).
-    def initialize(token:, project_id:, base_uri: "https://api.ubicloud.com/")
+    def initialize(token:, project_id:, base_uri: "https://api.layerrail.com/")
       @base_uri = URI.join(URI(base_uri), "project/#{project_id}/")
       @headers = {
         "authorization" => "Bearer: #{token}",

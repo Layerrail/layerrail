@@ -3,8 +3,8 @@
 UbiCli.on("gh") do
   desc "Manage GitHub integration"
 
-  banner "ubi gh command [...]"
-  post_banner "ubi gh (installation-name/repository-name) post-command [...]"
+  banner "lr gh command [...]"
+  post_banner "lr gh (installation-name/repository-name) post-command [...]"
 
   # :nocov:
   unless Config.production? || ENV["FORCE_AUTOLOAD"] == "1"

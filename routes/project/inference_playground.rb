@@ -2,6 +2,12 @@
 
 class Clover
   hash_branch(:project_prefix, "inference-playground") do |r|
+    unless Config.ai_inference_enabled
+      response.status = 501
+      response.content_type = :text
+      next "AI Inference is not enabled. Set AI_INFERENCE_ENABLED=true after configuring the inference provider."
+    end
+
     r.get web? do
       content_security_policy.add_connect_src "https://*.#{Config.inference_dns_zone}"
 

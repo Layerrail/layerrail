@@ -68,13 +68,19 @@ class Project < Sequel::Model
   plugin ResourceMethods
 
   def has_valid_payment_method?
-    return true unless Config.stripe_secret_key
+    return true unless Config.polar_access_token || Config.stripe_secret_key
     return true if discount == 100
 
     !!billing_info&.payment_methods&.any? || (!!billing_info && credit > 0)
   end
 
   def default_location
+    if Config.compute_provider
+      if (location = Location[provider: Config.compute_provider, visible: true])
+        return location.display_name
+      end
+    end
+
     location_max_capacity = DB[:vm_host]
       .join(:location, id: :location_id)
       .where(allocation_state: "accepting")

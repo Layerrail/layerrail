@@ -3,7 +3,7 @@
 UbiCli.on("pg").run_on("delete-firewall-rule") do
   desc "Delete a PostgreSQL firewall rule"
 
-  banner "ubi pg (location/pg-name | pg-id) delete-firewall-rule rule-id"
+  banner "lr pg (location/pg-name | pg-id) delete-firewall-rule rule-id"
 
   args 1
 

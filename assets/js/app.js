@@ -631,7 +631,7 @@ const colorPalette = [
   },
   {
     color: '#fc8452',
-    class: 'orange-500',
+    class: 'layerrail-500',
   }
 ];
 

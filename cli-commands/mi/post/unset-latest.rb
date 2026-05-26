@@ -3,7 +3,7 @@
 UbiCli.on("mi").run_on("unset-latest") do
   desc "Unset the latest version of a machine image"
 
-  banner "ubi mi (location/mi-name | mi-id) unset-latest"
+  banner "lr mi (location/mi-name | mi-id) unset-latest"
 
   run do
     sdk_object.set_latest_version(nil)

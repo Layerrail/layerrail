@@ -7,23 +7,23 @@ UbiCli.on("vm").run_on("create") do
   server_sizes = vm_sizes.map(&:name).uniq.freeze
   storage_sizes = vm_sizes.map(&:storage_size_options).flatten.uniq.sort.map(&:to_s).freeze.each(&:freeze)
 
-  options("ubi vm location/vm-name create [options] public-key", key: :vm_create) do
+  options("lr vm location/vm-name create [options] public-key", key: :vm_create) do
     on("-6", "--ipv6-only", "do not enable IPv4")
     on("-b", "--boot-image=image_name", "boot image")
     on("-i", "--init-script=script", "use given init script")
     on("-p", "--private-subnet-id=ps-id", "place VM into specific private subnet (also accepts ps-name)")
     on("-s", "--size=size", server_sizes, "server size")
     on("-S", "--storage-size=size", storage_sizes, "storage size")
-    on("-u", "--unix-user=username", "username (default: ubi)")
+    on("-u", "--unix-user=username", "username (default: lr)")
   end
   help_option_values("Boot Image:", Option::BootImages.map(&:name) + ["machine-image-name@version", "machine-image-name@latest"])
   help_option_values("Size:", server_sizes)
   help_option_values("Storage Size:", storage_sizes)
 
-  help_example 'ubi vm eu-central-h1/my-vm-name create "$(cat ~/.ssh/id_ed25519.pub)"'
-  help_example 'ubi vm eu-central-h1/my-vm-name create "$(cat ~/.ssh/authorized_keys)"'
-  help_example "ubi vm eu-central-h1/my-vm-name create registered-ssh-public-key-name"
-  help_example 'ubi vm eu-central-h1/my-vm-name create -i "$(cat /path/to/init/script)" registered-ssh-public-key-name'
+  help_example 'lr vm eu-central-h1/my-vm-name create "$(cat ~/.ssh/id_ed25519.pub)"'
+  help_example 'lr vm eu-central-h1/my-vm-name create "$(cat ~/.ssh/authorized_keys)"'
+  help_example "lr vm eu-central-h1/my-vm-name create registered-ssh-public-key-name"
+  help_example 'lr vm eu-central-h1/my-vm-name create -i "$(cat /path/to/init/script)" registered-ssh-public-key-name'
 
   args 1
 

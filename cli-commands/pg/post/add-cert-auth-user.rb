@@ -3,7 +3,7 @@
 UbiCli.on("pg").run_on("add-cert-auth-user") do
   desc "Add user to list of users authenticating with client certificate authentication"
 
-  banner "ubi pg (location/pg-name | pg-id) add-cert-auth-user name"
+  banner "lr pg (location/pg-name | pg-id) add-cert-auth-user name"
 
   args 1
 

@@ -34,13 +34,13 @@ RSpec.describe Clover, "auth" do
 
     expect(Mail::TestMailer.deliveries.length).to eq 1
 
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
 
     visit "/login"
     fill_in "Email Address", with: TEST_USER_EMAIL
     click_button "Sign in"
     expect(page).to have_flash_error("The account you tried to login with is currently awaiting verification")
-    expect(page.title).to eq("Ubicloud - Resend Verification")
+    expect(page.title).to eq("LayerRail - Resend Verification")
     expect(audit_log_hash).to eq({"create_account" => ip_hash})
   end
 
@@ -52,7 +52,7 @@ RSpec.describe Clover, "auth" do
     fill_in "Password Confirmation", with: TEST_USER_PASSWORD
     click_button "Create Account"
 
-    expect(page.title).to eq("Ubicloud - Create Account")
+    expect(page.title).to eq("LayerRail - Create Account")
     expect(Mail::TestMailer.deliveries.length).to eq 0
     expect(page).to have_content("Name must only contain letters, numbers, spaces, and hyphens and have max length 63.")
     expect(audit_log_hash).to eq({})
@@ -67,7 +67,7 @@ RSpec.describe Clover, "auth" do
     expect(EmailRenderer).to receive(:sendmail).and_raise(Net::SMTPSyntaxError, "501 5.1.3 Bad recipient address syntax")
     click_button "Create Account"
 
-    expect(page.title).to eq("Ubicloud - Create Account")
+    expect(page.title).to eq("LayerRail - Create Account")
     expect(Mail::TestMailer.deliveries.length).to eq 0
     expect(page).to have_flash_error("Invalid email address used")
     expect(audit_log_hash).to eq({})
@@ -119,7 +119,7 @@ RSpec.describe Clover, "auth" do
     fill_in "Email Address", with: TEST_USER_EMAIL
     fill_in "Password", with: TEST_USER_PASSWORD
     fill_in "Password Confirmation", with: TEST_USER_PASSWORD
-    expect(page).to have_no_content "By using Ubicloud console you agree to our"
+    expect(page).to have_no_content "By using LayerRail console you agree to our"
     click_button "Create Account"
 
     expect(page).to have_flash_notice("An email has been sent to you with a link to verify your account")
@@ -127,10 +127,10 @@ RSpec.describe Clover, "auth" do
     verify_link = Mail::TestMailer.deliveries.first.html_part.body.match(/(\/verify-account.+?)"/)[1]
 
     visit verify_link
-    expect(page.title).to eq("Ubicloud - Verify Account")
+    expect(page.title).to eq("LayerRail - Verify Account")
 
     click_button "Verify Account"
-    expect(page.title).to eq("Ubicloud - Default Dashboard")
+    expect(page.title).to eq("LayerRail - Default Dashboard")
     expect(audit_log_hash).to eq({"create_account" => ip_hash, "verify_account" => ip_hash})
   end
 
@@ -143,7 +143,7 @@ RSpec.describe Clover, "auth" do
     fill_in "Password Confirmation", with: TEST_USER_PASSWORD
     click_button "Create Account"
 
-    expect(page.title).to eq("Ubicloud - Create Account")
+    expect(page.title).to eq("LayerRail - Create Account")
     expect(Mail::TestMailer.deliveries.length).to eq 0
     expect(page).to have_content("Could not create account. Please ensure JavaScript is enabled and access to Cloudflare is not blocked, then try again.")
     expect(audit_log_hash).to eq({})
@@ -165,7 +165,7 @@ RSpec.describe Clover, "auth" do
     fill_in "Email Address", with: TEST_USER_EMAIL
     fill_in "Password", with: TEST_USER_PASSWORD
     fill_in "Password Confirmation", with: TEST_USER_PASSWORD
-    expect(page).to have_content "By using Ubicloud console you agree to our"
+    expect(page).to have_content "By using LayerRail console you agree to our"
     click_button "Create Account"
 
     expect(page).to have_flash_notice("An email has been sent to you with a link to verify your account")
@@ -173,11 +173,11 @@ RSpec.describe Clover, "auth" do
     verify_link = Mail::TestMailer.deliveries.first.html_part.body.match(/(\/verify-account.+?)"/)[1]
 
     visit verify_link
-    expect(page.title).to eq("Ubicloud - Verify Account")
+    expect(page.title).to eq("LayerRail - Verify Account")
     expect(Account.first(email: TEST_USER_EMAIL).default_project.name).to eq "Default"
 
     click_button "Verify Account"
-    expect(page.title).to eq("Ubicloud - Projects")
+    expect(page.title).to eq("LayerRail - Projects")
     expect(page).to have_content "Project Invitations"
     expect(audit_log_hash).to eq({"create_account" => ip_hash, "verify_account" => ip_hash})
   end
@@ -192,7 +192,7 @@ RSpec.describe Clover, "auth" do
     check "Remember me"
     click_button "Sign in"
 
-    expect(page.title).to eq("Ubicloud - Default Dashboard")
+    expect(page.title).to eq("LayerRail - Default Dashboard")
     expect(DB[:account_remember_keys].first(id: account.id)).not_to be_nil
     expect(audit_log_hash).to eq({"login" => ip_hash("via" => "password")})
   end
@@ -207,10 +207,10 @@ RSpec.describe Clover, "auth" do
     check "Remember me"
     click_button "Sign in"
 
-    expect(page.title).to eq("Ubicloud - Default Dashboard")
+    expect(page.title).to eq("LayerRail - Default Dashboard")
     page.driver.browser.rack_mock_session.cookie_jar.delete("_Clover.session")
     page.refresh
-    expect(page.title).to eq("Ubicloud - Default Dashboard")
+    expect(page.title).to eq("LayerRail - Default Dashboard")
     expect(audit_log_hash).to eq({"login" => ip_hash("via" => "password"), "load_memory" => ip_hash})
   end
 
@@ -229,14 +229,14 @@ RSpec.describe Clover, "auth" do
     reset_link = Mail::TestMailer.deliveries.first.html_part.body.match(/(\/reset-password.+?)"/)[1]
 
     visit reset_link
-    expect(page.title).to eq("Ubicloud - Reset Password")
+    expect(page.title).to eq("LayerRail - Reset Password")
 
     fill_in "Password", with: "#{TEST_USER_PASSWORD}_new"
     fill_in "Password Confirmation", with: "#{TEST_USER_PASSWORD}_new"
 
     click_button "Reset Password"
 
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
 
     fill_in "Email Address", with: TEST_USER_EMAIL
     click_button "Sign in"
@@ -275,7 +275,7 @@ RSpec.describe Clover, "auth" do
     fill_in "Password", with: TEST_USER_PASSWORD
     click_button "Sign in"
 
-    expect(page.title).to eq("Ubicloud - Projects")
+    expect(page.title).to eq("LayerRail - Projects")
     expect(audit_log_hash).to eq({"login" => ip_hash("via" => "password")})
   end
 
@@ -288,7 +288,7 @@ RSpec.describe Clover, "auth" do
     fill_in "Password", with: TEST_USER_PASSWORD
     click_button "Sign in"
 
-    expect(page.title).to eq("Ubicloud - Projects")
+    expect(page.title).to eq("LayerRail - Projects")
     expect(audit_log_hash).to eq({"login" => ip_hash("via" => "password")})
   end
 
@@ -301,7 +301,7 @@ RSpec.describe Clover, "auth" do
     fill_in "Password", with: TEST_USER_PASSWORD + "1"
     click_button "Sign in"
 
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in")
     expect(audit_log_hash).to eq({"login_failure" => ip_hash("reason" => "incorrect password")})
   end
@@ -316,7 +316,7 @@ RSpec.describe Clover, "auth" do
     fill_in "Password", with: TEST_USER_PASSWORD
     click_button "Sign in"
 
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error(/Your account has been suspended.*/)
     expect(audit_log_hash).to eq({"login_failure" => ip_hash("reason" => "account suspended")})
   end
@@ -331,11 +331,11 @@ RSpec.describe Clover, "auth" do
     check "Remember me"
     click_button "Sign in"
 
-    expect(page.title).to eq("Ubicloud - Default Dashboard")
+    expect(page.title).to eq("LayerRail - Default Dashboard")
     page.driver.browser.rack_mock_session.cookie_jar.delete("_Clover.session")
     account.suspend
     page.refresh
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(audit_log_hash).to eq({"login" => ip_hash("via" => "password"), "login_failure" => ip_hash("reason" => "account suspended")})
   end
 
@@ -348,7 +348,7 @@ RSpec.describe Clover, "auth" do
     fill_in "Password", with: TEST_USER_PASSWORD
     click_button "Sign in"
 
-    expect(page.title).to eq("Ubicloud - 2FA - One-Time Password")
+    expect(page.title).to eq("LayerRail - 2FA - One-Time Password")
     expect(audit_log_hash).to eq({"login" => ip_hash("via" => "password")})
   end
 
@@ -361,7 +361,7 @@ RSpec.describe Clover, "auth" do
     fill_in "Password", with: TEST_USER_PASSWORD
     click_button "Sign in"
 
-    expect(page.title).to eq("Ubicloud - 2FA - Security Keys")
+    expect(page.title).to eq("LayerRail - 2FA - Security Keys")
     expect(audit_log_hash).to eq({"login" => ip_hash("via" => "password")})
   end
 
@@ -374,7 +374,7 @@ RSpec.describe Clover, "auth" do
     fill_in "Password", with: TEST_USER_PASSWORD
     click_button "Sign in"
 
-    expect(page.title).to eq("Ubicloud - Two-factor Authentication")
+    expect(page.title).to eq("LayerRail - Two-factor Authentication")
     expect(audit_log_hash).to eq({"login" => ip_hash("via" => "password")})
   end
 
@@ -389,7 +389,7 @@ RSpec.describe Clover, "auth" do
 
     click_link "Enter a recovery code"
 
-    expect(page.title).to eq("Ubicloud - 2FA - Recovery Codes")
+    expect(page.title).to eq("LayerRail - 2FA - Recovery Codes")
     expect(audit_log_hash).to eq({"login" => ip_hash("via" => "password")})
   end
 
@@ -412,7 +412,7 @@ RSpec.describe Clover, "auth" do
 
       click_button "Log out"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
       expect(audit_log_hash).to eq({"logout" => ip_hash})
     end
 
@@ -435,18 +435,18 @@ RSpec.describe Clover, "auth" do
 
         click_button "Log out" unless logged_in
         visit verify_link
-        expect(page.title).to eq("Ubicloud - Verify New Email")
+        expect(page.title).to eq("LayerRail - Verify New Email")
         expect(page).to have_content("Verify your new email") unless logged_in
 
         click_button "Click to Verify New Email"
 
         expect(page).to have_flash_notice "Your login change has been verified"
         if logged_in
-          expect(page.title).to eq("Ubicloud - Default Dashboard")
+          expect(page.title).to eq("LayerRail - Default Dashboard")
           click_button "Log out"
         end
 
-        expect(page.title).to eq("Ubicloud - Login")
+        expect(page.title).to eq("LayerRail - Login")
 
         fill_in "Email Address", with: new_email
         click_button "Sign in"
@@ -467,18 +467,18 @@ RSpec.describe Clover, "auth" do
     it "can create password for accounts that do not have a password" do
       DB[:account_password_hashes].delete
       visit "/account/change-password"
-      expect(page.title).to eq("Ubicloud - Create Password")
+      expect(page.title).to eq("LayerRail - Create Password")
 
       fill_in "New Password", with: "#{TEST_USER_PASSWORD}_new"
       fill_in "New Password Confirmation", with: "#{TEST_USER_PASSWORD}_new"
 
       click_button "Create Password"
 
-      expect(page.title).to eq("Ubicloud - Change Password")
+      expect(page.title).to eq("LayerRail - Change Password")
 
       click_button "Log out"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
 
       fill_in "Email Address", with: TEST_USER_EMAIL
       click_button "Sign in"
@@ -509,7 +509,7 @@ RSpec.describe Clover, "auth" do
           fill_in "New Password Confirmation", with: password
 
           click_button "Change Password"
-          expect(page.title).to eq("Ubicloud - Change Password")
+          expect(page.title).to eq("LayerRail - Change Password")
           expect(page).to have_flash_error("There was an error changing your password")
           expect(page).to have_text(/invalid password, same as current password|Password cannot be the same as a previous password/)
         end
@@ -519,7 +519,7 @@ RSpec.describe Clover, "auth" do
         fill_in "New Password", with: new_password
         fill_in "New Password Confirmation", with: new_password
         click_button "Change Password"
-        expect(page.title).to eq("Ubicloud - Change Password")
+        expect(page.title).to eq("LayerRail - Change Password")
         expect(page).to have_flash_notice("Your password has been changed")
       end
       expect(audit_log_hash).to eq({"change_password" => ip_hash})
@@ -537,7 +537,7 @@ RSpec.describe Clover, "auth" do
 
         click_button "Change Password"
 
-        expect(page.title).to eq("Ubicloud - Change Password")
+        expect(page.title).to eq("LayerRail - Change Password")
         expect(page).to have_flash_error("There was an error changing your password")
         expect(page).to have_content("Password must have 8 characters minimum and contain at least one lowercase letter, one uppercase letter, and one digit.")
 
@@ -550,7 +550,7 @@ RSpec.describe Clover, "auth" do
 
         click_button "Log out"
 
-        expect(page.title).to eq("Ubicloud - Login")
+        expect(page.title).to eq("LayerRail - Login")
 
         fill_in "Email Address", with: TEST_USER_EMAIL
         click_button "Sign in"
@@ -575,7 +575,7 @@ RSpec.describe Clover, "auth" do
         fill_in "Password", with: TEST_USER_PASSWORD if clear_last_password_entry
         click_button "Close Account"
 
-        expect(page.title).to eq("Ubicloud - Login")
+        expect(page.title).to eq("LayerRail - Login")
         expect(page).to have_flash_notice("Your account has been closed")
 
         expect(Account[email: TEST_USER_EMAIL]).to be_nil
@@ -593,7 +593,7 @@ RSpec.describe Clover, "auth" do
 
       click_button "Close Account"
 
-      expect(page.title).to eq("Ubicloud - Close Account")
+      expect(page.title).to eq("LayerRail - Close Account")
       expect(page).to have_flash_error("'Default' project has some resources. Delete all related resources first.")
       expect(audit_log_hash).to eq({})
     end
@@ -601,7 +601,7 @@ RSpec.describe Clover, "auth" do
     it "show password change page" do
       visit "/account/change-password"
 
-      expect(page.title).to eq("Ubicloud - Change Password")
+      expect(page.title).to eq("LayerRail - Change Password")
       expect(page).to have_content "Change Password"
       expect(audit_log_hash).to eq({})
     end
@@ -611,16 +611,16 @@ RSpec.describe Clover, "auth" do
         visit "/clear-last-password-entry" if clear_last_password_entry
 
         visit "/account/multifactor-manage"
-        expect(page.title).to eq("Ubicloud - Multifactor Authentication")
+        expect(page.title).to eq("LayerRail - Multifactor Authentication")
 
         click_link "Enable"
-        expect(page.title).to eq("Ubicloud - Setup One-Time Password")
+        expect(page.title).to eq("LayerRail - Setup One-Time Password")
         totp = ROTP::TOTP.new(find_by_id("otp-secret").text)
         fill_in "Authentication Code", with: totp.now
         fill_in "Password", with: TEST_USER_PASSWORD if clear_last_password_entry
         click_button "Enable One-Time Password Authentication"
         expect(page).to have_flash_notice "One-time password authentication is now setup, please make note of your recovery codes"
-        expect(page.title).to eq("Ubicloud - Recovery Codes")
+        expect(page.title).to eq("LayerRail - Recovery Codes")
 
         if clear_last_password_entry
           DB[:account_otp_keys].update(last_use: Sequel.date_sub(Sequel::CURRENT_TIMESTAMP, seconds: 4600))
@@ -630,7 +630,7 @@ RSpec.describe Clover, "auth" do
           click_button "Sign in"
           fill_in "Password", with: TEST_USER_PASSWORD
           click_button "Sign in"
-          expect(page.title).to eq("Ubicloud - 2FA - One-Time Password")
+          expect(page.title).to eq("LayerRail - 2FA - One-Time Password")
           fill_in "Authentication Code", with: totp.now
           click_button "Authenticate Using One-Time Password"
           expect(page).to have_flash_notice("You have been logged in")
@@ -643,20 +643,20 @@ RSpec.describe Clover, "auth" do
           fill_in "Password", with: TEST_USER_PASSWORD
           click_button "Sign in"
           6.times do
-            expect(page.title).to eq("Ubicloud - 2FA - One-Time Password")
+            expect(page.title).to eq("LayerRail - 2FA - One-Time Password")
             fill_in "Authentication Code", with: totp.now + "1"
             click_button "Authenticate Using One-Time Password"
           end
           expect(page).to have_flash_error("TOTP authentication code use locked out due to numerous failures")
           expect(Mail::TestMailer.deliveries.length).to eq 1
-          expect(Mail::TestMailer.deliveries.first.subject).to eq "Ubicloud Account One-Time Password Authentication Locked Out"
+          expect(Mail::TestMailer.deliveries.first.subject).to eq "LayerRail Account One-Time Password Authentication Locked Out"
 
           2.times do
-            expect(page.title).to eq("Ubicloud - One-Time Password Unlock")
+            expect(page.title).to eq("LayerRail - One-Time Password Unlock")
             fill_in "Authentication Code", with: totp.now
             click_button "Authenticate Using One-Time Password to Unlock"
             expect(page).to have_flash_notice("One-Time Password successful authentication, more successful authentication needed to unlock")
-            expect(page.title).to eq("Ubicloud - One-Time Password Unlock Not Available")
+            expect(page.title).to eq("LayerRail - One-Time Password Unlock Not Available")
             expect(page.response_headers["refresh"]).to match(/\A1[012]\d\z/)
             expect(page).to have_content(/Deadline for next authentication: \d+ seconds/)
             expect(page).to have_content(/Page will automatically refresh when authentication is possible \(in \d+ seconds\)\./)
@@ -664,15 +664,15 @@ RSpec.describe Clover, "auth" do
             visit page.current_path
           end
 
-          expect(page.title).to eq("Ubicloud - One-Time Password Unlock")
+          expect(page.title).to eq("LayerRail - One-Time Password Unlock")
           fill_in "Authentication Code", with: totp.now
           click_button "Authenticate Using One-Time Password to Unlock"
           expect(page).to have_flash_notice("One-Time Password authentication unlocked")
           expect(Mail::TestMailer.deliveries.length).to eq 2
-          expect(Mail::TestMailer.deliveries.last.subject).to eq "Ubicloud Account One-Time Password Authentication Unlocked"
+          expect(Mail::TestMailer.deliveries.last.subject).to eq "LayerRail Account One-Time Password Authentication Unlocked"
 
           DB[:account_otp_keys].update(last_use: Sequel.date_sub(Sequel::CURRENT_TIMESTAMP, seconds: 4600))
-          expect(page.title).to eq("Ubicloud - 2FA - One-Time Password")
+          expect(page.title).to eq("LayerRail - 2FA - One-Time Password")
           fill_in "Authentication Code", with: totp.now
           click_button "Authenticate Using One-Time Password"
           expect(page).to have_flash_notice("You have been logged in")
@@ -682,7 +682,7 @@ RSpec.describe Clover, "auth" do
 
         visit "/account/multifactor-manage"
         click_link "Disable"
-        expect(page.title).to eq("Ubicloud - Disable One-Time Password")
+        expect(page.title).to eq("LayerRail - Disable One-Time Password")
         fill_in "Password", with: TEST_USER_PASSWORD if clear_last_password_entry
         click_button "Disable One-Time Password Authentication"
         expect(page).to have_flash_notice "One-time password authentication has been disabled"
@@ -706,16 +706,16 @@ RSpec.describe Clover, "auth" do
         2.times do |i|
           visit "/clear-last-password-entry" if clear_last_password_entry
           visit "/account/multifactor-manage"
-          expect(page.title).to eq("Ubicloud - Multifactor Authentication")
+          expect(page.title).to eq("LayerRail - Multifactor Authentication")
           click_link "Add"
-          expect(page.title).to eq("Ubicloud - Setup Security Key")
+          expect(page.title).to eq("LayerRail - Setup Security Key")
           challenge = JSON.parse(page.find_by_id("webauthn-setup-form")["data-credential-options"])["challenge"]
           fill_in "Key Name", with: "My Key #{i}"
           fill_in "Password", with: TEST_USER_PASSWORD if clear_last_password_entry
           fill_in "webauthn-setup", with: webauthn_client.create(challenge:).to_json, visible: false
           click_button "Setup Security Key"
           expect(page).to have_flash_notice "Security key is now setup, please make note of your recovery codes"
-          expect(page.title).to eq("Ubicloud - Recovery Codes")
+          expect(page.title).to eq("LayerRail - Recovery Codes")
         end
 
         if clear_last_password_entry
@@ -725,7 +725,7 @@ RSpec.describe Clover, "auth" do
           click_button "Sign in"
           fill_in "Password", with: TEST_USER_PASSWORD
           click_button "Sign in"
-          expect(page.title).to eq("Ubicloud - 2FA - Security Keys")
+          expect(page.title).to eq("LayerRail - 2FA - Security Keys")
           challenge = JSON.parse(page.find_by_id("webauthn-auth-form")["data-credential-options"])["challenge"]
           fill_in "webauthn_auth", with: webauthn_client.get(challenge:).to_json, visible: false
           click_button "Authenticate Using Security Keys"
@@ -736,7 +736,7 @@ RSpec.describe Clover, "auth" do
           visit "/clear-last-password-entry" if clear_last_password_entry
           visit "/account/multifactor-manage"
           click_link "Remove"
-          expect(page.title).to eq("Ubicloud - Remove Security Key")
+          expect(page.title).to eq("LayerRail - Remove Security Key")
           DB[:account_webauthn_keys].where(name: "My Key 1").delete
           fill_in "Password", with: TEST_USER_PASSWORD if clear_last_password_entry
           choose "My Key 1"
@@ -811,7 +811,7 @@ RSpec.describe Clover, "auth" do
 
       visit "/account/multifactor-manage"
       click_link "Remove All Multifactor Authentication Methods"
-      expect(page.title).to eq("Ubicloud - Remove All Multifactor Authentication Methods")
+      expect(page.title).to eq("LayerRail - Remove All Multifactor Authentication Methods")
       click_button "Remove All Multifactor Authentication Methods"
       expect(page).to have_flash_notice "All multifactor authentication methods have been disabled"
       expect(audit_log_hash).to eq({
@@ -866,12 +866,12 @@ RSpec.describe Clover, "auth" do
 
         visit "/auth/#{provider.ubid}"
         expect(page.status_code).to eq 200
-        expect(page.title).to eq "Ubicloud - Login to TestOIDC via OIDC"
+        expect(page.title).to eq "LayerRail - Login to TestOIDC via OIDC"
 
         OmniAuth.config.mock_auth[omniauth_key] = :invalid_credentials
         click_button "Login"
 
-        expect(page.title).to eq("Ubicloud - Login")
+        expect(page.title).to eq("LayerRail - Login")
         expect(page).to have_flash_error("There was an error logging in with the external provider")
 
         visit "/auth/#{provider.ubid}"
@@ -882,7 +882,7 @@ RSpec.describe Clover, "auth" do
         account = Account.first
         expect(account.email).to eq "user@example.com"
         expect(AccountIdentity.select_hash(:account_id, :provider)).to eq(account.id => provider.ubid)
-        expect(page.title).to eq("Ubicloud - Default Dashboard")
+        expect(page.title).to eq("LayerRail - Default Dashboard")
         expect(page).to have_flash_notice("You have been logged in")
         expect(audit_log_hash).to eq({"login" => ip_hash("via" => "TestOIDC"), "create_account" => ip_hash("provider" => "TestOIDC")})
       end
@@ -897,7 +897,7 @@ RSpec.describe Clover, "auth" do
       fill_in "Password", with: TEST_USER_PASSWORD
       click_button "Sign in"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
       expect(page).to have_flash_error("Login via username and password is not supported for the example.com domain. You must authenticate using TestOIDC.")
       expect(audit_log_hash).to eq({"login_failure" => ip_hash("reason" => "locked domain", "via" => "password")})
     end
@@ -908,7 +908,7 @@ RSpec.describe Clover, "auth" do
       fill_in "Email Address", with: TEST_USER_EMAIL
       fill_in "Password", with: TEST_USER_PASSWORD
       fill_in "Password Confirmation", with: TEST_USER_PASSWORD
-      expect(page).to have_no_content "By using Ubicloud console you agree to our"
+      expect(page).to have_no_content "By using LayerRail console you agree to our"
       click_button "Create Account"
 
       expect(page).to have_flash_notice("An email has been sent to you with a link to verify your account")
@@ -1056,7 +1056,7 @@ RSpec.describe Clover, "auth" do
 
       visit "/auth/#{provider.ubid}"
       click_button "Login"
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
       expect(page).to have_flash_error("Login via TestOIDC2 is not supported for the example.com domain. You must authenticate using TestOIDC.")
       expect(audit_log_hash).to eq({
         "create_account" => ip_hash("provider" => "TestOIDC2"),
@@ -1084,7 +1084,7 @@ RSpec.describe Clover, "auth" do
         info: {email: "user@example.com"})
       click_button "Login"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
       expect(page).to have_flash_error("Creating an account via authentication through TestOIDC2 is not supported for the example.com domain. You must authenticate using TestOIDC.")
       expect(Account.all).to eq []
       expect(AccountIdentity.all).to eq []
@@ -1097,7 +1097,7 @@ RSpec.describe Clover, "auth" do
       visit "/login"
       click_button "GitHub"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
       expect(page).to have_flash_error(/Social login is only allowed if social login provider provides email/)
       expect(audit_log_hash).to eq({})
     end
@@ -1153,7 +1153,7 @@ RSpec.describe Clover, "auth" do
       expect(account).not_to be_nil
       expect(account.identities_dataset.first(provider: "github", uid: "123456790")).not_to be_nil
       expect(page.status_code).to eq(200)
-      expect(page.title).to eq("Ubicloud - Default Dashboard")
+      expect(page.title).to eq("LayerRail - Default Dashboard")
       expect(audit_log_hash).to eq({"create_account" => ip_hash("provider" => "GitHub"), "login" => ip_hash("via" => "GitHub")})
     end
 
@@ -1168,7 +1168,7 @@ RSpec.describe Clover, "auth" do
       expect(Account.count).to eq(1)
       expect(AccountIdentity.count).to eq(1)
       expect(page.status_code).to eq(200)
-      expect(page.title).to eq("Ubicloud - Default Dashboard")
+      expect(page.title).to eq("LayerRail - Default Dashboard")
       expect(audit_log_hash).to eq({"login" => ip_hash("via" => "Google")})
     end
 
@@ -1183,7 +1183,7 @@ RSpec.describe Clover, "auth" do
       visit "/login"
       click_button "Google"
 
-      expect(page.title).to eq("Ubicloud - Renamed Dashboard")
+      expect(page.title).to eq("LayerRail - Renamed Dashboard")
       expect(audit_log_hash).to eq({"login" => ip_hash("via" => "Google")})
     end
 
@@ -1195,7 +1195,7 @@ RSpec.describe Clover, "auth" do
       click_button "GitHub"
 
       expect(page.status_code).to eq(200)
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
       expect(page).to have_flash_error(/There is already an account with this email address.*/)
       expect(audit_log_hash).to eq({"login_failure" => ip_hash("reason" => "unlinked existing account", "provider" => "GitHub")})
     end
@@ -1213,7 +1213,7 @@ RSpec.describe Clover, "auth" do
         omniauth_key = provider.ubid.to_sym
 
         visit "/account/login-method/oidc"
-        expect(page.title).to eq("Ubicloud - Login Methods")
+        expect(page.title).to eq("LayerRail - Login Methods")
         expect(page).to have_flash_error("No valid OIDC provider with that ID")
 
         visit "/account/login-method"
@@ -1228,7 +1228,7 @@ RSpec.describe Clover, "auth" do
         click_button "Connect"
 
         expect(AccountIdentity).to be_empty
-        expect(page.title).to eq("Ubicloud - Default Dashboard")
+        expect(page.title).to eq("LayerRail - Default Dashboard")
         expect(page).to have_flash_error("There was an error logging in with the external provider")
 
         visit "/account/login-method"
@@ -1242,7 +1242,7 @@ RSpec.describe Clover, "auth" do
         click_button "Connect"
 
         expect(AccountIdentity.select_hash(:account_id, :provider)).to eq(account.id => provider.ubid)
-        expect(page.title).to eq("Ubicloud - Login Methods")
+        expect(page.title).to eq("LayerRail - Login Methods")
         expect(page).to have_flash_notice("You have successfully connected your account with TestOIDC.")
 
         within "#login-method-disconnect-oidc-#{provider.ubid}" do
@@ -1250,7 +1250,7 @@ RSpec.describe Clover, "auth" do
         end
 
         expect(AccountIdentity).to be_empty
-        expect(page.title).to eq("Ubicloud - Login Methods")
+        expect(page.title).to eq("LayerRail - Login Methods")
         expect(page).to have_flash_notice("Your account has been disconnected from TestOIDC")
         expect(audit_log_hash).to eq({
           "connect_provider" => ip_hash("provider" => "TestOIDC"),
@@ -1275,7 +1275,7 @@ RSpec.describe Clover, "auth" do
           expect(page).to have_content("Or login with:")
           click_button "TestOIDC"
 
-          expect(page.title).to eq("Ubicloud - Default Dashboard")
+          expect(page.title).to eq("LayerRail - Default Dashboard")
           expect(page).to have_flash_notice("You have been logged in")
           expect(audit_log_hash).to eq({
             "login" => ip_hash("via" => "TestOIDC"),
@@ -1302,7 +1302,7 @@ RSpec.describe Clover, "auth" do
           expect(page).to have_content("Google")
           click_button "TestOIDC"
 
-          expect(page.title).to eq("Ubicloud - Default Dashboard")
+          expect(page.title).to eq("LayerRail - Default Dashboard")
           expect(page).to have_flash_notice("You have been logged in")
           expect(audit_log_hash).to eq({
             "login" => ip_hash("via" => "TestOIDC"),
@@ -1326,47 +1326,47 @@ RSpec.describe Clover, "auth" do
         expect(Clog).to receive(:emit).with("OIDC groups login", oidc_groups_login: {groups: %w[group1 group2], group_prefix: "foo-"})
         click_button "TestOIDC"
 
-        expect(page.title).to eq("Ubicloud - Default Dashboard")
+        expect(page.title).to eq("LayerRail - Default Dashboard")
         expect(page).to have_flash_notice("You have been logged in")
 
         project = Project.first
         visit project.path
         click_link "View Audit Logs"
-        expect(page.title).to eq("Ubicloud - Default - Audit Log")
+        expect(page.title).to eq("LayerRail - Default - Audit Log")
 
         AccessControlEntry.dataset.destroy
         page.refresh
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
 
         subject_tag = SubjectTag.create(project_id: project.id, name: "bar-group1")
         AccessControlEntry.create(project_id: project.id, subject_id: subject_tag.id)
         page.refresh
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
 
         subject_tag.update(name: "foo-group1")
         page.refresh
-        expect(page.title).to eq("Ubicloud - Default - Audit Log")
+        expect(page.title).to eq("LayerRail - Default - Audit Log")
 
         subject_tag.update(name: "foo-group2")
         page.refresh
-        expect(page.title).to eq("Ubicloud - Default - Audit Log")
+        expect(page.title).to eq("LayerRail - Default - Audit Log")
 
         subject_tag.update(name: "foo-group3")
         page.refresh
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
 
         subject_tag2 = SubjectTag.create(project_id: project.id, name: "bar-group1")
         subject_tag.add_member(subject_tag2.id)
         page.refresh
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
 
         subject_tag2.update(name: "foo-group1")
         page.refresh
-        expect(page.title).to eq("Ubicloud - Default - Audit Log")
+        expect(page.title).to eq("LayerRail - Default - Audit Log")
 
         subject_tag2.update(name: "foo-group2")
         page.refresh
-        expect(page.title).to eq("Ubicloud - Default - Audit Log")
+        expect(page.title).to eq("LayerRail - Default - Audit Log")
         expect(audit_log_hash).to eq({
           "login" => ip_hash("via" => "TestOIDC"),
           "logout" => ip_hash,
@@ -1381,7 +1381,7 @@ RSpec.describe Clover, "auth" do
           click_button "Connect"
         end
 
-        expect(page.title).to eq("Ubicloud - Login Methods")
+        expect(page.title).to eq("LayerRail - Login Methods")
         expect(page).to have_flash_notice("You have successfully connected your account with GitHub.")
         expect(audit_log_hash).to eq({"connect_provider" => ip_hash("provider" => "GitHub")})
       end
@@ -1395,7 +1395,7 @@ RSpec.describe Clover, "auth" do
           click_button "Disconnect"
         end
 
-        expect(page.title).to eq("Ubicloud - Login Methods")
+        expect(page.title).to eq("LayerRail - Login Methods")
         expect(page).to have_flash_notice("Your account has been disconnected from GitHub")
         expect(audit_log_hash).to eq({"disconnect_provider" => ip_hash("provider" => "GitHub")})
       end
@@ -1408,7 +1408,7 @@ RSpec.describe Clover, "auth" do
           click_button "Delete"
         end
 
-        expect(page.title).to eq("Ubicloud - Login Methods")
+        expect(page.title).to eq("LayerRail - Login Methods")
         expect(page).to have_flash_notice("Your password has been deleted")
         expect(audit_log_hash).to eq({"remove_password" => ip_hash})
       end
@@ -1422,7 +1422,7 @@ RSpec.describe Clover, "auth" do
           click_button "Disconnect"
         end
 
-        expect(page.title).to eq("Ubicloud - Login Methods")
+        expect(page.title).to eq("LayerRail - Login Methods")
         expect(page).to have_flash_error("You must have at least one login method")
         expect(audit_log_hash).to eq({"disconnect_provider_failure" => ip_hash("reason" => "only remaining authentication method")})
       end
@@ -1436,7 +1436,7 @@ RSpec.describe Clover, "auth" do
           click_button "Delete"
         end
 
-        expect(page.title).to eq("Ubicloud - Login Methods")
+        expect(page.title).to eq("LayerRail - Login Methods")
         expect(page).to have_flash_error("You must have at least one login method")
         expect(audit_log_hash).to eq({"remove_password_failure" => ip_hash("reason" => "only remaining authentication method")})
       end
@@ -1451,7 +1451,7 @@ RSpec.describe Clover, "auth" do
           click_button "Disconnect"
         end
 
-        expect(page.title).to eq("Ubicloud - Login Methods")
+        expect(page.title).to eq("LayerRail - Login Methods")
         expect(page).to have_flash_error("Your account already has been disconnected from GitHub")
         expect(audit_log_hash).to eq({})
       end
@@ -1464,7 +1464,7 @@ RSpec.describe Clover, "auth" do
           click_button "Connect"
         end
 
-        expect(page.title).to eq("Ubicloud - Login Methods")
+        expect(page.title).to eq("LayerRail - Login Methods")
         expect(page).to have_flash_error("Your account's email address is different from the email address associated with the GitHub account.")
         expect(audit_log_hash).to eq({"connect_provider_failure" => ip_hash("reason" => "different email", "provider" => "GitHub")})
       end
@@ -1478,7 +1478,7 @@ RSpec.describe Clover, "auth" do
           click_button "Connect"
         end
 
-        expect(page.title).to eq("Ubicloud - Login Methods")
+        expect(page.title).to eq("LayerRail - Login Methods")
         expect(page).to have_flash_error("Your account's email address is different from the email address associated with the GitHub account.")
         expect(audit_log_hash).to eq({"connect_provider_failure" => ip_hash("reason" => "different email", "provider" => "GitHub")})
       end
@@ -1493,7 +1493,7 @@ RSpec.describe Clover, "auth" do
 
         expect(Mail::TestMailer.deliveries.length).to eq 0
         expect(page).to have_flash_error("Changing passwords is not supported for the example.com domain.")
-        expect(page.title).to eq("Ubicloud - Default Dashboard")
+        expect(page.title).to eq("LayerRail - Default Dashboard")
         expect(audit_log_hash).to eq({"change_password_failure" => ip_hash("reason" => "locked domain")})
       end
 
@@ -1506,7 +1506,7 @@ RSpec.describe Clover, "auth" do
 
         expect(Mail::TestMailer.deliveries.length).to eq 0
         expect(page).to have_flash_error("Changing email addresses is not supported for the example.com domain.")
-        expect(page.title).to eq("Ubicloud - Default Dashboard")
+        expect(page.title).to eq("LayerRail - Default Dashboard")
         expect(audit_log_hash).to eq({"change_login_failure" => ip_hash("reason" => "locked domain")})
       end
 
@@ -1525,7 +1525,7 @@ RSpec.describe Clover, "auth" do
         click_button "Click to Verify New Email"
 
         expect(page).to have_flash_error("Changing email addresses is not supported for the example.com domain.")
-        expect(page.title).to eq("Ubicloud - Default Dashboard")
+        expect(page.title).to eq("LayerRail - Default Dashboard")
         expect(audit_log_hash).to eq({
           "change_login" => ip_hash,
           "verify_login_change_email" => ip_hash,
@@ -1542,7 +1542,7 @@ RSpec.describe Clover, "auth" do
 
         expect(Mail::TestMailer.deliveries.length).to eq 0
         expect(page).to have_flash_error("Changing email addresses is not supported for the other-example.com domain.")
-        expect(page.title).to eq("Ubicloud - Default Dashboard")
+        expect(page.title).to eq("LayerRail - Default Dashboard")
         expect(audit_log_hash).to eq({"change_login_failure" => ip_hash("reason" => "locked domain")})
       end
 
@@ -1561,7 +1561,7 @@ RSpec.describe Clover, "auth" do
         click_button "Click to Verify New Email"
 
         expect(page).to have_flash_error("Changing email addresses is not supported for the other-example.com domain.")
-        expect(page.title).to eq("Ubicloud - Default Dashboard")
+        expect(page.title).to eq("LayerRail - Default Dashboard")
         expect(audit_log_hash).to eq({
           "change_login" => ip_hash,
           "verify_login_change_email" => ip_hash,
@@ -1583,7 +1583,7 @@ RSpec.describe Clover, "auth" do
   it "can not access without login" do
     visit "/account"
 
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(audit_log_hash).to eq({})
   end
 end

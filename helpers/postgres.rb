@@ -2,6 +2,8 @@
 
 class Clover
   def postgres_post(name)
+    raise CloverError.new(404, "NotFound", "PostgreSQL is not enabled for this LayerRail deployment") unless Config.postgres_enabled
+
     authorize("Postgres:create", @project)
     fail Validation::ValidationFailed.new({billing_info: "Project doesn't have valid billing information"}) unless @project.has_valid_payment_method?
 
@@ -67,6 +69,8 @@ class Clover
   end
 
   def postgres_list(tags_param: nil)
+    raise CloverError.new(404, "NotFound", "PostgreSQL is not enabled for this LayerRail deployment") unless Config.postgres_enabled
+
     dataset = dataset_authorize(@project.postgres_resources_dataset.eager(:timeline, representative_server: [:semaphores, :strand, vm: :vm_storage_volumes]), "Postgres:view").eager(:semaphores, :location, strand: :children)
 
     if tags_param

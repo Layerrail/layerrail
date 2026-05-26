@@ -3,7 +3,7 @@
 UbiCli.on("help") do
   desc "Get command help"
 
-  options("ubi help [options] [command [subcommand]]") do
+  options("lr help [options] [command [subcommand]]") do
     on("-r", "--recursive", "also show documentation for all subcommands of command")
     on("-u", "--usage", "only show usage")
   end

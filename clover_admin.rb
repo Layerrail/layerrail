@@ -1189,6 +1189,22 @@ class CloverAdmin < Roda
       view("admin_list")
     end
 
+    r.get "linode-catalog" do
+      @linode_locations = Option::LINODE_LOCATIONS.map do |location_name, region, ui_name|
+        location = Location.first(name: location_name)
+        {
+          location_name:,
+          region:,
+          ui_name:,
+          visible: location&.visible,
+          id: location&.id,
+        }
+      end
+      @linode_plans = Option::LINODE_PLANS
+      @linode_markup = Option::LINODE_MARKUP
+      view("linode_catalog")
+    end
+
     r.get "github-runner-usage" do
       @arch = (typecast_params.str("arch") == "arm64") ? "arm64" : "x64"
 

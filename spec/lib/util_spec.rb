@@ -34,7 +34,7 @@ RSpec.describe Util do
     it "uses configured tag value and merges additional tags" do
       expect(Config).to receive(:provider_resource_tag_value).and_return("my-controlplane")
       result = described_class.aws_tags("test-vm", Owner: "team")
-      expect(result).to eq([{key: "Ubicloud", value: "my-controlplane"}, {key: "Name", value: "test-vm"}, {key: "Owner", value: "team"}])
+      expect(result).to eq([{key: "LayerRail", value: "my-controlplane"}, {key: "Name", value: "test-vm"}, {key: "Owner", value: "team"}])
     end
   end
 
@@ -42,21 +42,21 @@ RSpec.describe Util do
     it "uses configured tag value" do
       expect(Config).to receive(:provider_resource_tag_value).and_return("my-controlplane")
       result = described_class.aws_tag_specifications("instance", "test-vm")
-      expect(result).to eq([{resource_type: "instance", tags: [{key: "Ubicloud", value: "my-controlplane"}, {key: "Name", value: "test-vm"}]}])
+      expect(result).to eq([{resource_type: "instance", tags: [{key: "LayerRail", value: "my-controlplane"}, {key: "Name", value: "test-vm"}]}])
     end
   end
 
   describe "#send_email" do
-    it "renders 'Ubicloud' as the author name by default" do
+    it "renders 'LayerRail' as the author name by default" do
       described_class.send_email("user@example.com", "Hello", greeting: "Hi", body: "Welcome")
       expect(Mail::TestMailer.deliveries.length).to eq 1
-      expect(Mail::TestMailer.deliveries.first.html_part.body.to_s).to include("Regards,").and include("Ubicloud")
+      expect(Mail::TestMailer.deliveries.first.html_part.body.to_s).to include("Regards,").and include("LayerRail")
     end
 
     it "renders a custom author name when provided" do
-      described_class.send_email("user@example.com", "Hello", greeting: "Hi", body: "Welcome", author_name: "The Ubicloud Team")
+      described_class.send_email("user@example.com", "Hello", greeting: "Hi", body: "Welcome", author_name: "The LayerRail Team")
       expect(Mail::TestMailer.deliveries.length).to eq 1
-      expect(Mail::TestMailer.deliveries.first.html_part.body.to_s).to include("The Ubicloud Team")
+      expect(Mail::TestMailer.deliveries.first.html_part.body.to_s).to include("The LayerRail Team")
     end
   end
 

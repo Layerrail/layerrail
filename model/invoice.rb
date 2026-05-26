@@ -24,7 +24,7 @@ class Invoice < Sequel::Model
   end
 
   def filename
-    "Ubicloud-#{begin_time.utc.strftime("%Y-%m")}-#{invoice_number}.pdf"
+    "LayerRail-#{begin_time.utc.strftime("%Y-%m")}-#{invoice_number}.pdf"
   end
 
   %i[subtotal cost].each do |meth|
@@ -68,6 +68,11 @@ class Invoice < Sequel::Model
 
   def charge
     reload # Reload to get the latest status to avoid double charging
+    if Config.polar_access_token
+      Clog.emit("Polar billing is enabled. Invoice charging is handled by Polar checkout or usage-based billing.", {polar_invoice_charge_deferred: {ubid:}})
+      return false
+    end
+
     unless Config.stripe_secret_key
       Clog.emit("Billing is not enabled. Set STRIPE_SECRET_KEY to enable billing.")
       return true
@@ -155,21 +160,21 @@ class Invoice < Sequel::Model
     when "waiting_transfer"
       ["The invoice amount of #{data.total} is pending payment via bank transfer. Please follow the bank transfer instructions at the bottom of the invoice to complete the payment."]
     when "paid"
-      ["The invoice amount of #{data.total} will be debited from your credit card on file."]
+      ["The invoice amount of #{data.total} has been paid through Polar."]
     else
       fail "BUG: unexpected invoice status #{status}"
     end
     github_usage = data.items.select { it.description.include?("GitHub Runner") }.sum(&:cost)
     saved_amount = 9 * github_usage
     if saved_amount > 1
-      messages << "You saved $#{saved_amount.to_i} this month using managed Ubicloud runners instead of GitHub hosted runners!"
+      messages << "You saved $#{saved_amount.to_i} this month using managed LayerRail runners instead of GitHub hosted runners!"
     end
 
-    Util.send_email(data.billing_email, "Ubicloud #{data.name} Invoice ##{data.invoice_number}",
+    Util.send_email(data.billing_email, "LayerRail #{data.name} Invoice ##{data.invoice_number}",
       greeting: "Dear #{data.billing_name},",
       body: ["Please find your current invoice ##{data.invoice_number} below.",
         *messages,
-        "If you have any questions, please send us a support request via support@ubicloud.com, and include your invoice number."],
+        "If you have any questions, please send us a support request via support@layerrail.com, and include your invoice number."],
       button_title: "View Invoice",
       button_link: "#{Config.base_url}#{project.path}/billing#{data.path}",
       attachments: [[filename, pdf]])
@@ -182,12 +187,12 @@ class Invoice < Sequel::Model
     Util.send_email(receivers.uniq, "Urgent: Action Required to Prevent Service Disruption",
       greeting: "Dear #{data.billing_name},",
       body: ["We hope this message finds you well.",
-        "We've noticed that your credit card on file has been declined with the following errors:",
+        "We couldn't complete your Polar invoice payment with the following errors:",
         *errors.map { "- #{it}" },
-        "The invoice amount of #{data.total} tried be debited from your credit card on file.",
-        "To prevent service disruption, please update your payment information within the next two days.",
-        "If you have any questions, please send us a support request via support@ubicloud.com."],
-      button_title: "Update Payment Method",
+        "The invoice amount of #{data.total} still needs attention.",
+        "To prevent service disruption, please update your billing information within the next two days.",
+        "If you have any questions, please send us a support request via support@layerrail.com."],
+      button_title: "Open Billing",
       button_link: "#{Config.base_url}#{project.path}/billing")
   end
 
@@ -195,7 +200,7 @@ class Invoice < Sequel::Model
     pdf = Prawn::Document.new(
       page_size: "A4",
       page_layout: :portrait,
-      info: {Title: filename, Creator: "Ubicloud", CreationDate: created_at},
+      info: {Title: filename, Creator: "LayerRail", CreationDate: created_at},
     )
     # We use external fonts to support all UTF-8 characters
     pdf.font_families.update(
