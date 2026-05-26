@@ -45,24 +45,48 @@ class Clover
           tp = typecast_params
           new_tax_id = tp.str("tax_id").gsub(/[^a-zA-Z0-9]/, "")
 
+          # Sanitize email (strip any spaces)
+          email_input = tp.str!("email").gsub(/\s+/, "")
+
+          # Sanitize state to 2-letter abbreviation for countries like US
+          country_code = tp.str!("country")
+          state_input = tp.nonempty_str("state")
+          state_sanitized = nil
+          if state_input
+            country = ISO3166::Country[country_code]
+            if country && !country.subdivisions.empty?
+              upcased = state_input.strip.upcase
+              if country.subdivisions.key?(upcased)
+                state_sanitized = upcased
+              else
+                state_sanitized = country.subdivisions.find { |k, v| v["name"].to_s.downcase == state_input.strip.downcase }&.first || state_input.strip
+              end
+            else
+              state_sanitized = state_input.strip
+            end
+          end
+
+          # Sanitize metadata (omit empty fields to avoid Polar API length constraint errors)
+          metadata_payload = {
+            company_name: tp.str("company_name").to_s.strip.empty? ? nil : tp.str("company_name").strip,
+            note: tp.str("note").to_s.strip.empty? ? nil : tp.str("note").strip,
+            project_id: @project.ubid
+          }.compact
+
           begin
             PolarClient.update_customer_by_external_id(polar_customer_id, {
               name: tp.str!("name"),
-              email: tp.str!("email").strip,
+              email: email_input,
               billing_address: {
-                country: tp.str!("country"),
-                state: tp.nonempty_str("state"),
+                country: country_code,
+                state: state_sanitized,
                 city: tp.nonempty_str("city"),
                 postal_code: tp.nonempty_str("postal_code"),
                 line1: tp.str!("address"),
                 line2: nil
               },
               tax_id: new_tax_id.empty? ? nil : new_tax_id,
-              metadata: {
-                company_name: tp.str("company_name"),
-                note: tp.str("note"),
-                project_id: @project.ubid
-              }
+              metadata: metadata_payload
             })
             if new_tax_id != current_tax_id
               DB.transaction do
