@@ -9,12 +9,10 @@ class Clover
     end
 
     r.get web? do
-      content_security_policy.add_connect_src "https://*.#{Config.inference_dns_zone}"
+      content_security_policy.add_connect_src "https://*.#{Config.inference_dns_zone}" unless cloudflare_inference_provider?
 
       DB.ignore_duplicate_queries do
-        @inference_models = [inference_router_model_ds.eager(inference_router: {load_balancer: :private_subnet}), inference_endpoint_ds.eager(:location, load_balancer: :private_subnet)].flat_map do |ds|
-          ds.where(Sequel.pg_jsonb_op(:tags).get_text("capability") => "Text Generation").all
-        end
+        @inference_models = all_inference_models.select { it.tags["capability"] == "Text Generation" }
       end
 
       @inference_api_keys = inference_api_key_ds.all

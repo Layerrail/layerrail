@@ -1040,6 +1040,19 @@ class Clover < Roda
         r.hash_branches(:webhook_prefix)
       end
 
+      r.on "ai" do
+        response.json = true
+        response.skip_content_security_policy!
+
+        r.post "v1", "chat", "completions" do
+          handle_cloudflare_ai_request("chat/completions", "Text Generation")
+        end
+
+        r.post "v1", "embeddings" do
+          handle_cloudflare_ai_request("embeddings", "Embeddings")
+        end
+      end
+
       r.get "auth", :ubid_uuid do |id|
         next unless (@oidc_provider = OidcProvider[id])
 

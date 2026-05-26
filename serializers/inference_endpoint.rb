@@ -8,7 +8,7 @@ class Serializers::InferenceEndpoint < Serializers::Base
       display_name: ie.tags["display_name"] || ie.model_name,
       url: ie.load_balancer.health_check_url,
       model_name: ie.model_name,
-      tags: ie.tags.slice("hf_model", "capability", "multimodal", "context_length"),
+      tags: ie.tags.slice("hf_model", "capability", "multimodal", "context_length", "provider"),
       price: {
         per_million_prompt_tokens: BillingRate.million_token_price(ie.prompt_billing_resource),
         per_million_completion_tokens: BillingRate.million_token_price(ie.completion_billing_resource),

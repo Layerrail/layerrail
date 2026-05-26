@@ -449,7 +449,9 @@ function setupPlayground() {
       return;
     }
 
-    const endpoint_url = $('#inference_endpoint option:selected').attr('data-url');
+    const $selected_endpoint = $('#inference_endpoint option:selected');
+    const endpoint_url = $selected_endpoint.attr('data-url');
+    const streams_response = $selected_endpoint.attr('data-provider') !== "cloudflare";
 
     const messages = [];
     if (system.length > 0) {
@@ -470,14 +472,17 @@ function setupPlayground() {
       ]
     };
     messages.push(user_message);
-    const payload = JSON.stringify({
+    const request_payload = {
       model: endpoint_name,
       messages: messages,
-      stream: true,
-      stream_options: { include_usage: true },
+      stream: streams_response,
       temperature: temperature,
       top_p: top_p,
-    });
+    };
+    if (streams_response) {
+      request_payload.stream_options = { include_usage: true };
+    }
+    const payload = JSON.stringify(request_payload);
 
     const MAX_PAYLOAD_MB = 50;
     if (payload.length > MAX_PAYLOAD_MB << 20) {
@@ -520,6 +525,23 @@ function setupPlayground() {
 
       if (!response.ok) {
         throw new Error(`Response status: ${response.status}`);
+      }
+
+      if (!streams_response) {
+        const parsed = await response.json();
+        const prompt_tokens = parsed?.usage?.prompt_tokens;
+        const completion_tokens = parsed?.usage?.completion_tokens;
+        if (prompt_tokens !== undefined && completion_tokens !== undefined) {
+          $(`#inference_message_info_${assistant_message_id}`).text(`Usage: ${prompt_tokens} input tokens and ${completion_tokens} output tokens.`);
+        } else {
+          $(`#inference_message_info_${assistant_message_id}`).text("");
+        }
+
+        content = parsed?.choices?.[0]?.message?.content || "";
+        assistant_message.content[0].text = content;
+        const rendered_response = DOMPurify.sanitize(marked.parse(content));
+        $assistant_message_container.html(rendered_response);
+        return;
       }
 
       const reader = response.body.getReader();

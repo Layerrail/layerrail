@@ -11,7 +11,7 @@
           "hero-chat-bubble-bottom-center-text",
         <<-MSG
 "messages": [{"role": "user", "content": "say something"}],
-    "stream": true
+    "stream": #{ie.respond_to?(:provider) && ie.provider == "cloudflare" ? "false" : "true"}
 MSG
         ]
       when "Embeddings"
@@ -40,6 +40,8 @@ curl #{ie.load_balancer.health_check_url(path:)} \\
         <div class="flex items-center gap-1 text-gray-500">
           <%if hf_model = ie.tags["hf_model"]%>
           <a target="_blank" rel="noreferrer" href="https://huggingface.co/<%= hf_model %>" class="text-layerrail-600 line-clamp-2">🤗 <%= hf_model %></a>
+          <%elsif ie.tags["provider"]%>
+          <p class="text-gray-500"><%= ie.tags["provider"] %></p>
           <%else%>
           <p class="text-gray-500">Not available</p>
           <%end%>

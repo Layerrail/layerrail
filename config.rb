@@ -262,6 +262,9 @@ module Config
 
   # AI
   override :ai_inference_enabled, false, bool
+  override :ai_inference_provider, "cloudflare", string
+  optional :cloudflare_account_id, string
+  optional :cloudflare_api_token, string, clear: true
   optional :inference_endpoint_service_project_id, uuid
   optional :runpod_api_key, string, clear: true
   optional :huggingface_token, string, clear: true

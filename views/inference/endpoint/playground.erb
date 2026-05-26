@@ -15,6 +15,7 @@
             [ie.model_name, ie.model_name, nil, {
               "data-id": ie.ubid,
               "data-url": ie.load_balancer.health_check_url,
+              "data-provider": (ie.respond_to?(:provider) ? ie.provider : "layerrail"),
               "data-tags": ie.tags.to_json
             }]
           },
