@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "securerandom"
+require "uri"
+
 class Clover
   hash_branch(:project_prefix, "github") do |r|
     unless Config.github_app_name
@@ -28,9 +31,12 @@ class Clover
       unless @project.has_valid_payment_method?
         raise_web_error("Project doesn't have valid billing information")
       end
-      session[:github_installation_project_id] = @project.id
+      session["github_installation_project_id"] = @project.id
+      state = SecureRandom.urlsafe_base64(24)
+      session["github_installation_state"] = state
 
-      r.redirect "https://github.com/apps/#{Config.github_app_name}/installations/new", 302
+      query = URI.encode_www_form(state:)
+      r.redirect "https://github.com/apps/#{Config.github_app_name}/installations/new?#{query}", 302
     end
 
     r.on GITHUB_INSTALLATION_NAME_OR_UBID do |installation_name, installation_id|

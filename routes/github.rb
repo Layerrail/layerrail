@@ -1,13 +1,16 @@
 # frozen_string_literal: true
 
+require "securerandom"
+require "uri"
+
 class Clover
   hash_branch("github") do |r|
     r.get web?, "callback" do
       no_authorization_needed
       oauth_code = typecast_params.str("code")
-      installation_id = typecast_params.str("installation_id")
+      installation_id = typecast_params.str("installation_id") || session.delete("github_installation_id")
       setup_action = typecast_params.str("setup_action")
-      code_response = Github.oauth_client.exchange_code_for_token(oauth_code)
+      state = typecast_params.str("state")
 
       if (installation = GithubInstallation.with_github_installation_id(installation_id))
         @project = installation.project
@@ -17,7 +20,7 @@ class Clover
         r.redirect installation, "/runner"
       end
 
-      unless (@project = project = current_account.projects_dataset.with_pk(session.delete("github_installation_project_id")))
+      unless (@project = project = current_account.projects_dataset.with_pk(session["github_installation_project_id"]))
         flash["error"] = "You should initiate the GitHub App installation request from the project's GitHub runner integration page."
         Clog.emit("GitHub callback failed due to lack of project in the session", {installation_failed: {id: installation_id, account_ubid: current_account.ubid}})
         r.redirect "/project"
@@ -25,11 +28,42 @@ class Clover
 
       authorize("Project:github", project)
 
+      if oauth_code
+        expected_state = session.delete("github_installation_state")
+        if expected_state && state != expected_state
+          flash["error"] = "GitHub App installation failed because the authorization state did not match. Please try connecting the account again."
+          Clog.emit("GitHub callback failed due to state mismatch", {installation_failed: {id: installation_id, account_ubid: current_account.ubid}})
+          r.redirect project, "/github"
+        end
+      end
+
       if setup_action == "request"
+        session.delete("github_installation_project_id")
+        session.delete("github_installation_state")
         flash["notice"] = "The GitHub App installation request is awaiting approval from the GitHub organization's administrator. As GitHub will redirect your admin back to the LayerRail console, the admin needs to have a LayerRail account with the necessary permissions to finalize the installation. Please invite the admin to your project if they don't have an account yet."
         Clog.emit("GitHub installation initiated by non-admin user", {installation_failed: {id: installation_id, account_ubid: current_account.ubid}})
         r.redirect user_path
       end
+
+      unless oauth_code
+        if installation_id && Config.github_app_client_id
+          state = SecureRandom.urlsafe_base64(24)
+          session["github_installation_id"] = installation_id
+          session["github_installation_state"] = state
+          query = URI.encode_www_form(
+            client_id: Config.github_app_client_id,
+            redirect_uri: "#{Config.base_url}/github/callback",
+            state:,
+          )
+          r.redirect "https://github.com/login/oauth/authorize?#{query}", 302
+        end
+
+        flash["error"] = "GitHub App installation failed because GitHub did not return an authorization code. Enable OAuth during installation for the GitHub App and try again."
+        Clog.emit("GitHub callback failed due to missing oauth code", {installation_failed: {id: installation_id, account_ubid: current_account.ubid}})
+        r.redirect project, "/github"
+      end
+
+      code_response = Github.oauth_client.exchange_code_for_token(oauth_code)
 
       unless (access_token = code_response[:access_token])
         flash["error"] = "GitHub App installation failed. For any questions or assistance, reach out to our team at support@layerrail.com"
@@ -66,6 +100,7 @@ class Clover
         project_id: project.id,
       )
 
+      session.delete("github_installation_project_id")
       flash["notice"] = "GitHub runner integration is enabled for #{project.name} project."
       r.redirect installation, "/runner"
     end
