@@ -14,7 +14,7 @@ class Clover
       authorize("Project:billing", @project)
 
       polar_customer_id = @project.ubid
-      polar_checkout = lambda do |kind, product_id, success_path, metadata = {}|
+      polar_checkout = lambda do |kind, product_id, success_path, metadata = {}, checkout_options = {}|
         PolarClient.create_checkout({
           products: [product_id],
           external_customer_id: polar_customer_id,
@@ -31,7 +31,7 @@ class Clover
           require_billing_address: true,
           success_url: "#{Config.base_url}#{success_path}?checkout_id={CHECKOUT_ID}",
           return_url: "#{Config.base_url}#{billing_path}"
-        })
+        }.merge(checkout_options))
       end
 
       r.get true do
@@ -184,12 +184,22 @@ class Clover
           raise_web_error("Invoice is not payable") unless invoice.payable?
           raise_web_error("Polar invoice checkout is not configured. Set POLAR_INVOICE_PRODUCT_ID.") unless Config.polar_invoice_product_id
 
+          invoice_amount_cents = (invoice.cost.to_f * 100).round
+          raise_web_error("Invoice amount is invalid") unless invoice_amount_cents.positive?
+
           checkout = polar_checkout.call(
             "invoice_payment",
             Config.polar_invoice_product_id,
             "#{path(invoice)}/success",
-            invoice: invoice.ubid,
-            invoice_number: invoice.invoice_number
+            {
+              invoice: invoice.ubid,
+              invoice_number: invoice.invoice_number,
+              invoice_amount_cents:
+            },
+            {
+              amount: invoice_amount_cents,
+              currency: "usd"
+            }
           )
 
           r.redirect checkout.fetch("url"), 303
@@ -208,9 +218,11 @@ class Clover
           end
 
           metadata = checkout_session["metadata"] || {}
+          expected_amount_cents = (invoice.cost.to_f * 100).round
           unless checkout_session["status"] == "succeeded" &&
               checkout_session["external_customer_id"] == polar_customer_id &&
-              metadata["invoice"] == invoice.ubid
+              metadata["invoice"] == invoice.ubid &&
+              checkout_session["amount"].to_i == expected_amount_cents
             Clog.emit("unsuccessful invoice payment", {unsuccessful_invoice_payment: {invoice_ubid: invoice.ubid, checkout_id:}})
             raise_web_error("Invoice payment was not successful")
           end
