@@ -98,7 +98,16 @@ class Clover
             end
             audit_log(@project, "update_billing")
           rescue PolarAPIError => e
-            raise_web_error(e.message)
+            if e.status == 404 || e.body.to_s.include?("Customer does not exist")
+              DB.transaction do
+                @project.update(billing_info_id: nil)
+                billing_info.destroy
+              end
+              flash["notice"] = "Your billing details were not found on Polar. Please reconnect your billing."
+              r.redirect billing_path
+            else
+              raise_web_error(e.message)
+            end
           end
 
           flash["notice"] = "Billing info updated"
@@ -154,11 +163,25 @@ class Clover
       r.get "portal" do
         next unless @project.billing_info
 
-        session = PolarClient.create_customer_session(
-          polar_customer_id,
-          return_url: "#{Config.base_url}#{billing_path}"
-        )
-        r.redirect session.fetch("customer_portal_url"), 303
+        begin
+          session = PolarClient.create_customer_session(
+            polar_customer_id,
+            return_url: "#{Config.base_url}#{billing_path}"
+          )
+          r.redirect session.fetch("customer_portal_url"), 303
+        rescue PolarAPIError => e
+          if e.status == 404 || e.body.to_s.include?("Customer does not exist")
+            DB.transaction do
+              billing_info = @project.billing_info
+              @project.update(billing_info_id: nil)
+              billing_info.destroy
+            end
+            flash["notice"] = "Your billing details were not found on Polar. Please reconnect your billing."
+            r.redirect billing_path
+          else
+            raise_web_error(e.message)
+          end
+        end
       end
 
       r.on "payment-method" do
