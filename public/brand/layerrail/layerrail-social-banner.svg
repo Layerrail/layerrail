@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 500" role="img" aria-labelledby="title desc">
+  <title id="title">LayerRail social banner</title>
+  <desc id="desc">A LayerRail social banner with layered rails and infrastructure lines.</desc>
+  <rect width="1500" height="500" fill="#1A1520"/>
+  <path d="M450 440C620 280 742 245 1030 180c145-33 256-71 380-140" fill="none" stroke="#8B67F2" stroke-width="8" opacity=".8"/>
+  <path d="M500 460C665 305 790 270 1070 210c150-32 250-66 386-142" fill="none" stroke="#D1C8E7" stroke-width="3" opacity=".65"/>
+  <path d="M640 380h500M710 326h360M785 275h470" stroke="#D1C8E7" stroke-width="2" opacity=".28"/>
+  <g transform="translate(80 98) scale(1.05)">
+    <path fill="#D1C8E7" d="M64 10 112 33 95 43 64 28 33 43 16 33 64 10Z"/>
+    <path fill="#BDA9FF" d="M64 42 112 64 95 75 64 60 33 75 16 64 64 42Z"/>
+    <path fill="#8B67F2" d="M16 95 49 77 58 88 38 109 16 95Z"/>
+    <path fill="#8B67F2" d="M112 95 79 77 70 88 90 109 112 95Z"/>
+    <path fill="#FEFDFE" d="M58 68H70l10 45H48l10-45Z"/>
+    <path fill="none" stroke="#8B67F2" stroke-width="4" stroke-linecap="round" d="M57 82h14M54 93h20M51 104h26"/>
+  </g>
+  <text x="230" y="185" fill="#FEFDFE" font-family="Inter, Be Vietnam Pro, Segoe UI, Arial, sans-serif" font-size="78" font-weight="300" letter-spacing="-1.5">Layer</text>
+  <text x="420" y="185" fill="#8B67F2" font-family="Inter, Be Vietnam Pro, Segoe UI, Arial, sans-serif" font-size="78" font-weight="700" letter-spacing="-1.5">Rail</text>
+  <text x="86" y="292" fill="#FEFDFE" font-family="Inter, Be Vietnam Pro, Segoe UI, Arial, sans-serif" font-size="38" font-weight="500">Developer-first cloud infrastructure.</text>
+  <text x="86" y="342" fill="#D1C8E7" font-family="Inter, Be Vietnam Pro, Segoe UI, Arial, sans-serif" font-size="26">Compute. Kubernetes. PostgreSQL. Networking. Billing. Deploy with evidence.</text>
+</svg>

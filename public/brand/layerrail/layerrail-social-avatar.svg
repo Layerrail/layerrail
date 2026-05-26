@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">LayerRail social avatar</title>
+  <desc id="desc">LayerRail mark centered in a violet circle.</desc>
+  <circle cx="80" cy="80" r="72" fill="#8B67F2"/>
+  <g transform="translate(16 16)">
+    <path fill="#FEFDFE" d="M64 10 112 33 95 43 64 28 33 43 16 33 64 10Z"/>
+    <path fill="#EFEAFF" d="M64 42 112 64 95 75 64 60 33 75 16 64 64 42Z"/>
+    <path fill="#FEFDFE" d="M16 95 49 77 58 88 38 109 16 95Z"/>
+    <path fill="#FEFDFE" d="M112 95 79 77 70 88 90 109 112 95Z"/>
+    <path fill="#FEFDFE" d="M58 68H70l10 45H48l10-45Z"/>
+    <path fill="none" stroke="#8B67F2" stroke-width="4" stroke-linecap="round" d="M57 82h14M54 93h20M51 104h26"/>
+  </g>
+</svg>

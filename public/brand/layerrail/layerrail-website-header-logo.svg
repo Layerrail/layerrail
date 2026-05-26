@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 72" role="img" aria-labelledby="title desc">
+  <title id="title">LayerRail website header logo</title>
+  <desc id="desc">Compact LayerRail logo for website and dashboard headers.</desc>
+  <g transform="translate(4 3) scale(.52)">
+    <path fill="#BDA9FF" d="M64 10 112 33 95 43 64 28 33 43 16 33 64 10Z"/>
+    <path fill="#8B67F2" d="M64 42 112 64 95 75 64 60 33 75 16 64 64 42Z"/>
+    <path fill="#5E32C8" d="M16 95 49 77 58 88 38 109 16 95Z"/>
+    <path fill="#5E32C8" d="M112 95 79 77 70 88 90 109 112 95Z"/>
+    <path fill="#5A3A38" d="M58 68H70l10 45H48l10-45Z"/>
+    <path fill="none" stroke="#FEFDFE" stroke-width="4" stroke-linecap="round" d="M57 82h14M54 93h20M51 104h26"/>
+  </g>
+  <text x="82" y="46" fill="#5A3A38" font-family="Inter, Be Vietnam Pro, Segoe UI, Arial, sans-serif" font-size="36" font-weight="300" letter-spacing="-.8">Layer</text>
+  <text x="180" y="46" fill="#5E32C8" font-family="Inter, Be Vietnam Pro, Segoe UI, Arial, sans-serif" font-size="36" font-weight="700" letter-spacing="-.8">Rail</text>
+</svg>

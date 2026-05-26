@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">LayerRail mark</title>
+  <desc id="desc">A geometric layered infrastructure mark with a rail path.</desc>
+  <path fill="#BDA9FF" d="M64 10 112 33 95 43 64 28 33 43 16 33 64 10Z"/>
+  <path fill="#8B67F2" d="M64 42 112 64 95 75 64 60 33 75 16 64 64 42Z"/>
+  <path fill="#5E32C8" d="M16 95 49 77 58 88 38 109 16 95Z"/>
+  <path fill="#5E32C8" d="M112 95 79 77 70 88 90 109 112 95Z"/>
+  <path fill="#5A3A38" d="M58 68H70l10 45H48l10-45Z"/>
+  <path fill="none" stroke="#FEFDFE" stroke-width="4" stroke-linecap="round" d="M57 82h14M54 93h20M51 104h26"/>
+</svg>
