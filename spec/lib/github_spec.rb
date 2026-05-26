@@ -61,9 +61,30 @@ RSpec.describe Github do
 
   it "can map alias to actual label" do
     labels = described_class.runner_labels
-    expect(labels["ubicloud"]).to eq(labels["ubicloud-standard-2-ubuntu-2404"])
-    expect(labels["ubicloud-standard-8"]).to eq(labels["ubicloud-standard-8-ubuntu-2404"])
-    expect(labels["ubicloud-standard-4-arm"]).to eq(labels["ubicloud-standard-4-arm-ubuntu-2404"])
+    expect(labels["layerrail"]).to eq(labels["layerrail-standard-2-ubuntu-2404"])
+    expect(labels["layerrail-standard-8"]).to eq(labels["layerrail-standard-8-ubuntu-2404"])
+    unless Config.compute_provider == "linode"
+      expect(labels["layerrail-standard-4-arm"]).to eq(labels["layerrail-standard-4-arm-ubuntu-2404"])
+    end
+  end
+
+  it "keeps legacy ubicloud aliases mapped to LayerRail labels" do
+    labels = YAML.load_file("config/github_runner_labels.yml").to_h { [it["name"], it] }
+
+    described_class.add_legacy_runner_aliases(labels)
+
+    expect(labels["ubicloud-standard-2"]).to eq({"name" => "ubicloud-standard-2", "alias_for" => "layerrail-standard-2"})
+    expect(described_class.resolve_runner_label(labels, labels["ubicloud-standard-2"])["name"]).to eq("layerrail-standard-2-ubuntu-2404")
+  end
+
+  it "keeps only Linode-backed x64 standard runner sizes for Linode" do
+    labels = YAML.load_file("config/github_runner_labels.yml").to_h { [it["name"], it] }
+    described_class.add_legacy_runner_aliases(labels)
+
+    filtered = described_class.linode_runner_labels(labels)
+
+    expect(filtered).to include("layerrail-standard-2", "layerrail-standard-16", "ubicloud-standard-2")
+    expect(filtered).not_to include("layerrail-standard-30", "layerrail-premium-2", "layerrail-arm")
   end
 
   it "can map all aliases to actual tag" do

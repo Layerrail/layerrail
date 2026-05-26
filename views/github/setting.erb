@@ -3,6 +3,7 @@
 <%== render("github/tabbar") %>
 
 <div class="grid gap-6">
+  <% unless Config.compute_provider == "linode" %>
   <!-- Premium runners -->
   <div class="overflow-hidden rounded-lg ring-1 ring-black ring-opacity-5 bg-white lg:flex shadow">
     <div class="p-8 sm:p-10 lg:flex-auto">
@@ -64,6 +65,7 @@
       </div>
     </div>
   </div>
+  <% end %>
   <div>
     <div class="overflow-hidden rounded-lg shadow ring-1 ring-black ring-opacity-5 bg-white divide-y divide-gray-200">
       <!-- Transparent Cache Card -->

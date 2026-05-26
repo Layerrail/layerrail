@@ -51,6 +51,8 @@ class Clover
       end
 
       r.post web?, "set-premium" do
+        raise_web_error("Premium GitHub runners are not available on Linode yet") if Config.compute_provider == "linode"
+
         enabled = typecast_params.bool("premium_runner_enabled")
         if @installation.premium_runner_enabled? != enabled
           flash["notice"] = "Premium runners #{enabled ? "enabled" : "disabled"}"

@@ -48,12 +48,47 @@ module Github
   def self.runner_labels
     @runner_labels ||= begin
       labels = YAML.load_file("config/github_runner_labels.yml").to_h { [it["name"], it] }
+      add_legacy_runner_aliases(labels)
+      labels = linode_runner_labels(labels) if Config.compute_provider == "linode"
       labels.transform_values do |v|
-        new = (a = v["alias_for"]) ? labels[a] : v
+        new = resolve_runner_label(labels, v)
         new["vm_size"] = "#{new["family"]}-#{new["vcpus"]}"
         Validation.validate_vm_size(new["vm_size"], new["arch"])
         new
       end.freeze
     end
+  end
+
+  def self.add_legacy_runner_aliases(labels)
+    labels.keys.grep(/\Alayerrail/).each do |name|
+      legacy_name = name.sub(/\Alayerrail/, "ubicloud")
+      labels[legacy_name] ||= {"name" => legacy_name, "alias_for" => name}
+    end
+  end
+
+  def self.linode_runner_labels(labels)
+    labels.select do |_name, label|
+      target = resolve_runner_label(labels, label)
+      next false unless target
+      next false unless target["family"] == "standard" && target["arch"] == "x64"
+
+      begin
+        Option.linode_plan(target["family"], target["vcpus"])
+        true
+      rescue Validation::ValidationFailed
+        false
+      end
+    end
+  end
+
+  def self.resolve_runner_label(labels, label)
+    seen = {}
+    while label && (alias_for = label["alias_for"])
+      raise "Circular GitHub runner label alias: #{alias_for}" if seen[alias_for]
+
+      seen[alias_for] = true
+      label = labels[alias_for]
+    end
+    label
   end
 end

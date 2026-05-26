@@ -133,6 +133,8 @@ module Config
   optional :github_app_webhook_secret, string, clear: true
   optional :vm_pool_project_id, uuid
   optional :github_runner_service_project_id, uuid
+  optional :github_runner_linode_location_id, uuid
+  override :github_runner_bootstrap_version, "latest", string
   override :enable_github_workflow_poller, true, bool
   optional :github_runner_aws_location_id, uuid
   override :github_runner_aws_spot_instance_enabled, false, bool

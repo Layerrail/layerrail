@@ -52,6 +52,7 @@ module Option
   ].freeze
   LINODE_BOOT_IMAGES = {
     "ubuntu-noble" => "linode/ubuntu24.04",
+    "ubuntu-jammy" => "linode/ubuntu22.04",
     "gpu-ubuntu-noble" => "linode/ubuntu24.04",
     "debian-12" => "linode/debian12",
     "almalinux-9" => "linode/almalinux9",

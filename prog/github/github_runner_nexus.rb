@@ -38,9 +38,9 @@ class Prog::Github::GithubRunnerNexus < Prog::Base
   end
 
   def pick_vm
-    skip_pool = project.get_ff_skip_runner_pool || github_runner.spill_over_set?
+    skip_pool = linode_runner? || project.get_ff_skip_runner_pool || github_runner.spill_over_set?
 
-    vm_size = if installation.premium_runner_enabled? || installation.free_runner_upgrade?
+    vm_size = if !linode_runner? && (installation.premium_runner_enabled? || installation.free_runner_upgrade?)
       "premium-#{label_data["vcpus"]}"
     else
       label_data["vm_size"]
@@ -48,7 +48,7 @@ class Prog::Github::GithubRunnerNexus < Prog::Base
     pool = unless skip_pool
       VmPool.where(
         vm_size:,
-        boot_image: label_data["boot_image"],
+        boot_image: runner_boot_image,
         location_id: Location::GITHUB_RUNNERS_ID,
         storage_size_gib: label_data["storage_size_gib"],
         arch:,
@@ -59,13 +59,13 @@ class Prog::Github::GithubRunnerNexus < Prog::Base
       return picked_vm
     end
 
-    boot_image = label_data["boot_image"]
-    location_id = Location::GITHUB_RUNNERS_ID
+    boot_image = runner_boot_image
+    location_id = runner_location.id
     size = label_data["vm_size"]
     preferred_azs = []
     alternative_families = []
     alien_ratio = project.get_ff_aws_alien_runners_ratio || 0
-    if github_runner.spill_over_set? || (support_alien? && rand < alien_ratio)
+    if !linode_runner? && (github_runner.spill_over_set? || (support_alien? && rand < alien_ratio))
       boot_image = Config.send(:"#{boot_image.tr("-", "_")}_#{arch}_aws_ami_version")
       location_id = Config.github_runner_aws_location_id
       if x64?
@@ -80,7 +80,7 @@ class Prog::Github::GithubRunnerNexus < Prog::Base
     end
 
     ps = Prog::Vnet::SubnetNexus.assemble(
-      Config.github_runner_service_project_id,
+      runner_service_project_id,
       location_id:,
       allow_only_ssh: true,
       ipv4_range_size: 28,
@@ -88,7 +88,7 @@ class Prog::Github::GithubRunnerNexus < Prog::Base
     ).subject
 
     vm_st = Prog::Vm::Nexus.assemble_with_sshable(
-      Config.github_runner_service_project_id,
+      runner_service_project_id,
       unix_user: "runneradmin",
       sshable_unix_user: "runneradmin",
       name: github_runner.ubid.to_s,
@@ -245,7 +245,44 @@ class Prog::Github::GithubRunnerNexus < Prog::Base
     "/repos/#{github_runner.repository_name}/actions/runners#{"/#{suffix}" if suffix}"
   end
 
+  def linode_runner?
+    Config.compute_provider == "linode"
+  end
+
+  def runner_service_project_id
+    Config.github_runner_service_project_id || fail("GITHUB_RUNNER_SERVICE_PROJECT_ID must be set before GitHub runners can create VMs")
+  end
+
+  def runner_location
+    return @runner_location if defined?(@runner_location)
+
+    @runner_location = if linode_runner?
+      if Config.github_runner_linode_location_id
+        location = Location[Config.github_runner_linode_location_id] || fail("Configured GitHub runner Linode location was not found")
+        fail("Configured GitHub runner location must be a Linode location") unless location.linode?
+        location
+      else
+        Location.where(provider: "linode", project_id: nil, visible: true).first || fail("No visible Linode location is available for GitHub runners")
+      end
+    else
+      Location[Location::GITHUB_RUNNERS_ID]
+    end
+  end
+
+  def runner_boot_image
+    return label_data["boot_image"] unless linode_runner?
+
+    case label_data["boot_image"]
+    when "github-ubuntu-2204"
+      "ubuntu-jammy"
+    else
+      "ubuntu-noble"
+    end
+  end
+
   def support_alien?
+    return false if linode_runner?
+
     label_data["vcpus"] <= 16
   end
 
@@ -285,6 +322,12 @@ class Prog::Github::GithubRunnerNexus < Prog::Base
     if project.reputation == "limited"
       Clog.emit("not allowed because of limited reputation", {limited_reputation: {label: github_runner.label, repository_name: github_runner.repository_name}})
       nap rand(5..15)
+    end
+
+    if linode_runner?
+      Clog.emit("allowed because Linode runner capacity is provider-backed", {linode_runner_capacity: {label: github_runner.label, repository_name: github_runner.repository_name}})
+      hop_apply_custom_label_quota if github_runner.custom_label
+      hop_allocate_vm
     end
 
     # check utilization, if it's high, wait for it to go down
@@ -370,16 +413,16 @@ class Prog::Github::GithubRunnerNexus < Prog::Base
   def setup_info
     vmh = vm.vm_host
     {
-      group: "Ubicloud Managed Runner",
+      group: "LayerRail Managed Runner",
       detail: {
         "Name" => github_runner.ubid,
         "Label" => github_runner.label,
         "VM Family" => vm.family,
         "Arch" => vm.arch,
         "Image" => vm.boot_image,
-        "VM Host" => vmh&.ubid,
+        "VM Host" => vmh&.ubid || vm.linode_instance&.linode_id,
         "VM Pool" => vm.pool_id ? UBID.to_ubid(vm.pool_id) : nil,
-        "Location" => vmh&.location&.name,
+        "Location" => vmh&.location&.name || (vm.location.name if vm.location.linode?),
         "Datacenter" => vmh&.data_center,
         "Project" => project.ubid,
         "Console URL" => "#{Config.base_url}#{project.path}/github",
@@ -387,8 +430,8 @@ class Prog::Github::GithubRunnerNexus < Prog::Base
     }
   end
 
-  label def setup_environment
-    command = [NetSsh.command(<<~COMMAND, setup_info: setup_info.to_json, runtime_token: vm.runtime_token, base_url: Config.base_url)]
+  def prebuilt_runner_environment_command
+    NetSsh.command(<<~COMMAND, setup_info: setup_info.to_json, runtime_token: vm.runtime_token, base_url: Config.base_url)
       # To make sure the script errors out if any command fails
       set -ueo pipefail
       echo "image version: $ImageVersion"
@@ -398,23 +441,101 @@ class Prog::Github::GithubRunnerNexus < Prog::Base
       sudo usermod -a -G sudo,adm runneradmin
 
       # The `imagedata.json` file contains information about the generated image.
-      # I enrich it with details about the Ubicloud environment and placed it in the runner's home directory.
+      # I enrich it with details about the LayerRail environment and placed it in the runner's home directory.
       # GitHub-hosted runners also use this file as setup_info to show on the GitHub UI.
       jq '. += [':setup_info']' /imagegeneration/imagedata.json | sudo -u runner tee /home/runner/actions-runner/.setup_info > /dev/null
 
       # We use a JWT token to authenticate the virtual machines with our runtime API. This token is valid as long as the vm is running.
-      # ubicloud/cache package which forked from the official actions/cache package, sends requests to UBICLOUD_CACHE_URL using this token.
-      echo "UBICLOUD_RUNTIME_TOKEN=":runtime_token"
+      # The LayerRail cache integration sends requests to LAYERRAIL_CACHE_URL using this token.
+      echo "LAYERRAIL_RUNTIME_TOKEN=":runtime_token"
+      LAYERRAIL_CACHE_URL=":base_url"/runtime/github/
+      UBICLOUD_RUNTIME_TOKEN=":runtime_token"
       UBICLOUD_CACHE_URL=":base_url"/runtime/github/" | sudo tee -a /etc/environment > /dev/null
     COMMAND
+  end
 
-    if installation.cache_enabled
+  def linode_runner_environment_command
+    NetSsh.command(<<~COMMAND, setup_info_json: [setup_info].to_json, runtime_token: vm.runtime_token, base_url: Config.base_url, runner_version: Config.github_runner_bootstrap_version)
+      set -ueo pipefail
+      echo "image version: ${ImageVersion:-stock-linode}"
+
+      sudo env DEBIAN_FRONTEND=noninteractive apt-get update
+      sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl jq tar gzip git unzip zip build-essential docker.io
+      sudo systemctl enable --now docker
+
+      if ! id -u runner >/dev/null 2>&1; then
+        sudo useradd --create-home --shell /bin/bash runner
+      fi
+      sudo usermod -a -G sudo,adm,docker runner
+      echo "runner ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/90-layerrail-runner > /dev/null
+      sudo chmod 0440 /etc/sudoers.d/90-layerrail-runner
+      sudo mkdir -p /home/runner/actions-runner
+      sudo chown -R runner:runner /home/runner
+
+      runner_arch="$(uname -m)"
+      case "$runner_arch" in
+        x86_64) runner_arch="x64" ;;
+        aarch64|arm64) runner_arch="arm64" ;;
+        *) echo "Unsupported runner architecture: $runner_arch" >&2; exit 1 ;;
+      esac
+
+      runner_version=:runner_version
+      if [ "$runner_version" = "latest" ]; then
+        runner_version="$(curl -fsSL https://api.github.com/repos/actions/runner/releases/latest | jq -r '.tag_name | ltrimstr("v")')"
+      fi
+
+      if [ ! -x /home/runner/actions-runner/run.sh ]; then
+        curl -fL -o /tmp/actions-runner.tar.gz "https://github.com/actions/runner/releases/download/v${runner_version}/actions-runner-linux-${runner_arch}-${runner_version}.tar.gz"
+        sudo -u runner tar xzf /tmp/actions-runner.tar.gz -C /home/runner/actions-runner
+        sudo /home/runner/actions-runner/bin/installdependencies.sh
+      fi
+
+      printf '%s\\n' :setup_info_json | sudo -u runner tee /home/runner/actions-runner/.setup_info > /dev/null
+
+      echo "LAYERRAIL_RUNTIME_TOKEN=":runtime_token"
+      LAYERRAIL_CACHE_URL=":base_url"/runtime/github/
+      UBICLOUD_RUNTIME_TOKEN=":runtime_token"
+      UBICLOUD_CACHE_URL=":base_url"/runtime/github/" | sudo tee -a /etc/environment > /dev/null
+
+      sudo tee /usr/local/bin/layerrail-runner-start > /dev/null <<'SCRIPT'
+      #!/bin/bash
+      set -euo pipefail
+      cd /home/runner/actions-runner
+      exec sudo -E -u runner ./run.sh --jitconfig "$(cat .jit_token)"
+      SCRIPT
+      sudo chmod +x /usr/local/bin/layerrail-runner-start
+
+      sudo tee /etc/systemd/system/runner-script.service > /dev/null <<'UNIT'
+      [Unit]
+      Description=LayerRail GitHub Actions Runner
+      After=network-online.target docker.service
+      Wants=network-online.target docker.service
+
+      [Service]
+      Type=simple
+      EnvironmentFile=-/etc/environment
+      WorkingDirectory=/home/runner/actions-runner
+      ExecStart=/usr/local/bin/layerrail-runner-start
+      KillSignal=SIGINT
+      TimeoutStopSec=5min
+
+      [Install]
+      WantedBy=multi-user.target
+      UNIT
+      sudo systemctl daemon-reload
+    COMMAND
+  end
+
+  label def setup_environment
+    command = [linode_runner? ? linode_runner_environment_command : prebuilt_runner_environment_command]
+
+    if installation.cache_enabled && !linode_runner?
       command << NetSsh.command(<<~COMMAND, private_ipv4: vm.private_ipv4)
         echo "CUSTOM_ACTIONS_CACHE_URL=http://":private_ipv4":51123/random_token/" | sudo tee -a /etc/environment > /dev/null
       COMMAND
     end
 
-    if (cache_proxy_url = project.get_ff_cache_proxy_download_url&.dig(label_data["arch"]))
+    if !linode_runner? && (cache_proxy_url = project.get_ff_cache_proxy_download_url&.dig(label_data["arch"]))
       command << NetSsh.command(<<~COMMAND, cache_proxy_url:)
         sudo systemctl stop cache-proxy.service
         curl -fsSL -o /tmp/cache-proxy.tar.gz :cache_proxy_url
@@ -423,7 +544,7 @@ class Prog::Github::GithubRunnerNexus < Prog::Base
       COMMAND
     end
 
-    if project.get_ff_overwrite_runner_apt_sources
+    if project.get_ff_overwrite_runner_apt_sources && !linode_runner?
       command << NetSsh.command(<<~COMMAND)
         sudo tee /etc/apt/apt-mirrors.txt > /dev/null <<MIRRORS
         https://mirror.hetzner.com/ubuntu/packages/	priority:1
@@ -568,7 +689,8 @@ class Prog::Github::GithubRunnerNexus < Prog::Base
       Clog.emit("Remaining DockerHub rate limits", {dockerhub_rate_limits:})
     end
 
-    if (cache_proxy_log = vm.sshable.cmd("sudo cat /var/log/cacheproxy.log", log: false))
+    cache_proxy_log_command = vm.location.linode? ? "sudo test -f /var/log/cacheproxy.log && sudo cat /var/log/cacheproxy.log || true" : "sudo cat /var/log/cacheproxy.log"
+    if (cache_proxy_log = vm.sshable.cmd(cache_proxy_log_command, log: false))
       cache_proxy_log.each_line do |line|
         line.strip!
         next if line.empty?
