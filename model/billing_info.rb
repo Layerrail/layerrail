@@ -34,7 +34,7 @@ class BillingInfo < Sequel::Model
           "note" => metadata["note"]
         }
       rescue PolarAPIError => e
-        raise unless e.status == 404
+        raise unless e.status == 404 || (e.status == 422 && e.body.to_s.include?("Customer does not exist"))
 
         {}
       end
