@@ -20,10 +20,20 @@ RSpec.describe Option do
   end
 
   describe ".linode_plan" do
-    it "maps visible GPU sizes to real Linode RTX 4000 Ada plans" do
+    it "maps the exposed GPU size to the real Linode RTX 4000 Ada small plan" do
       expect(described_class.linode_plan("standard", 4, gpu_count: 1, gpu_device: described_class::LINODE_GPU_DEVICE).id).to eq("g2-gpu-rtx4000a1-s")
-      expect(described_class.linode_plan("standard", 8, gpu_count: 1, gpu_device: described_class::LINODE_GPU_DEVICE).id).to eq("g2-gpu-rtx4000a1-m")
-      expect(described_class.linode_plan("standard", 16, gpu_count: 1, gpu_device: described_class::LINODE_GPU_DEVICE).id).to eq("g2-gpu-rtx4000a1-l")
+      expect {
+        described_class.linode_plan("standard", 8, gpu_count: 1, gpu_device: described_class::LINODE_GPU_DEVICE)
+      }.to raise_error(Validation::ValidationFailed)
+    end
+  end
+
+  describe ".linode_gpu_location?" do
+    it "only exposes the chosen Linode GPU regions" do
+      expect(described_class.linode_gpu_location?("linode-de-fra-2")).to be true
+      expect(described_class.linode_gpu_location?("linode-us-sea")).to be true
+      expect(described_class.linode_gpu_location?("linode-us-east")).to be false
+      expect(described_class.linode_gpu_location?("linode-us-lax")).to be false
     end
   end
 

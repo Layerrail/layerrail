@@ -39,6 +39,7 @@ module Option
     ["linode-us-lax", "us-lax", "Los Angeles, CA"],
     ["linode-us-sea", "us-sea", "Seattle, WA"],
   ].map(&:freeze).freeze
+  LINODE_GPU_LOCATION_NAMES = ["linode-de-fra-2", "linode-us-sea"].freeze
   LINODE_PLANS = [
     LinodePlan.new("g6-standard-1", "Shared 2GB", "burstable", 1, 2, 50, 12, 0.018, 0, nil),
     LinodePlan.new("g6-standard-2", "Shared 4GB", "burstable", 2, 4, 80, 24, 0.036, 0, nil),
@@ -46,9 +47,7 @@ module Option
     LinodePlan.new("g7-dedicated-8-4", "Dedicated 8GB", "standard", 4, 8, 160, 86, 0.129, 0, nil),
     LinodePlan.new("g7-dedicated-16-8", "Dedicated 16GB", "standard", 8, 16, 320, 173, 0.2595, 0, nil),
     LinodePlan.new("g7-dedicated-32-16", "Dedicated 32GB", "standard", 16, 32, 640, 346, 0.519, 0, nil),
-    LinodePlan.new("g2-gpu-rtx4000a1-s", "RTX 4000 Ada Small", "standard", 4, 16, 512, 350, 0.52, 1, LINODE_GPU_DEVICE),
-    LinodePlan.new("g2-gpu-rtx4000a1-m", "RTX 4000 Ada Medium", "standard", 8, 32, 512, 446, 0.67, 1, LINODE_GPU_DEVICE),
-    LinodePlan.new("g2-gpu-rtx4000a1-l", "RTX 4000 Ada Large", "standard", 16, 64, 512, 638, 0.96, 1, LINODE_GPU_DEVICE),
+    LinodePlan.new("g2-gpu-rtx4000a1-s", "RTX 4000 Ada x1 Small", "standard", 4, 16, 512, 350, 0.52, 1, LINODE_GPU_DEVICE),
   ].freeze
   LINODE_BOOT_IMAGES = {
     "ubuntu-noble" => "linode/ubuntu24.04",
@@ -72,6 +71,10 @@ module Option
     linode_plan(family, vcpu_count, gpu_count:, gpu_device:).id
   rescue KeyError
     raise Validation::ValidationFailed.new({size: "#{family}-#{vcpu_count} is not available on Linode"})
+  end
+
+  def self.linode_gpu_location?(location_name)
+    LINODE_GPU_LOCATION_NAMES.include?(location_name.to_s)
   end
 
   def self.linode_image_name(boot_image)
@@ -214,7 +217,7 @@ module Option
 
   BootImage = Struct.new(:name, :display_name)
   BootImages = [
-    ["gpu-ubuntu-noble", "Ubuntu 24.04 for GPU VMs"],
+    ["gpu-ubuntu-noble", "Ubuntu 24.04 LTS for GPU VMs"],
     ["ubuntu-noble", "Ubuntu Noble 24.04 LTS"],
     ["ubuntu-jammy", "Ubuntu Jammy 22.04 LTS"],
     ["debian-12", "Debian 12"],

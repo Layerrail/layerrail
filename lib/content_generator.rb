@@ -93,10 +93,11 @@ module ContentGenerator
       gpu_count, device = gpu.split(":", 2)
       gpu_count = gpu_count.to_i
       return self.gpu(location, family, gpu) unless location.linode? && gpu_count.positive?
+      plan = Option.linode_plan(family, 4, gpu_count:, gpu_device: device)
 
       [
-        "#{gpu_count}x NVIDIA RTX 4000 Ada",
-        "Bundled with selected Linode GPU VM",
+        "NVIDIA #{plan.label}",
+        "#{plan.memory_gib} GB RAM / 20 GB VRAM / #{plan.disk_gib} GB storage",
         "Included",
         "",
       ]

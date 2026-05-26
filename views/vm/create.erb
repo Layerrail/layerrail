@@ -34,6 +34,23 @@ current_usage = @project.current_resource_usage("VmVCpu")
 
   size_content_generator = (@show_gpu && Config.compute_provider == "linode") ? ContentGenerator::Vm.method(:linode_gpu_size) : ContentGenerator::Vm.method(:size)
   gpu_content_generator = (@show_gpu && Config.compute_provider == "linode") ? ContentGenerator::Vm.method(:linode_gpu) : ContentGenerator::Vm.method(:gpu)
+  linode_gpu_contact_card = nil
+  if @show_gpu && Config.compute_provider == "linode"
+    linode_gpu_contact_card = <<~HTML
+      <div class="h-full flex cursor-not-allowed opacity-60">
+        <span class="radio-small-card justify-between p-4 border-dashed">
+          <span class="flex flex-col">
+            <span class="text-md font-semibold">NVIDIA RTX PRO 6000 Blackwell</span>
+            <span class="text-sm opacity-80"><span class="block sm:inline">96 GB VRAM / reserved premium capacity</span></span>
+          </span>
+          <span class="mt-2 flex text-sm sm:ml-4 sm:mt-0 sm:flex-col sm:text-right">
+            <span class="font-medium">Contact for pricing</span>
+            <span class="ml-1 opacity-50 sm:ml-0">Limited availability</span>
+          </span>
+        </span>
+      </div>
+    HTML
+  end
 
   elements = [
     {name: "size", type: "radio_small_cards", label: "Server size", required: "required", content_generator: size_content_generator},
@@ -41,7 +58,7 @@ current_usage = @project.current_resource_usage("VmVCpu")
   ]
 
   if @show_gpu != false
-    gpu = {name: "gpu", type: "radio_small_cards", label: "GPU", required: "required", content_generator: gpu_content_generator}
+    gpu = {name: "gpu", type: "radio_small_cards", label: "GPU", required: "required", content_generator: gpu_content_generator, additional_element_html: linode_gpu_contact_card}
     if @show_gpu
       elements.unshift gpu
     else

@@ -127,9 +127,12 @@ module Validation
     return [0, nil] if gpu_count == 0
 
     fail ValidationFailed.new({gpu: "gpu not available for burstable vms"}) if vm_size&.family == "burstable"
-    linode_gpu_available = Config.compute_provider == "linode" && location.to_s.start_with?("linode-")
+    linode_gpu_available = Config.compute_provider == "linode" && Option.linode_gpu_location?(location)
     fail ValidationFailed.new({gpu: "gpu not available for this project"}) unless project.get_ff_gpu_vm || linode_gpu_available
     fail ValidationFailed.new({gpu: "gpu type must be specified when gpu count is greater than 0."}) if gpu_device.nil? || gpu_device.empty?
+    if Config.compute_provider == "linode"
+      fail ValidationFailed.new({gpu: "Linode GPU VMs support only 1x NVIDIA RTX 4000 Ada at launch."}) unless gpu_count == 1 && gpu_device == Option::LINODE_GPU_DEVICE
+    end
     fail ValidationFailed.new({gpu: "gpu type unsupported"}) unless !!BillingRate.from_resource_properties("Gpu", gpu_device, location)
 
     [gpu_count, gpu_device]

@@ -73,6 +73,17 @@ class Clover
       assemble_params.delete(:gpu)
     end
 
+    if @location.linode? && gpu_count.positive?
+      unless Option.linode_gpu_location?(@location.name)
+        fail Validation::ValidationFailed.new({location: "Linode GPU VMs are available in Frankfurt, DE and Seattle, WA."})
+      end
+
+      assemble_params[:boot_image] ||= "gpu-ubuntu-noble"
+      unless assemble_params[:boot_image] == "gpu-ubuntu-noble"
+        fail Validation::ValidationFailed.new({boot_image: "Linode GPU VMs use Ubuntu 24.04 for GPU VMs."})
+      end
+    end
+
     if @location.linode?
       plan = Option.linode_plan(
         (parsed_size || Validation.validate_vm_size(Prog::Vm::Nexus::DEFAULT_SIZE, "x64", only_visible: true)).family,
@@ -159,7 +170,7 @@ class Clover
 
       if Config.compute_provider == "linode"
         linode_gpu_locations = Option.locations(feature_flags: @project.feature_flags)
-          .select { it.linode? }
+          .select { it.linode? && Option.linode_gpu_location?(it.name) }
           .map(&:name)
         available_gpus.concat(
           linode_gpu_locations.map {
@@ -274,8 +285,13 @@ class Clover
       end
     end
 
-    boot_images = Option::BootImages.map(&:name)
-    boot_images.reject! { |name| name == "gpu-ubuntu-noble" } unless @show_gpu != false
+    boot_images = if @show_gpu && Config.compute_provider == "linode"
+      ["gpu-ubuntu-noble"]
+    else
+      Option::BootImages.map(&:name).tap do |images|
+        images.reject! { |name| name == "gpu-ubuntu-noble" } unless @show_gpu != false
+      end
+    end
     boot_images.select! { Option.linode_boot_image?(it) } if locations.any?(&:linode?)
     options.add_option(name: "boot_image", values: boot_images)
     options.add_option(name: "unix_user")
