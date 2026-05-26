@@ -1,9 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
   <title id="title">LayerRail favicon</title>
-  <desc id="desc">Simplified LayerRail layered rail mark.</desc>
-  <path fill="#BDA9FF" d="M32 5 58 17 49 23 32 15 15 23 6 17 32 5Z"/>
-  <path fill="#8B67F2" d="M32 22 58 34 49 40 32 32 15 40 6 34 32 22Z"/>
-  <path fill="#5E32C8" d="M8 49 25 40 30 46 20 58 8 49Z"/>
-  <path fill="#5E32C8" d="M56 49 39 40 34 46 44 58 56 49Z"/>
-  <path fill="#5A3A38" d="M29 36h6l6 23H23l6-23Z"/>
+  <desc id="desc">Simplified LayerRail favicon mark.</desc>
+  <defs>
+    <linearGradient id="g" x1="6" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D1C8E7"/>
+      <stop offset=".48" stop-color="#8B67F2"/>
+      <stop offset="1" stop-color="#5E32C8"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#g)" d="M32 5 59 18 50 24 32 15 14 24 5 18 32 5Z"/>
+  <path fill="url(#g)" opacity=".9" d="M32 22 56 34 48 40 32 32 16 40 8 34 32 22Z"/>
+  <path fill="#5E32C8" d="M11 49 25 42 30 48 20 60 6 52 11 49Z"/>
+  <path fill="#5E32C8" d="M53 49 39 42 34 48 44 60 58 52 53 49Z"/>
+  <path fill="#5A3A38" d="M29 36h6l6 25H23l6-25Z"/>
 </svg>

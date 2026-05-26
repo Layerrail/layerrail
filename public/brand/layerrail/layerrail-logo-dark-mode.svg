@@ -1,20 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 430 104" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 92" role="img" aria-labelledby="title desc">
   <title id="title">LayerRail dark mode logo</title>
-  <desc id="desc">LayerRail logo shown on a deep violet panel.</desc>
-  <rect width="430" height="104" rx="16" fill="#1A1520"/>
-  <use href="#logo"/>
+  <desc id="desc">LayerRail horizontal logo on a deep background.</desc>
+  <rect width="420" height="92" rx="16" fill="#1A1520"/>
   <defs>
-    <g id="logo">
-      <g transform="translate(8 6) scale(.72)">
-        <path fill="#D1C8E7" d="M64 10 112 33 95 43 64 28 33 43 16 33 64 10Z"/>
-        <path fill="#BDA9FF" d="M64 42 112 64 95 75 64 60 33 75 16 64 64 42Z"/>
-        <path fill="#8B67F2" d="M16 95 49 77 58 88 38 109 16 95Z"/>
-        <path fill="#8B67F2" d="M112 95 79 77 70 88 90 109 112 95Z"/>
-        <path fill="#FEFDFE" d="M58 68H70l10 45H48l10-45Z"/>
-        <path fill="none" stroke="#8B67F2" stroke-width="4" stroke-linecap="round" d="M57 82h14M54 93h20M51 104h26"/>
-      </g>
-      <text x="118" y="66" fill="#FEFDFE" font-family="Inter, Be Vietnam Pro, Segoe UI, Arial, sans-serif" font-size="50" font-weight="300" letter-spacing="-1">Layer</text>
-      <text x="255" y="66" fill="#8B67F2" font-family="Inter, Be Vietnam Pro, Segoe UI, Arial, sans-serif" font-size="50" font-weight="700" letter-spacing="-1">Rail</text>
-    </g>
+    <linearGradient id="plane" x1="12" y1="9" x2="80" y2="78" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FEFDFE"/>
+      <stop offset=".58" stop-color="#D1C8E7"/>
+      <stop offset="1" stop-color="#8B67F2"/>
+    </linearGradient>
   </defs>
+  <g transform="translate(8 7) scale(.62)">
+    <path fill="url(#plane)" d="M64 8 116 34 98 45 64 28 30 45 12 34 64 8Z"/>
+    <path fill="url(#plane)" opacity=".9" d="M64 39 109 62 94 72 64 57 34 72 19 62 64 39Z"/>
+    <path fill="#8B67F2" d="M26 86 53 73 61 84 39 112 14 96 26 86Z"/>
+    <path fill="#8B67F2" d="M102 86 75 73 67 84 89 112 114 96 102 86Z"/>
+    <path fill="#FEFDFE" d="M57 68h14l13 50H44l13-50Z"/>
+    <path fill="none" stroke="#8B67F2" stroke-width="3.8" stroke-linecap="round" d="M58 82h12M55 94h18M51 106h26"/>
+  </g>
+  <text x="102" y="59" fill="#FEFDFE" font-family="Inter, Be Vietnam Pro, Segoe UI, Arial, sans-serif" font-size="46" font-weight="350" letter-spacing="-1.2">Layer</text>
+  <text x="229" y="59" fill="#8B67F2" font-family="Inter, Be Vietnam Pro, Segoe UI, Arial, sans-serif" font-size="46" font-weight="750" letter-spacing="-1.2">Rail</text>
 </svg>
