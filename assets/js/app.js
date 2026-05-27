@@ -524,7 +524,17 @@ function setupPlayground() {
       });
 
       if (!response.ok) {
-        throw new Error(`Response status: ${response.status}`);
+        let error_detail = `Response status: ${response.status}`;
+        try {
+          const error_body = await response.json();
+          error_detail = error_body?.errors?.map((err) => err.message).join("; ")
+            || error_body?.error?.message
+            || error_body?.error
+            || error_detail;
+        } catch (_) {
+          // Keep the plain status when the server did not return JSON.
+        }
+        throw new Error(error_detail);
       }
 
       if (!streams_response) {

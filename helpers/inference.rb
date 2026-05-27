@@ -63,11 +63,7 @@ class Clover
     model = cloudflare_inference_models.find { it.model_name == payload["model"] && it.tags["capability"] == capability }
     fail CloverError.new(400, "InvalidRequest", "model is not enabled for #{capability.downcase}") unless model
 
-    if path == "chat/completions"
-      payload["stream"] = false
-    else
-      payload.delete("stream")
-    end
+    normalize_cloudflare_payload!(payload, path)
     payload.delete("stream_options")
 
     status, body = CloudflareWorkersAiClient.new.openai_request(path, payload)
@@ -91,6 +87,25 @@ class Clover
     JSON.parse(request.body.read)
   rescue JSON::ParserError
     fail CloverError.new(400, "InvalidRequest", "request body must be valid JSON")
+  end
+
+  def normalize_cloudflare_payload!(payload, path)
+    case path
+    when "chat/completions"
+      messages = payload["messages"]
+      fail CloverError.new(400, "InvalidRequest", "messages must be an array") unless messages.is_a?(Array)
+
+      messages.each do |message|
+        next unless message["content"].is_a?(Array)
+
+        message["content"] = message["content"].filter_map do |part|
+          part["text"] if part.is_a?(Hash) && part["type"] == "text"
+        end.join("\n")
+      end
+      payload["stream"] = false
+    when "embeddings"
+      payload.delete("stream")
+    end
   end
 
   def record_cloudflare_inference_usage(api_key, model, body)
