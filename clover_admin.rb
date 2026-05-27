@@ -170,12 +170,12 @@ class CloverAdmin < Roda
       payload[:database] = "ok"
     end
 
-    response.content_type = :json
+    response.content_type = "application/json"
     JSON.generate(payload)
   rescue => ex
     Clog.emit("admin readiness check failed", Util.exception_to_hash(ex))
     response.status = 503
-    response.content_type = :json
+    response.content_type = "application/json"
     JSON.generate({status: "error", service: "admin", database: "error"})
   end
 
