@@ -273,7 +273,7 @@ function redrawChildOptions(name) {
 }
 
 function setupPlayground() {
-  if ($(document).attr('title') !== 'Ubicloud - Playground') {
+  if ($('#inference_submit').length === 0) {
     return;
   }
 
