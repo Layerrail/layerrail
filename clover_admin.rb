@@ -6,6 +6,7 @@ require "roda"
 require "tilt"
 require "tilt/erubi"
 require "openssl"
+require "json"
 
 class CloverAdmin < Roda
   include AuditLog
