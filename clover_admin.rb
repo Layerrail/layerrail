@@ -158,6 +158,27 @@ class CloverAdmin < Roda
     password
   end
 
+  def health_check_response(database: false)
+    payload = {
+      status: "ok",
+      service: "admin",
+      checked_at: Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+    }
+
+    if database
+      DB.get(Sequel.lit("1"))
+      payload[:database] = "ok"
+    end
+
+    response.content_type = :json
+    JSON.generate(payload)
+  rescue => ex
+    Clog.emit("admin readiness check failed", Util.exception_to_hash(ex))
+    response.status = 503
+    response.content_type = :json
+    JSON.generate({status: "error", service: "admin", database: "error"})
+  end
+
   def linkify_ubids(body)
     h(body).gsub(/\b[a-tv-z0-9]{26}\b/) do
       if (klass = UBID.class_for_ubid(it))
@@ -948,6 +969,14 @@ class CloverAdmin < Roda
   end
 
   route do |r|
+    r.get "up" do
+      health_check_response
+    end
+
+    r.get "ready" do
+      health_check_response(database: true)
+    end
+
     r.public
     check_csrf!
     r.rodauth

@@ -998,6 +998,27 @@ class Clover < Roda
     end
   end
 
+  def health_check_response(service, database: false)
+    payload = {
+      status: "ok",
+      service:,
+      checked_at: Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+    }
+
+    if database
+      DB.get(Sequel.lit("1"))
+      payload[:database] = "ok"
+    end
+
+    response.content_type = :json
+    JSON.generate(payload)
+  rescue => ex
+    Clog.emit("#{service} readiness check failed", Util.exception_to_hash(ex))
+    response.status = 503
+    response.content_type = :json
+    JSON.generate({status: "error", service:, database: "error"})
+  end
+
   if Config.production? || ENV["FORCE_AUTOLOAD"] == "1"
     Unreloader.require("routes")
   # :nocov:
@@ -1021,6 +1042,14 @@ class Clover < Roda
 
   route do |r|
     if api?
+      r.get "up" do
+        health_check_response("api")
+      end
+
+      r.get "ready" do
+        health_check_response("api", database: true)
+      end
+
       unless /\ABearer:?\s+pat-/i.match?(env["HTTP_AUTHORIZATION"].to_s)
         if r.path_info == "/cli"
           response.content_type = :text
@@ -1045,6 +1074,14 @@ class Clover < Roda
     elsif r.admin?
       r.run(CloverAdmin.app)
     else
+      r.get "up" do
+        health_check_response("console")
+      end
+
+      r.get "ready" do
+        health_check_response("console", database: true)
+      end
+
       r.on "runtime" do
         response.json = true
         response.skip_content_security_policy!
