@@ -1,27 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="520" viewBox="0 0 1600 520" role="img" aria-label="LayerRail horizontal logo">
-  <title>LayerRail horizontal logo</title>
-  <rect width="1600" height="520" fill="#FEFDFE"/>
-  <rect x="445" y="142" width="4" height="235" rx="2" fill="#5A3A38" opacity="0.24"/>
-  <polygon points="150.00,310.00 285.00,375.00 445.00,295.00 310.00,230.00" fill="#EBE9F1" opacity="0.92"/>
-  <polygon points="162.50,275.00 297.50,340.00 432.50,272.50 297.50,207.50" fill="#D1C8E7" opacity="0.96"/>
-  <polygon points="215.00,215.00 297.50,175.00 373.75,212.50 291.25,253.75" fill="#8B67F2" opacity="1"/>
-  <polygon points="320.00,200.00 438.75,255.00 350.00,298.75 232.50,242.50" fill="#8B67F2" opacity="1"/>
-  <polygon points="187.50,190.00 222.50,170.00 222.50,265.00 187.50,282.50" fill="#6F49E8" opacity="1"/>
-  <polygon points="187.50,282.50 265.00,320.00 293.75,305.00 222.50,265.00" fill="#6F49E8" opacity="1"/>
-  <polygon points="155.00,270.00 173.75,260.00 173.75,280.00" fill="#6F49E8" opacity="1"/>
-  <polygon points="251.25,306.25 290.00,251.25 317.50,196.25 351.25,212.50 320.00,275.00 302.50,345.00" fill="#FEFDFE" opacity="1"/>
-  <line x1="261.25" y1="302.50" x2="298.75" y2="201.25" stroke="#5A3A38" stroke-width="6.25" stroke-linecap="round" opacity="1"/>
-  <line x1="298.75" y1="341.25" x2="341.25" y2="213.75" stroke="#5A3A38" stroke-width="6.25" stroke-linecap="round" opacity="1"/>
-  <polygon points="260.00,298.75 297.50,312.50 305.00,293.75 270.00,282.50" fill="#5A3A38" opacity="1"/>
-  <polygon points="271.25,273.75 305.00,286.25 311.25,271.25 280.00,260.00" fill="#5A3A38" opacity="1"/>
-  <polygon points="281.25,252.50 310.00,263.75 315.00,251.25 286.25,241.25" fill="#5A3A38" opacity="1"/>
-  <polygon points="290.00,235.00 315.00,243.75 318.75,233.75 295.00,226.25" fill="#5A3A38" opacity="1"/>
-  <polygon points="297.50,220.00 318.75,227.50 322.50,220.00 301.25,213.75" fill="#5A3A38" opacity="1"/>
-  <polygon points="303.75,207.50 322.50,215.00 325.00,207.50 307.50,202.50" fill="#5A3A38" opacity="1"/>
-  <circle cx="277.50" cy="245.00" r="4.00" fill="#FEFDFE"/>
-  <circle cx="290.00" cy="235.00" r="3.00" fill="#D1C8E7"/>
-  
-  <text x="520" y="288" font-family="Inter, Geist, Avenir Next, Helvetica Neue, Arial, sans-serif" font-size="122" letter-spacing="-3.2" fill="#5A3A38">
-    <tspan font-weight="300">Layer</tspan><tspan font-weight="780">Rail</tspan>
-  </text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">LayerRail mark</title>
+  <desc id="desc">A premium layered infrastructure mark with a centered rail path.</desc>
+  <defs>
+    <linearGradient id="plane" x1="14" y1="12" x2="112" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D1C8E7"/>
+      <stop offset=".42" stop-color="#8B67F2"/>
+      <stop offset="1" stop-color="#5E32C8"/>
+    </linearGradient>
+    <linearGradient id="track" x1="45" y1="68" x2="83" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5A3A38"/>
+      <stop offset="1" stop-color="#1A1520"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#plane)" d="M64 8 116 34 98 45 64 28 30 45 12 34 64 8Z"/>
+  <path fill="url(#plane)" opacity=".88" d="M64 39 109 62 94 72 64 57 34 72 19 62 64 39Z"/>
+  <path fill="#6F4BE9" d="M26 86 53 73 61 84 39 112 14 96 26 86Z"/>
+  <path fill="#6F4BE9" d="M102 86 75 73 67 84 89 112 114 96 102 86Z"/>
+  <path fill="url(#track)" d="M57 68h14l13 50H44l13-50Z"/>
+  <path fill="#D1C8E7" opacity=".26" d="M62 68h4l4 50H58l4-50Z"/>
+  <path fill="none" stroke="#FEFDFE" stroke-width="3.8" stroke-linecap="round" d="M58 82h12M55 94h18M51 106h26"/>
 </svg>
