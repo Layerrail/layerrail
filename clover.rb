@@ -1072,6 +1072,14 @@ class Clover < Roda
         self.class.ips_v4
       end
     elsif r.admin?
+      r.get "up" do
+        health_check_response("admin")
+      end
+
+      r.get "ready" do
+        health_check_response("admin", database: true)
+      end
+
       r.run(CloverAdmin.app)
     else
       r.get "up" do
