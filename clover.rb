@@ -468,8 +468,8 @@ class Clover < Roda
 
     before_login do
       if Config.account_verification_enabled? && @omniauth_account_created_pending_verification && !open_account?
-        set_notice_flash verify_account_email_sent_notice_flash
-        redirect login_route
+        flash["notice"] = verify_account_email_sent_notice_flash
+        redirect "/login"
       end
 
       email = account[:email]
