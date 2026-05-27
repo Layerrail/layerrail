@@ -1108,8 +1108,11 @@ RSpec.describe Clover, "auth" do
       visit "/login"
       click_button "GitHub"
 
-      expect(Account[email: TEST_USER_EMAIL].name).to eq "user"
-      expect(audit_log_hash).to eq({"create_account" => ip_hash("provider" => "GitHub"), "login" => ip_hash("via" => "GitHub")})
+      account = Account[email: TEST_USER_EMAIL]
+      expect(account.name).to eq "user"
+      expect(account.status_id).to eq 1
+      expect(Mail::TestMailer.deliveries.length).to eq 1
+      expect(audit_log_hash).to eq({"create_account" => ip_hash("provider" => "GitHub")})
     end
 
     it "can create new account even if social account has a name that isn't a valid Ubicloud name" do
@@ -1118,8 +1121,11 @@ RSpec.describe Clover, "auth" do
       visit "/login"
       click_button "GitHub"
 
-      expect(Account[email: TEST_USER_EMAIL].name).to eq "Foo \u1234Bar"
-      expect(audit_log_hash).to eq({"create_account" => ip_hash("provider" => "GitHub"), "login" => ip_hash("via" => "GitHub")})
+      account = Account[email: TEST_USER_EMAIL]
+      expect(account.name).to eq "Foo \u1234Bar"
+      expect(account.status_id).to eq 1
+      expect(Mail::TestMailer.deliveries.length).to eq 1
+      expect(audit_log_hash).to eq({"create_account" => ip_hash("provider" => "GitHub")})
     end
 
     it "can create new account even if social account has a name is too long" do
@@ -1128,8 +1134,11 @@ RSpec.describe Clover, "auth" do
       visit "/login"
       click_button "GitHub"
 
-      expect(Account[email: TEST_USER_EMAIL].name).to eq("F" * 63)
-      expect(audit_log_hash).to eq({"create_account" => ip_hash("provider" => "GitHub"), "login" => ip_hash("via" => "GitHub")})
+      account = Account[email: TEST_USER_EMAIL]
+      expect(account.name).to eq("F" * 63)
+      expect(account.status_id).to eq 1
+      expect(Mail::TestMailer.deliveries.length).to eq 1
+      expect(audit_log_hash).to eq({"create_account" => ip_hash("provider" => "GitHub")})
     end
 
     it "can create new account even if name for social login cannot be determined" do
@@ -1139,11 +1148,14 @@ RSpec.describe Clover, "auth" do
       visit "/login"
       click_button "GitHub"
 
-      expect(Account[email:].name).to eq "Unknown"
-      expect(audit_log_hash).to eq({"create_account" => ip_hash("provider" => "GitHub"), "login" => ip_hash("via" => "GitHub")})
+      account = Account[email:]
+      expect(account.name).to eq "Unknown"
+      expect(account.status_id).to eq 1
+      expect(Mail::TestMailer.deliveries.length).to eq 1
+      expect(audit_log_hash).to eq({"create_account" => ip_hash("provider" => "GitHub")})
     end
 
-    it "can create new account" do
+    it "requires email verification after creating a new account with social login" do
       mock_provider(:github)
 
       visit "/login"
@@ -1151,10 +1163,25 @@ RSpec.describe Clover, "auth" do
 
       account = Account[email: TEST_USER_EMAIL]
       expect(account).not_to be_nil
+      expect(account.status_id).to eq 1
       expect(account.identities_dataset.first(provider: "github", uid: "123456790")).not_to be_nil
+      expect(Mail::TestMailer.deliveries.length).to eq 1
+      verify_link = Mail::TestMailer.deliveries.first.html_part.body.match(/(\/verify-account.+?)"/)[1]
       expect(page.status_code).to eq(200)
+      expect(page.title).to eq("LayerRail - Login")
+      expect(page).to have_flash_notice("An email has been sent to you with a link to verify your account")
+
+      visit "/login"
+      click_button "GitHub"
+      expect(page.title).to eq("LayerRail - Login")
+      expect(page).to have_flash_error("The account matching the external identity is currently awaiting verification")
+
+      visit verify_link
+      click_button "Verify Account"
+
       expect(page.title).to eq("LayerRail - Default Dashboard")
-      expect(audit_log_hash).to eq({"create_account" => ip_hash("provider" => "GitHub"), "login" => ip_hash("via" => "GitHub")})
+      expect(account.reload.status_id).to eq 2
+      expect(audit_log_hash).to eq({"create_account" => ip_hash("provider" => "GitHub"), "verify_account" => ip_hash})
     end
 
     it "can login existing account" do

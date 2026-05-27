@@ -467,6 +467,11 @@ class Clover < Roda
     already_logged_in { redirect login_redirect }
 
     before_login do
+      if Config.account_verification_enabled? && @omniauth_account_created_pending_verification && !open_account?
+        set_notice_flash verify_account_email_sent_notice_flash
+        redirect login_route
+      end
+
       email = account[:email]
       if (locked_domain = locked_domain_for(email))
         error = if !omniauth_provider
@@ -592,6 +597,22 @@ class Clover < Roda
       def locked_domain_for(email)
         LockedDomain.with_pk(domain_for_email(email))
       end
+
+      def layerrail_verify_email_for_omniauth?
+        Config.account_verification_enabled? && %w[github google].include?(omniauth_provider.to_s)
+      end
+
+      def _omniauth_new_account(login)
+        acc = super
+        acc[account_status_column] = account_initial_status_value if layerrail_verify_email_for_omniauth? && !skip_status_checks?
+        acc
+      end
+
+      def omniauth_verify_account?
+        return false if layerrail_verify_email_for_omniauth?
+
+        super
+      end
     end
 
     before_omniauth_create_account do
@@ -627,6 +648,10 @@ class Clover < Roda
 
     after_omniauth_create_account do
       scope.after_rodauth_create_account(account_id)
+      if layerrail_verify_email_for_omniauth?
+        setup_account_verification
+        @omniauth_account_created_pending_verification = true
+      end
     end
 
     omniauth_on_failure do
