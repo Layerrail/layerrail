@@ -111,6 +111,15 @@ module Config
   optional :linode_access_token, string, clear: true
   override :linode_api_base_url, "https://api.linode.com/v4", string
   override :compute_provider, "linode", string
+  override :game_vps_enabled, false, bool
+  override :game_vps_provider, "ionos", string
+  optional :ionos_api_token, string, clear: true
+  optional :ionos_username, string, clear: true
+  optional :ionos_password, string, clear: true
+  override :ionos_api_base_url, "https://api.ionos.com/cloudapi/v6", string
+  override :ionos_game_vps_cpu_family, "INTEL_ICELAKE", string
+  override :ionos_game_vps_disk_type, "SSD", string
+  override :ionos_windows_image_alias, "windows:2022", string
   optional :hetzner_user, string, clear: true
   optional :hetzner_password, string, clear: true
   override :hetzner_connection_string, "https://robot-ws.your-server.de", string

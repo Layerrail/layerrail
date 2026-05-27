@@ -23,6 +23,15 @@
               is_active: request.path.start_with?("#{@project.path}/vm"),
               icon: "hero-server-stack"
             ) %>
+            <% if Config.game_vps_enabled %>
+              <%== part(
+                "layouts/sidebar/item",
+                name: "Game VPS",
+                url: "#{@project.path}/game-vps",
+                is_active: request.path.start_with?("#{@project.path}/game-vps"),
+                icon: "hero-rocket-launch"
+              ) %>
+            <% end %>
             <%== part(
               "layouts/sidebar/item",
               name: "Networking",

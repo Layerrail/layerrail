@@ -68,6 +68,8 @@ class BillingRate
       "Additional GitHub Runner Concurrency"
     when "GitHubCacheStorage"
       "#{amount.to_i} GiB Storage for GitHub Cache"
+    when "GameVpsPlan"
+      "#{resource_family.split("-").map(&:capitalize).join(" ")} Game VPS"
     when "InferenceTokens"
       "#{resource_family} Inference Tokens"
     when "Gpu"

@@ -9,6 +9,7 @@ check_perms =
 
 tiles = [
   ["Virtual Machines", @project.vms_dataset.count, "#{@project.path}/vm", "Vm:create"],
+  (["Game VPS", @project.game_vpses_dataset.count, "#{@project.path}/game-vps", "Vm:create"] if Config.game_vps_enabled),
   (["Databases", @project.postgres_resources_dataset.count, "#{@project.path}/postgres", "Postgres:create"] if Config.postgres_enabled),
   [
     "Load Balancers",
@@ -51,6 +52,13 @@ cards = [
     "#{@project.path}/vm/create",
     "Vm:create"
   ],
+  ([
+    "hero-rocket-launch",
+    "Create Game VPS",
+    "Windows VPS packages for game communities, with public access and FiveM-ready firewall ports.",
+    "#{@project.path}/game-vps/create",
+    "Vm:create"
+  ] if Config.game_vps_enabled),
   [
     "github",
     "Use GitHub Runners",

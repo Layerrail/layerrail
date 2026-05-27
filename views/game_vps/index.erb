@@ -1,0 +1,37 @@
+<% @page_title = "Game VPS" %>
+<div class="auto-refresh hidden" data-interval="10"></div>
+
+<%== part(
+  "components/page_header",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Game VPS", "#"]],
+  right_items: (!@game_vpses.empty? && has_project_permission("Vm:create")) ? [part("components/button", text: "Create Game VPS", link: "#{@project.path}/game-vps/create")] : []
+) %>
+
+<div class="grid gap-6">
+  <%== part(
+    "components/table_card",
+    headers: ["Name", "Location", "Plan", "Resources", "State", "IP Address"],
+    rows: @game_vpses.map do |game_vps|
+      [
+        [
+          [game_vps.name, {link: path(game_vps)}],
+          game_vps.location_label,
+          [[[game_vps.plan_label], [game_vps.price_label]], {}],
+          game_vps.resources_label,
+          ["game_vps_state_label", {component: {state: game_vps.display_state}}],
+          [game_vps.primary_ip || "Not assigned yet", {copyable: !!game_vps.primary_ip}]
+        ],
+        {id: "game-vps-#{game_vps.ubid}"}
+      ]
+    end,
+    empty_state: {
+      icon: "hero-rocket-launch",
+      title: "No Game VPS servers",
+      description: "You don't have permission to create Game VPS servers."
+    }.merge(has_project_permission("Vm:create") ? {
+      description: "Create a Windows VPS package for a game community.",
+      button_link: "#{@project.path}/game-vps/create",
+      button_title: "Create Game VPS",
+    } : {})
+  ) %>
+</div>

@@ -1,0 +1,95 @@
+<% @page_title = @game_vps.name %>
+<div class="auto-refresh hidden" data-interval="10"></div>
+
+<% right_items = [part("components/game_vps_state_label", state: @game_vps.display_state, extra_class: "text-md")]
+right_items << part(
+  "components/delete_button",
+  text: "Delete",
+  url: path(@game_vps),
+  confirmation: @game_vps.name,
+  confirmation_message: "Deleting this Game VPS removes the IONOS virtual data center and server.",
+) if has_permission?("Vm:delete", @game_vps) && !@game_vps.display_state.start_with?("deleting") %>
+
+<%== part(
+  "components/page_header",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Game VPS", "#{@project.path}/game-vps"], [@game_vps.name, "#"]],
+  right_items:
+) %>
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+    <h3 class="text-base font-semibold leading-6 text-gray-900">Server</h3>
+    <dl class="mt-4 space-y-3 text-sm">
+      <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">Plan</dt>
+        <dd class="font-medium text-gray-900"><%= @game_vps.plan_label %></dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">Price</dt>
+        <dd class="font-medium text-gray-900"><%= @game_vps.price_label %></dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">Location</dt>
+        <dd class="font-medium text-gray-900"><%= @game_vps.location_label %></dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">Resources</dt>
+        <dd class="font-medium text-gray-900 text-right"><%= @game_vps.resources_label %></dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+    <h3 class="text-base font-semibold leading-6 text-gray-900">Access</h3>
+    <dl class="mt-4 space-y-3 text-sm">
+      <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">IP address</dt>
+        <dd class="font-medium text-gray-900"><%== part("components/copyable_content", content: @game_vps.primary_ip || "Not assigned yet") %></dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">RDP user</dt>
+        <dd class="font-medium text-gray-900"><%== part("components/copyable_content", content: @game_vps.rdp_username) %></dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">RDP password</dt>
+        <dd class="font-medium text-gray-900"><%== part("components/copyable_content", content: @game_vps.rdp_password || "Not ready", revealable: !!@game_vps.rdp_password) %></dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">txAdmin password</dt>
+        <dd class="font-medium text-gray-900"><%== part("components/copyable_content", content: @game_vps.txadmin_password || "Not ready", revealable: !!@game_vps.txadmin_password) %></dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+    <h3 class="text-base font-semibold leading-6 text-gray-900">IONOS</h3>
+    <dl class="mt-4 space-y-3 text-sm">
+      <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">Datacenter</dt>
+        <dd class="font-medium text-gray-900"><%== part("components/copyable_content", content: @game_vps.datacenter_id || "-") %></dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">Server</dt>
+        <dd class="font-medium text-gray-900"><%== part("components/copyable_content", content: @game_vps.server_id || "-") %></dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">Image</dt>
+        <dd class="font-medium text-gray-900"><%= @game_vps.image_alias %></dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">Ports</dt>
+        <dd class="font-medium text-gray-900 text-right">3389, 30120, 40120</dd>
+      </div>
+    </dl>
+  </div>
+</div>
+
+<% if @game_vps.failure_message %>
+  <div class="mt-6 rounded-lg bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
+    <%= @game_vps.failure_message %>
+  </div>
+<% elsif @game_vps.access_notes %>
+  <div class="mt-6 rounded-lg bg-white p-4 text-sm text-gray-600 shadow ring-1 ring-black ring-opacity-5">
+    <%= @game_vps.access_notes %>
+  </div>
+<% end %>

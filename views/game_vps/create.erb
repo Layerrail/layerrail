@@ -1,0 +1,41 @@
+<% @page_title = "Create Game VPS"
+
+location_content = lambda do |location_key|
+  location = GameVps.locations.fetch(location_key)
+  [location[:name], location[:region], location_key, "IONOS"]
+end
+
+plan_content = lambda do |plan_key|
+  plan = GameVps.plans.fetch(plan_key)
+  [plan[:name], plan[:description], GameVps.price_label(plan), "#{plan[:cores]} vCPU / #{plan[:ram_gib]} GB"]
+end
+
+form_elements = [
+  {name: "name", type: "text", label: "Name", required: "required", placeholder: "fivem-rp-1"},
+  {name: "location", type: "radio_small_cards", label: "Location", required: "required", content_generator: location_content},
+  {name: "plan", type: "radio_small_cards", label: "Plan", required: "required", content_generator: plan_content},
+  {name: "image_alias", type: "text", label: "Windows image alias", placeholder: Config.ionos_windows_image_alias, value: Config.ionos_windows_image_alias},
+]
+
+options = OptionTreeGenerator.new
+options.add_option(name: "location", values: GameVps.locations.keys)
+options.add_option(name: "plan", values: GameVps.plans.keys)
+option_tree, option_parents = options.serialize %>
+
+<%== part(
+  "components/page_header",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Game VPS", "#{@project.path}/game-vps"], ["Create", "#"]]
+) %>
+
+<%== part(
+  "components/form/resource_creation_form",
+  action: "#{@project.path}/game-vps",
+  form_elements:,
+  option_tree:,
+  option_parents:,
+  pre_selected_values: {
+    "location" => "de/fra",
+    "plan" => "community",
+    "image_alias" => Config.ionos_windows_image_alias,
+  }
+) %>

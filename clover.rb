@@ -83,6 +83,7 @@ class Clover < Roda
   end
   [
     Firewall,
+    GameVps,
     [GithubInstallation, /([A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?)/],
     [GithubRepository, /([A-Za-z0-9\-_.]{1,100})/],
     KubernetesCluster,
@@ -122,6 +123,7 @@ class Clover < Roda
     ActionTag
     ApiKey
     Firewall
+    GameVps
     KubernetesCluster
     KubernetesNodepool
     LoadBalancer
