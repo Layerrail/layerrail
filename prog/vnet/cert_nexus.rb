@@ -2,11 +2,13 @@
 
 require "acme-client"
 require "openssl"
+require "resolv"
 
 class Prog::Vnet::CertNexus < Prog::Base
   subject_is :cert
 
   REVOKE_REASON = "cessationOfOperation"
+  PUBLIC_DNS_RESOLVERS = ["1.1.1.1", "8.8.8.8"].freeze
 
   def self.assemble(hostname, dns_zone_id, private_hostname: nil)
     unless Config.development? || DnsZone[dns_zone_id]
@@ -60,7 +62,7 @@ class Prog::Vnet::CertNexus < Prog::Base
       dns_challenge = authorization.dns
       name = dns_challenge.record_name + "." + authorization.domain
       dns_record = DnsRecord[dns_zone_id: dns_zone.id, name: name + ".", tombstoned: false, data: dns_challenge.record_content]
-      if DB[:seen_dns_records_by_dns_servers].where(dns_record_id: dns_record.id).empty?
+      unless dns_record_visible?(name, dns_challenge.record_content, dns_record.id)
         nap 10
       end
     end
@@ -196,6 +198,21 @@ class Prog::Vnet::CertNexus < Prog::Base
     end
 
     options
+  end
+
+  def dns_record_visible?(name, record_content, dns_record_id)
+    return true unless DB[:seen_dns_records_by_dns_servers].where(dns_record_id:).empty?
+    return false unless DnsServer.count.zero?
+
+    PUBLIC_DNS_RESOLVERS.any? do |resolver|
+      Resolv::DNS.open(nameserver: [resolver], search: [], ndots: 1) do |dns|
+        dns.getresources(name, Resolv::DNS::Resource::IN::TXT).any? do |txt|
+          txt.strings.join == record_content
+        end
+      end
+    rescue Resolv::ResolvError, SystemCallError
+      false
+    end
   end
 
   def acme_order
