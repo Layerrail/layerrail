@@ -293,13 +293,18 @@ sudo touch #{marker}
   end
 
   label def install_cni
+    pod_ipv6_subnet = if vm.location.linode?
+      vm.nics.first.private_ipv6
+    else
+      NetAddr::IPv6Net.new(vm.ephemeral_net6.network, NetAddr::Mask128.new(vm.ephemeral_net6.netmask.prefix_len + 1))
+    end
     cni_config = <<CONFIG
 {
   "cniVersion": "1.0.0",
   "name": "ubicni-network",
   "type": "ubicni",
   "ranges":{
-      "subnet_ipv6": "#{NetAddr::IPv6Net.new(vm.ephemeral_net6.network, NetAddr::Mask128.new(vm.ephemeral_net6.netmask.prefix_len + 1))}",
+      "subnet_ipv6": "#{pod_ipv6_subnet}",
       "subnet_ula_ipv6": "#{vm.nics.first.private_ipv6}",
       "subnet_ipv4": "#{vm.nics.first.private_ipv4}"
   }
