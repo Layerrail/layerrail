@@ -43,7 +43,11 @@ class LoadBalancerVmPort < Sequel::Model
   end
 
   def health_check_cmd(type)
-    address = (type == :ipv4) ? vm.private_ipv4 : vm.ip6
+    address = if type == :ipv4
+      vm.location.linode? ? vm.ip4 : vm.private_ipv4
+    else
+      vm.ip6
+    end
     kw = {
       vm_name: vm.inhost_name,
       timeout: load_balancer.health_check_timeout,

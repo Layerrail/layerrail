@@ -20,7 +20,84 @@ class PostgresSetup
     # Check if the packages exist in the cache, if so, install them.
     if File.exist?("/var/cache/postgresql-packages/#{@version}")
       r "sudo install-postgresql-packages #{@version}"
+    else
+      install_packages_from_apt
     end
+  end
+
+  def install_packages_from_apt
+    codename = r(". /etc/os-release && printf '%s' \"$VERSION_CODENAME\"").strip
+    r "sudo install -d -m 0755 /etc/apt/keyrings"
+    r "sudo apt-get update"
+    r "sudo apt-get install -y ca-certificates curl gpg lsb-release acl prometheus prometheus-node-exporter prometheus-postgres-exporter pgbouncer"
+    r "curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg.tmp"
+    r "sudo mv /etc/apt/keyrings/postgresql.gpg.tmp /etc/apt/keyrings/postgresql.gpg"
+    r "echo 'deb [signed-by=/etc/apt/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt #{codename}-pgdg main' | sudo tee /etc/apt/sources.list.d/pgdg.list"
+    r "sudo mkdir -p /etc/postgresql-common"
+    r "echo 'create_main_cluster = false' | sudo tee /etc/postgresql-common/createcluster.conf"
+    r "sudo apt-get update"
+    r "sudo apt-get install -y postgresql-#{@version} postgresql-client-#{@version} postgresql-contrib-#{@version}"
+    r "sudo groupadd -f --system cert_readers"
+    r "id -u prometheus >/dev/null 2>&1 || sudo useradd --system --home-dir /home/prometheus --shell /usr/sbin/nologin prometheus"
+    r "sudo usermod -aG cert_readers postgres"
+    r "sudo usermod -aG cert_readers prometheus"
+    r "sudo install -d -o prometheus -g prometheus -m 0755 /home/prometheus /var/lib/prometheus"
+    configure_exporter_services
+  end
+
+  def configure_exporter_services
+    safe_write_to_file("/etc/systemd/system/node_exporter.service", <<~SERVICE)
+      [Unit]
+      Description=Prometheus Node Exporter
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      Type=simple
+      ExecStart=/bin/sh -c 'exec $(command -v prometheus-node-exporter || command -v node_exporter) --web.listen-address=127.0.0.1:9100 --collector.textfile.directory=/var/lib/node_exporter'
+      Restart=always
+      User=nobody
+      Group=nogroup
+
+      [Install]
+      WantedBy=multi-user.target
+    SERVICE
+
+    safe_write_to_file("/etc/systemd/system/postgres_exporter.service", <<~SERVICE)
+      [Unit]
+      Description=Prometheus PostgreSQL Exporter
+      After=postgresql.service
+
+      [Service]
+      Type=simple
+      Environment=DATA_SOURCE_NAME=postgresql:///postgres?host=/var/run/postgresql&sslmode=disable
+      ExecStart=/bin/sh -c 'exec $(command -v prometheus-postgres-exporter || command -v postgres_exporter) --web.listen-address=127.0.0.1:9187 --extend.query-path=/usr/local/share/postgresql/postgres_exporter_queries.yaml'
+      Restart=always
+      User=postgres
+      Group=postgres
+
+      [Install]
+      WantedBy=multi-user.target
+    SERVICE
+
+    safe_write_to_file("/etc/systemd/system/prometheus.service", <<~SERVICE)
+      [Unit]
+      Description=Prometheus
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      Type=simple
+      User=prometheus
+      Group=prometheus
+      ExecStart=/bin/sh -c 'exec $(command -v prometheus) --config.file=/home/prometheus/prometheus.yml --web.config.file=/home/prometheus/web-config.yml --storage.tsdb.path=/var/lib/prometheus --web.listen-address=127.0.0.1:9090'
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+    SERVICE
+
+    r "sudo systemctl daemon-reload"
   end
 
   def configure_memory_overcommit(strict: false)
@@ -66,9 +143,9 @@ class PostgresSetup
     # so only restart services not yet in slice.
     r "systemctl set-property system-go_services.slice MemoryHigh=2G MemoryMax=2560M"
     GO_SERVICES.each_key do |svc|
-      current_slice = r("systemctl show #{svc}.service -p Slice --value").strip
+      current_slice = r("systemctl show #{svc}.service -p Slice --value", expect: [0, 1, 3, 4]).strip
       next if current_slice == "system-go_services.slice"
-      r "systemctl try-restart #{svc}.service"
+      r "systemctl try-restart #{svc}.service", expect: [0, 1, 3, 4, 5]
     end
   end
 
@@ -79,6 +156,7 @@ class PostgresSetup
     r "rm -rf /dat/#{@version}"
     r "rm -rf /etc/postgresql/#{@version}"
 
+    r "sudo mkdir -p /etc/postgresql-common/createcluster.d"
     r "echo \"data_directory = '/dat/#{@version}/data'\" | sudo tee /etc/postgresql-common/createcluster.d/data-dir.conf"
 
     # Install to path postgres can access

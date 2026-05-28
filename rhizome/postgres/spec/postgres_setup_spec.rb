@@ -77,9 +77,9 @@ RSpec.describe PostgresSetup do
       # Last two still in system.slice / missing -> try-restart.
       slices = ["system-go_services.slice", "system-go_services.slice", "system.slice", ""]
       PostgresSetup::GO_SERVICES.each_key.with_index do |svc, i|
-        expect(pg_setup).to receive(:r).with("systemctl show #{svc}.service -p Slice --value").and_return("#{slices[i]}\n")
+        expect(pg_setup).to receive(:r).with("systemctl show #{svc}.service -p Slice --value", expect: [0, 1, 3, 4]).and_return("#{slices[i]}\n")
         if slices[i] != "system-go_services.slice"
-          expect(pg_setup).to receive(:r).with("systemctl try-restart #{svc}.service")
+          expect(pg_setup).to receive(:r).with("systemctl try-restart #{svc}.service", expect: [0, 1, 3, 4, 5])
         end
       end
 

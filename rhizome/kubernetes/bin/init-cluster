@@ -89,9 +89,11 @@ end
 r("sudo kubeadm init --config #{config_path} --node-name #{node_name}")
 r("sudo /home/ubi/kubernetes/bin/setup-cni")
 
+local_kubectl = "kubectl --kubeconfig=/etc/kubernetes/admin.conf --server=https://127.0.0.1:6443 --insecure-skip-tls-verify=true"
+
 api_server_up = false
 5.times do
-  r("kubectl --kubeconfig=/etc/kubernetes/admin.conf get --raw='/healthz'")
+  r("#{local_kubectl} get --raw='/healthz'")
   api_server_up = true
   break
 rescue CommandFail
@@ -104,9 +106,9 @@ unless api_server_up
   exit 1
 end
 
-r "kubectl --kubeconfig /etc/kubernetes/admin.conf -n kube-system create serviceaccount #{service_account_name}"
-r "kubectl --kubeconfig /etc/kubernetes/admin.conf -n kube-system create clusterrolebinding #{service_account_name}-binding --clusterrole=cluster-admin --serviceaccount=kube-system:#{service_account_name}"
-r "kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f - <<EOF
+r "#{local_kubectl} -n kube-system create serviceaccount #{service_account_name}"
+r "#{local_kubectl} -n kube-system create clusterrolebinding #{service_account_name}-binding --clusterrole=cluster-admin --serviceaccount=kube-system:#{service_account_name}"
+r "#{local_kubectl} apply -f - <<EOF
 apiVersion: v1
 kind: Secret
 metadata:

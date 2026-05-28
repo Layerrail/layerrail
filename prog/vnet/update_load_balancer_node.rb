@@ -38,7 +38,11 @@ class Prog::Vnet::UpdateLoadBalancerNode < Prog::Base
   end
 
   label def remove_load_balancer
-    run_nft_rules(generate_nat_rules(vm.ip4_string, vm.private_ipv4.to_s))
+    if vm.location.linode?
+      run_nft_rules(generate_flush_nat_rules)
+    else
+      run_nft_rules(generate_nat_rules(vm.ip4_string, vm.private_ipv4.to_s))
+    end
 
     pop "load balancer is removed"
   end
@@ -67,10 +71,13 @@ class Prog::Vnet::UpdateLoadBalancerNode < Prog::Base
         port = vm_port.load_balancer_port
         ipv4_map_def = generate_lb_map_defs_ipv4(port)
         modulo = ipv4_map_def.count
+        local_private_rule = unless vm.location.linode?
+          "ip daddr #{private_ipv4} tcp dport #{port.src_port} ct state established,related,new counter dnat to #{private_ipv4}:#{port.dst_port}"
+        end
         <<-IPV4_PREROUTING
 ip daddr #{public_ipv4} tcp dport #{port.src_port} meta mark set 0x00B1C100D
 ip daddr #{public_ipv4} tcp dport #{port.src_port} ct state established,related,new counter dnat to #{balance_mode_ip4} mod #{modulo} map { #{ipv4_map_def.join(", ")} }
-ip daddr #{private_ipv4} tcp dport #{port.src_port} ct state established,related,new counter dnat to #{private_ipv4}:#{port.dst_port}
+#{local_private_rule}
         IPV4_PREROUTING
       end.join("\n")
     end
@@ -80,26 +87,62 @@ ip daddr #{private_ipv4} tcp dport #{port.src_port} ct state established,related
         port = vm_port.load_balancer_port
         ipv6_map_def = generate_lb_map_defs_ipv6(port)
         modulo = ipv6_map_def.count
+        local_private_rule = unless vm.location.linode?
+          "ip6 daddr #{private_ipv6} tcp dport #{port.src_port} ct state established,related,new counter dnat to [#{public_ipv6}]:#{port.dst_port}"
+        end
         <<-IPV6_PREROUTING
 ip6 daddr #{public_ipv6} tcp dport #{port.src_port} meta mark set 0x00B1C100D
 ip6 daddr #{public_ipv6} tcp dport #{port.src_port} ct state established,related,new counter dnat to #{balance_mode_ip6} mod #{modulo} map { #{ipv6_map_def.join(", ")} }
-ip6 daddr #{private_ipv6} tcp dport #{port.src_port} ct state established,related,new counter dnat to [#{public_ipv6}]:#{port.dst_port}
+#{local_private_rule}
         IPV6_PREROUTING
       end.join("\n")
+    end
+
+    ipv4_output = if vm.location.linode? && load_balancer.ipv4_enabled?
+      load_balancer_ports_to_work_on
+        .select { |vm_port| vm_port.stack == "ipv4" && vm_port.load_balancer_vm.vm_id == vm.id }
+        .uniq(&:load_balancer_port_id)
+        .map do |vm_port|
+          port = vm_port.load_balancer_port
+          "ip daddr #{public_ipv4} tcp dport #{port.src_port} redirect to :#{port.dst_port}"
+        end.join("\n")
+    end
+
+    ipv6_output = if vm.location.linode? && load_balancer.ipv6_enabled?
+      load_balancer_ports_to_work_on
+        .select { |vm_port| vm_port.stack == "ipv6" && vm_port.load_balancer_vm.vm_id == vm.id }
+        .uniq(&:load_balancer_port_id)
+        .map do |vm_port|
+          port = vm_port.load_balancer_port
+          "ip6 daddr #{public_ipv6} tcp dport #{port.src_port} redirect to :#{port.dst_port}"
+        end.join("\n")
     end
 
     sorted_ports = load_balancer.ports.sort_by { |port| port.src_port }
     ipv4_postrouting_rule = sorted_ports.map do |port|
       if load_balancer.ipv4_enabled?
-        "ip daddr @neighbor_ips_v4 tcp dport #{port.src_port} ct state established,related,new counter snat to #{private_ipv4}"
+        snat_address = vm.location.linode? ? public_ipv4 : private_ipv4
+        "ip daddr @neighbor_ips_v4 tcp dport #{port.src_port} ct state established,related,new counter snat to #{snat_address}"
       end
     end.join("\n")
 
     ipv6_postrouting_rule = sorted_ports.map do |port|
       if load_balancer.ipv6_enabled?
-        "ip6 daddr @neighbor_ips_v6 tcp dport #{port.src_port} ct state established,related,new counter snat to #{private_ipv6}"
+        snat_address = vm.location.linode? ? public_ipv6 : private_ipv6
+        "ip6 daddr @neighbor_ips_v6 tcp dport #{port.src_port} ct state established,related,new counter snat to #{snat_address}"
       end
     end.join("\n")
+
+    basic_prerouting_rule = unless vm.location.linode?
+      "# Basic NAT for public IPv4 to private IPv4\n    ip daddr #{public_ipv4} dnat to #{private_ipv4}"
+    end
+    basic_postrouting_rule = unless vm.location.linode?
+      <<~RULE.chomp
+        # Basic NAT for private IPv4 to public IPv4
+            ip saddr #{private_ipv4} ip daddr != { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } snat to #{public_ipv4}
+            ip saddr #{private_ipv4} ip daddr #{private_ipv4} snat to #{public_ipv4}
+      RULE
+    end
 
     <<TEMPLATE
 table ip nat;
@@ -122,8 +165,13 @@ table inet nat {
 #{ipv4_prerouting}
 #{ipv6_prerouting}
 
-    # Basic NAT for public IPv4 to private IPv4
-    ip daddr #{public_ipv4} dnat to #{private_ipv4}
+    #{basic_prerouting_rule}
+  }
+
+  chain output {
+    type nat hook output priority dstnat; policy accept;
+#{ipv4_output}
+#{ipv6_output}
   }
 
   chain postrouting {
@@ -131,9 +179,7 @@ table inet nat {
 #{ipv4_postrouting_rule}
 #{ipv6_postrouting_rule}
 
-    # Basic NAT for private IPv4 to public IPv4
-    ip saddr #{private_ipv4} ip daddr != { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } snat to #{public_ipv4}
-    ip saddr #{private_ipv4} ip daddr #{private_ipv4} snat to #{public_ipv4}
+    #{basic_postrouting_rule}
   }
 }
 TEMPLATE
@@ -141,8 +187,8 @@ TEMPLATE
 
   def generate_lb_ip_set_definition(neighbor_vm_ports)
     return ["", ""] if neighbor_vm_ports.empty?
-    ipv4_ips = neighbor_vm_ports.select { it.stack == "ipv4" }.map { it.vm.private_ipv4 }.uniq.join(", ")
-    ipv6_ips = neighbor_vm_ports.select { it.stack == "ipv6" }.map { it.vm.private_ipv6 }.uniq.join(", ")
+    ipv4_ips = neighbor_vm_ports.select { it.stack == "ipv4" }.map { backend_ipv4(it.vm) }.uniq.join(", ")
+    ipv6_ips = neighbor_vm_ports.select { it.stack == "ipv6" }.map { backend_ipv6(it.vm) }.uniq.join(", ")
     [ipv4_ips.empty? ? "" : "elements = {#{ipv4_ips}}",
       ipv6_ips.empty? ? "" : "elements = {#{ipv6_ips}}"]
   end
@@ -163,14 +209,22 @@ TEMPLATE
 
   def generate_lb_map_defs_ipv4(current_port)
     generate_lb_map_defs(current_port, "ipv4") do |vm_port|
-      vm_port.load_balancer_vm.vm.private_ipv4
+      backend_ipv4(vm_port.load_balancer_vm.vm)
     end
   end
 
   def generate_lb_map_defs_ipv6(current_port)
     generate_lb_map_defs(current_port, "ipv6") do |vm_port|
-      (vm_port.load_balancer_vm.vm_id == vm.id) ? vm.ip6 : vm_port.load_balancer_vm.vm.private_ipv6
+      backend_ipv6(vm_port.load_balancer_vm.vm)
     end
+  end
+
+  def backend_ipv4(backend_vm)
+    vm.location.linode? ? backend_vm.ip4 : backend_vm.private_ipv4
+  end
+
+  def backend_ipv6(backend_vm)
+    vm.location.linode? ? backend_vm.ip6 : backend_vm.private_ipv6
   end
 
   def generate_nat_rules(current_public_ipv4, current_private_ipv4)
@@ -190,6 +244,15 @@ table ip nat {
     ip saddr #{current_private_ipv4} ip daddr #{current_private_ipv4} snat to #{current_public_ipv4}
   }
 }
+NAT
+  end
+
+  def generate_flush_nat_rules
+    <<NAT
+table ip nat;
+delete table ip nat;
+table inet nat;
+delete table inet nat;
 NAT
   end
 end

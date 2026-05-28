@@ -96,7 +96,7 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
   label def bootstrap_rhizome
     register_deadline("wait", 10 * 60)
 
-    bud Prog::BootstrapRhizome, {"target_folder" => "postgres", "subject_id" => vm.id, "user" => "ubi", "no_bundler_install" => true}
+    bud Prog::BootstrapRhizome, {"target_folder" => "postgres", "subject_id" => vm.id, "user" => "ubi", "no_bundler_install" => !vm.location.linode?}
     hop_wait_bootstrap_rhizome
   end
 
@@ -388,6 +388,13 @@ TIMER
 
   label def configure_logs
     nap 5 if ParseableResource.for_project(Config.postgres_service_project_id) && resource.parseable_password.nil?
+
+    if vm.location.linode? && postgres_server.logs_config[:log_destinations].empty?
+      when_initial_provisioning_set? do
+        hop_setup_hugepages
+      end
+      hop_wait
+    end
 
     case vm.sshable.d_check("configure_logs")
     when "Succeeded"

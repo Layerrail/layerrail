@@ -16,6 +16,10 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
     @vm ||= node.vm
   end
 
+  def node_ipv4
+    vm.location.linode? ? vm.ip4 : vm.private_ipv4
+  end
+
   # We need to create a random ula cidr for the cluster services subnet with
   # a NetMask of /108
   # For reference read here:
@@ -83,6 +87,8 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
   label def bootstrap_rhizome
     nap 5 unless vm.strand.label == "wait"
 
+    prepare_linode_kubernetes_node
+
     nft_rules = <<~NFT
       #!/usr/sbin/nft -f
       flush ruleset
@@ -120,6 +126,52 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
     hop_wait_bootstrap_rhizome
   end
 
+  def prepare_linode_kubernetes_node
+    return unless vm.location.linode?
+
+    repo_version = kubernetes_cluster.version
+    marker = "/var/lib/layerrail-linode-kubernetes-prepared-#{repo_version.tr(".", "_")}"
+    vm.sshable.cmd(<<~SH)
+set -ueo pipefail
+if command -v kubelet >/dev/null && command -v kubeadm >/dev/null && command -v kubectl >/dev/null && [ -f #{marker} ]; then
+  exit 0
+fi
+sudo install -d -m 0755 /etc/apt/keyrings
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl gpg containerd
+sudo swapoff -a || true
+sudo sed -i.bak '/[[:space:]]swap[[:space:]]/d' /etc/fstab
+sudo modprobe overlay || true
+sudo modprobe br_netfilter || true
+sudo sed -i '/ #{vm.name}$/d' /etc/hosts
+echo '#{node_ipv4} #{vm.name}' | sudo tee -a /etc/hosts >/dev/null
+cat <<'EOF' | sudo tee /etc/modules-load.d/k8s.conf >/dev/null
+overlay
+br_netfilter
+EOF
+cat <<'EOF' | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf >/dev/null
+net.bridge.bridge-nf-call-iptables = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.ip_forward = 1
+net.ipv6.conf.all.forwarding = 1
+net.ipv6.conf.default.forwarding = 1
+EOF
+sudo sysctl --system
+sudo mkdir -p /etc/containerd
+sudo containerd config default | sudo tee /etc/containerd/config.toml >/dev/null
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+sudo systemctl enable --now containerd
+curl -fsSL https://pkgs.k8s.io/core:/stable:/#{repo_version}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg.tmp
+sudo mv /etc/apt/keyrings/kubernetes-apt-keyring.gpg.tmp /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/#{repo_version}/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list >/dev/null
+sudo apt-get update
+sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+sudo systemctl enable kubelet
+sudo touch #{marker}
+    SH
+  end
+
   label def wait_bootstrap_rhizome
     reap(:assign_role)
   end
@@ -146,7 +198,7 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
         port: "443",
         private_subnet_cidr4: kubernetes_cluster.private_subnet.net4,
         private_subnet_cidr6: kubernetes_cluster.private_subnet.net6,
-        node_ipv4: vm.private_ipv4,
+        node_ipv4: node_ipv4,
         node_ipv6: vm.ip6,
         service_subnet_cidr6: random_ula_cidr,
       }
@@ -183,7 +235,7 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
         join_token: cp_sshable.cmd("sudo kubeadm token create --ttl 24h --usages signing,authentication", log: false).chomp,
         certificate_key: cp_sshable.cmd("sudo kubeadm init phase upload-certs --upload-certs", log: false)[/certificate key:\n(.*)/, 1],
         discovery_token_ca_cert_hash: cp_sshable.cmd("sudo kubeadm token create --print-join-command", log: false)[/discovery-token-ca-cert-hash (\S+)/, 1],
-        node_ipv4: vm.private_ipv4,
+        node_ipv4: node_ipv4,
         node_ipv6: vm.ip6,
       }
       vm.sshable.d_run("join_control_plane", "kubernetes/bin/join-node", stdin: JSON.generate(params), log: false)
@@ -218,7 +270,7 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
         endpoint: "#{kubernetes_cluster.endpoint}:443",
         join_token: cp_sshable.cmd("sudo kubeadm token create --ttl 24h --usages signing,authentication", log: false).tr("\n", ""),
         discovery_token_ca_cert_hash: cp_sshable.cmd("sudo kubeadm token create --print-join-command", log: false)[/discovery-token-ca-cert-hash (\S+)/, 1],
-        node_ipv4: vm.private_ipv4,
+        node_ipv4: node_ipv4,
         node_ipv6: vm.ip6,
       }
       vm.sshable.d_run("join_worker", "kubernetes/bin/join-node", stdin: JSON.generate(params), log: false)
