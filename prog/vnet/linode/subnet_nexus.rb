@@ -66,6 +66,11 @@ class Prog::Vnet::Linode::SubnetNexus < Prog::Base
 
   def linode_firewall_rules
     firewall_rules = private_subnet.firewalls(eager: :firewall_rules).flat_map(&:firewall_rules)
+    firewall_rules += private_subnet.attached_vms.flat_map do |vm|
+      vm.vm_firewalls_dataset.eager(:firewall_rules).all.flat_map(&:firewall_rules)
+    end
+    firewall_rules.uniq!(&:id)
+
     {
       "inbound_policy" => "DROP",
       "outbound_policy" => "ACCEPT",
