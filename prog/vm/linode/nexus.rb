@@ -67,8 +67,8 @@ class Prog::Vm::Linode::Nexus < Prog::Base
       project_id: project.id,
       resource_id: vm.id,
       resource_name: vm.name,
-      billing_rate_id: BillingRate.from_resource_properties("VmVCpu", vm.family, vm.location.name)["id"],
-      amount: vm.vcpus,
+      billing_rate_id: BillingRate.from_resource_properties("VmVCpu", linode_plan.billing_family, vm.location.name)["id"],
+      amount: (vm.family == "nanode") ? 1 : vm.vcpus,
     )
 
     if linode_plan.gpu_count.positive?
@@ -191,7 +191,7 @@ class Prog::Vm::Linode::Nexus < Prog::Base
   end
 
   def linode_plan
-    @linode_plan ||= Option.linode_plan(vm.family, vm.vcpus, gpu_count: frame["gpu_count"] || 0, gpu_device: frame["gpu_device"])
+    @linode_plan ||= Option.linode_plan(vm.family, vm.vcpus, gpu_count: frame["gpu_count"] || 0, gpu_device: frame["gpu_device"], memory_gib: (vm.family == "nanode") ? vm.memory_gib : nil)
   end
 
   def linode_image

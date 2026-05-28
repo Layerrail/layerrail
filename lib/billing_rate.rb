@@ -45,6 +45,8 @@ class BillingRate
     when "VmCores"
       "#{resource_family}-#{(amount * 2).to_i} Virtual Machine"
     when "VmVCpu"
+      return "#{resource_family} Virtual Machine" if resource_family.start_with?("nanode-")
+
       "#{resource_family}-#{amount.to_i} Virtual Machine"
     when "VmStorage"
       "#{amount.to_i} GiB Storage for Virtual Machine"

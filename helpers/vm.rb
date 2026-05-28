@@ -85,11 +85,13 @@ class Clover
     end
 
     if @location.linode?
+      linode_size = parsed_size || Validation.validate_vm_size(Prog::Vm::Nexus::DEFAULT_SIZE, "x64", only_visible: true)
       plan = Option.linode_plan(
-        (parsed_size || Validation.validate_vm_size(Prog::Vm::Nexus::DEFAULT_SIZE, "x64", only_visible: true)).family,
-        (parsed_size || Validation.validate_vm_size(Prog::Vm::Nexus::DEFAULT_SIZE, "x64", only_visible: true)).vcpus,
+        linode_size.family,
+        linode_size.vcpus,
         gpu_count:,
         gpu_device:,
+        size_name: linode_size.display_name,
       )
 
       if assemble_params[:storage_size] && assemble_params[:storage_size] != plan.disk_gib
@@ -239,9 +241,9 @@ class Clover
       if location.linode?
         begin
           if @show_gpu
-            Option.linode_instance_type_name(family, vm_size.vcpus, gpu_count: 1, gpu_device: Option::LINODE_GPU_DEVICE)
+            Option.linode_instance_type_name(family, vm_size.vcpus, gpu_count: 1, gpu_device: Option::LINODE_GPU_DEVICE, size_name: vm_size.display_name)
           else
-            Option.linode_instance_type_name(family, vm_size.vcpus)
+            Option.linode_instance_type_name(family, vm_size.vcpus, size_name: vm_size.display_name)
           end
           true
         rescue Validation::ValidationFailed
@@ -257,9 +259,9 @@ class Clover
       if location.linode?
         begin
           plan = if @show_gpu
-            Option.linode_plan(family, vm_size.vcpus, gpu_count: 1, gpu_device: Option::LINODE_GPU_DEVICE)
+            Option.linode_plan(family, vm_size.vcpus, gpu_count: 1, gpu_device: Option::LINODE_GPU_DEVICE, size_name: vm_size.display_name)
           else
-            Option.linode_plan(family, vm_size.vcpus)
+            Option.linode_plan(family, vm_size.vcpus, size_name: vm_size.display_name)
           end
           plan.disk_gib == storage_size.to_i
         rescue Validation::ValidationFailed

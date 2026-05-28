@@ -30,7 +30,7 @@ module Option
     kubernetes_versions.first(2)
   end
 
-  LinodePlan = Data.define(:id, :label, :family, :vcpus, :memory_gib, :disk_gib, :monthly_price, :hourly_price, :gpu_count, :gpu_device)
+  LinodePlan = Data.define(:id, :label, :family, :size_name, :vcpus, :memory_gib, :disk_gib, :monthly_price, :hourly_price, :gpu_count, :gpu_device, :billing_family)
   LINODE_MARKUP = 1.30
   LINODE_GPU_DEVICE = "27b0"
   LINODE_LOCATIONS = [
@@ -41,14 +41,17 @@ module Option
   ].map(&:freeze).freeze
   LINODE_GPU_LOCATION_NAMES = ["linode-de-fra-2", "linode-us-sea"].freeze
   LINODE_PLANS = [
-    LinodePlan.new("g6-nanode-1", "Nanode 1GB", "nanode", 1, 1, 25, 5, 0.0075, 0, nil),
-    LinodePlan.new("g6-standard-1", "Shared 2GB", "burstable", 1, 2, 50, 12, 0.018, 0, nil),
-    LinodePlan.new("g6-standard-2", "Shared 4GB", "burstable", 2, 4, 80, 24, 0.036, 0, nil),
-    LinodePlan.new("g7-dedicated-4-2", "Dedicated 4GB", "standard", 2, 4, 80, 43, 0.0645, 0, nil),
-    LinodePlan.new("g7-dedicated-8-4", "Dedicated 8GB", "standard", 4, 8, 160, 86, 0.129, 0, nil),
-    LinodePlan.new("g7-dedicated-16-8", "Dedicated 16GB", "standard", 8, 16, 320, 173, 0.2595, 0, nil),
-    LinodePlan.new("g7-dedicated-32-16", "Dedicated 32GB", "standard", 16, 32, 640, 346, 0.519, 0, nil),
-    LinodePlan.new("g2-gpu-rtx4000a1-s", "RTX 4000 Ada x1 Small", "standard", 4, 16, 512, 350, 0.52, 1, LINODE_GPU_DEVICE),
+    LinodePlan.new("g6-nanode-1", "Nanode 1GB", "nanode", "nanode-1", 1, 1, 25, 5, 0.0075, 0, nil, "nanode"),
+    LinodePlan.new("g6-standard-1", "Starter 2GB", "nanode", "nanode-2", 1, 2, 50, 12, 0.018, 0, nil, "nanode-2"),
+    LinodePlan.new("g6-standard-2", "Starter 4GB", "nanode", "nanode-4", 2, 4, 80, 24, 0.036, 0, nil, "nanode-4"),
+    LinodePlan.new("g6-standard-4", "Starter 8GB", "nanode", "nanode-8", 4, 8, 160, 48, 0.072, 0, nil, "nanode-8"),
+    LinodePlan.new("g6-standard-1", "Shared 2GB", "burstable", "burstable-1", 1, 2, 50, 12, 0.018, 0, nil, "burstable"),
+    LinodePlan.new("g6-standard-2", "Shared 4GB", "burstable", "burstable-2", 2, 4, 80, 24, 0.036, 0, nil, "burstable"),
+    LinodePlan.new("g7-dedicated-4-2", "Dedicated 4GB", "standard", "standard-2", 2, 4, 80, 43, 0.0645, 0, nil, "standard"),
+    LinodePlan.new("g7-dedicated-8-4", "Dedicated 8GB", "standard", "standard-4", 4, 8, 160, 86, 0.129, 0, nil, "standard"),
+    LinodePlan.new("g7-dedicated-16-8", "Dedicated 16GB", "standard", "standard-8", 8, 16, 320, 173, 0.2595, 0, nil, "standard"),
+    LinodePlan.new("g7-dedicated-32-16", "Dedicated 32GB", "standard", "standard-16", 16, 32, 640, 346, 0.519, 0, nil, "standard"),
+    LinodePlan.new("g2-gpu-rtx4000a1-s", "RTX 4000 Ada x1 Small", "standard", "standard-4", 4, 16, 512, 350, 0.52, 1, LINODE_GPU_DEVICE, "standard"),
   ].freeze
   LINODE_BOOT_IMAGES = {
     "ubuntu-noble" => "linode/ubuntu24.04",
@@ -59,17 +62,19 @@ module Option
     "rocky-9" => "linode/rocky9",
   }.freeze
 
-  def self.linode_plan(family, vcpu_count, gpu_count: 0, gpu_device: nil)
+  def self.linode_plan(family, vcpu_count, gpu_count: 0, gpu_device: nil, size_name: nil, memory_gib: nil)
     LINODE_PLANS.find {
       it.family == family &&
         it.vcpus == vcpu_count &&
         it.gpu_count == gpu_count.to_i &&
-        it.gpu_device == gpu_device
+        it.gpu_device == gpu_device &&
+        (size_name.nil? || it.size_name == size_name) &&
+        (memory_gib.nil? || it.memory_gib == memory_gib)
     } || raise(Validation::ValidationFailed.new({size: "#{family}-#{vcpu_count} is not available on Linode"}))
   end
 
-  def self.linode_instance_type_name(family, vcpu_count, gpu_count: 0, gpu_device: nil)
-    linode_plan(family, vcpu_count, gpu_count:, gpu_device:).id
+  def self.linode_instance_type_name(family, vcpu_count, gpu_count: 0, gpu_device: nil, size_name: nil, memory_gib: nil)
+    linode_plan(family, vcpu_count, gpu_count:, gpu_device:, size_name:, memory_gib:).id
   rescue KeyError
     raise Validation::ValidationFailed.new({size: "#{family}-#{vcpu_count} is not available on Linode"})
   end
@@ -246,7 +251,10 @@ module Option
     alias_method :display_name, :name
   end
   VmSizes = [
-    VmSize.new("nanode-1", "nanode", 1, 50, 50, 1, [25], IoLimits.new(50, 50), 1, true, "x64")
+    VmSize.new("nanode-1", "nanode", 1, 50, 50, 1, [25], IoLimits.new(50, 50), 1, true, "x64"),
+    VmSize.new("nanode-2", "nanode", 1, 50, 50, 2, [50], IoLimits.new(50, 50), 1, true, "x64"),
+    VmSize.new("nanode-4", "nanode", 2, 100, 100, 4, [80], IoLimits.new(100, 100), 1, true, "x64"),
+    VmSize.new("nanode-8", "nanode", 4, 200, 200, 8, [160], IoLimits.new(200, 200), 1, true, "x64")
   ].concat([2, 4, 8, 16, 30, 60].map {
     storage_size_options = [it * 20, it * 40]
     VmSize.new("standard-#{it}", "standard", it, it * 100, 0, it * 4, storage_size_options, NO_IO_LIMITS, vring_workers(it), true, "x64")

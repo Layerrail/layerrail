@@ -4,8 +4,10 @@ require_relative "../spec_helper"
 
 RSpec.describe Option do
   describe "#VmSize options" do
-    it "no burstable cpu allowed for Standard VMs" do
-      expect(Option::VmSizes.map { it.name.include?("burstable-") == (it.cpu_burst_percent_limit > 0) }.all?(true)).to be true
+    it "no burstable cpu allowed for dedicated VMs" do
+      expect(Option::VmSizes.map {
+        (it.name.include?("burstable-") || it.name.include?("nanode-")) == (it.cpu_burst_percent_limit > 0)
+      }.all?(true)).to be true
     end
 
     it "no odd number of vcpus allowed, except for 1" do
@@ -22,6 +24,12 @@ RSpec.describe Option do
   describe ".linode_plan" do
     it "maps the exposed Nanode starter size to the real Linode Nanode plan" do
       expect(described_class.linode_plan("nanode", 1).id).to eq("g6-nanode-1")
+    end
+
+    it "maps the expanded Nanode starter sizes to the correct Linode shared plans" do
+      expect(described_class.linode_plan("nanode", 1, size_name: "nanode-2").id).to eq("g6-standard-1")
+      expect(described_class.linode_plan("nanode", 2, size_name: "nanode-4").id).to eq("g6-standard-2")
+      expect(described_class.linode_plan("nanode", 4, size_name: "nanode-8").id).to eq("g6-standard-4")
     end
 
     it "maps the exposed GPU size to the real Linode RTX 4000 Ada small plan" do

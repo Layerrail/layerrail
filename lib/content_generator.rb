@@ -31,17 +31,20 @@ module ContentGenerator
 
     def self.size(location, family, size)
       size = Option::VmSizes.find { it.display_name == size }
-      unit_price = BillingRate.unit_price_from_resource_properties("VmVCpu", family, location.name)
-      memory_gib = if location.linode?
-        plan = Option.linode_plan(family, size.vcpus)
-        "#{plan.memory_gib} GB RAM"
-      else
-        "#{size.memory_gib} GB RAM"
+      if location.linode?
+        plan = Option.linode_plan(family, size.vcpus, size_name: size.display_name)
+        return [
+          size.display_name,
+          "#{plan.vcpus} vCPUs / #{plan.memory_gib} GB RAM / #{plan.disk_gib} GB storage",
+          "$#{"%.2f" % (plan.monthly_price * Option::LINODE_MARKUP)}/mo",
+          "$#{"%.3f" % (plan.hourly_price * Option::LINODE_MARKUP)}/hour",
+        ]
       end
 
+      unit_price = BillingRate.unit_price_from_resource_properties("VmVCpu", family, location.name)
       [
         size.display_name,
-        "#{size.vcpus} vCPUs / #{memory_gib}",
+        "#{size.vcpus} vCPUs / #{size.memory_gib} GB RAM",
         "$#{"%.2f" % (size.vcpus * unit_price * 60 * 672)}/mo",
         "$#{"%.3f" % (size.vcpus * unit_price * 60)}/hour",
       ]
@@ -51,7 +54,7 @@ module ContentGenerator
       size = Option::VmSizes.find { it.display_name == size }
       return self.size(location, family, size.display_name) unless location.linode?
 
-      plan = Option.linode_plan(family, size.vcpus, gpu_count: 1, gpu_device: Option::LINODE_GPU_DEVICE)
+      plan = Option.linode_plan(family, size.vcpus, gpu_count: 1, gpu_device: Option::LINODE_GPU_DEVICE, size_name: size.display_name)
 
       [
         plan.label,

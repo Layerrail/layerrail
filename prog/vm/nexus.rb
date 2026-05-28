@@ -26,14 +26,16 @@ class Prog::Vm::Nexus < Prog::Base
     end
 
     vm_size = Validation.validate_vm_size(size, arch)
-    Validation.validate_billing_rate("VmVCpu", vm_size.family, location.name)
 
     linode_plan = nil
     if location.linode?
-      linode_plan = Option.linode_plan(vm_size.family, vm_size.vcpus, gpu_count:, gpu_device:)
+      linode_plan = Option.linode_plan(vm_size.family, vm_size.vcpus, gpu_count:, gpu_device:, size_name: vm_size.display_name)
+      Validation.validate_billing_rate("VmVCpu", linode_plan.billing_family, location.name)
       storage_volumes ||= [{size_gib: linode_plan.disk_gib}]
       boot_volume = storage_volumes[boot_disk_index] || storage_volumes.first
       boot_volume[:size_gib] = linode_plan.disk_gib
+    else
+      Validation.validate_billing_rate("VmVCpu", vm_size.family, location.name)
     end
 
     storage_volumes ||= [{}]
