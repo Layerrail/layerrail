@@ -19,6 +19,10 @@ class Prog::Vnet::UpdateLoadBalancerNode < Prog::Base
     end
   end
 
+  def run_linode_script(script)
+    vm.sshable.cmd("sudo bash -s", stdin: script)
+  end
+
   def before_run
     super
     pop "VM is destroyed" unless vm
@@ -29,16 +33,26 @@ class Prog::Vnet::UpdateLoadBalancerNode < Prog::Base
       load_balancer.remove_vm_port(load_balancer_vm_port)
     end
 
-    # if there is literally no up resources to balance for, we simply not do
-    # load balancing.
-    hop_remove_load_balancer if load_balancer.active_vm_ports.count == 0
+    # If there is literally no up resource to balance to, keep Linode-backed
+    # empty load balancers reachable with a small holding page.
+    if load_balancer.active_vm_ports.count == 0
+      if linode_waiting_page_enabled? && !force_remove_waiting_page?
+        setup_linode_waiting_page
+        run_nft_rules(generate_flush_nat_rules)
+        pop "load balancer waiting page is active"
+      end
 
+      hop_remove_load_balancer
+    end
+
+    remove_linode_waiting_page if vm.location.linode?
     run_nft_rules(generate_lb_based_nat_rules)
     pop "load balancer is updated"
   end
 
   label def remove_load_balancer
     if vm.location.linode?
+      remove_linode_waiting_page if force_remove_waiting_page? || !linode_waiting_page_enabled?
       run_nft_rules(generate_flush_nat_rules)
     else
       run_nft_rules(generate_nat_rules(vm.ip4_string, vm.private_ipv4.to_s))
@@ -254,5 +268,228 @@ delete table ip nat;
 table inet nat;
 delete table inet nat;
 NAT
+  end
+
+  def linode_waiting_page_enabled?
+    vm.location.linode? && load_balancer.ports_dataset.empty?
+  end
+
+  def force_remove_waiting_page?
+    frame["remove_waiting_page"] == true
+  end
+
+  def setup_linode_waiting_page
+    run_linode_script(<<~SH)
+      set -euo pipefail
+
+      if ! command -v ruby >/dev/null 2>&1; then
+        if command -v apt-get >/dev/null 2>&1; then
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y ruby
+        elif command -v dnf >/dev/null 2>&1; then
+          dnf install -y ruby
+        elif command -v yum >/dev/null 2>&1; then
+          yum install -y ruby
+        fi
+      fi
+
+      install -d -m 0755 /etc/layerrail/load-balancer
+      cat >/usr/local/bin/layerrail-lb-waiting-page.rb <<'RUBY'
+      #{linode_waiting_page_ruby_script}
+      RUBY
+      chmod 0755 /usr/local/bin/layerrail-lb-waiting-page.rb
+
+      cat >/etc/systemd/system/layerrail-lb-waiting-page.service <<'SYSTEMD'
+      #{linode_waiting_page_systemd_unit}
+      SYSTEMD
+
+      systemctl daemon-reload
+      systemctl enable layerrail-lb-waiting-page >/dev/null
+      systemctl restart layerrail-lb-waiting-page
+    SH
+  end
+
+  def remove_linode_waiting_page
+    run_linode_script(<<~SH)
+      set -euo pipefail
+      systemctl disable --now layerrail-lb-waiting-page >/dev/null 2>&1 || true
+      rm -f /etc/systemd/system/layerrail-lb-waiting-page.service
+      rm -f /usr/local/bin/layerrail-lb-waiting-page.rb
+      systemctl daemon-reload || true
+    SH
+  end
+
+  def linode_waiting_page_systemd_unit
+    <<~SYSTEMD
+      [Unit]
+      Description=LayerRail load balancer waiting page
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=simple
+      Environment=LAYERRAIL_LB_HOSTNAME=#{load_balancer.hostname}
+      ExecStart=/usr/bin/env ruby /usr/local/bin/layerrail-lb-waiting-page.rb
+      Restart=always
+      RestartSec=3
+
+      [Install]
+      WantedBy=multi-user.target
+    SYSTEMD
+  end
+
+  def linode_waiting_page_ruby_script
+    <<~'RUBY'
+      #!/usr/bin/env ruby
+      # frozen_string_literal: true
+
+      require "openssl"
+      require "socket"
+
+      HOSTNAME = ENV.fetch("LAYERRAIL_LB_HOSTNAME", "layerrail.com")
+      CERT_PATH = "/etc/layerrail/load-balancer/cert.pem"
+      KEY_PATH = "/etc/layerrail/load-balancer/key.pem"
+
+      PAGE = <<~HTML
+        <!doctype html>
+        <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>LayerRail endpoint is live</title>
+          <style>
+            :root {
+              color-scheme: dark;
+              --bg: #0f0d14;
+              --panel: #17131f;
+              --text: #fefdfe;
+              --muted: #bcb9c1;
+              --line: #2f2838;
+              --accent: #8b67f2;
+            }
+
+            * { box-sizing: border-box; }
+
+            body {
+              margin: 0;
+              min-height: 100vh;
+              display: grid;
+              place-items: center;
+              background: radial-gradient(circle at 50% 0%, #24183d 0, var(--bg) 42%);
+              color: var(--text);
+              font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            }
+
+            main {
+              width: min(92vw, 680px);
+              padding: 36px;
+              border: 1px solid var(--line);
+              border-radius: 8px;
+              background: color-mix(in srgb, var(--panel) 92%, transparent);
+              box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+            }
+
+            .mark {
+              width: 44px;
+              height: 44px;
+              display: grid;
+              place-items: center;
+              border-radius: 8px;
+              background: var(--accent);
+              color: white;
+              font-weight: 800;
+              margin-bottom: 24px;
+            }
+
+            h1 {
+              margin: 0;
+              font-size: clamp(2rem, 5vw, 4.6rem);
+              line-height: 0.95;
+              letter-spacing: 0;
+            }
+
+            p {
+              margin: 18px 0 0;
+              max-width: 56ch;
+              color: var(--muted);
+              font-size: 1.05rem;
+              line-height: 1.6;
+            }
+
+            code {
+              display: inline-block;
+              margin-top: 22px;
+              padding: 8px 10px;
+              border: 1px solid var(--line);
+              border-radius: 6px;
+              color: var(--text);
+              background: rgba(255, 255, 255, 0.04);
+              font: 0.92rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+              word-break: break-word;
+            }
+          </style>
+        </head>
+        <body>
+          <main>
+            <div class="mark">LR</div>
+            <h1>Endpoint ready</h1>
+            <p>This LayerRail load balancer is live. Attach a service or deployment to start serving application traffic.</p>
+            <code>#{HOSTNAME}</code>
+          </main>
+        </body>
+        </html>
+      HTML
+
+      RESPONSE_HEADERS = [
+        "HTTP/1.1 200 OK",
+        "Content-Type: text/html; charset=utf-8",
+        "Content-Length: #{PAGE.bytesize}",
+        "Cache-Control: no-store",
+        "Connection: close",
+        "\r\n"
+      ].join("\r\n")
+
+      def handle(client)
+        client.gets
+        while (line = client.gets)
+          break if line == "\r\n"
+        end
+        client.write(RESPONSE_HEADERS)
+        client.write(PAGE)
+      rescue IOError, SystemCallError, OpenSSL::SSL::SSLError
+        nil
+      ensure
+        client&.close
+      end
+
+      def serve_tcp(host, port)
+        server = TCPServer.new(host, port)
+        loop { Thread.new(server.accept) { |client| handle(client) } }
+      rescue SystemCallError => ex
+        warn "LayerRail waiting page could not bind #{host}:#{port}: #{ex.message}"
+      end
+
+      def serve_tls(host, port)
+        return unless File.exist?(CERT_PATH) && File.exist?(KEY_PATH)
+
+        context = OpenSSL::SSL::SSLContext.new
+        context.cert = OpenSSL::X509::Certificate.new(File.read(CERT_PATH))
+        context.key = OpenSSL::PKey.read(File.read(KEY_PATH))
+        server = OpenSSL::SSL::SSLServer.new(TCPServer.new(host, port), context)
+        loop { Thread.new(server.accept) { |client| handle(client) } }
+      rescue SystemCallError, OpenSSL::SSL::SSLError => ex
+        warn "LayerRail waiting page could not bind TLS #{host}:#{port}: #{ex.message}"
+      end
+
+      threads = [
+        Thread.new { serve_tcp("0.0.0.0", 80) },
+        Thread.new { serve_tcp("::", 80) },
+        Thread.new { serve_tls("0.0.0.0", 443) },
+        Thread.new { serve_tls("::", 443) }
+      ]
+
+      threads.each(&:join)
+    RUBY
   end
 end

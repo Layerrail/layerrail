@@ -95,7 +95,7 @@ RSpec.describe Prog::Vnet::CertNexus do
       order = setup_order(new_order: true)
       expect(OpenSSL::PKey::EC).to receive(:generate).with("prime256v1").and_return(account_key)
       expect(Acme::Client).to receive(:new).with(private_key: account_key, directory: Config.acme_directory).and_return(client)
-      expect(client).to receive(:new_account).with(contact: "mailto:#{Config.acme_email}", terms_of_service_agreed: true, external_account_binding: {kid: Config.acme_eab_kid, hmac_key: Config.acme_eab_hmac_key}).and_return(instance_double(Acme::Client::Resources::Account, kid: "test-kid"))
+      expect(client).to receive(:new_account).with(contact: "mailto:#{Config.acme_email}", terms_of_service_agreed: true).and_return(instance_double(Acme::Client::Resources::Account, kid: "test-kid"))
       expect(client).to receive(:new_order).with(identifiers:).and_return(order)
 
       expect { nx.start }.to hop("wait_dns_update")
@@ -111,7 +111,7 @@ RSpec.describe Prog::Vnet::CertNexus do
       order = setup_order(new_order: true, add_private: true)
       expect(OpenSSL::PKey::EC).to receive(:generate).with("prime256v1").and_return(account_key)
       expect(Acme::Client).to receive(:new).with(private_key: account_key, directory: Config.acme_directory).and_return(client)
-      expect(client).to receive(:new_account).with(contact: "mailto:#{Config.acme_email}", terms_of_service_agreed: true, external_account_binding: {kid: Config.acme_eab_kid, hmac_key: Config.acme_eab_hmac_key}).and_return(instance_double(Acme::Client::Resources::Account, kid: "test-kid"))
+      expect(client).to receive(:new_account).with(contact: "mailto:#{Config.acme_email}", terms_of_service_agreed: true).and_return(instance_double(Acme::Client::Resources::Account, kid: "test-kid"))
       expect(client).to receive(:new_order).with(identifiers:).and_return(order)
 
       expect { nx.start }.to hop("wait_dns_update")

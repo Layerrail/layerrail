@@ -39,7 +39,7 @@ class Prog::Vnet::CertNexus < Prog::Base
 
     account_key = OpenSSL::PKey::EC.generate("prime256v1")
     client = Acme::Client.new(private_key: account_key, directory: Config.acme_directory)
-    account = client.new_account(contact: "mailto:#{Config.acme_email}", terms_of_service_agreed: true, external_account_binding: {kid: Config.acme_eab_kid, hmac_key: Config.acme_eab_hmac_key})
+    account = client.new_account(**acme_account_options)
     identifiers = cert.hostnames
     order = client.new_order(identifiers:)
     cert.update(kid: account.kid, account_key: account_key.to_der, order_url: order.url)
@@ -178,6 +178,24 @@ class Prog::Vnet::CertNexus < Prog::Base
     if cert.account_key
       @acme_client ||= Acme::Client.new(private_key: Util.parse_key(cert.account_key), directory: Config.acme_directory, kid: cert.kid)
     end
+  end
+
+  def acme_account_options
+    fail "ACME_EMAIL must be configured before issuing certificates" if Config.acme_email.to_s.empty?
+
+    options = {
+      contact: "mailto:#{Config.acme_email}",
+      terms_of_service_agreed: true,
+    }
+
+    if Config.acme_eab_kid && Config.acme_eab_hmac_key
+      options[:external_account_binding] = {
+        kid: Config.acme_eab_kid,
+        hmac_key: Config.acme_eab_hmac_key,
+      }
+    end
+
+    options
   end
 
   def acme_order

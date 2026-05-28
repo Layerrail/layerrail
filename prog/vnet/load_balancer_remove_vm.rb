@@ -13,7 +13,7 @@ class Prog::Vnet::LoadBalancerRemoveVm < Prog::Base
 
   label def destroy_vm_ports_and_update_node
     load_balancer.vm_ports_by_vm(vm).destroy
-    bud Prog::Vnet::UpdateLoadBalancerNode, {"subject_id" => vm.id, "load_balancer_id" => load_balancer.id}, :update_load_balancer
+    bud Prog::Vnet::UpdateLoadBalancerNode, {"subject_id" => vm.id, "load_balancer_id" => load_balancer.id, "remove_waiting_page" => true}, :update_load_balancer
     hop_wait_for_node_update
   end
 

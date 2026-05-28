@@ -136,8 +136,12 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
       expect(internal_firewall.project_id).to eq Config.kubernetes_service_project_id
       expect(internal_firewall.firewall_rules.map { "#{it.cidr}:#{it.port_range.to_range}" }.sort).to eq [
         "0.0.0.0/0:22...23",
+        "0.0.0.0/0:443...444",
+        "0.0.0.0/0:80...81",
         "#{kc.private_subnet.net4}:10250...10251",
         "::/0:22...23",
+        "::/0:443...444",
+        "::/0:80...81",
         "#{kc.private_subnet.net6}:10250...10251",
       ]
     end

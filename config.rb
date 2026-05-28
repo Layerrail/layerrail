@@ -262,10 +262,8 @@ module Config
   override :load_balancer_service_hostname, "lb.layerrail.com", string
 
   # ACME
-  # The following are optional because they are only needed in production.
-  # They are not needed in development or test.
-  optional :acme_email, string
-  override :acme_directory, "https://acme.zerossl.com/v2/DV90", string
+  override :acme_email, "support@layerrail.com", string
+  override :acme_directory, "https://acme-v02.api.letsencrypt.org/directory", string
   optional :acme_eab_kid, string, clear: true
   optional :acme_eab_hmac_key, string, clear: true
 

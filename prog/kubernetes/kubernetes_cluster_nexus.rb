@@ -43,6 +43,10 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
       internal_worker_vm_firewall = Firewall.create(name: "#{ubid}-worker-vm-firewall", location_id:, description: "Kubernetes worker node internal firewall", project_id: Config.kubernetes_service_project_id)
       internal_worker_vm_firewall.replace_firewall_rules(
         Config.control_plane_outbound_cidrs.map { {cidr: it, port_range: Sequel.pg_range(22..22)} } + [
+          {cidr: "0.0.0.0/0", port_range: Sequel.pg_range(80..80)},
+          {cidr: "::/0", port_range: Sequel.pg_range(80..80)},
+          {cidr: "0.0.0.0/0", port_range: Sequel.pg_range(443..443)},
+          {cidr: "::/0", port_range: Sequel.pg_range(443..443)},
           {cidr: subnet.net4.to_s, port_range: Sequel.pg_range(10250..10250)},
           {cidr: subnet.net6.to_s, port_range: Sequel.pg_range(10250..10250)},
         ],
@@ -123,6 +127,7 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
       health_check_protocol: "tcp",
       custom_hostname_dns_zone_id:,
       custom_hostname_prefix: custom_services_hostname_prefix,
+      cert_enabled: true,
     ).subject
 
     kubernetes_cluster.update(api_server_lb_id: api_server_lb.id, services_lb_id: services_lb.id)
