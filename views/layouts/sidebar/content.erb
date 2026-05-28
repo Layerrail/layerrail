@@ -171,7 +171,21 @@
         </li>
 
       <% end %>
-      <li class="-mx-6 mt-auto">
+      <li class="mt-auto">
+        <div class="rounded-md bg-layerrail-700/40 px-2 py-2">
+          <iframe
+            src="https://status.layerrail.com/badge?theme=dark"
+            width="250"
+            height="30"
+            frameborder="0"
+            scrolling="no"
+            class="block max-w-full"
+            title="LayerRail system status"
+            style="color-scheme: normal"
+          ></iframe>
+        </div>
+      </li>
+      <li class="-mx-6">
         <%== render("layouts/sidebar/project_switcher") %>
       </li>
     </ul>

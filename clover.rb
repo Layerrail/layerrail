@@ -191,7 +191,7 @@ class Clover < Roda
     csp.img_src :self, "data: image/svg+xml", "https://github.com", "https://avatars.githubusercontent.com"
     csp.form_action :self, Config.base_url, "https://checkout.stripe.com", "https://checkout.polar.sh", "https://polar.sh", "https://github.com/login/oauth/authorize", "https://accounts.google.com/o/oauth2/auth"
     csp.script_src :self, "https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js", "https://cdn.jsdelivr.net/npm/dompurify@3.4.0/dist/purify.min.js", "https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js", "https://challenges.cloudflare.com/turnstile/v0/api.js", "https://cdn.jsdelivr.net/npm/marked@15.0.5/marked.min.js", "https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"
-    csp.frame_src :self, "https://challenges.cloudflare.com"
+    csp.frame_src :self, "https://challenges.cloudflare.com", "https://status.layerrail.com"
     csp.connect_src :self, "https://cdn.jsdelivr.net"
     csp.base_uri :none
     csp.frame_ancestors :none

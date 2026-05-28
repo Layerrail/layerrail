@@ -31,7 +31,7 @@ module Option
   end
 
   LinodePlan = Data.define(:id, :label, :family, :vcpus, :memory_gib, :disk_gib, :monthly_price, :hourly_price, :gpu_count, :gpu_device)
-  LINODE_MARKUP = 1.30
+  LINODE_MARKUP = 1.10
   LINODE_GPU_DEVICE = "27b0"
   LINODE_LOCATIONS = [
     ["linode-de-fra-2", "de-fra-2", "Frankfurt, DE"],
