@@ -89,6 +89,7 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
 
     prepare_linode_kubernetes_node
 
+    outbound_interface = vm.location.linode? ? "eth0" : "ens3"
     nft_rules = <<~NFT
       #!/usr/sbin/nft -f
       flush ruleset
@@ -96,7 +97,7 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
       table ip nat {
         chain postrouting {
           type nat hook postrouting priority 100;
-          ip saddr #{vm.nics.first.private_ipv4} oifname "ens3" masquerade
+          ip saddr #{vm.nics.first.private_ipv4} oifname "#{outbound_interface}" masquerade
         }
       }
 
@@ -304,6 +305,7 @@ sudo touch #{marker}
   }
 }
 CONFIG
+    vm.sshable.cmd("sudo mkdir -p /etc/cni/net.d")
     vm.sshable.cmd("sudo tee /etc/cni/net.d/ubicni-config.json", stdin: cni_config)
     hop_approve_new_csr
   end
