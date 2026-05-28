@@ -31,7 +31,7 @@ module Option
   end
 
   LinodePlan = Data.define(:id, :label, :family, :vcpus, :memory_gib, :disk_gib, :monthly_price, :hourly_price, :gpu_count, :gpu_device)
-  LINODE_MARKUP = 1.10
+  LINODE_MARKUP = 1.30
   LINODE_GPU_DEVICE = "27b0"
   LINODE_LOCATIONS = [
     ["linode-de-fra-2", "de-fra-2", "Frankfurt, DE"],
@@ -41,6 +41,7 @@ module Option
   ].map(&:freeze).freeze
   LINODE_GPU_LOCATION_NAMES = ["linode-de-fra-2", "linode-us-sea"].freeze
   LINODE_PLANS = [
+    LinodePlan.new("g6-nanode-1", "Nanode 1GB", "nanode", 1, 1, 25, 5, 0.0075, 0, nil),
     LinodePlan.new("g6-standard-1", "Shared 2GB", "burstable", 1, 2, 50, 12, 0.018, 0, nil),
     LinodePlan.new("g6-standard-2", "Shared 4GB", "burstable", 2, 4, 80, 24, 0.036, 0, nil),
     LinodePlan.new("g7-dedicated-4-2", "Dedicated 4GB", "standard", 2, 4, 80, 43, 0.0645, 0, nil),
@@ -232,6 +233,7 @@ module Option
   end
 
   VmFamilies = [
+    ["nanode", "Shared CPU Starter", true, true],
     ["standard", "Dedicated CPU", true, false],
     ["premium", "Dedicated Premium CPU", false, false],
     ["burstable", "Shared CPU", true, true],
@@ -243,10 +245,12 @@ module Option
   VmSize = Struct.new(:name, :family, :vcpus, :cpu_percent_limit, :cpu_burst_percent_limit, :memory_gib, :storage_size_options, :io_limits, :vring_workers, :visible, :arch) do
     alias_method :display_name, :name
   end
-  VmSizes = [2, 4, 8, 16, 30, 60].map {
+  VmSizes = [
+    VmSize.new("nanode-1", "nanode", 1, 50, 50, 1, [25], IoLimits.new(50, 50), 1, true, "x64")
+  ].concat([2, 4, 8, 16, 30, 60].map {
     storage_size_options = [it * 20, it * 40]
     VmSize.new("standard-#{it}", "standard", it, it * 100, 0, it * 4, storage_size_options, NO_IO_LIMITS, vring_workers(it), true, "x64")
-  }.concat([2, 4, 8, 16, 30, 60].map {
+  }).concat([2, 4, 8, 16, 30, 60].map {
     storage_size_options = [it * 20, it * 40]
     VmSize.new("standard-#{it}", "standard", it, it * 100, 0, (it * 3.2).to_i, storage_size_options, NO_IO_LIMITS, vring_workers(it), false, "arm64")
   }).concat([2, 4, 8, 16, 30].map {

@@ -252,7 +252,7 @@ class Clover
       end
     end
 
-    options.add_option(name: "storage_size", values: ["10", "20", "40", "50", "80", "160", "320", "512", "600", "640", "1200", "2400"], parent: "size") do |location, family, size, storage_size|
+    options.add_option(name: "storage_size", values: ["10", "20", "25", "40", "50", "80", "160", "320", "512", "600", "640", "1200", "2400"], parent: "size") do |location, family, size, storage_size|
       vm_size = Option::VmSizes.find { it.display_name == size && it.arch == "x64" }
       if location.linode?
         begin

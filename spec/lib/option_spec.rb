@@ -20,6 +20,10 @@ RSpec.describe Option do
   end
 
   describe ".linode_plan" do
+    it "maps the exposed Nanode starter size to the real Linode Nanode plan" do
+      expect(described_class.linode_plan("nanode", 1).id).to eq("g6-nanode-1")
+    end
+
     it "maps the exposed GPU size to the real Linode RTX 4000 Ada small plan" do
       expect(described_class.linode_plan("standard", 4, gpu_count: 1, gpu_device: described_class::LINODE_GPU_DEVICE).id).to eq("g2-gpu-rtx4000a1-s")
       expect {

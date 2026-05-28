@@ -126,7 +126,7 @@ module Validation
 
     return [0, nil] if gpu_count == 0
 
-    fail ValidationFailed.new({gpu: "gpu not available for burstable vms"}) if vm_size&.family == "burstable"
+    fail ValidationFailed.new({gpu: "gpu not available for shared vms"}) if ["nanode", "burstable"].include?(vm_size&.family)
     linode_gpu_available = Config.compute_provider == "linode" && Option.linode_gpu_location?(location)
     fail ValidationFailed.new({gpu: "gpu not available for this project"}) unless project.get_ff_gpu_vm || linode_gpu_available
     fail ValidationFailed.new({gpu: "gpu type must be specified when gpu count is greater than 0."}) if gpu_device.nil? || gpu_device.empty?
