@@ -39,7 +39,9 @@ class CloudflareDnsClient
 
   def upsert_record(name:, type:, ttl:, content:)
     name = normalize_name(name)
-    matches = list_records(type:, name:).select { it["content"] == content }
+    content = normalize_content(type, content)
+    existing_records = list_records(type:, name:)
+    matches = existing_records.select { normalize_content(type, it["content"]) == content }
     payload = {
       type:,
       name:,
@@ -49,7 +51,13 @@ class CloudflareDnsClient
     }
 
     if matches.empty?
-      request(:post, records_path, body: payload)
+      if type == "CNAME" && !existing_records.empty?
+        keep, *duplicates = existing_records
+        request(:patch, "#{records_path}/#{keep.fetch("id")}", body: payload)
+        duplicates.each { |record| request(:delete, "#{records_path}/#{record.fetch("id")}") }
+      else
+        request(:post, records_path, body: payload)
+      end
     else
       keep, *duplicates = matches
       request(:patch, "#{records_path}/#{keep.fetch("id")}", body: payload)
@@ -59,8 +67,9 @@ class CloudflareDnsClient
 
   def delete_record(name:, type:, content:)
     name = normalize_name(name)
+    content = normalize_content(type, content) if content
     list_records(type:, name:).each do |record|
-      next if content && record["content"] != content
+      next if content && normalize_content(type, record["content"]) != content
 
       request(:delete, "#{records_path}/#{record.fetch("id")}")
     end
@@ -98,6 +107,10 @@ class CloudflareDnsClient
 
   def normalize_name(name)
     name.to_s.delete_suffix(".")
+  end
+
+  def normalize_content(type, content)
+    (type == "CNAME") ? content.to_s.delete_suffix(".") : content
   end
 
   def cloudflare_ttl(ttl)
