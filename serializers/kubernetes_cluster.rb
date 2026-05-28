@@ -5,7 +5,7 @@ class Serializers::KubernetesCluster < Serializers::Base
     base = {
       id: kc.ubid,
       name: kc.name,
-      location: kc.location.display_name,
+      location: kc.display_location,
       display_state: kc.display_state,
       cp_node_count: kc.cp_node_count,
       node_size: kc.target_node_size,

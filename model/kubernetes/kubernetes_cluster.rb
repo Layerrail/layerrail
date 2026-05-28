@@ -39,11 +39,11 @@ class KubernetesCluster < Sequel::Model
   end
 
   def display_location
-    location.display_name
+    location.ui_name
   end
 
   def path
-    "/location/#{display_location}/kubernetes-cluster/#{name}"
+    "/location/#{location.display_name}/kubernetes-cluster/#{name}"
   end
 
   def endpoint

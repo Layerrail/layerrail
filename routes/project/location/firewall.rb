@@ -85,7 +85,7 @@ class Clover
         handle_validation_failure("networking/firewall/show") { @page = "networking" }
 
         unless (private_subnet = authorized_private_subnet(location_id: @location.id, perm: "PrivateSubnet:edit"))
-          fail Validation::ValidationFailed.new({private_subnet_id: "Private subnet with the given id \"#{typecast_params.str("private_subnet_id")}\" and the location \"#{@location.display_name}\" is not found"})
+          fail Validation::ValidationFailed.new({private_subnet_id: "Private subnet with the given id \"#{typecast_params.str("private_subnet_id")}\" and the location \"#{@location.ui_name}\" is not found"})
         end
 
         actioned = nil

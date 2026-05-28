@@ -45,7 +45,7 @@ class LoadBalancer < Sequel::Model
   end
 
   def path
-    "/location/#{display_location}/load-balancer/#{name}"
+    "/location/#{private_subnet.location.display_name}/load-balancer/#{name}"
   end
 
   def vm_ports_by_vm(vm)

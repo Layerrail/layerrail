@@ -103,7 +103,7 @@ class Clover
         greeting: "Hello #{flavor_name} team,",
         body: ["New #{flavor_name} Postgres database has been created.",
           "ID: #{resource.ubid}",
-          "Location: #{resource.location.display_name}",
+          "Location: #{resource.location.ui_name}",
           "Name: #{resource.name}",
           "E-mail: #{user_email}",
           "Instance VM Size: #{resource.target_vm_size}",

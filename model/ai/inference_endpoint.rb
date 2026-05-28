@@ -20,11 +20,11 @@ class InferenceEndpoint < Sequel::Model
   include ObjectTag::Cleanup
 
   def display_location
-    location.display_name
+    location.ui_name
   end
 
   def path
-    "/location/#{display_location}/inference-endpoint/#{name}"
+    "/location/#{location.display_name}/inference-endpoint/#{name}"
   end
 
   def display_state

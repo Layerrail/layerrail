@@ -32,11 +32,11 @@ class PostgresResource < Sequel::Model
   ServerExclusionFilters = Struct.new(:exclude_host_ids, :exclude_data_centers, :exclude_availability_zones, :availability_zone)
 
   def display_location
-    location.display_name
+    location.ui_name
   end
 
   def path
-    "/location/#{display_location}/postgres/#{name}"
+    "/location/#{location.display_name}/postgres/#{name}"
   end
 
   def vm_size

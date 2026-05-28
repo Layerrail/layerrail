@@ -57,7 +57,7 @@ class Clover
         handle_validation_failure("vm/show") { @page = "settings" }
 
         unless ["metal", "linode"].include?(vm.location.provider_dispatcher_group_name)
-          raise CloverError.new(400, "InvalidRequest", "The #{action} action is not supported for VMs running on #{vm.location.display_name}")
+          raise CloverError.new(400, "InvalidRequest", "The #{action} action is not supported for VMs running on #{vm.location.ui_name}")
         end
 
         unless vm.send(:"can_#{action}?")

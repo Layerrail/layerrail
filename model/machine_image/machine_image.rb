@@ -13,11 +13,11 @@ class MachineImage < Sequel::Model
   dataset_module Pagination
 
   def display_location
-    location.display_name
+    location.ui_name
   end
 
   def path
-    "/location/#{display_location}/machine-image/#{name}"
+    "/location/#{location.display_name}/machine-image/#{name}"
   end
 end
 

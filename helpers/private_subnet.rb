@@ -50,7 +50,7 @@ class Clover
 
     if (firewall_id = typecast_params.nonempty_str("firewall_id"))
       unless (firewall = authorized_firewall(location_id: @location.id))
-        fail Validation::ValidationFailed.new(firewall_id: "Firewall with id \"#{firewall_id}\" and location \"#{@location.display_name}\" is not found")
+        fail Validation::ValidationFailed.new(firewall_id: "Firewall with id \"#{firewall_id}\" and location \"#{@location.ui_name}\" is not found")
       end
     end
 

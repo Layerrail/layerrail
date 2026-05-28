@@ -45,6 +45,14 @@ LayerRail's production control plane needs:
 - Billing through Polar.
 - At least one configured compute provider before customer VMs, Kubernetes, managed Postgres, load balancers, or inference routers can provision real resources.
 
+On Render, the web service alone is not enough for provisioning. Create separate background worker services from the same repo and branch:
+
+- `web`: `bundle exec puma -C puma_config.rb`
+- `respirate`: `bin/restarter bin/respirate`
+- `monitor`: `bin/monitor`
+
+If `respirate` is not running against the same `CLOVER_DATABASE_URL` as the web service, resources will stay in `creating` and nothing will appear in Linode.
+
 Run production migrations with:
 
 ```sh
@@ -63,6 +71,8 @@ RACK_ENV=production bundle exec rake prod_up
 
 Provider-specific credentials are required separately for whichever compute provider LayerRail is configured to use.
 
+Service hostnames such as `lb.layerrail.com`, `postgres.layerrail.com`, and `k8s.layerrail.com` are product DNS zones for generated customer endpoints. They are separate from the console host `console.layerrail.com` and should be created as DNS zones/subdomains in your DNS provider, not as extra Render web apps.
+
 ## Linode Compute
 
 LayerRail currently supports Linode as the first public-cloud compute provider for VM provisioning. Set:
@@ -79,7 +89,7 @@ The Linode catalog is intentionally narrow for launch:
 - VM sizes: Linode shared 2GB/4GB, dedicated 4GB/8GB/16GB/32GB, and one RTX 4000 Ada GPU plan.
 - Pricing: VM and GPU rates use a 30% LayerRail markup. Linode-included root storage and public IPv4 are shown as included instead of billed separately.
 
-With `COMPUTE_PROVIDER=linode`, PostgreSQL and Kubernetes are hidden unless explicitly enabled. The current PostgreSQL and Kubernetes code paths still expect LayerRail-managed infrastructure and backup/control-plane plumbing that is not fully mapped to Linode Object Storage or LKE yet.
+With `COMPUTE_PROVIDER=linode`, PostgreSQL and Kubernetes are LayerRail-managed, VM-backed services when `POSTGRES_ENABLED=true` and `KUBERNETES_ENABLED=true`. They use Linode compute under the hood through the configured service project IDs, so the production worker process must be running before they can create real Linode resources.
 
 The `/cli` page remains the built-in LayerRail CLI web shell for project commands. It is not a browser SSH terminal into customer VMs.
 

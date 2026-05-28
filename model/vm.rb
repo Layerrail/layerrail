@@ -54,7 +54,7 @@ class Vm < Sequel::Model
   end
 
   def display_location
-    location.display_name
+    location.ui_name
   end
 
   def display_gpu
@@ -76,7 +76,7 @@ class Vm < Sequel::Model
   end
 
   def path
-    "/location/#{display_location}/vm/#{name}"
+    "/location/#{location.display_name}/vm/#{name}"
   end
 
   def ip4

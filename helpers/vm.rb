@@ -25,7 +25,7 @@ class Clover
     authorize("Vm:create", project)
     fail Validation::ValidationFailed.new({billing_info: "Project doesn't have valid billing information"}) unless project.has_valid_payment_method?
     if Config.compute_provider && @location.provider != Config.compute_provider
-      fail Validation::ValidationFailed.new({location: "LayerRail compute is configured for #{Config.compute_provider}, but #{@location.display_name} uses #{@location.provider}."})
+      fail Validation::ValidationFailed.new({location: "LayerRail compute is configured for #{Config.compute_provider}, but #{@location.ui_name} uses #{@location.provider}."})
     end
 
     if api?
@@ -117,7 +117,7 @@ class Clover
       elsif (ps = authorized_private_subnet(location_id: @location.id))
         assemble_params[:private_subnet_id] = ps.id
       else
-        fail Validation::ValidationFailed.new({private_subnet_id: "Private subnet with the given id \"#{ps_id}\" is not found in the location \"#{@location.display_name}\""})
+        fail Validation::ValidationFailed.new({private_subnet_id: "Private subnet with the given id \"#{ps_id}\" is not found in the location \"#{@location.ui_name}\""})
       end
     end
     assemble_params[:unix_user] ||= "lr"

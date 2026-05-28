@@ -16,11 +16,11 @@ class Firewall < Sequel::Model
   dataset_module Pagination
 
   def display_location
-    location.display_name
+    location.ui_name
   end
 
   def path
-    "/location/#{display_location}/firewall/#{name}"
+    "/location/#{location.display_name}/firewall/#{name}"
   end
 
   def remove_firewall_rule(firewall_rule)
