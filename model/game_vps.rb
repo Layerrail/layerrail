@@ -12,36 +12,36 @@ class GameVps < Sequel::Model(:game_vps)
   }.freeze
   PLANS = {
     "starter" => {
-      name: "Starter RP",
+      name: "Starter",
       description: "Entry Windows VPS",
       cores: 2,
       ram_gib: 4,
       disk_gib: 80,
-      monthly_price: "19.99",
+      monthly_price: "4.99",
     },
     "community" => {
-      name: "Community RP",
+      name: "Community",
       description: "Growing FiveM server",
       cores: 4,
       ram_gib: 8,
       disk_gib: 160,
-      monthly_price: "34.99",
+      monthly_price: "8.99",
     },
     "growth" => {
-      name: "Growth RP",
+      name: "Growth",
       description: "Busy game community",
       cores: 8,
       ram_gib: 16,
       disk_gib: 320,
-      monthly_price: "64.99",
+      monthly_price: "14.99",
     },
     "serious" => {
-      name: "Serious RP",
+      name: "Serious",
       description: "High-capacity roleplay",
       cores: 16,
       ram_gib: 32,
       disk_gib: 640,
-      monthly_price: "119.99",
+      monthly_price: "29.99",
     },
   }.freeze
 
@@ -63,7 +63,7 @@ class GameVps < Sequel::Model(:game_vps)
   end
 
   def self.price_label(plan)
-    "EUR #{format("%0.2f", plan[:monthly_price].to_f)}/mo"
+    "$#{format("%0.2f", plan[:monthly_price].to_f)}/mo"
   end
 
   def location_label
@@ -83,7 +83,7 @@ class GameVps < Sequel::Model(:game_vps)
   end
 
   def price_label
-    "EUR #{format("%0.2f", monthly_price.to_f)}/mo"
+    "$#{format("%0.2f", monthly_price.to_f)}/mo"
   end
 
   def display_state

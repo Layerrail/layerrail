@@ -1,4 +1,4 @@
-- { id: 4b484694-19cd-491c-8105-9f8ca0a1bc2d, resource_type: GameVpsPlan, resource_family: starter,   location: global, unit_price: 0.0004627315, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
-- { id: df62c2db-d6fe-46cd-ad7c-e56a6551904c, resource_type: GameVpsPlan, resource_family: community, location: global, unit_price: 0.0008099537, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
-- { id: 495c13d6-39de-4c9a-bfd6-a1c933ff04ae, resource_type: GameVpsPlan, resource_family: growth,    location: global, unit_price: 0.0015043981, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
-- { id: 84dfbe42-2480-4307-bfa9-503acec4d805, resource_type: GameVpsPlan, resource_family: serious,   location: global, unit_price: 0.0027775463, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
+- { id: 4b484694-19cd-491c-8105-9f8ca0a1bc2d, resource_type: GameVpsPlan, resource_family: starter,   location: global, unit_price: 0.0001237599, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
+- { id: df62c2db-d6fe-46cd-ad7c-e56a6551904c, resource_type: GameVpsPlan, resource_family: community, location: global, unit_price: 0.0002229663, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
+- { id: 495c13d6-39de-4c9a-bfd6-a1c933ff04ae, resource_type: GameVpsPlan, resource_family: growth,    location: global, unit_price: 0.0003717758, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
+- { id: 84dfbe42-2480-4307-bfa9-503acec4d805, resource_type: GameVpsPlan, resource_family: serious,   location: global, unit_price: 0.0007437996, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
