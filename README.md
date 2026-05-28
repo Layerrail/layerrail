@@ -67,11 +67,12 @@ RACK_ENV=production bundle exec rake prod_up
 - Billing: `POLAR_ACCESS_TOKEN`, `POLAR_VERIFICATION_PRODUCT_ID`
 - Compute: `COMPUTE_PROVIDER=linode`, `LINODE_ACCESS_TOKEN`, `LINODE_API_BASE_URL`
 - Public URL: `BASE_URL`
+- DNS automation: `CLOUDFLARE_DNS_API_TOKEN`, `CLOUDFLARE_DNS_ZONE_ID`, `CLOUDFLARE_DNS_PROXIED=false`
 - AI inference: `AI_INFERENCE_ENABLED`, `RUNPOD_API_KEY`, `HUGGINGFACE_TOKEN`, `INFERENCE_DNS_ZONE`, `INFERENCE_ROUTER_ACCESS_TOKEN`
 
 Provider-specific credentials are required separately for whichever compute provider LayerRail is configured to use.
 
-Service hostnames such as `lb.layerrail.com`, `postgres.layerrail.com`, and `k8s.layerrail.com` are product DNS zones for generated customer endpoints. They are separate from the console host `console.layerrail.com` and should be created as DNS zones/subdomains in your DNS provider, not as extra Render web apps.
+Service hostnames such as `lb.layerrail.com`, `postgres.layerrail.com`, and `k8s.layerrail.com` are product DNS zones for generated customer endpoints. They are separate from the console host `console.layerrail.com` and should be managed in Cloudflare DNS, not as extra Render web apps.
 
 ## Linode Compute
 

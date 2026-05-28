@@ -259,7 +259,7 @@ module Config
 
   # Load Balancer
   optional :load_balancer_service_project_id, uuid
-  optional :load_balancer_service_hostname, string
+  override :load_balancer_service_hostname, "lb.layerrail.com", string
 
   # ACME
   # The following are optional because they are only needed in production.
@@ -283,11 +283,14 @@ module Config
 
   # DNS
   optional :dns_service_project_id, uuid
+  optional :cloudflare_dns_api_token, string, clear: true
+  optional :cloudflare_dns_zone_id, string, clear: true
+  override :cloudflare_dns_proxied, false, bool
 
   # Kubernetes
   override :kubernetes_enabled, true, bool
   optional :kubernetes_service_project_id, uuid
-  optional :kubernetes_service_hostname, string
+  override :kubernetes_service_hostname, "k8s.layerrail.com", string
 
   # Billing
   optional :polar_access_token, string, clear: true

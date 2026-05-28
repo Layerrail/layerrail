@@ -163,7 +163,7 @@ class LoadBalancer < Sequel::Model
   end
 
   def dns_zone
-    custom_hostname_dns_zone || DnsZone[project_id: Config.load_balancer_service_project_id, name: Config.load_balancer_service_hostname]
+    custom_hostname_dns_zone || DnsZone.ensure_service_zone(project_id: Config.load_balancer_service_project_id, name: Config.load_balancer_service_hostname)
   end
 
   def need_certificates?

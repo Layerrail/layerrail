@@ -11,6 +11,24 @@ class DnsZone < Sequel::Model
   plugin ResourceMethods
   plugin SemaphoreMethods, :refresh_dns_servers
 
+  def self.ensure_service_zone(project_id:, name:)
+    return unless project_id && name && Project[project_id]
+
+    DB.transaction do
+      DB[:dns_zone]
+        .insert_conflict(target: [:project_id, :name], update: {name: Sequel[:excluded][:name]})
+        .insert(project_id:, name:)
+      zone = DnsZone[project_id:, name:]
+      unless zone.strand
+        begin
+          Strand.create_with_id(zone, prog: "DnsZone::DnsZoneNexus", label: "wait")
+        rescue Sequel::UniqueConstraintViolation
+        end
+      end
+      zone
+    end
+  end
+
   def insert_record(record_name:, type:, ttl:, data:)
     record_name = add_dot_if_missing(record_name)
     add_record(name: record_name, type:, ttl:, data:)

@@ -70,7 +70,7 @@ class PostgresResource < Sequel::Model
   end
 
   def dns_zone
-    @dns_zone ||= DnsZone[project_id: Config.postgres_service_project_id, name: hostname_suffix]
+    @dns_zone ||= DnsZone.ensure_service_zone(project_id: Config.postgres_service_project_id, name: hostname_suffix)
   end
 
   AAAA_CUTOFF = Time.utc(2026, 1, 13, 20)

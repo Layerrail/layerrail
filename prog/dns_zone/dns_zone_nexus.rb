@@ -18,7 +18,9 @@ class Prog::DnsZone::DnsZoneNexus < Prog::Base
   end
 
   label def refresh_dns_servers
-    decr_refresh_dns_servers
+    if CloudflareDnsClient.configured?
+      CloudflareDnsClient.new.sync_zone(dns_zone)
+    end
 
     dns_zone.dns_servers.each do |dns_server|
       records_to_rectify = dns_zone.records_dataset
@@ -43,6 +45,7 @@ class Prog::DnsZone::DnsZoneNexus < Prog::Base
       DB[:seen_dns_records_by_dns_servers].multi_insert(records_to_rectify.map { {dns_record_id: it.id, dns_server_id: dns_server.id} })
     end
 
+    decr_refresh_dns_servers
     hop_purge_obsolete_records
   end
 
