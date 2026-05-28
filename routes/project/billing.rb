@@ -157,7 +157,25 @@ class Clover
           end
         end
 
-        flash["notice"] = "Polar billing connected successfully."
+        begin
+          refund_result = PolarClient.refund_checkout_order(
+            checkout_id:,
+            external_customer_id: polar_customer_id,
+            product_id: PolarClient.verification_product_id
+          )
+          flash["notice"] = case refund_result.fetch(:status)
+          when "refunded"
+            "Polar billing connected successfully. Your verification charge refund has been initiated."
+          when "already_refunded"
+            "Polar billing connected successfully. Your verification charge was already refunded."
+          else
+            Clog.emit("Polar verification order not found for refund", {polar_verification_refund_missing_order: {project_id: @project.id, checkout_id:}})
+            "Polar billing connected successfully. We couldn't confirm the verification refund yet; contact support@layerrail.com if it does not appear."
+          end
+        rescue PolarAPIError => e
+          Clog.emit("Polar verification refund failed", {polar_verification_refund_failed: {project_id: @project.id, checkout_id:, message: e.message}})
+          flash["notice"] = "Polar billing connected successfully. We couldn't start the automatic verification refund; contact support@layerrail.com if it does not appear."
+        end
         r.redirect billing_path
       end
 
