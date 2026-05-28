@@ -87,8 +87,46 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
   label def bootstrap_rhizome
     nap 5 unless vm.strand.label == "wait"
 
-    prepare_linode_kubernetes_node
+    bud Prog::BootstrapRhizome, {"target_folder" => "kubernetes", "subject_id" => vm.id, "user" => "ubi"}
 
+    hop_wait_bootstrap_rhizome
+  end
+
+  label def wait_bootstrap_rhizome
+    reap(:prepare_node_runtime)
+  end
+
+  label def prepare_node_runtime
+    if vm.location.linode?
+      state = vm.sshable.d_check("prepare_linode_kubernetes_node")
+      case state
+      when "Succeeded"
+        configure_kubernetes_node_services
+        hop_assign_role
+      when "NotStarted"
+        vm.sshable.d_run("prepare_linode_kubernetes_node", "bash", "-s", stdin: linode_kubernetes_prepare_script, log: false)
+        nap 15
+      when "InProgress"
+        nap 10
+      when "Failed"
+        Clog.emit("prepare linode kubernetes node failed", {logs: vm.sshable.d_logs("prepare_linode_kubernetes_node")})
+        Prog::PageNexus.assemble(
+          "prepare linode kubernetes node failed on node #{node.ubid}",
+          ["KubernetesNodePrepareLinodeFailed", node.ubid],
+          [node.ubid, kubernetes_cluster.ubid],
+        )
+        nap 30
+      else
+        Clog.emit("got unknown state from daemonizer2 check: #{state}")
+        nap 30
+      end
+    else
+      configure_kubernetes_node_services
+      hop_assign_role
+    end
+  end
+
+  def configure_kubernetes_node_services
     outbound_interface = vm.location.linode? ? "eth0" : "ens3"
     nft_rules = <<~NFT
       #!/usr/sbin/nft -f
@@ -120,19 +158,13 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
     NFT
     vm.sshable.cmd("sudo tee /etc/nftables.conf > /dev/null", stdin: nft_rules)
     vm.sshable.cmd("sudo systemctl enable --now nftables")
-    vm.sshable.cmd "sudo systemctl enable --now kubelet"
-
-    bud Prog::BootstrapRhizome, {"target_folder" => "kubernetes", "subject_id" => vm.id, "user" => "ubi"}
-
-    hop_wait_bootstrap_rhizome
+    vm.sshable.cmd "sudo systemctl enable kubelet"
   end
 
-  def prepare_linode_kubernetes_node
-    return unless vm.location.linode?
-
+  def linode_kubernetes_prepare_script
     repo_version = kubernetes_cluster.version
     marker = "/var/lib/layerrail-linode-kubernetes-prepared-#{repo_version.tr(".", "_")}"
-    vm.sshable.cmd(<<~SH)
+    <<~SH
 set -ueo pipefail
 if command -v kubelet >/dev/null && command -v kubeadm >/dev/null && command -v kubectl >/dev/null && [ -f #{marker} ]; then
   exit 0
@@ -171,10 +203,6 @@ sudo apt-mark hold kubelet kubeadm kubectl
 sudo systemctl enable kubelet
 sudo touch #{marker}
     SH
-  end
-
-  label def wait_bootstrap_rhizome
-    reap(:assign_role)
   end
 
   label def assign_role
