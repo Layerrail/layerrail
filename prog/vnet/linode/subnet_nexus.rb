@@ -6,11 +6,7 @@ class Prog::Vnet::Linode::SubnetNexus < Prog::Base
   label def start
     register_deadline("wait", 5 * 60)
     unless private_subnet.private_subnet_linode_resource
-      firewall = client.create_firewall(
-        label: "lr-#{private_subnet.ubid[0, 20]}",
-        rules: linode_firewall_rules,
-        tags: ["LayerRail", private_subnet.project.ubid],
-      )
+      firewall = create_linode_firewall
       PrivateSubnetLinodeResource.create_with_id(private_subnet, firewall_id: firewall.fetch("id"))
     end
 
@@ -33,7 +29,14 @@ class Prog::Vnet::Linode::SubnetNexus < Prog::Base
   label def update_firewall_rules
     decr_update_firewall_rules
     if (resource = private_subnet.private_subnet_linode_resource)
-      client.update_firewall_rules(resource.firewall_id, linode_firewall_rules)
+      begin
+        client.update_firewall_rules(resource.firewall_id, linode_firewall_rules)
+      rescue LinodeAPIError => ex
+        raise unless ex.status == 404
+
+        firewall = create_linode_firewall
+        resource.update(firewall_id: firewall.fetch("id"))
+      end
     end
     hop_wait
   end
@@ -62,6 +65,14 @@ class Prog::Vnet::Linode::SubnetNexus < Prog::Base
 
   def client
     @client ||= LinodeClient.new
+  end
+
+  def create_linode_firewall
+    client.create_firewall(
+      label: "lr-#{private_subnet.ubid[0, 20]}",
+      rules: linode_firewall_rules,
+      tags: ["LayerRail", private_subnet.project.ubid],
+    )
   end
 
   def linode_firewall_rules
