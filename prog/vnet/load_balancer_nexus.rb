@@ -160,7 +160,9 @@ class Prog::Vnet::LoadBalancerNexus < Prog::Base
       private_hostname = "private.#{hostname}"
 
       ip_info = []
-      load_balancer.vms_to_dns.each do |vm|
+      dns_vms = load_balancer.vms_to_dns
+      dns_vms = load_balancer.vms if dns_vms.empty? && load_balancer.ports_dataset.empty?
+      dns_vms.each do |vm|
         # Insert IPv4 record if stack is ipv4 or dual, and vm has IPv4
         if load_balancer.ipv4_enabled?
           if vm.ip4_string
