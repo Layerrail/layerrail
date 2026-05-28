@@ -11,6 +11,14 @@ class Prog::Vnet::UpdateLoadBalancerNode < Prog::Base
     vm.inhost_name
   end
 
+  def run_nft_rules(rules)
+    if vm.location.linode?
+      vm.sshable.cmd("sudo nft --file -", stdin: rules)
+    else
+      vm.vm_host.sshable.cmd("sudo ip netns exec :inhost_name nft --file -", inhost_name:, stdin: rules)
+    end
+  end
+
   def before_run
     super
     pop "VM is destroyed" unless vm
@@ -25,12 +33,12 @@ class Prog::Vnet::UpdateLoadBalancerNode < Prog::Base
     # load balancing.
     hop_remove_load_balancer if load_balancer.active_vm_ports.count == 0
 
-    vm.vm_host.sshable.cmd("sudo ip netns exec :inhost_name nft --file -", inhost_name:, stdin: generate_lb_based_nat_rules)
+    run_nft_rules(generate_lb_based_nat_rules)
     pop "load balancer is updated"
   end
 
   label def remove_load_balancer
-    vm.vm_host.sshable.cmd("sudo ip netns exec :inhost_name nft --file -", inhost_name:, stdin: generate_nat_rules(vm.ip4_string, vm.private_ipv4.to_s))
+    run_nft_rules(generate_nat_rules(vm.ip4_string, vm.private_ipv4.to_s))
 
     pop "load balancer is removed"
   end

@@ -18,7 +18,7 @@ class LoadBalancerVmPort < Sequel::Model
 
   def init_health_monitor_session
     {
-      ssh_session: vm.vm_host.sshable.start_fresh_session,
+      ssh_session: health_check_sshable.start_fresh_session,
     }
   end
 
@@ -50,16 +50,21 @@ class LoadBalancerVmPort < Sequel::Model
       dst_port: load_balancer_port.dst_port,
     }
 
+    cmd_prefix = vm.location.linode? ? "" : "sudo ip netns exec :vm_name "
     cmd = if load_balancer.health_check_protocol == "tcp"
       kw[:address] = address.to_s
-      "sudo ip netns exec :vm_name nc -z -w :timeout :address :dst_port >/dev/null 2>&1 && echo 200 || echo 400"
+      "#{cmd_prefix}nc -z -w :timeout :address :dst_port >/dev/null 2>&1 && echo 200 || echo 400"
     else
       kw[:address] = "#{load_balancer.hostname}:#{load_balancer_port.dst_port}:#{(address.version == 6) ? "[#{address}]" : address}"
       kw[:health_check_url] = load_balancer.health_check_url(use_endpoint: true)
-      "sudo ip netns exec :vm_name curl --insecure --resolve :address --max-time :timeout --silent --output /dev/null --write-out '%{http_code}' :health_check_url"
+      "#{cmd_prefix}curl --insecure --resolve :address --max-time :timeout --silent --output /dev/null --write-out '%{http_code}' :health_check_url"
     end
 
     [cmd, kw]
+  end
+
+  def health_check_sshable
+    vm.location.linode? ? vm.sshable : vm.vm_host.sshable
   end
 
   def check_pulse(session:, previous_pulse:)
