@@ -17,7 +17,7 @@ class DnsZone < Sequel::Model
     DB.transaction do
       DB[:dns_zone]
         .insert_conflict(target: [:project_id, :name], update: {name: Sequel[:excluded][:name]})
-        .insert(project_id:, name:)
+        .insert(id: DnsZone.generate_uuid, project_id:, name:)
       zone = DnsZone[project_id:, name:]
       unless zone.strand
         begin
