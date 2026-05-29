@@ -1,0 +1,11 @@
+<% @page_title = "Create Discount Code" %>
+
+<p>Creates project credit codes. Each code can be applied once per project from the billing page.</p>
+
+<% form(action: "/discount-codes", method: :post, id: "discount-code-form", class: "form-vertical") do |f| %>
+  <%== f.input(:text, key: "code", label: "Code", value: @discount_code_values["code"], required: true, placeholder: "phlaunch5") %>
+  <%== f.input(:number, key: "credit_amount", label: "Credit Amount ($)", value: @discount_code_values["credit_amount"], required: true, attr: {min: "0.01", max: "10000", step: "0.01"}) %>
+  <%== f.input("datetime-local", key: "expires_at", label: "Expires At", value: @discount_code_values["expires_at"], required: true) %>
+  <%== f.button("Create Discount Code") %>
+<% end %>
+

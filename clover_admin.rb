@@ -7,6 +7,7 @@ require "tilt"
 require "tilt/erubi"
 require "openssl"
 require "json"
+require "time"
 
 class CloverAdmin < Roda
   include AuditLog
@@ -1317,6 +1318,53 @@ class CloverAdmin < Roda
       end
 
       r.redirect "/admin-list"
+    end
+
+    r.on "discount-codes" do
+      r.get "new" do
+        @discount_code_values = {
+          "code" => "",
+          "credit_amount" => "",
+          "expires_at" => (Time.now.utc + 30 * 24 * 60 * 60).strftime("%Y-%m-%dT%H:%M"),
+        }
+        view("discount_code_new")
+      end
+
+      r.is do
+        r.post do
+          @discount_code_values = {
+            "code" => request.params["code"].to_s,
+            "credit_amount" => request.params["credit_amount"].to_s,
+            "expires_at" => request.params["expires_at"].to_s,
+          }
+
+          begin
+            code = typecast_params.nonempty_str!("code").strip.downcase
+            unless /\A[a-z0-9][a-z0-9_-]{2,63}\z/.match?(code)
+              raise ArgumentError, "Code must be 3-64 characters and use only letters, numbers, hyphens, or underscores."
+            end
+
+            credit_amount = typecast_params.float!("credit_amount")
+            unless credit_amount.positive? && credit_amount <= 10_000
+              raise ArgumentError, "Credit amount must be greater than $0.00 and no more than $10,000.00."
+            end
+
+            expires_at = Time.parse(typecast_params.nonempty_str!("expires_at")).utc
+            raise ArgumentError, "Expiry must be in the future." unless expires_at > Time.now.utc
+
+            discount_code = DiscountCode.create(code:, credit_amount:, expires_at:)
+          rescue Roda::RodaPlugins::TypecastParams::Error => e
+            flash.now["error"] = "Invalid parameter submitted: #{e.param_name}"
+            next view("discount_code_new")
+          rescue ArgumentError, Sequel::UniqueConstraintViolation => e
+            flash.now["error"] = e.is_a?(Sequel::UniqueConstraintViolation) ? "That discount code already exists." : e.message
+            next view("discount_code_new")
+          end
+
+          flash["notice"] = "Created discount code #{code} for $#{format("%.2f", credit_amount)} credit."
+          r.redirect "/model/DiscountCode/#{discount_code.ubid}"
+        end
+      end
     end
 
     r.get "search" do
