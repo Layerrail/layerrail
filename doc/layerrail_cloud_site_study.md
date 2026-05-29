@@ -468,3 +468,99 @@ The site should make one thing obvious:
 LayerRail is a real cloud console for practical infrastructure, not just a landing page.
 ```
 
+## SaaS Gallery Inspiration Addendum
+
+Scanned on 2026-05-29:
+
+- SaaSpo: https://saaspo.com/
+- SaaS Landing Page: https://saaslandingpage.com/
+- SaaSpo infrastructure examples: https://saaspo.com/industry/infrastructure-saas-websites-inspiration
+- SaaSpo cloud examples: https://saaspo.com/industry/cloud-saas-websites-inspiration
+- SaaSpo developer tools examples: https://saaspo.com/industry/developer-tools-saas-websites-inspiration
+- SaaSpo product pages: https://saaspo.com/page-types/saas-product-page-examples
+- SaaSpo pricing pages: https://saaspo.com/page-types/saas-pricing-page-examples
+- SaaSpo changelog pages: https://saaspo.com/page-types/saas-changelog-page-examples
+- SaaSpo unique footer examples: https://saaspo.com/style/unique-footer
+- SaaS Landing Page pricing examples: https://saaslandingpage.com/pricing/
+- SaaS Landing Page features examples: https://saaslandingpage.com/features/
+- SaaS Landing Page code-tool examples: https://saaslandingpage.com/tag/code-tool/
+
+These galleries are useful as pattern libraries, not as brands to copy. The strongest LayerRail-fit categories are infrastructure, cloud, developer tools, security, product pages, pricing pages, changelog pages, and unique footers.
+
+### Reference Sites Worth Borrowing From
+
+- Doss: strong "one operating cloud" narrative, modular product grid, serious B2B motion, and repeated demo CTA. Useful for showing LayerRail as a unified control plane rather than a loose list of services.
+- Antimetal: premium infrastructure tone, restrained visual system, and a confident "new layer of the stack" framing. Useful for LayerRail's higher-end infrastructure pages, but avoid being too abstract.
+- Latitude.sh: excellent cloud navigation with products, locations, networking, storage, managed Postgres, Kubernetes, and pricing all visible. This is one of the closest structural references for LayerRail.
+- Meter: clean infrastructure trust story, strong hardware/software/service framing, and calm enterprise sections. Useful for networking and load balancer pages.
+- Unkey: developer-first product storytelling, dark technical UI, docs/changelog/GitHub links, and "control plane" language. Useful for API, keys, runners, and platform primitives.
+- GitBook and ReadMe: best references for docs positioning. They treat docs as part of the product experience, not a support afterthought.
+- Neon: best reference for a PostgreSQL product page. It leads with a clear database promise, then explains autoscaling, branching, auth, API, and pricing logic.
+- HydraDB: useful for technical database/AI page energy, but too hype-heavy for LayerRail unless heavily toned down.
+- Linear features: best reference for a polished feature index. Useful if LayerRail makes a `/features` page grouping compute, Postgres, Kubernetes, networking, runners, AI, and game VPS.
+- Cloudflare product pages: strong product-detail structure: plain headline, technical benefit, use cases, docs CTA, and pricing/contact links.
+
+### What LayerRail Should Borrow
+
+- A first viewport that shows the platform as a working product, not just a headline.
+- A product grid with real service categories: VMs, GPU VMs, Game VPS, PostgreSQL, Kubernetes, Load Balancers, GitHub Runners, AI Inference.
+- A visible pricing route from the navbar and homepage.
+- A docs route from the navbar and every product page.
+- A status badge or status link in the footer.
+- Feature cards that explain what the user can create, not vague "powerful platform" claims.
+- Screenshots or console previews inside product sections.
+- A footer wordmark moment, but only if it feels premium and does not compete with the actual footer links.
+- A changelog page because weekly product updates are part of the LayerRail motion.
+
+### What LayerRail Should Avoid
+
+- Overly abstract AI language that hides the real product.
+- Huge decorative gradients without screenshots or service details.
+- Generic "teams move faster" copy.
+- Pricing pages that require contact for every plan.
+- Feature pages that show animation but not concrete infrastructure.
+- Developer pages that do not include docs, API examples, CLI examples, or resource limits.
+
+### LayerRail Website Shape From The Gallery Research
+
+Recommended homepage flow:
+
+```text
+1. Hero with direct platform promise and console/product visual.
+2. Trust strip: status, deploy regions, Linux images, support, billing.
+3. Product grid: Compute, GPU, Game VPS, Postgres, Kubernetes, Networking, Runners, AI.
+4. "How it works" strip: choose resource, pick location/size, deploy, monitor, upgrade.
+5. Pricing preview: starter plans, popular plans, GPU/contact plan, link to full pricing.
+6. Console preview: dashboard, VM list, Postgres creation, K8s detail, billing.
+7. Use cases: developers, startups, gaming communities, teams running private infrastructure.
+8. Docs and API section.
+9. Status/changelog/support strip.
+10. Footer with product links, resources, company, social, and a subtle oversized wordmark.
+```
+
+Recommended top navigation:
+
+```text
+Products
+Pricing
+Docs
+Changelog
+Status
+Support
+Console
+```
+
+Recommended product page template:
+
+```text
+1. Product hero: what it creates and who it is for.
+2. Quick deploy CTA: create in console, read docs.
+3. Practical capability grid.
+4. Pricing and limits.
+5. Regions and supported images/sizes.
+6. Security and networking details.
+7. CLI/API/docs block.
+8. FAQ.
+```
+
+The big takeaway from SaaSpo and SaaS Landing Page is that LayerRail should look polished, but it cannot be only aesthetic. The best references show real product structure fast. For LayerRail, the site has to prove: "I can create real infrastructure here, I understand what it costs, and I know where the docs and status live."
