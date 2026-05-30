@@ -4,7 +4,7 @@ require_relative "../model"
 
 class DeployVariable < Sequel::Model(:deploy_variable)
   one_to_one :strand, key: :id
-  many_to_one :app, class: :DeployApp, key: :app_id, read_only: true
+  many_to_one :app, class: :DeployApp, read_only: true
 
   plugin ResourceMethods, encrypted_columns: :value
 

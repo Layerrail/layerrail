@@ -7,7 +7,7 @@ class DeployDeployment < Sequel::Model(:deploy_deployment)
   TRIGGERS = %w[manual].freeze
 
   one_to_one :strand, key: :id
-  many_to_one :app, class: :DeployApp, key: :app_id, read_only: true
+  many_to_one :app, class: :DeployApp, read_only: true
 
   plugin ResourceMethods
   dataset_module Pagination

@@ -2,7 +2,7 @@
 <div class="auto-refresh hidden" data-interval="10"></div>
 
 <% right_items = [part("components/deploy_state_label", state: @deploy_app.display_state, extra_class: "text-md")]
-if has_permission?("Vm:create", @deploy_app) && !%w[provisioning deploying deleting].include?(@deploy_app.display_state)
+if has_permission?("Vm:create", @project) && !%w[provisioning deploying deleting].include?(@deploy_app.display_state)
   right_items << form({action: "#{path(@deploy_app)}/deploy", method: :post}, emit: false) do |f|
     f << part("components/button", text: "Deploy", icon: "hero-rocket-launch")
   end
@@ -13,7 +13,7 @@ right_items << part(
   url: path(@deploy_app),
   confirmation: @deploy_app.name,
   confirmation_message: "Deleting this deploy app also deletes its LayerRail VM.",
-) if has_permission?("Vm:delete", @deploy_app) && !@deploy_app.display_state.start_with?("deleting") %>
+) if has_permission?("Vm:delete", @project) && !@deploy_app.display_state.start_with?("deleting") %>
 
 <%== part(
   "components/page_header",

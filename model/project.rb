@@ -16,7 +16,7 @@ class Project < Sequel::Model
   many_to_many :nics, join_table: :private_subnet, right_key: :id, right_primary_key: :private_subnet_id, read_only: true
   one_to_many :vms, read_only: true
   one_to_many :deploy_apps, read_only: true
-  one_to_many :game_vpses, class: :GameVps, key: :project_id, read_only: true
+  one_to_many :game_vpses, class: :GameVps, read_only: true
   one_to_many :minio_clusters, read_only: true
   one_to_many :private_subnets, read_only: true
   one_to_many :postgres_resources, read_only: true

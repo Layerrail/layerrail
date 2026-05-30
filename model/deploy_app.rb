@@ -11,7 +11,7 @@ class DeployApp < Sequel::Model(:deploy_app)
 
   one_to_one :strand, key: :id
   many_to_one :project, read_only: true
-  many_to_one :installation, class: :GithubInstallation, key: :installation_id, read_only: true
+  many_to_one :installation, class: :GithubInstallation, read_only: true
   many_to_one :vm, read_only: true
   many_to_one :location, read_only: true
   one_to_many :deployments, key: :app_id, class: :DeployDeployment, order: Sequel.desc(:created_at), remover: nil, clearer: nil
@@ -27,6 +27,10 @@ class DeployApp < Sequel::Model(:deploy_app)
       .select { it.visible && it.arch == "x64" && %w[nanode burstable standard].include?(it.family) }
       .map { [it.name, "#{it.name} (#{it.vcpus} vCPU / #{it.memory_gib} GB)"] }
       .uniq(&:first)
+  end
+
+  def self.vm_size_available?(name)
+    vm_size_options.any? { it.first == name }
   end
 
   def display_state
@@ -68,6 +72,7 @@ class DeployApp < Sequel::Model(:deploy_app)
     errors.add(:app_port, "must be between 1 and 65535") unless app_port && app_port.between?(1, 65_535)
     errors.add(:root_directory, "must be relative") if root_directory.to_s.start_with?("/")
     errors.add(:output_directory, "must be relative") if output_directory.to_s.start_with?("/")
+    errors.add(:vm_size, "is not available for LayerRail Deploy") unless self.class.vm_size_available?(vm_size)
     Validation.validate_vm_size(vm_size, "x64", only_visible: true)
   rescue Validation::ValidationFailed => ex
     ex.details.each { |key, message| errors.add(key, message) }

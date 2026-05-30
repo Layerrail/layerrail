@@ -33,6 +33,8 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
     )
     app.update(vm_id: vm_st.subject.id, updated_at: Time.now)
     hop_wait_vm
+  rescue Prog::Base::FlowControl
+    raise
   rescue => ex
     mark_failed(ex)
   end
@@ -54,8 +56,11 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
     deploy_deployment.update(status: "building", updated_at: Time.now)
     app.update(status: "deploying", updated_at: Time.now)
 
+    configure_dns_record
     vm.sshable.cmd("sudo bash -s", stdin: remote_setup_script, log: false, timeout: 30)
     hop_poll_remote_build
+  rescue Prog::Base::FlowControl
+    raise
   rescue => ex
     mark_failed(ex)
   end
@@ -68,13 +73,14 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
     if status.fetch(:active_state) == "activating" || status.fetch(:sub_state) == "running"
       nap 10
     elsif status.fetch(:result) == "success" && %w[dead exited].include?(status.fetch(:sub_state))
-      configure_dns_record
       deploy_deployment.update(status: "live", finished_at: Time.now, updated_at: Time.now)
       app.update(status: "live", failure_message: nil, updated_at: Time.now)
       pop "deploy completed"
     else
       mark_failed(StandardError.new("Remote build failed. Check deployment logs."))
     end
+  rescue Prog::Base::FlowControl
+    raise
   rescue => ex
     mark_failed(ex)
   end
@@ -198,6 +204,63 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
       export DEBIAN_FRONTEND=noninteractive
       sudo apt-get update -y
       sudo apt-get install -y ca-certificates curl git nginx build-essential
+
+      write_deploy_page() {
+        local title="$1"
+        local message="$2"
+        sudo install -d -m 0755 /var/www/layerrail-deploy
+        sudo tee /var/www/layerrail-deploy/index.html > /dev/null <<HTML
+      <!doctype html>
+      <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>$title - LayerRail Deploy</title>
+        <style>
+          :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+          body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #FEFDFE; color: #101828; }
+          main { width: min(720px, calc(100vw - 32px)); text-align: center; }
+          .mark { width: 54px; height: 54px; margin: 0 auto 24px; border-radius: 16px; background: #8B67F2; box-shadow: 0 18px 40px rgba(139, 103, 242, .28); }
+          h1 { margin: 0; font-size: clamp(32px, 5vw, 56px); line-height: 1; letter-spacing: 0; }
+          p { margin: 18px auto 0; max-width: 560px; color: #667085; font-size: 18px; line-height: 1.6; }
+          .host { margin-top: 28px; display: inline-flex; border: 1px solid #EBE9F1; border-radius: 999px; padding: 10px 16px; color: #5A3A38; background: white; }
+        </style>
+      </head>
+      <body>
+        <main>
+          <div class="mark" aria-hidden="true"></div>
+          <h1>$title</h1>
+          <p>$message</p>
+          <div class="host">$APP_HOST</div>
+        </main>
+      </body>
+      </html>
+      HTML
+        sudo tee "/etc/nginx/sites-available/layerrail-$APP_ID" > /dev/null <<NGINX
+      server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+        server_name $APP_HOST _;
+        root /var/www/layerrail-deploy;
+        index index.html;
+      }
+      NGINX
+        sudo rm -f /etc/nginx/sites-enabled/default
+        sudo ln -sf "/etc/nginx/sites-available/layerrail-$APP_ID" "/etc/nginx/sites-enabled/layerrail-$APP_ID"
+        sudo nginx -t
+        sudo systemctl reload nginx || sudo systemctl restart nginx
+      }
+
+      deploy_failed() {
+        local exit_code=$?
+        trap - ERR
+        write_deploy_page "Deployment failed" "The latest deployment did not finish. Open the LayerRail console to inspect the build log and redeploy."
+        exit "$exit_code"
+      }
+
+      trap deploy_failed ERR
+      write_deploy_page "Deployment in progress" "LayerRail is preparing this application. The page will update automatically when the deployment is live."
+
       NODE_MAJOR="$(node -p 'Number(process.versions.node.split(".")[0])' 2>/dev/null || echo 0)"
       if [ "$NODE_MAJOR" -lt 20 ]; then
         curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
