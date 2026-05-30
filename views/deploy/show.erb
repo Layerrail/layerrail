@@ -12,7 +12,7 @@ right_items << part(
   text: "Delete",
   url: path(@deploy_app),
   confirmation: @deploy_app.name,
-  confirmation_message: "Deleting this deploy app also deletes its LayerRail VM.",
+  confirmation_message: "Deleting this deploy app also deletes its managed runtime.",
 ) if has_permission?("Vm:delete", @project) && !@deploy_app.display_state.start_with?("deleting") %>
 
 <%== part(
@@ -45,30 +45,37 @@ right_items << part(
   </div>
 
   <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-    <h3 class="text-base font-semibold leading-6 text-gray-900">Compute</h3>
+    <h3 class="text-base font-semibold leading-6 text-gray-900">Runtime</h3>
     <dl class="mt-4 space-y-3 text-sm">
       <div class="flex justify-between gap-4">
         <dt class="text-gray-500">Location</dt>
         <dd class="font-medium text-gray-900"><%= @deploy_app.location.ui_name %></dd>
       </div>
-      <div class="flex justify-between gap-4">
-        <dt class="text-gray-500">VM size</dt>
-        <dd class="font-medium text-gray-900"><%= @deploy_app.vm_size %></dd>
-      </div>
-      <div class="flex justify-between gap-4">
-        <dt class="text-gray-500">VM</dt>
-        <dd class="font-medium text-gray-900">
-          <% if @deploy_app.vm %>
-            <a class="text-layerrail-600" href="<%= path(@deploy_app.vm) %>"><%= @deploy_app.vm.name %></a>
-          <% else %>
-            Not assigned yet
-          <% end %>
-        </dd>
-      </div>
-      <div class="flex justify-between gap-4">
-        <dt class="text-gray-500">IP address</dt>
-        <dd class="font-medium text-gray-900"><%== part("components/copyable_content", content: @deploy_app.vm&.ip4_string || "Not assigned yet") %></dd>
-      </div>
+      <% if Config.deploy_infrastructure_controls_enabled %>
+        <div class="flex justify-between gap-4">
+          <dt class="text-gray-500">Runtime size</dt>
+          <dd class="font-medium text-gray-900"><%= @deploy_app.vm_size %></dd>
+        </div>
+        <div class="flex justify-between gap-4">
+          <dt class="text-gray-500">Instance</dt>
+          <dd class="font-medium text-gray-900">
+            <% if @deploy_app.vm %>
+              <a class="text-layerrail-600" href="<%= path(@deploy_app.vm) %>"><%= @deploy_app.vm.name %></a>
+            <% else %>
+              Not assigned yet
+            <% end %>
+          </dd>
+        </div>
+        <div class="flex justify-between gap-4">
+          <dt class="text-gray-500">IP address</dt>
+          <dd class="font-medium text-gray-900"><%== part("components/copyable_content", content: @deploy_app.vm&.ip4_string || "Not assigned yet") %></dd>
+        </div>
+      <% else %>
+        <div class="flex justify-between gap-4">
+          <dt class="text-gray-500">Capacity</dt>
+          <dd class="font-medium text-gray-900">Managed</dd>
+        </div>
+      <% end %>
     </dl>
   </div>
 

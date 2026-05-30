@@ -296,6 +296,7 @@ module Config
   override :deploy_service_hostname, "apps.layerrail.com", string
   override :deploy_default_vm_size, "nanode-1", string
   override :deploy_default_port, 3000, int
+  override :deploy_infrastructure_controls_enabled, false, bool
 
   # Billing
   optional :polar_access_token, string, clear: true

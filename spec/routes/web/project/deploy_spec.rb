@@ -28,18 +28,15 @@ RSpec.describe Clover, "deploy" do
     click_link "New Deploy App"
     expect(page.title).to eq("LayerRail - New Deploy App")
     expect(page).to have_content "GitHub account"
+    expect(page).to have_no_content "Runtime size"
   end
 
   it "can create a deploy app from a GitHub repository" do
-    vm_size_name, vm_size_label = DeployApp.vm_size_options.first
-
     visit "#{project.path}/deploy/create"
     fill_in "App name", with: "web"
     select "test-user (User)", from: "GitHub account"
     fill_in "Repository", with: "test-user/web"
     fill_in "Branch", with: "main"
-    select location.ui_name, from: "Location"
-    select vm_size_label, from: "VM size"
     select "Node.js", from: "Runtime"
     fill_in "App port", with: "3000"
     fill_in "Root directory", with: "apps/web"
@@ -54,13 +51,15 @@ RSpec.describe Clover, "deploy" do
     expect(app.project_id).to eq(project.id)
     expect(app.installation_id).to eq(installation.id)
     expect(app.location_id).to eq(location.id)
-    expect(app.vm_size).to eq(vm_size_name)
+    expect(app.vm_size).to eq(Config.deploy_default_vm_size)
     expect(app.repository).to eq("test-user/web")
     expect(app.hostname).to end_with(".apps.layerrail.com")
     expect(DeployDeployment.first(app_id: app.id).status).to eq("queued")
   end
 
-  it "rejects VM sizes outside the LayerRail Deploy v1 catalog" do
+  it "rejects runtime sizes outside the LayerRail Deploy v1 catalog when infrastructure controls are enabled" do
+    allow(Config).to receive(:deploy_infrastructure_controls_enabled).and_return(true)
+
     visit "#{project.path}/deploy/create"
     fill_in "App name", with: "web"
     fill_in "Repository", with: "test-user/web"

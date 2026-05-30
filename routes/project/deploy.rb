@@ -29,7 +29,12 @@ class Clover
       installation = @project.github_installations_dataset.first(id: installation_id)
       raise_web_error("Select a connected GitHub account.") unless installation
 
-      check_visible_location
+      if Config.deploy_infrastructure_controls_enabled
+        check_visible_location
+      else
+        @location = @deploy_locations.first
+        raise_web_error("LayerRail Deploy does not have an available runtime location yet.") unless @location
+      end
       if Config.compute_provider && @location.provider != Config.compute_provider
         fail Validation::ValidationFailed.new({location: "LayerRail Deploy is configured for #{Config.compute_provider}, but #{@location.ui_name} uses #{@location.provider}."})
       end
@@ -40,7 +45,7 @@ class Clover
       branch = "main" if branch.empty?
       framework = typecast_params.str("framework").to_s.strip
       framework = "node" if framework.empty?
-      vm_size = typecast_params.str("vm_size").to_s.strip
+      vm_size = Config.deploy_infrastructure_controls_enabled ? typecast_params.str("vm_size").to_s.strip : ""
       vm_size = Config.deploy_default_vm_size if vm_size.empty?
 
       Validation.validate_name(name)
@@ -51,7 +56,6 @@ class Clover
       Validation.validate_vcpu_quota(@project, "VmVCpu", vm_size_info.vcpus)
 
       app = nil
-      deployment = nil
       DB.transaction do
         app = DeployApp.new_with_id(
           project_id: @project.id,
@@ -72,7 +76,7 @@ class Clover
         )
         app.hostname = "#{app.name}-#{app.ubid.to_s[2, 6]}.#{Config.deploy_service_hostname}"
         app.save_changes
-        deployment = Prog::Deploy::DeploymentNexus.assemble(app)
+        Prog::Deploy::DeploymentNexus.assemble(app)
         audit_log(app, "create")
       end
 

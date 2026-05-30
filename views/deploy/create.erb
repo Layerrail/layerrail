@@ -42,26 +42,28 @@
           <div class="sm:col-span-2">
             <%== part("components/form/text", name: "branch", label: "Branch", value: typecast_body_params.str("branch") || "main", attributes: {required: "required"}) %>
           </div>
-          <div class="sm:col-span-3">
-            <%== part(
-              "components/form/select",
-              name: "location",
-              label: "Location",
-              selected: typecast_body_params.str("location") || @deploy_locations.first&.ubid,
-              options: @deploy_locations.map { [it.ubid, it.ui_name] },
-              attributes: {required: "required"}
-            ) %>
-          </div>
-          <div class="sm:col-span-3">
-            <%== part(
-              "components/form/select",
-              name: "vm_size",
-              label: "VM size",
-              selected: typecast_body_params.str("vm_size") || Config.deploy_default_vm_size,
-              options: @deploy_vm_sizes,
-              attributes: {required: "required"}
-            ) %>
-          </div>
+          <% if Config.deploy_infrastructure_controls_enabled %>
+            <div class="sm:col-span-3">
+              <%== part(
+                "components/form/select",
+                name: "location",
+                label: "Location",
+                selected: typecast_body_params.str("location") || @deploy_locations.first&.ubid,
+                options: @deploy_locations.map { [it.ubid, it.ui_name] },
+                attributes: {required: "required"}
+              ) %>
+            </div>
+            <div class="sm:col-span-3">
+              <%== part(
+                "components/form/select",
+                name: "vm_size",
+                label: "Runtime size",
+                selected: typecast_body_params.str("vm_size") || Config.deploy_default_vm_size,
+                options: @deploy_vm_sizes,
+                attributes: {required: "required"}
+              ) %>
+            </div>
+          <% end %>
           <div class="sm:col-span-3">
             <%== part(
               "components/form/select",
