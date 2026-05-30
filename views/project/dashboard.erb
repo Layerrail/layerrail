@@ -9,6 +9,7 @@ check_perms =
 
 tiles = [
   ["Virtual Machines", @project.vms_dataset.count, "#{@project.path}/vm", "Vm:create"],
+  (["Deploy Apps", @project.deploy_apps_dataset.count, "#{@project.path}/deploy", "Vm:create"] if Config.deploy_enabled),
   (["Databases", @project.postgres_resources_dataset.count, "#{@project.path}/postgres", "Postgres:create"] if Config.postgres_enabled),
   [
     "Load Balancers",
@@ -51,6 +52,13 @@ cards = [
     "#{@project.path}/vm/create",
     "Vm:create"
   ],
+  ([
+    "hero-rocket-launch",
+    "Deploy from GitHub",
+    "Connect a repository and run it on LayerRail-managed compute with deployment logs and a stable app hostname.",
+    "#{@project.path}/deploy/create",
+    "Vm:create"
+  ] if Config.deploy_enabled),
   ([
     "hero-rocket-launch",
     "Create Game VPS",

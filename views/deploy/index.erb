@@ -1,0 +1,36 @@
+<% @page_title = "Deploy" %>
+<div class="auto-refresh hidden" data-interval="10"></div>
+
+<%== part(
+  "components/page_header",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Deploy", "#"]],
+  right_items: (!@deploy_apps.empty? && has_project_permission("Vm:create")) ? [part("components/button", text: "New Deploy App", link: "#{@project.path}/deploy/create", icon: "hero-rocket-launch")] : []
+) %>
+
+<div class="grid gap-6">
+  <%== part(
+    "components/table_card",
+    headers: ["Name", "Repository", "Location", "State", "URL"],
+    rows: @deploy_apps.map do |app|
+      [
+        [
+          [app.name, {link: path(app)}],
+          [[app.repository, {link: app.repository_url}], [app.branch, {}]],
+          app.location.ui_name,
+          ["deploy_state_label", {component: {state: app.display_state}}],
+          [app.public_hostname, {copyable: true}]
+        ],
+        {id: "deploy-app-#{app.ubid}"}
+      ]
+    end,
+    empty_state: {
+      icon: "hero-rocket-launch",
+      title: "No deploy apps",
+      description: "You don't have permission to create deploy apps."
+    }.merge(has_project_permission("Vm:create") ? {
+      description: "Connect a GitHub repository and deploy it onto LayerRail-managed compute.",
+      button_link: "#{@project.path}/deploy/create",
+      button_title: "New Deploy App",
+    } : {})
+  ) %>
+</div>

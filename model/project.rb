@@ -15,6 +15,7 @@ class Project < Sequel::Model
   many_to_many :accounts, join_table: :access_tag, right_key: :hyper_tag_id
   many_to_many :nics, join_table: :private_subnet, right_key: :id, right_primary_key: :private_subnet_id, read_only: true
   one_to_many :vms, read_only: true
+  one_to_many :deploy_apps, read_only: true
   one_to_many :game_vpses, class: :GameVps, key: :project_id, read_only: true
   one_to_many :minio_clusters, read_only: true
   one_to_many :private_subnets, read_only: true
@@ -27,7 +28,7 @@ class Project < Sequel::Model
   one_to_many :machine_image_stores, read_only: true
   one_to_many :ssh_public_keys, order: :name, remover: nil, clearer: nil
 
-  RESOURCE_ASSOCIATIONS = %i[vms game_vpses minio_clusters private_subnets postgres_resources firewalls load_balancers kubernetes_clusters github_runners]
+  RESOURCE_ASSOCIATIONS = %i[vms deploy_apps game_vpses minio_clusters private_subnets postgres_resources firewalls load_balancers kubernetes_clusters github_runners]
   RESOURCE_ASSOCIATION_DATASET_METHODS = RESOURCE_ASSOCIATIONS.map { :"#{it}_dataset" }
 
   one_to_many :invoices, order: Sequel.desc(:created_at), read_only: true

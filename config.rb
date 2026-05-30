@@ -290,6 +290,13 @@ module Config
   optional :kubernetes_service_project_id, uuid
   override :kubernetes_service_hostname, "k8s.layerrail.com", string
 
+  # Deploy
+  override :deploy_enabled, true, bool
+  optional :deploy_service_project_id, uuid
+  override :deploy_service_hostname, "apps.layerrail.com", string
+  override :deploy_default_vm_size, "nanode-1", string
+  override :deploy_default_port, 3000, int
+
   # Billing
   optional :polar_access_token, string, clear: true
   override :polar_api_base_url, "https://api.polar.sh/v1", string

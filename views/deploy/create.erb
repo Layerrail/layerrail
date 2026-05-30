@@ -1,0 +1,101 @@
+<% @page_title = "New Deploy App" %>
+
+<%== part(
+  "components/page_header",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Deploy", "#{@project.path}/deploy"], ["Create", "#"]]
+) %>
+
+<% if @github_installations.empty? %>
+  <div class="rounded-lg bg-white p-8 shadow ring-1 ring-black ring-opacity-5">
+    <div class="mx-auto max-w-xl text-center">
+      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-layerrail-50 text-layerrail-700">
+        <%== part("components/icon", name: "github", classes: "h-6 w-6") %>
+      </div>
+      <h3 class="mt-4 text-base font-semibold leading-6 text-gray-900">Connect GitHub first</h3>
+      <p class="mt-2 text-sm text-gray-500">LayerRail Deploy needs a GitHub App installation so it can clone your repository during deployment.</p>
+      <div class="mt-6">
+        <%== part("components/button", text: "Connect GitHub", link: "#{@project.path}/github", icon: "github") %>
+      </div>
+    </div>
+  </div>
+<% else %>
+  <div class="rounded-lg bg-white shadow ring-1 ring-black ring-opacity-5">
+    <% form(action: "#{@project.path}/deploy", method: "POST") do %>
+      <div class="space-y-8 px-4 py-5 sm:p-6">
+        <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
+          <div class="sm:col-span-3">
+            <%== part("components/form/text", name: "name", label: "App name", value: typecast_body_params.str("name"), attributes: {required: "required", placeholder: "api-web"}) %>
+          </div>
+          <div class="sm:col-span-3">
+            <%== part(
+              "components/form/select",
+              name: "installation_id",
+              label: "GitHub account",
+              selected: typecast_body_params.str("installation_id") || @github_installations.first.ubid,
+              options: @github_installations.map { [it.ubid, "#{it.name} (#{it.type})"] },
+              attributes: {required: "required"}
+            ) %>
+          </div>
+          <div class="sm:col-span-4">
+            <%== part("components/form/text", name: "repository", label: "Repository", value: typecast_body_params.str("repository"), attributes: {required: "required", placeholder: "owner/repository"}) %>
+          </div>
+          <div class="sm:col-span-2">
+            <%== part("components/form/text", name: "branch", label: "Branch", value: typecast_body_params.str("branch") || "main", attributes: {required: "required"}) %>
+          </div>
+          <div class="sm:col-span-3">
+            <%== part(
+              "components/form/select",
+              name: "location",
+              label: "Location",
+              selected: typecast_body_params.str("location") || @deploy_locations.first&.ubid,
+              options: @deploy_locations.map { [it.ubid, it.ui_name] },
+              attributes: {required: "required"}
+            ) %>
+          </div>
+          <div class="sm:col-span-3">
+            <%== part(
+              "components/form/select",
+              name: "vm_size",
+              label: "VM size",
+              selected: typecast_body_params.str("vm_size") || Config.deploy_default_vm_size,
+              options: @deploy_vm_sizes,
+              attributes: {required: "required"}
+            ) %>
+          </div>
+          <div class="sm:col-span-3">
+            <%== part(
+              "components/form/select",
+              name: "framework",
+              label: "Runtime",
+              selected: typecast_body_params.str("framework") || "node",
+              options: DeployApp::FRAMEWORKS.map { |value, label| [value, label] },
+              attributes: {required: "required"}
+            ) %>
+          </div>
+          <div class="sm:col-span-3">
+            <%== part("components/form/text", name: "app_port", label: "App port", type: "number", value: typecast_body_params.str("app_port") || Config.deploy_default_port, attributes: {required: "required", min: 1, max: 65535}) %>
+          </div>
+          <div class="sm:col-span-3">
+            <%== part("components/form/text", name: "root_directory", label: "Root directory", value: typecast_body_params.str("root_directory"), attributes: {placeholder: "apps/web"}) %>
+          </div>
+          <div class="sm:col-span-3">
+            <%== part("components/form/text", name: "output_directory", label: "Static output directory", value: typecast_body_params.str("output_directory"), attributes: {placeholder: "dist"}) %>
+          </div>
+          <div class="sm:col-span-3">
+            <%== part("components/form/text", name: "install_command", label: "Install command", value: typecast_body_params.str("install_command") || "npm install", attributes: {required: "required"}) %>
+          </div>
+          <div class="sm:col-span-3">
+            <%== part("components/form/text", name: "build_command", label: "Build command", value: typecast_body_params.str("build_command") || "npm run build", attributes: {placeholder: "npm run build"}) %>
+          </div>
+          <div class="col-span-full">
+            <%== part("components/form/text", name: "start_command", label: "Start command", value: typecast_body_params.str("start_command") || "npm start", attributes: {placeholder: "npm start"}) %>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-x-6 border-t border-gray-900/10 px-4 py-4 sm:px-6">
+        <a href="<%= "#{@project.path}/deploy" %>" class="text-sm font-semibold leading-6 text-gray-900">Cancel</a>
+        <%== part("components/form/submit_button", text: "Create") %>
+      </div>
+    <% end %>
+  </div>
+<% end %>

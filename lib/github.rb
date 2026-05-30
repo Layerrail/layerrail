@@ -34,8 +34,12 @@ module Github
   end
 
   def self.installation_client(installation_id, auto_paginate: false, per_page: 100)
-    access_token = app_client.create_app_installation_access_token(installation_id)[:token]
+    access_token = installation_access_token(installation_id)
     Octokit::Client.new(access_token:, auto_paginate:, per_page:)
+  end
+
+  def self.installation_access_token(installation_id)
+    app_client.create_app_installation_access_token(installation_id)[:token]
   end
 
   # :nocov:

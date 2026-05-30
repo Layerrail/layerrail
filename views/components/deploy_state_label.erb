@@ -1,0 +1,9 @@
+<%# locals: (state:, extra_class: nil) %>
+<% color = case state
+  when "live" then "bg-green-100 text-green-800"
+  when "failed" then "bg-red-100 text-red-800"
+  when "deploying", "provisioning", "building", "queued" then "bg-yellow-100 text-yellow-800"
+  when "deleting", "canceled" then "bg-gray-100 text-gray-800"
+  else "bg-gray-100 text-gray-800"
+  end %>
+<%== part("components/state_label", state:, color:, extra_class:) %>
