@@ -7,6 +7,8 @@ require "prawn"
 require "prawn/table"
 
 class Invoice < Sequel::Model
+  INVOICE_LOGO_PATH = "public/brand/layerrail/layerrail-console-logo.png"
+
   unrestrict_primary_key
 
   many_to_one :project
@@ -247,8 +249,7 @@ class Invoice < Sequel::Model
     # Row 1, Left Column: Logo and issuer information
     row_y = pdf.bounds.top
     row = pdf.bounding_box([0, row_y], width: column_width) do
-      path = "public/logo-primary.png"
-      pdf.image path, height: 25, position: :left
+      pdf.image INVOICE_LOGO_PATH, height: 25, position: :left
       pdf.move_down 10
       pdf.text data.issuer_name, style: :semibold, color: dark_gray if data.issuer_name
       pdf.text "#{data.issuer_address},"
@@ -353,14 +354,15 @@ class Invoice < Sequel::Model
     pdf.render
   end
 
-  def persist(pdf)
-    Invoice.blob_storage_client.put_object(
+  def persist(pdf, overwrite: false)
+    payload = {
       bucket: Config.invoices_bucket_name,
       key: blob_key,
       body: pdf,
-      content_type: "application/pdf",
-      if_none_match: "*",
-    )
+      content_type: "application/pdf"
+    }
+    payload[:if_none_match] = "*" unless overwrite
+    Invoice.blob_storage_client.put_object(payload)
   end
 
   def generate_download_link

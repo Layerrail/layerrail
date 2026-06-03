@@ -189,6 +189,9 @@ Important environment groups include:
   invoices, applies project credits, and marks credit-covered invoices as no
   charge. Set `EUR_RATE` before running it; use `INVOICE_MONTH=YYYY-MM` to
   backfill a missed month.
+- `bin/republish-invoice-pdfs` regenerates and uploads existing invoice PDFs
+  after branding or invoice template changes. Use `INVOICE_UBIDS=...` for a
+  precise refresh or `INVOICE_MONTH=YYYY-MM` for a full month.
 
 ### Compute
 

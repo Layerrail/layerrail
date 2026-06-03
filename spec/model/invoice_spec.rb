@@ -233,6 +233,12 @@ RSpec.describe Invoice do
       expect(client).to receive(:put_object).with(bucket: Config.invoices_bucket_name, key: invoice.blob_key, content_type: "application/pdf", if_none_match: "*", body: pdf)
       invoice.persist(pdf)
     end
+
+    it "can overwrite an existing invoice PDF" do
+      pdf = invoice.generate_pdf
+      expect(client).to receive(:put_object).with(bucket: Config.invoices_bucket_name, key: invoice.blob_key, content_type: "application/pdf", body: pdf)
+      invoice.persist(pdf, overwrite: true)
+    end
   end
 
   describe ".generate_pdf" do
@@ -248,6 +254,11 @@ RSpec.describe Invoice do
 
     def pdf_text
       PDF::Reader.new(StringIO.new(invoice.generate_pdf)).pages.map(&:text).join(" ")
+    end
+
+    it "uses the LayerRail invoice logo" do
+      expect(described_class::INVOICE_LOGO_PATH).to eq("public/brand/layerrail/layerrail-console-logo.png")
+      expect(File).to exist(described_class::INVOICE_LOGO_PATH)
     end
 
     it "renders the discount label for line items with a discount" do

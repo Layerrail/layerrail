@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "date"
+require_relative "../loader"
+
+dataset = Invoice.dataset
+
+if ENV["INVOICE_UBIDS"]
+  ids = ENV.fetch("INVOICE_UBIDS").split(",").map(&:strip).reject(&:empty?).map do |ubid|
+    uuid = UBID.to_uuid(ubid)
+    abort "Invalid invoice UBID: #{ubid}" unless uuid
+
+    uuid
+  end
+  dataset = dataset.where(id: ids)
+elsif ENV["INVOICE_MONTH"]
+  begin
+    month = Date.strptime(ENV.fetch("INVOICE_MONTH"), "%Y-%m")
+  rescue Date::Error
+    abort "INVOICE_MONTH must use YYYY-MM format."
+  end
+  begin_time = Time.utc(month.year, month.month, 1)
+  next_month = month >> 1
+  end_time = Time.utc(next_month.year, next_month.month, 1)
+  dataset = dataset.where(begin_time:, end_time:)
+else
+  abort "Set INVOICE_UBIDS=ubid1,ubid2 or INVOICE_MONTH=YYYY-MM."
+end
+
+invoices = dataset.all
+puts "MATCHED_INVOICES=#{invoices.length}"
+
+if ENV["DRY_RUN"] == "1"
+  puts "DRY_RUN=1"
+  invoices.each { |invoice| puts invoice.ubid }
+  exit
+end
+
+invoices.each do |invoice|
+  invoice.persist(invoice.generate_pdf, overwrite: true)
+  puts "REPUBLISHED=#{invoice.ubid}"
+end
