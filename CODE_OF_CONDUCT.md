@@ -40,8 +40,8 @@ security details with care.
 
 Do not post credentials, API tokens, private keys, customer data, deployment
 secrets, exploit chains, or unpatched vulnerability details in public issues or
-pull requests. Use the process in [SECURITY.md](SECURITY.md) for security
-reports.
+pull requests. Use the process in the [security policy](.github/SECURITY.md)
+for security reports.
 
 ## Enforcement
 

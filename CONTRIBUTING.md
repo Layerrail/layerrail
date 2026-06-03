@@ -13,7 +13,7 @@ you spend time on an implementation.
 
 Please do not use public issues or pull requests for vulnerabilities, secrets,
 customer data, provider credentials, or exploit details. Follow
-[SECURITY.md](SECURITY.md) instead.
+[the security policy](.github/SECURITY.md) instead.
 
 ## Contribution Areas
 

@@ -8,8 +8,8 @@ body:
     attributes:
       value: |
         Thanks for helping improve LayerRail. Do not include secrets, credentials,
-        customer data, or vulnerability details in a public issue. Use SECURITY.md
-        for security reports.
+        customer data, or vulnerability details in a public issue. Use the
+        security policy for security reports.
   - type: textarea
     id: summary
     attributes:
