@@ -53,6 +53,14 @@ RSpec.describe Util do
       expect(Mail::TestMailer.deliveries.first.html_part.body.to_s).to include("Regards,").and include("LayerRail")
     end
 
+    it "links the email footer to the LayerRail GitHub organization" do
+      described_class.send_email("user@example.com", "Hello", greeting: "Hi", body: "Welcome")
+      body = Mail::TestMailer.deliveries.first.html_part.body.to_s
+
+      expect(body).to include("https://github.com/layerrail")
+      expect(body).not_to include("https://github.com/mayowaoladosu")
+    end
+
     it "renders a custom author name when provided" do
       described_class.send_email("user@example.com", "Hello", greeting: "Hi", body: "Welcome", author_name: "The LayerRail Team")
       expect(Mail::TestMailer.deliveries.length).to eq 1
