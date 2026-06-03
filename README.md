@@ -185,6 +185,10 @@ Important environment groups include:
   view for the organization and reports whether active Polar meters exist.
   The portal view does not create meters by itself; usage appears only after
   meters are attached to subscription products and matching events are ingested.
+- `bin/finalize-monthly-invoices` finalizes the previous month's LayerRail
+  invoices, applies project credits, and marks credit-covered invoices as no
+  charge. Set `EUR_RATE` before running it; use `INVOICE_MONTH=YYYY-MM` to
+  backfill a missed month.
 
 ### Compute
 

@@ -149,7 +149,7 @@ class Project < Sequel::Model
 
   def current_invoice(since: nil)
     end_time = Time.now.utc
-    begin_time = since || invoices_dataset.where(Sequel[:end_time] < end_time).get(:end_time) || Time.utc(end_time.year, end_time.month)
+    begin_time = since || Time.utc(end_time.year, end_time.month)
 
     if (invoice = InvoiceGenerator.new(begin_time, end_time, project_ids: [id]).run.first)
       return invoice

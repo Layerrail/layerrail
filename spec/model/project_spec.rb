@@ -152,6 +152,22 @@ RSpec.describe Project do
       Invoice.create(project_id: project.id, content: {}, begin_time: t, end_time: t - 86400, status: "current", invoice_number: "1", created_at: t - 1)
       expect(project.current_invoice).to be_a Invoice
     end
+
+    it "uses the current calendar month when the previous invoice was missed" do
+      now = Time.utc(2026, 6, 3, 12)
+      allow(Time).to receive(:now).and_return(now)
+      project = described_class.create(name: "dummy-name")
+      Invoice.create(
+        project_id: project.id,
+        content: {},
+        begin_time: Time.utc(2026, 4, 1),
+        end_time: Time.utc(2026, 5, 1),
+        status: "paid",
+        invoice_number: "2604-dummy-0001"
+      )
+
+      expect(project.current_invoice.begin_time).to eq(Time.utc(2026, 6, 1))
+    end
   end
 
   it "sets and gets feature flags" do

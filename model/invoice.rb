@@ -68,16 +68,6 @@ class Invoice < Sequel::Model
 
   def charge
     reload # Reload to get the latest status to avoid double charging
-    if Config.polar_access_token
-      Clog.emit("Polar billing is enabled. Invoice charging is handled by Polar checkout or usage-based billing.", {polar_invoice_charge_deferred: {ubid:}})
-      return false
-    end
-
-    unless Config.stripe_secret_key
-      Clog.emit("Billing is not enabled. Set STRIPE_SECRET_KEY to enable billing.")
-      return true
-    end
-
     if status != "unpaid"
       Clog.emit("Invoice already charged.", {invoice_already_charged: {ubid:, status:}})
       return true
@@ -88,6 +78,22 @@ class Invoice < Sequel::Model
       update(status: "below_minimum_threshold")
       Clog.emit("Invoice cost is less than minimum charge cost.", {invoice_below_threshold: {ubid:, cost: amount}})
       send_success_email
+      return true
+    end
+
+    if Config.polar_access_token
+      unless BillingInfo[content.dig("billing_info", "id")]
+        Clog.emit("Invoice doesn't have billing info.", {invoice_no_billing: {ubid:}})
+        return false
+      end
+
+      Clog.emit("Polar billing is enabled. Invoice payment is handled by Polar checkout.", {polar_invoice_payment_pending: {ubid:, cost: amount}})
+      send_payment_due_email
+      return true
+    end
+
+    unless Config.stripe_secret_key
+      Clog.emit("Billing is not enabled. Set STRIPE_SECRET_KEY to enable billing.")
       return true
     end
 
@@ -144,6 +150,25 @@ class Invoice < Sequel::Model
     Clog.emit("Invoice couldn't charged with any payment method.", {invoice_not_charged: {ubid:}})
     send_failure_email(errors)
     false
+  end
+
+  def send_payment_due_email
+    data = Serializers::Invoice.serialize(self)
+    pdf = generate_pdf(data)
+    unless data.billing_email
+      Clog.emit("Couldn't send the invoice because it has no billing information", {invoice_no_billing_info: {ubid:}})
+      return
+    end
+
+    Util.send_email(data.billing_email, "LayerRail #{data.name} Invoice ##{data.invoice_number}",
+      greeting: "Dear #{data.billing_name},",
+      body: ["Please find your current invoice ##{data.invoice_number} below.",
+        "The invoice amount of #{data.total} is ready for payment through Polar.",
+        "You can pay it from your project's billing page.",
+        "If you have any questions, please send us a support request via support@layerrail.com, and include your invoice number."],
+      button_title: "Pay Invoice",
+      button_link: "#{Config.base_url}#{project.path}/billing",
+      attachments: [[filename, pdf]])
   end
 
   def send_success_email

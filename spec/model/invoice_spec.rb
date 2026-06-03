@@ -105,10 +105,33 @@ RSpec.describe Invoice do
     it "not charge if less than minimum charge threshold" do
       update_content(billing_info: {"id" => billing_info.id, "email" => "customer@example.com", "country" => "NL"}, cost: 0.4)
       expect(Clog).to receive(:emit).with("Invoice cost is less than minimum charge cost.", instance_of(Hash)).and_call_original
-      expect(client).to receive(:put_object).with(hash_including(bucket: Config.invoices_bucket_name, key: "2025/03/below_minimum_threshold/Ubicloud-2025-03-2503-4ddfa430e8-0006.pdf"))
+      expect(client).to receive(:put_object).with(hash_including(bucket: Config.invoices_bucket_name, key: "2025/03/below_minimum_threshold/#{invoice.filename}"))
       expect(invoice.charge).to be true
       expect(invoice.status).to eq("below_minimum_threshold")
       expect(Mail::TestMailer.deliveries.length).to eq 1
+    end
+
+    it "marks credit-covered Polar invoices as below the minimum threshold" do
+      allow(Config).to receive(:polar_access_token).and_return("polar_test")
+      update_content(billing_info: {"id" => billing_info.id, "email" => "customer@example.com", "country" => "NL"}, cost: 0)
+      expect(Clog).to receive(:emit).with("Invoice cost is less than minimum charge cost.", instance_of(Hash)).and_call_original
+      expect(client).to receive(:put_object).with(hash_including(bucket: Config.invoices_bucket_name, key: "2025/03/below_minimum_threshold/#{invoice.filename}"))
+
+      expect(invoice.charge).to be true
+      expect(invoice.status).to eq("below_minimum_threshold")
+      expect(Mail::TestMailer.deliveries.length).to eq 1
+    end
+
+    it "sends a Polar payment due email for payable invoices" do
+      allow(Config).to receive(:polar_access_token).and_return("polar_test")
+      update_content(billing_info: {"id" => billing_info.id, "email" => "customer@example.com", "country" => "NL", "name" => "Customer"}, cost: 10)
+      expect(Clog).to receive(:emit).with("Polar billing is enabled. Invoice payment is handled by Polar checkout.", instance_of(Hash)).and_call_original
+      expect(payment_intents_service).not_to receive(:create)
+
+      expect(invoice.charge).to be true
+      expect(invoice.status).to eq("unpaid")
+      expect(Mail::TestMailer.deliveries.length).to eq 1
+      expect(Mail::TestMailer.deliveries.first.html_part.body).to include("ready for payment through Polar")
     end
 
     it "not charge if doesn't have billing info" do

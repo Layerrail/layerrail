@@ -1,0 +1,66 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "date"
+require_relative "../loader"
+
+def parse_invoice_month(value)
+  date = Date.strptime(value, "%Y-%m")
+  Date.new(date.year, date.month, 1)
+rescue Date::Error
+  abort "INVOICE_MONTH must use YYYY-MM format."
+end
+
+invoice_month = if ENV["INVOICE_MONTH"]
+  parse_invoice_month(ENV.fetch("INVOICE_MONTH"))
+else
+  today = Date.today
+  Date.new(today.year, today.month, 1) << 1
+end
+
+begin_time = Time.utc(invoice_month.year, invoice_month.month, 1)
+next_month = invoice_month >> 1
+end_time = Time.utc(next_month.year, next_month.month, 1)
+eur_rate = ENV["EUR_RATE"] && Float(ENV.fetch("EUR_RATE"))
+abort "Set EUR_RATE before finalizing invoices." unless eur_rate
+
+requested_project_ids = ENV.fetch("PROJECT_IDS", "")
+  .split(",")
+  .map(&:strip)
+  .reject(&:empty?)
+
+existing_invoice_project_ids = Invoice
+  .where(begin_time:, end_time:)
+  .select_map(:project_id)
+
+candidate_project_ids = BillingRecord
+  .where { |br| Sequel.pg_range(br.span).overlaps(Sequel.pg_range(begin_time...end_time)) }
+  .select_map(:project_id)
+  .uniq
+
+candidate_project_ids &= requested_project_ids unless requested_project_ids.empty?
+project_ids = candidate_project_ids - existing_invoice_project_ids
+
+puts "INVOICE_MONTH=#{invoice_month.strftime("%Y-%m")}"
+puts "CANDIDATE_PROJECTS=#{candidate_project_ids.length}"
+puts "SKIPPED_EXISTING_INVOICES=#{candidate_project_ids.length - project_ids.length}"
+
+if project_ids.empty?
+  puts "CREATED_INVOICES=0"
+  exit
+end
+
+if ENV["DRY_RUN"] == "1"
+  puts "DRY_RUN=1"
+  puts "WOULD_CREATE_INVOICES=#{project_ids.length}"
+  exit
+end
+
+invoices = InvoiceGenerator.new(begin_time, end_time, save_result: true, project_ids:, eur_rate:).run
+charged_count = 0
+invoices.each do |invoice|
+  charged_count += 1 if invoice.charge
+end
+
+puts "CREATED_INVOICES=#{invoices.length}"
+puts "PROCESSED_INVOICES=#{charged_count}"
