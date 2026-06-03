@@ -2,7 +2,100 @@
 <%== render("components/free_quota") %>
 <%== render("inference/tabbar") %>
 
-<div class="grid xl:grid-cols-2 2xl:grid-cols-3 gap-4">
+<%
+  text_generation_models = @inference_models.count { it.tags["capability"] == "Text Generation" }
+  embedding_models = @inference_models.count { it.tags["capability"] == "Embeddings" }
+  first_model_url = @inference_models.first&.load_balancer&.health_check_url
+%>
+
+<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-4">
+  <div class="rounded-lg bg-white p-4 shadow ring-1 ring-black ring-opacity-5">
+    <div class="flex items-center gap-3">
+      <%== part("components/icon", name: "hero-cpu-chip", classes: "h-7 w-7 text-layerrail-600") %>
+      <div>
+        <p class="text-sm text-gray-500">Available models</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= @inference_models.length %></p>
+      </div>
+    </div>
+  </div>
+  <div class="rounded-lg bg-white p-4 shadow ring-1 ring-black ring-opacity-5">
+    <div class="flex items-center gap-3">
+      <%== part("components/icon", name: "hero-chat-bubble-bottom-center-text", classes: "h-7 w-7 text-layerrail-600") %>
+      <div>
+        <p class="text-sm text-gray-500">Text generation</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= text_generation_models %></p>
+      </div>
+    </div>
+  </div>
+  <div class="rounded-lg bg-white p-4 shadow ring-1 ring-black ring-opacity-5">
+    <div class="flex items-center gap-3">
+      <%== part("components/icon", name: "hero-document-arrow-down", classes: "h-7 w-7 text-layerrail-600") %>
+      <div>
+        <p class="text-sm text-gray-500">Embedding models</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= embedding_models %></p>
+      </div>
+    </div>
+  </div>
+  <div class="rounded-lg bg-white p-4 shadow ring-1 ring-black ring-opacity-5">
+    <div class="flex items-center gap-3">
+      <%== part("components/icon", name: "hero-banknotes", classes: "h-7 w-7 text-layerrail-600") %>
+      <div>
+        <p class="text-sm text-gray-500">Free quota</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= @remaining_free_quota.to_i %></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="rounded-lg bg-white p-4 shadow ring-1 ring-black ring-opacity-5 mb-4">
+  <div class="grid gap-4 lg:grid-cols-[1fr_220px] lg:items-end">
+    <div>
+      <label for="inference_model_search" class="block text-sm font-medium leading-6 text-gray-900">Search models</label>
+      <div class="relative mt-2">
+        <%== part("components/icon", name: "hero-magnifying-glass", classes: "pointer-events-none absolute left-3 top-2 h-5 w-5 text-gray-400") %>
+        <input
+          id="inference_model_search"
+          type="search"
+          placeholder="Search by model, provider, capability, or model card"
+          class="block w-full rounded-md border-0 py-2 pl-10 pr-3 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-layerrail-600"
+        >
+      </div>
+    </div>
+    <div>
+      <label for="inference_capability_filter" class="block text-sm font-medium leading-6 text-gray-900">Capability</label>
+      <select id="inference_capability_filter" class="mt-2 block w-full rounded-md border-0 py-2 pl-3 pr-10 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-layerrail-600">
+        <option value="">All capabilities</option>
+        <option value="Text Generation">Text generation</option>
+        <option value="Embeddings">Embeddings</option>
+      </select>
+    </div>
+  </div>
+  <% if first_model_url %>
+    <div class="mt-4 grid gap-3 text-sm text-gray-600 lg:grid-cols-[120px_1fr] lg:items-center">
+      <span class="font-medium text-gray-900">Base URL</span>
+      <%== part("components/copyable_content", content: first_model_url, message: "Copied base URL") %>
+    </div>
+  <% end %>
+</div>
+
+<% if @inference_models.empty? %>
+  <%== render(
+    "components/empty_state",
+    locals: {
+      title: "No inference models",
+      icon: "hero-cpu-chip",
+      description: "AI inference is enabled, but no visible models are available for this project yet."
+    }
+  ) %>
+<% end %>
+
+<div id="inference_catalog_empty" class="hidden rounded-lg bg-white p-8 text-center shadow ring-1 ring-black ring-opacity-5">
+  <%== part("components/icon", name: "hero-magnifying-glass", classes: "mx-auto h-10 w-10 text-gray-400") %>
+  <h3 class="mt-2 text-sm font-semibold text-gray-900">No matching models</h3>
+  <p class="mt-1 text-sm text-gray-500">Adjust the search or capability filter.</p>
+</div>
+
+<div id="inference_model_catalog" class="grid xl:grid-cols-2 2xl:grid-cols-3 gap-4">
   <% @inference_models.each_with_index do | ie, index |
     path, model_icon, curl_message = case ie.tags["capability"]
       when "Text Generation"
@@ -22,6 +115,20 @@ MSG
       # :nocov:
     end
 
+    display_name = ie.tags["display_name"] || ie.model_name
+    provider = ie.tags["provider"] || (ie.respond_to?(:provider) ? ie.provider : "LayerRail")
+    prompt_price = BillingRate.million_token_price(ie.prompt_billing_resource)
+    completion_price = BillingRate.million_token_price(ie.completion_billing_resource)
+    context_length = ie.tags.fetch("context_length", "Full")
+    capability = ie.tags["capability"]
+    search_text = [
+      display_name,
+      ie.model_name,
+      provider,
+      capability,
+      context_length,
+      ie.tags["hf_model"]
+    ].compact.join(" ").downcase
 
     curl_snippet_html = <<-CURL
 curl #{ie.load_balancer.health_check_url(path:)} \\
@@ -32,43 +139,66 @@ curl #{ie.load_balancer.health_check_url(path:)} \\
     #{curl_message}   }'</span>
   CURL
     %>
-  <div class="overflow-hidden rounded-lg shadow ring-1 ring-black ring-opacity-5 bg-white p-4">
-    <h2 class="text-lg font-bold mb-4 text-gray-800 line-clamp-1"><%= ie.tags["display_name"] || ie.model_name %></h2>
+  <div
+    class="overflow-hidden rounded-lg shadow ring-1 ring-black ring-opacity-5 bg-white p-4"
+    data-inference-model-card
+    data-capability="<%= capability %>"
+    data-search="<%= search_text %>"
+  >
+    <div class="mb-4 flex items-start justify-between gap-3">
+      <div>
+        <h2 class="text-lg font-bold text-gray-800 line-clamp-1"><%= display_name %></h2>
+        <p class="mt-1 text-xs text-gray-500 line-clamp-1"><%= ie.model_name %></p>
+      </div>
+      <span class="inline-flex shrink-0 items-center rounded-full bg-layerrail-50 px-2 py-1 text-xs font-medium text-layerrail-700"><%= provider %></span>
+    </div>
     <div class="grid sm:grid-cols-2 gap-4">
       <div>
         <h3 class="text-sm font-semibold text-gray-900">Model card</h3>
         <div class="flex items-center gap-1 text-gray-500">
-          <%if hf_model = ie.tags["hf_model"]%>
-          <a target="_blank" rel="noreferrer" href="https://huggingface.co/<%= hf_model %>" class="text-layerrail-600 line-clamp-2">🤗 <%= hf_model %></a>
-          <%elsif ie.tags["provider"]%>
+          <% if hf_model = ie.tags["hf_model"] %>
+          <a target="_blank" rel="noreferrer" href="https://huggingface.co/<%= hf_model %>" class="text-layerrail-600 line-clamp-2"><%= hf_model %></a>
+          <% elsif ie.tags["provider"] %>
           <p class="text-gray-500"><%= ie.tags["provider"] %></p>
-          <%else%>
+          <% else %>
           <p class="text-gray-500">Not available</p>
-          <%end%>
+          <% end %>
         </div>
       </div>
       <div>
         <h3 class="text-sm font-semibold text-gray-900">Price</h3>
         <p class="text-gray-500">
-          Input: $<%= "%0.02f" % BillingRate.million_token_price(ie.prompt_billing_resource) %> / 1M tokens
+          Input: $<%= "%0.02f" % prompt_price %> / 1M tokens
           <br>
-          Output: $<%= "%0.02f" % BillingRate.million_token_price(ie.completion_billing_resource) %> / 1M tokens
+          Output: $<%= "%0.02f" % completion_price %> / 1M tokens
         </p>
       </div>
       <div>
         <h3 class="text-sm font-semibold text-gray-900">Capability</h3>
         <div class="flex items-center gap-1 text-gray-500">
           <%== part("components/icon", name: model_icon, classes: "w-5 h-5 text-gray-400") %>
-          <%= ie.tags["capability"] %>
+          <%= capability %>
         </div>
       </div>
       <div>
         <h3 class="text-sm font-semibold text-gray-900">Context length</h3>
-        <p class="text-gray-500"><%= ie.tags.fetch("context_length", "Full") %></p>
+        <p class="text-gray-500"><%= context_length %></p>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold text-gray-900">Streaming</h3>
+        <p class="text-gray-500"><%= ie.respond_to?(:provider) && ie.provider == "cloudflare" ? "Disabled" : "Available" %></p>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold text-gray-900">Modalities</h3>
+        <p class="text-gray-500"><%= ie.tags["multimodal"] ? "Text, image, PDF" : "Text" %></p>
       </div>
       <div class="sm:col-span-2">
         <h3 class="text-sm font-semibold text-gray-900">URL</h3>
         <div class="text-gray-500"><%== part("components/copyable_content", content: ie.load_balancer.health_check_url, message: "Copied URL") %></div>
+      </div>
+      <div class="sm:col-span-2">
+        <h3 class="text-sm font-semibold text-gray-900">Model ID</h3>
+        <div class="text-gray-500"><%== part("components/copyable_content", content: ie.model_name, message: "Copied model ID") %></div>
       </div>
       <div class="sm:col-span-2">
         <h3 class="text-sm font-semibold text-gray-900">
@@ -78,7 +208,7 @@ curl #{ie.load_balancer.health_check_url(path:)} \\
           <pre class="text-sm bg-gray-800 text-white p-2 rounded-lg overflow-scroll"><%== curl_snippet_html %></pre>
         </div>
       </div>
-      <% if ie.tags["capability"] == "Text Generation" %>
+      <% if capability == "Text Generation" %>
       <%== render(
         "components/button",
         locals: {
@@ -93,5 +223,4 @@ curl #{ie.load_balancer.health_check_url(path:)} \\
     </div>
   </div>
   <% end %>
-
 </div>

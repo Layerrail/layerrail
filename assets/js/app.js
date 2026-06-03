@@ -3,6 +3,7 @@ $(function () {
   setupScrollToBottom();
   setupDatePicker();
   setupFormOptionUpdates();
+  setupInferenceCatalog();
   setupPlayground();
   setupMetricsCharts();
   setupPgConfigCard();
@@ -272,6 +273,40 @@ function redrawChildOptions(name) {
   }
 }
 
+function setupInferenceCatalog() {
+  const $catalog = $('#inference_model_catalog');
+  if ($catalog.length === 0) {
+    return;
+  }
+
+  const $cards = $('[data-inference-model-card]');
+  const $empty = $('#inference_catalog_empty');
+  const $search = $('#inference_model_search');
+  const $capability = $('#inference_capability_filter');
+
+  function filterCatalog() {
+    const query = ($search.val() || '').toString().trim().toLowerCase();
+    const capability = ($capability.val() || '').toString();
+    let visibleCount = 0;
+
+    $cards.each(function () {
+      const $card = $(this);
+      const matchesQuery = query === '' || ($card.data('search') || '').includes(query);
+      const matchesCapability = capability === '' || $card.data('capability') === capability;
+      const visible = matchesQuery && matchesCapability;
+      $card.toggleClass('hidden', !visible);
+      if (visible) {
+        visibleCount += 1;
+      }
+    });
+
+    $empty.toggleClass('hidden', visibleCount !== 0 || $cards.length === 0);
+  }
+
+  $search.on('input', filterCatalog);
+  $capability.on('change', filterCatalog);
+}
+
 function setupPlayground() {
   if ($('#inference_submit').length === 0) {
     return;
@@ -279,6 +314,117 @@ function setupPlayground() {
 
   const previous_messages = [];
   const previous_message_containers = [];
+  const session_usage = { prompt_tokens: 0, completion_tokens: 0, cost: 0 };
+
+  const prompt_templates = {
+    summarize: {
+      system: "You summarize technical content clearly and preserve the important details.",
+      prompt: "Summarize the following content in concise bullet points:\n\n"
+    },
+    classify: {
+      system: "You classify incoming requests into a compact JSON object.",
+      prompt: "Classify this request by intent, urgency, and required product area:\n\n"
+    },
+    json: {
+      system: "Return only valid JSON. Do not include markdown or commentary.",
+      prompt: "Return a JSON object for the following request:\n\n"
+    },
+    code: {
+      system: "You explain code with attention to behavior, edge cases, and production risk.",
+      prompt: "Explain what this code does and call out any important risks:\n\n"
+    }
+  };
+
+  function selectedEndpointOption() {
+    return $('#inference_endpoint option:selected');
+  }
+
+  function selectedEndpointNumber(name) {
+    const value = parseFloat(selectedEndpointOption().attr(name));
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  function formatTokenCount(value) {
+    return Number(value || 0).toLocaleString();
+  }
+
+  function formatPrice(value) {
+    const number = Number(value || 0);
+    return `$${number.toFixed(2)}`;
+  }
+
+  function formatEstimatedCost(value) {
+    const number = Number(value || 0);
+    if (number > 0 && number < 0.000001) {
+      return "less than $0.000001";
+    }
+    return `$${number.toFixed(6)}`;
+  }
+
+  function estimateCost(prompt_tokens, completion_tokens, input_price = selectedEndpointNumber('data-input-price'), output_price = selectedEndpointNumber('data-output-price')) {
+    return (prompt_tokens * input_price + completion_tokens * output_price) / 1_000_000;
+  }
+
+  function updateMessageCount() {
+    const count = previous_messages.length;
+    $('#inference_session_message_count').text(`${count} message${count === 1 ? "" : "s"} in this session`);
+  }
+
+  function updateUsagePanel() {
+    $('#inference_session_usage').text(`${formatTokenCount(session_usage.prompt_tokens)} input tokens and ${formatTokenCount(session_usage.completion_tokens)} output tokens`);
+    $('#inference_session_cost').text(formatEstimatedCost(session_usage.cost));
+  }
+
+  function recordUsage(prompt_tokens, completion_tokens, message_id, input_price, output_price) {
+    prompt_tokens = Number(prompt_tokens || 0);
+    completion_tokens = Number(completion_tokens || 0);
+    const cost = estimateCost(prompt_tokens, completion_tokens, input_price, output_price);
+    const summary = `Usage: ${formatTokenCount(prompt_tokens)} input tokens and ${formatTokenCount(completion_tokens)} output tokens. Estimated cost: ${formatEstimatedCost(cost)}.`;
+
+    $(`#inference_message_info_${message_id}`).text(summary);
+    $('#inference_last_usage').text(`${formatTokenCount(prompt_tokens)} input tokens and ${formatTokenCount(completion_tokens)} output tokens`);
+
+    session_usage.prompt_tokens += prompt_tokens;
+    session_usage.completion_tokens += completion_tokens;
+    session_usage.cost += cost;
+    updateUsagePanel();
+  }
+
+  function updateSelectedModelDetails() {
+    const $option = selectedEndpointOption();
+    if ($option.length === 0 || !$option.val()) {
+      $('#inference_selected_model_name').text("No model selected");
+      $('#inference_selected_provider').text("-");
+      $('#inference_selected_capability').text("-");
+      $('#inference_selected_context').text("-");
+      $('#inference_selected_price').text("-");
+      $('#inference_selected_url').text("-");
+      return;
+    }
+
+    const input_price = selectedEndpointNumber('data-input-price');
+    const output_price = selectedEndpointNumber('data-output-price');
+    $('#inference_selected_model_name').text($option.attr('data-display-name') || $option.val());
+    $('#inference_selected_provider').text($option.attr('data-provider-label') || $option.attr('data-provider') || "LayerRail");
+    $('#inference_selected_capability').text($option.attr('data-capability') || "-");
+    $('#inference_selected_context').text($option.attr('data-context-length') || "-");
+    $('#inference_selected_price').text(`${formatPrice(input_price)} input / ${formatPrice(output_price)} output per 1M tokens`);
+    $('#inference_selected_url').text($option.attr('data-url') || "-");
+  }
+
+  function applyPromptTemplate() {
+    const selected = $('#inference_prompt_template').val();
+    const template = prompt_templates[selected];
+    if (!template) {
+      return;
+    }
+
+    $('#inference_system').val(template.system);
+    $('#inference_prompt').val(template.prompt).trigger('focus');
+    if (selected === "json") {
+      $('#inference_response_format').val("json_object");
+    }
+  }
 
   // Initialize the model selector based on the location hash.
   const hash = window.location.hash.slice(1);
@@ -299,8 +445,15 @@ function setupPlayground() {
     const is_multimodal = tags['multimodal'] || false;
     $('#inference_files').prop('disabled', !is_multimodal);
   }
-  update_file_input_state();
-  $('#inference_endpoint').on('change', update_file_input_state);
+
+  function syncSelectedEndpoint() {
+    update_file_input_state();
+    updateSelectedModelDetails();
+    updateUsagePanel();
+  }
+
+  syncSelectedEndpoint();
+  $('#inference_endpoint').on('change', syncSelectedEndpoint);
 
   $("#inference_new_chat").click(() => {
     for (const container of previous_message_containers) {
@@ -309,6 +462,12 @@ function setupPlayground() {
     previous_messages.splice(0);
     previous_message_containers.splice(0);
     $("#inference_previous_empty").show();
+    session_usage.prompt_tokens = 0;
+    session_usage.completion_tokens = 0;
+    session_usage.cost = 0;
+    $('#inference_last_usage').text("No usage yet");
+    updateMessageCount();
+    updateUsagePanel();
   });
 
   // Show reasoning in a different style.
@@ -407,6 +566,7 @@ function setupPlayground() {
     $("#inference_previous").append($new_message);
     previous_message_containers.push($new_message);
     previous_messages.push(message);
+    updateMessageCount();
     let timeout = undefined;
     $(`#copy_inference_message_${message_id}`).click(() => {
       const content = previous_messages[message_id].content[0].text;
@@ -435,6 +595,8 @@ function setupPlayground() {
     const api_key = $('#inference_api_key').val();
     const temperature = parseFloat($('#inference_temperature').val()) || 1.0;
     const top_p = parseFloat($('#inference_top_p').val()) || 1.0;
+    const max_tokens = parseInt($('#inference_max_tokens').val(), 10);
+    const response_format = $('#inference_response_format').val();
 
     if (!prompt) {
       alert("Please enter a prompt.");
@@ -452,6 +614,8 @@ function setupPlayground() {
     const $selected_endpoint = $('#inference_endpoint option:selected');
     const endpoint_url = $selected_endpoint.attr('data-url');
     const streams_response = $selected_endpoint.attr('data-provider') !== "cloudflare";
+    const request_input_price = selectedEndpointNumber('data-input-price');
+    const request_output_price = selectedEndpointNumber('data-output-price');
 
     const messages = [];
     if (system.length > 0) {
@@ -479,6 +643,12 @@ function setupPlayground() {
       temperature: temperature,
       top_p: top_p,
     };
+    if (Number.isInteger(max_tokens) && max_tokens > 0) {
+      request_payload.max_tokens = max_tokens;
+    }
+    if (response_format === "json_object") {
+      request_payload.response_format = { type: "json_object" };
+    }
     if (streams_response) {
       request_payload.stream_options = { include_usage: true };
     }
@@ -542,7 +712,7 @@ function setupPlayground() {
         const prompt_tokens = parsed?.usage?.prompt_tokens;
         const completion_tokens = parsed?.usage?.completion_tokens;
         if (prompt_tokens !== undefined && completion_tokens !== undefined) {
-          $(`#inference_message_info_${assistant_message_id}`).text(`Usage: ${prompt_tokens} input tokens and ${completion_tokens} output tokens.`);
+          recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price);
         } else {
           $(`#inference_message_info_${assistant_message_id}`).text("");
         }
@@ -581,7 +751,7 @@ function setupPlayground() {
           const prompt_tokens = parsedLine?.usage?.prompt_tokens;
           const completion_tokens = parsedLine?.usage?.completion_tokens;
           if (prompt_tokens !== undefined && completion_tokens !== undefined) {
-            $(`#inference_message_info_${assistant_message_id}`).text(`Usage: ${prompt_tokens} input tokens and ${completion_tokens} output tokens.`);
+            recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price);
           }
           const new_content = parsedLine?.choices?.[0]?.delta?.content;
           const new_reasoning_content = parsedLine?.choices?.[0]?.delta?.reasoning_content ?? parsedLine?.choices?.[0]?.delta?.reasoning;
@@ -630,9 +800,12 @@ function setupPlayground() {
   };
 
   $('#inference_submit').on("click", generate);
+  $('#inference_prompt_template').on("change", applyPromptTemplate);
   $('#inference_config-show_advanced-0').on("change", function() {
     $('#inference_config_advanced_settings').toggleClass("hidden", !$(this).is(":checked"));
   });
+  updateMessageCount();
+  updateUsagePanel();
 }
 
 const metricsCharts = [];

@@ -2,145 +2,272 @@
 <%== render("components/free_quota") %>
 <% @enable_marked = true %>
 <%== render("inference/tabbar") %>
-<div class="overflow-hidden rounded-lg shadow ring-1 ring-black ring-opacity-5 bg-white divide-y divide-gray-200">
-  <div class="px-4 py-5 sm:p-6 grid gap-6">
-    <div class="grid sm:grid-cols-2 gap-6 text-gray-900">
-      <%== render(
-        "components/form/select",
-        locals: {
-          name: "inference_endpoint",
-          label: "Inference Endpoint",
-          placeholder: "Pick an endpoint",
-          options: @inference_models.map { |ie|
-            [ie.model_name, ie.model_name, nil, {
-              "data-id": ie.ubid,
-              "data-url": ie.load_balancer.health_check_url,
-              "data-provider": (ie.respond_to?(:provider) ? ie.provider : "layerrail"),
-              "data-tags": ie.tags.to_json
-            }]
-          },
-          selected: @inference_models.first&.model_name,
-        }
-      ) %>
-      <%== render(
-        "components/form/select",
-        locals: {
-          name: "inference_api_key",
-          label: "Inference API Key",
-          placeholder: "Pick a key",
-          options: @inference_api_keys.map { [it.key, it.ubid] },
-          selected: @inference_api_keys.first&.key
-        }
-      ) %>
-    </div>
-    <%== part(
-      "components/form/checkbox",
-      name: "inference_config",
-      options: [["show_advanced", "Show advanced settings", nil, nil]]
-    ) %>
-    <div class="hidden grid gap-6" id="inference_config_advanced_settings">
+
+<div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+  <div class="overflow-hidden rounded-lg shadow ring-1 ring-black ring-opacity-5 bg-white divide-y divide-gray-200">
+    <div class="px-4 py-5 sm:p-6 grid gap-6">
+      <% if @inference_api_keys.empty? %>
+        <div class="rounded-md bg-layerrail-50 p-4 text-sm text-layerrail-800">
+          Create an inference API key before sending requests from the playground.
+          <a href="<%= @project.path %>/inference-api-key" class="font-semibold text-layerrail-700">Manage API keys</a>
+        </div>
+      <% end %>
+
       <div class="grid sm:grid-cols-2 gap-6 text-gray-900">
         <%== render(
-          "components/form/text",
+          "components/form/select",
           locals: {
-            name: "inference_temperature",
-            label: "Temperature (Optional)",
-            type: "number",
-            attributes: {
-              "placeholder" => 1.0,
-              "min" => 0.0,
-              "max" => 2.0,
+            name: "inference_endpoint",
+            label: "Inference Endpoint",
+            placeholder: "Pick an endpoint",
+            options: @inference_models.map { |ie|
+              prompt_price = BillingRate.million_token_price(ie.prompt_billing_resource)
+              completion_price = BillingRate.million_token_price(ie.completion_billing_resource)
+              [ie.model_name, ie.model_name, nil, {
+                "data-id": ie.ubid,
+                "data-url": ie.load_balancer.health_check_url,
+                "data-provider": (ie.respond_to?(:provider) ? ie.provider : "layerrail"),
+                "data-provider-label": ie.tags["provider"] || (ie.respond_to?(:provider) ? ie.provider : "LayerRail"),
+                "data-display-name": ie.tags["display_name"] || ie.model_name,
+                "data-capability": ie.tags["capability"],
+                "data-context-length": ie.tags.fetch("context_length", "Full"),
+                "data-input-price": prompt_price,
+                "data-output-price": completion_price,
+                "data-tags": ie.tags.to_json
+              }]
             },
-            extra_class: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            selected: @inference_models.first&.model_name,
           }
         ) %>
         <%== render(
-          "components/form/text",
+          "components/form/select",
           locals: {
-            name: "inference_top_p",
-            label: "Top P (Optional)",
-            type: "number",
-            attributes: {
-              "placeholder" => 1.0,
-              "min" => 0.0,
-              "max" => 1.0,
-            },
-            extra_class: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            name: "inference_api_key",
+            label: "Inference API Key",
+            placeholder: "Pick a key",
+            options: @inference_api_keys.map { [it.key, it.ubid] },
+            selected: @inference_api_keys.first&.key
           }
         ) %>
       </div>
-      <div>
-        <%== render(
-          "components/form/textarea",
-          locals: {
-            name: "inference_system",
-            label: "System Message (Optional)",
-            attributes: {
-              "placeholder" => "System message to be submitted to the inference endpoint",
-              "rows" => 3,
-            },
-          }
-        ) %>
-      </div>
-    </div>
-  </div>
-  <div class="px-4 py-5 sm:p-6 grid gap-6">
-    <div>
-      <%== render(
-        "components/button",
-        locals: {
-          text: "Start a new chat",
-          attributes: {
-            "id" => "inference_new_chat",
-            "type" => "button"
-          }
-        }
-      ) %>
-    </div>
-    <div>
-      <div class="block text-sm font-medium leading-6 text-gray-900 mb-2">Previous Messages</div>
-      <div id="inference_previous_empty" class="text-sm text-gray-500">There are no messages yet.</div>
-      <div id="inference_previous">
-      </div>
-    </div>
-    <div>
-      <%== render(
-        "components/form/textarea",
-        locals: {
-          name: "inference_prompt",
-          label: "New Message",
-          attributes: {
-            "autofocus" => true,
-            "placeholder" => "User prompt to be submitted to the inference endpoint",
-            "rows" => 3,
-          },
-        }
-      ) %>
-      <div class="grid grid-cols-2 gap-6 text-gray-900 flex pt-4">
-        <div class="flex flex-row items-center">
-          <input
-            type="file"
-            id="inference_files"
-            accept=".jpg,.jpeg,.png,.pdf"
-            class="inline-flex items-center text-sm"
-            multiple
-            aria-label="Upload files"
+
+      <div class="grid sm:grid-cols-2 gap-6 text-gray-900">
+        <div class="space-y-2">
+          <label for="inference_prompt_template" class="text-sm font-medium leading-6">Prompt template</label>
+          <select
+            id="inference_prompt_template"
+            class="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 shadow-sm ring-1 ring-inset text-sm sm:leading-6 text-gray-900 ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-layerrail-600"
           >
+            <option value="">Blank chat</option>
+            <option value="summarize">Summarize text</option>
+            <option value="classify">Classify request</option>
+            <option value="json">Return JSON</option>
+            <option value="code">Explain code</option>
+          </select>
         </div>
-        <div class="flex flex-row items-center justify-end">
+        <%== part(
+          "components/form/checkbox",
+          name: "inference_config",
+          options: [["show_advanced", "Show advanced settings", nil, nil]]
+        ) %>
+      </div>
+
+      <div class="hidden grid gap-6" id="inference_config_advanced_settings">
+        <div class="grid sm:grid-cols-3 gap-6 text-gray-900">
           <%== render(
-            "components/button",
+            "components/form/text",
             locals: {
-              text: "Submit",
+              name: "inference_temperature",
+              label: "Temperature",
+              type: "number",
               attributes: {
-                "name" => "inference_submit",
-                "id" => "inference_submit",
-                "type" => "button"
+                "placeholder" => 1.0,
+                "min" => 0.0,
+                "max" => 2.0,
+                "step" => 0.1,
+              },
+              extra_class: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            }
+          ) %>
+          <%== render(
+            "components/form/text",
+            locals: {
+              name: "inference_top_p",
+              label: "Top P",
+              type: "number",
+              attributes: {
+                "placeholder" => 1.0,
+                "min" => 0.0,
+                "max" => 1.0,
+                "step" => 0.05,
+              },
+              extra_class: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            }
+          ) %>
+          <%== render(
+            "components/form/text",
+            locals: {
+              name: "inference_max_tokens",
+              label: "Max output tokens",
+              type: "number",
+              attributes: {
+                "placeholder" => "Auto",
+                "min" => 1,
+                "step" => 1,
+              },
+              extra_class: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            }
+          ) %>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-6 text-gray-900">
+          <div class="space-y-2">
+            <label for="inference_response_format" class="text-sm font-medium leading-6">Response format</label>
+            <select
+              id="inference_response_format"
+              class="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 shadow-sm ring-1 ring-inset text-sm sm:leading-6 text-gray-900 ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-layerrail-600"
+            >
+              <option value="">Auto</option>
+              <option value="json_object">JSON object</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <%== render(
+            "components/form/textarea",
+            locals: {
+              name: "inference_system",
+              label: "System Message",
+              attributes: {
+                "placeholder" => "System message to be submitted to the inference endpoint",
+                "rows" => 3,
               },
             }
           ) %>
         </div>
       </div>
+    </div>
+
+    <div class="px-4 py-5 sm:p-6 grid gap-6">
+      <div class="flex flex-wrap items-center gap-3">
+        <%== render(
+          "components/button",
+          locals: {
+            text: "Start a new chat",
+            attributes: {
+              "id" => "inference_new_chat",
+              "type" => "button"
+            }
+          }
+        ) %>
+        <div class="text-sm text-gray-500" id="inference_session_message_count">0 messages in this session</div>
+      </div>
+      <div>
+        <div class="block text-sm font-medium leading-6 text-gray-900 mb-2">Previous Messages</div>
+        <div id="inference_previous_empty" class="text-sm text-gray-500">There are no messages yet.</div>
+        <div id="inference_previous">
+        </div>
+      </div>
+      <div>
+        <%== render(
+          "components/form/textarea",
+          locals: {
+            name: "inference_prompt",
+            label: "New Message",
+            attributes: {
+              "autofocus" => true,
+              "placeholder" => "User prompt to be submitted to the inference endpoint",
+              "rows" => 3,
+            },
+          }
+        ) %>
+        <div class="grid grid-cols-2 gap-6 text-gray-900 flex pt-4">
+          <div class="flex flex-row items-center">
+            <input
+              type="file"
+              id="inference_files"
+              accept=".jpg,.jpeg,.png,.pdf"
+              class="inline-flex items-center text-sm"
+              multiple
+              aria-label="Upload files"
+            >
+          </div>
+          <div class="flex flex-row items-center justify-end">
+            <%== render(
+              "components/button",
+              locals: {
+                text: "Submit",
+                attributes: {
+                  "name" => "inference_submit",
+                  "id" => "inference_submit",
+                  "type" => "button"
+                },
+              }
+            ) %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid gap-4 content-start">
+    <div class="rounded-lg bg-white p-4 shadow ring-1 ring-black ring-opacity-5">
+      <div class="flex items-center gap-2">
+        <%== part("components/icon", name: "hero-cpu-chip", classes: "h-5 w-5 text-layerrail-600") %>
+        <h2 class="text-base font-semibold text-gray-900">Selected model</h2>
+      </div>
+      <dl class="mt-4 grid gap-3 text-sm">
+        <div>
+          <dt class="text-gray-500">Name</dt>
+          <dd class="font-medium text-gray-900" id="inference_selected_model_name">No model selected</dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Provider</dt>
+          <dd class="font-medium text-gray-900" id="inference_selected_provider">-</dd>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <dt class="text-gray-500">Capability</dt>
+            <dd class="font-medium text-gray-900" id="inference_selected_capability">-</dd>
+          </div>
+          <div>
+            <dt class="text-gray-500">Context</dt>
+            <dd class="font-medium text-gray-900" id="inference_selected_context">-</dd>
+          </div>
+        </div>
+        <div>
+          <dt class="text-gray-500">Pricing</dt>
+          <dd class="font-medium text-gray-900" id="inference_selected_price">-</dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Endpoint</dt>
+          <dd class="break-all text-gray-700" id="inference_selected_url">-</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="rounded-lg bg-white p-4 shadow ring-1 ring-black ring-opacity-5">
+      <div class="flex items-center gap-2">
+        <%== part("components/icon", name: "hero-chart-pie", classes: "h-5 w-5 text-layerrail-600") %>
+        <h2 class="text-base font-semibold text-gray-900">Session usage</h2>
+      </div>
+      <dl class="mt-4 grid gap-3 text-sm">
+        <div>
+          <dt class="text-gray-500">Last request</dt>
+          <dd class="font-medium text-gray-900" id="inference_last_usage">No usage yet</dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Session total</dt>
+          <dd class="font-medium text-gray-900" id="inference_session_usage">0 input tokens and 0 output tokens</dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Estimated session cost</dt>
+          <dd class="font-medium text-gray-900" id="inference_session_cost">$0.000000</dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Free quota remaining</dt>
+          <dd class="font-medium text-gray-900"><%= @remaining_free_quota.to_i %> inference tokens</dd>
+        </div>
+      </dl>
     </div>
   </div>
 </div>
