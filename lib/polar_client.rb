@@ -69,6 +69,10 @@ class PolarClient
     request(:post, "/products/", body: payload, expected_status: 201)
   end
 
+  def self.update_product(id, payload)
+    request(:patch, "/products/#{id}", body: payload)
+  end
+
   def self.get_checkout(id)
     request(:get, "/checkouts/#{id}")
   end

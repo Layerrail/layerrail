@@ -178,6 +178,8 @@ Important environment groups include:
 
 - `POLAR_ACCESS_TOKEN`
 - `POLAR_VERIFICATION_PRODUCT_ID`
+- `POLAR_VERIFICATION_AMOUNT_CENTS` defaults to `100` for the one-time billing
+  verification checkout
 
 ### Compute
 
