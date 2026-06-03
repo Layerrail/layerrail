@@ -26,8 +26,7 @@ Please do not open a public issue for vulnerabilities.
 
 Report suspected vulnerabilities using one of these private paths:
 
-- GitHub private vulnerability reporting or a repository security advisory, if
-  available.
+- GitHub private vulnerability reporting from the repository Security tab.
 - Email support@layerrail.com with the subject prefix `[security]`.
 
 Include as much of the following as you safely can:
