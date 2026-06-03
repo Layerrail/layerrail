@@ -1,0 +1,35 @@
+# LayerRail
+
+> LayerRail is an open cloud control plane for teams that need project-centered infrastructure, budget-aware operations, and deployment evidence across compute, networking, managed services, billing, and AI inference surfaces.
+
+LayerRail is built from the Ubicloud open source infrastructure foundation and keeps the AGPL-3.0 license and attribution intact. This product fork focuses on LayerRail-specific provider integrations, billing workflows, brand surfaces, and product experience.
+
+Use this file as the concise AI-readable map for LayerRail. For fuller context, see `https://console.layerrail.com/llms-full.txt`.
+
+## Primary
+
+- [LayerRail website](https://layerrail.com): Public product website for LayerRail.
+- [LayerRail console](https://console.layerrail.com): Customer console for managing projects and infrastructure resources.
+- [LayerRail GitHub organization](https://github.com/layerrail): Public LayerRail organization and open source entry point.
+- [LayerRail documentation](https://docs.layerrail.com): Product and platform documentation.
+- [LayerRail status](https://status.layerrail.com): Public status page for platform availability.
+
+## Platform Surfaces
+
+- [Console dashboard](https://console.layerrail.com): Project dashboard for resource ownership, billing context, and operational visibility.
+- [Billing](https://console.layerrail.com): Billing information, invoices, payment methods, credits, and monthly usage summaries live inside the authenticated console.
+- [GitHub runners](https://console.layerrail.com): Managed GitHub Actions runner workflow inside LayerRail projects.
+- [Deploy apps](https://console.layerrail.com): GitHub-backed application deployment workflow, when enabled.
+- [Managed PostgreSQL](https://console.layerrail.com): Managed database provisioning, backup, restore, monitoring, and networking workflow, when enabled.
+- [AI inference](https://console.layerrail.com): AI inference routing and endpoint surfaces, when enabled.
+
+## Support
+
+- [Support email](mailto:support@layerrail.com): Contact for workspace, billing, and infrastructure help.
+- [Terms of service](https://layerrail.com/terms-of-service): LayerRail service terms.
+- [Privacy policy](https://layerrail.com/privacy-policy): LayerRail privacy policy.
+
+## Optional
+
+- [Ubicloud upstream](https://github.com/ubicloud/ubicloud): Upstream infrastructure foundation used as a source for selected improvements.
+- [llms.txt proposal](https://llmstxt.org/): Informal proposal followed by this file.

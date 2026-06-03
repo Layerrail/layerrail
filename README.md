@@ -168,6 +168,12 @@ Important environment groups include:
 
 - `BASE_URL`
 
+The console app publishes AI-readable discovery files at `/llms.txt` and
+`/llms-full.txt`. It also serves the same files from subpath aliases such as
+`/docs/llms.txt` so directory-style crawlers can discover the LayerRail context.
+After deployment, run `bin/publish-llms-directories` to verify the public file
+URLs and prepare directory submissions.
+
 ### Email
 
 - `RESEND_API_KEY`

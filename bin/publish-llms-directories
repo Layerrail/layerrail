@@ -1,0 +1,52 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "net/http"
+require "uri"
+
+product_name = ENV.fetch("PRODUCT_NAME", "LayerRail")
+website_url = ENV.fetch("WEBSITE_URL", "https://layerrail.com").delete_suffix("/")
+llms_base_url = ENV.fetch("LLMS_BASE_URL", ENV.fetch("BASE_URL", "https://console.layerrail.com")).delete_suffix("/")
+llms_txt_url = ENV.fetch("LLMS_TXT_URL", "#{llms_base_url}/llms.txt")
+llms_full_txt_url = ENV.fetch("LLMS_FULL_TXT_URL", "#{llms_base_url}/llms-full.txt")
+contact_name = ENV.fetch("CONTACT_NAME", "LayerRail")
+contact_email = ENV.fetch("CONTACT_EMAIL", "support@layerrail.com")
+notes = ENV.fetch("SUBMISSION_NOTES", "LayerRail is an open cloud control plane for project-centered infrastructure, billing context, and deployment evidence.")
+
+def check_url(url)
+  uri = URI(url)
+  response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", open_timeout: 10, read_timeout: 10) do |http|
+    http.get(uri.request_uri)
+  end
+  [response.code.to_i, response["content-type"].to_s]
+rescue => ex
+  [:error, ex.message]
+end
+
+puts "PRODUCT_NAME=#{product_name}"
+puts "WEBSITE_URL=#{website_url}"
+puts "LLMS_TXT_URL=#{llms_txt_url}"
+puts "LLMS_FULL_TXT_URL=#{llms_full_txt_url}"
+puts
+
+{
+  "llms.txt" => llms_txt_url,
+  "llms-full.txt" => llms_full_txt_url
+}.each do |label, url|
+  status, detail = check_url(url)
+  puts "#{label}=#{status} #{detail}"
+end
+
+puts
+puts "Submit after the files return HTTP 200:"
+puts "- https://llmstxt.site/submit"
+puts "- https://tally.so/r/wAydjB"
+puts
+puts "Submission payload:"
+puts "Product Name: #{product_name}"
+puts "Website URL: #{website_url}"
+puts "Your Name: #{contact_name}"
+puts "Email Address: #{contact_email}"
+puts "llms.txt URL: #{llms_txt_url}"
+puts "llms-full.txt URL: #{llms_full_txt_url}"
+puts "Additional Notes: #{notes}"

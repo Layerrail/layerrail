@@ -33,6 +33,18 @@ class Clover < Roda
   @ips_v4 = Util.calculate_ips_v4
   singleton_class.attr_reader :ips_v4
 
+  LLMS_TXT_PATH = /\A(?:\/.*)?\/(llms(?:-full)?\.txt)\z/
+
+  def llms_txt_filename
+    request.path_info.match(LLMS_TXT_PATH)&.[](1)
+  end
+
+  def llms_txt_response(filename)
+    response.content_type = :text
+    response.cache_control public: true, max_age: 3600
+    File.read(File.join(Config.root, "public", filename))
+  end
+
   opts[:check_dynamic_arity] = false
   opts[:check_arity] = :warn
 
@@ -1047,6 +1059,10 @@ class Clover < Roda
   # :nocov:
 
   route do |r|
+    if request.get? && (filename = llms_txt_filename)
+      next llms_txt_response(filename)
+    end
+
     if api?
       r.get "up" do
         health_check_response("api")
