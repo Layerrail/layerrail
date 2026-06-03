@@ -10,6 +10,12 @@ LayerRail is in active product development. Security fixes are prioritized for
 the repository's active default branch and any production branches explicitly
 maintained by the LayerRail team.
 
+| Version or branch | Supported |
+| --- | --- |
+| `layerrail-rebrand-start` | Yes |
+| Production branches maintained by LayerRail | Yes |
+| Unsupported forks, private deployments, experimental branches, and local demo environments | No |
+
 Unsupported forks, private deployments, experimental branches, and local demo
 environments may not receive direct security support. Operators should apply
 security patches from the maintained branch as soon as practical.
