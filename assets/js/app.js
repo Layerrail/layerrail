@@ -662,7 +662,7 @@ const colorPalette = [
     class: 'emerald-600'
   },
   {
-    color: '#fc8452',
+    color: '#8B67F2',
     class: 'layerrail-500',
   }
 ];
