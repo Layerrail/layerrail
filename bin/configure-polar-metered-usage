@@ -1,0 +1,58 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../loader"
+
+abort "Set POLAR_ACCESS_TOKEN first." unless Config.polar_access_token
+
+def configured_product_id
+  ENV["POLAR_PRODUCT_ID"] ||
+    Config.polar_verification_product_id ||
+    Config.polar_checkout_product_id ||
+    Config.polar_invoice_product_id
+end
+
+def find_polar_organization
+  if Config.polar_organization_id
+    return PolarClient.get_organization(Config.polar_organization_id)
+  end
+
+  if (product_id = configured_product_id)
+    product = PolarClient.get_product(product_id)
+    return PolarClient.get_organization(product.fetch("organization_id"))
+  end
+
+  organizations = PolarClient.list_organizations.fetch("items", [])
+  abort "No Polar organization found for this access token." if organizations.empty?
+  if organizations.length > 1
+    abort "Multiple Polar organizations found. Set POLAR_ORGANIZATION_ID before running this script."
+  end
+
+  organizations.first
+end
+
+organization = find_polar_organization
+portal_settings = organization["customer_portal_settings"] || {}
+usage_settings = portal_settings["usage"] || {}
+
+updated_organization = PolarClient.update_organization(
+  organization.fetch("id"),
+  customer_portal_settings: portal_settings.merge(
+    "usage" => usage_settings.merge("show" => true)
+  )
+)
+
+meters = PolarClient.list_meters(
+  organization_id: organization.fetch("id"),
+  is_archived: false
+).fetch("items", [])
+
+puts "POLAR_ORGANIZATION_ID=#{updated_organization.fetch("id")}"
+puts "POLAR_ORGANIZATION_SLUG=#{updated_organization.fetch("slug")}"
+puts "CUSTOMER_PORTAL_USAGE_SHOW=#{updated_organization.fetch("customer_portal_settings").fetch("usage").fetch("show")}"
+puts "POLAR_METERS_COUNT=#{meters.length}"
+
+if meters.empty?
+  warn "Warning: customer portal usage is enabled, but this organization has no active Polar meters yet."
+  warn "Metered usage will stay empty until you create meters, attach metered prices to subscription products, and ingest matching events."
+end

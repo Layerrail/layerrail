@@ -177,9 +177,14 @@ Important environment groups include:
 ### Billing
 
 - `POLAR_ACCESS_TOKEN`
+- `POLAR_ORGANIZATION_ID`
 - `POLAR_VERIFICATION_PRODUCT_ID`
 - `POLAR_VERIFICATION_AMOUNT_CENTS` defaults to `100` for the one-time billing
   verification checkout
+- `bin/configure-polar-metered-usage` enables Polar's customer portal usage
+  view for the organization and reports whether active Polar meters exist.
+  The portal view does not create meters by itself; usage appears only after
+  meters are attached to subscription products and matching events are ingested.
 
 ### Compute
 

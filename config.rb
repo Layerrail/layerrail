@@ -301,6 +301,7 @@ module Config
   # Billing
   optional :polar_access_token, string, clear: true
   override :polar_api_base_url, "https://api.polar.sh/v1", string
+  optional :polar_organization_id, uuid
   optional :polar_verification_product_id, uuid
   optional :polar_checkout_product_id, uuid
   optional :polar_invoice_product_id, uuid

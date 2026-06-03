@@ -69,8 +69,36 @@ class PolarClient
     request(:post, "/products/", body: payload, expected_status: 201)
   end
 
+  def self.get_product(id)
+    request(:get, "/products/#{id}")
+  end
+
   def self.update_product(id, payload)
     request(:patch, "/products/#{id}", body: payload)
+  end
+
+  def self.list_organizations(filters = {})
+    request(:get, "/organizations/", query: {limit: 100}.merge(filters))
+  end
+
+  def self.get_organization(id)
+    request(:get, "/organizations/#{id}")
+  end
+
+  def self.update_organization(id, payload)
+    request(:patch, "/organizations/#{id}", body: payload)
+  end
+
+  def self.create_meter(payload)
+    request(:post, "/meters/", body: payload, expected_status: 201)
+  end
+
+  def self.list_meters(filters = {})
+    request(:get, "/meters/", query: {limit: 100}.merge(filters))
+  end
+
+  def self.ingest_events(events)
+    request(:post, "/events/ingest", body: {events:})
   end
 
   def self.get_checkout(id)
@@ -83,6 +111,10 @@ class PolarClient
 
   def self.update_customer_by_external_id(external_id, payload)
     request(:patch, "/customers/external/#{external_id}", body: payload)
+  end
+
+  def self.get_customer_state_by_external_id(external_id)
+    request(:get, "/customers/external/#{external_id}/state")
   end
 
   def self.create_customer_session(external_id, return_url:)
