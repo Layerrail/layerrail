@@ -39,14 +39,12 @@ class InvoiceGenerator
               "IBAN" => "NL30REVO6759811127",
               "BIC" => "REVONL22",
               "Intermediary BIC" => "CHASGB2L",
-              "Beneficiary address" => "Configure LayerRail billing address",
               "Bank/Payment institution" => "Revolut Bank UAB",
               "Bank address" => "Barbara Strozzilaan 201, 1083 HN, Amsterdam, Netherlands",
             }
           else
             {
               "Beneficiary" => "LayerRail",
-              "Beneficiary address" => "Configure LayerRail billing address",
               "ABA/Routing number" => "121145349",
               "Account number" => "974842159957503",
               "Bank/Payment institution" => "Column NA - Brex",
@@ -62,10 +60,10 @@ class InvoiceGenerator
         project_content[:issuer_info] = if is_eu
           {
             name: "LayerRail",
-            address: "Configure LayerRail billing address",
+            address: nil,
             country: "NL",
-            city: "",
-            postal_code: "",
+            city: nil,
+            postal_code: nil,
             tax_id: "",
             trade_id: "",
             in_eu_vat: true,
@@ -73,11 +71,11 @@ class InvoiceGenerator
         else
           {
             name: "LayerRail",
-            address: "Configure LayerRail billing address",
+            address: nil,
             country: "US",
-            city: "",
-            state: "",
-            postal_code: "",
+            city: nil,
+            state: nil,
+            postal_code: nil,
           }
         end
         vat_info = if is_eu

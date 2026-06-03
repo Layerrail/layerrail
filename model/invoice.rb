@@ -251,12 +251,10 @@ class Invoice < Sequel::Model
     row = pdf.bounding_box([0, row_y], width: column_width) do
       pdf.image INVOICE_LOGO_PATH, height: 25, position: :left
       pdf.move_down 10
-      pdf.text data.issuer_name, style: :semibold, color: dark_gray if data.issuer_name
-      pdf.text "#{data.issuer_address},"
-      pdf.text "#{data.issuer_city}, #{data.issuer_state} #{data.issuer_postal_code},"
-      pdf.text data.issuer_country
-      pdf.text "#{data.issuer_in_eu_vat ? "VAT" : "Tax"} ID: #{data.issuer_tax_id}" if data.issuer_tax_id
-      pdf.text "CCI/KVK ID: #{data.issuer_trade_id}" if data.issuer_trade_id
+      pdf.text data.issuer_name, style: :semibold, color: dark_gray if present_invoice_value?(data.issuer_name)
+      draw_invoice_address(pdf, data.issuer_address, data.issuer_city, data.issuer_state, data.issuer_postal_code, data.issuer_country)
+      pdf.text "#{data.issuer_in_eu_vat ? "VAT" : "Tax"} ID: #{data.issuer_tax_id}" if present_invoice_value?(data.issuer_tax_id)
+      pdf.text "CCI/KVK ID: #{data.issuer_trade_id}" if present_invoice_value?(data.issuer_trade_id)
     end
 
     # Row 1, Right Column: Invoice name and number
@@ -273,10 +271,8 @@ class Invoice < Sequel::Model
         pdf.text "Bill to:", style: :semibold, color: dark_gray, size: 14
         pdf.text data.company_name.to_s.strip.empty? ? data.billing_name : data.company_name, style: :semibold, color: dark_gray, size: 14
         pdf.move_down 5
-        pdf.text "#{data.billing_address},"
-        pdf.text "#{data.billing_city}, #{data.billing_state} #{data.billing_postal_code},"
-        pdf.text data.billing_country
-        pdf.text "#{data.billing_in_eu_vat ? "VAT" : "Tax"} ID: #{data.tax_id}" if data.tax_id
+        draw_invoice_address(pdf, data.billing_address, data.billing_city, data.billing_state, data.billing_postal_code, data.billing_country)
+        pdf.text "#{data.billing_in_eu_vat ? "VAT" : "Tax"} ID: #{data.tax_id}" if present_invoice_value?(data.tax_id)
       end
     end
 
@@ -383,6 +379,24 @@ class Invoice < Sequel::Model
       request_checksum_calculation: "when_required",
       response_checksum_validation: "when_required",
     )
+  end
+
+  private
+
+  def present_invoice_value?(value)
+    !value.to_s.strip.empty?
+  end
+
+  def draw_invoice_address(pdf, address, city, state, postal_code, country)
+    city_state_postal = [
+      city,
+      [state, postal_code].select { present_invoice_value?(it) }.join(" ")
+    ].select { present_invoice_value?(it) }.join(", ")
+
+    lines = [address, city_state_postal, country].select { present_invoice_value?(it) }
+    lines.each_with_index do |line, index|
+      pdf.text(index == lines.length - 1 ? line : "#{line},")
+    end
   end
 end
 

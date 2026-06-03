@@ -32,23 +32,23 @@ RSpec.describe InvoiceGenerator do
     expect(invoices.count).to eq(1)
     expected_issuer = if expected_vat_info
       {
-        "name" => "Ubicloud B.V.",
-        "address" => "Turfschip 267",
+        "name" => "LayerRail",
+        "address" => nil,
         "country" => "NL",
-        "city" => "Amstelveen",
-        "postal_code" => "1186 XK",
-        "tax_id" => "NL864651442B01",
-        "trade_id" => "88492729",
+        "city" => nil,
+        "postal_code" => nil,
+        "tax_id" => "",
+        "trade_id" => "",
         "in_eu_vat" => true,
       }
     else
       {
-        "name" => "Ubicloud Inc.",
-        "address" => "310 Santa Ana Avenue",
+        "name" => "LayerRail",
+        "address" => nil,
         "country" => "US",
-        "city" => "San Francisco",
-        "state" => "CA",
-        "postal_code" => "94127",
+        "city" => nil,
+        "state" => nil,
+        "postal_code" => nil,
       }
     end
 
@@ -268,7 +268,7 @@ RSpec.describe InvoiceGenerator do
 
       generate_billing_record(p1, vm1, Sequel::Postgres::PGRange.new(begin_time - 90 * day, nil))
       invoice = described_class.new(begin_time, end_time).run.first
-      expect(invoice.content["bank_transfer_info"]["Beneficiary"]).to eq("Ubicloud Inc.")
+      expect(invoice.content["bank_transfer_info"]["Beneficiary"]).to eq("LayerRail")
     end
 
     it "uses EU bank info for transfer when no payment method" do
@@ -277,7 +277,7 @@ RSpec.describe InvoiceGenerator do
 
       generate_billing_record(p1, vm1, Sequel::Postgres::PGRange.new(begin_time - 90 * day, nil))
       invoice = described_class.new(begin_time, end_time).run.first
-      expect(invoice.content["bank_transfer_info"]["Beneficiary"]).to eq("Ubicloud B.V.")
+      expect(invoice.content["bank_transfer_info"]["Beneficiary"]).to eq("LayerRail")
     end
   end
 

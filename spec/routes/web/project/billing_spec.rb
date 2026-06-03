@@ -582,11 +582,12 @@ RSpec.describe Clover, "billing" do
         visit "#{project.path}/billing"
         click_link invoice.name
 
-        expect(page.response_headers["content-disposition"]).to match(/\Ainline; filename="Ubicloud-2023-06-[-\h]+-0001.pdf"/)
+        expect(page.response_headers["content-disposition"]).to match(/\Ainline; filename="LayerRail-2023-06-[-\h]+-0001.pdf"/)
         expect(page.response_headers["content-type"]).to eq("application/pdf")
         expect(page.status_code).to eq(200)
         text = PDF::Reader.new(StringIO.new(page.body)).pages.map(&:text).join(" ")
-        expect(text).to include("Ubicloud Inc.")
+        expect(text).to include("LayerRail")
+        expect(text).not_to include("Configure LayerRail billing address")
         expect(text).to include("Acme Inc.")
         expect(text).not_to include("John Doe")
         expect(text).to include("test-vm")
@@ -605,7 +606,8 @@ RSpec.describe Clover, "billing" do
 
         expect(page.status_code).to eq(200)
         text = PDF::Reader.new(StringIO.new(page.body)).pages.map(&:text).join(" ")
-        expect(text).to include("Ubicloud B.V.")
+        expect(text).to include("LayerRail")
+        expect(text).not_to include("Configure LayerRail billing address")
         expect(text).to include("John Doe")
         expect(text).to include("test-vm")
         expect(text).to include("VAT (21%): (€5.53) $6.51")
@@ -622,7 +624,8 @@ RSpec.describe Clover, "billing" do
 
         expect(page.status_code).to eq(200)
         text = PDF::Reader.new(StringIO.new(page.body)).pages.map(&:text).join(" ")
-        expect(text).to include("Ubicloud B.V.")
+        expect(text).to include("LayerRail")
+        expect(text).not_to include("Configure LayerRail billing address")
         expect(text).to include("test-vm")
         expect(text).to include("VAT subject to reverse charge")
       end
@@ -640,7 +643,7 @@ RSpec.describe Clover, "billing" do
         expect(page.status_code).to eq(200)
         text = PDF::Reader.new(StringIO.new(page.body)).pages.map(&:text).join(" ")
         expect(text).not_to include("We kindly request you to remit the amount to")
-        expect(text).not_to include("Beneficiary Ubicloud B.V.")
+        expect(text).not_to include("Beneficiary LayerRail")
         expect(text).to include("Invoice date: #{invoice.created_at.strftime("%B %d, %Y")}")
         expect(text).to include("Due date: #{invoice.created_at.strftime("%B %d, %Y")}")
       end
@@ -656,7 +659,8 @@ RSpec.describe Clover, "billing" do
         expect(page.status_code).to eq(200)
         text = PDF::Reader.new(StringIO.new(page.body)).pages.map(&:text).join(" ")
         expect(text).to include("We kindly request you to remit the amount to")
-        expect(text).to include("Beneficiary Ubicloud B.V.")
+        expect(text).to include("Beneficiary LayerRail")
+        expect(text).not_to include("Configure LayerRail billing address")
         expect(text).to include(/Invoice date:\s+#{invoice.created_at.strftime("%B %d, %Y")}/)
         expect(text).to include(/Due date:\s+#{(invoice.created_at + 30 * 24 * 60 * 60).strftime("%B %d, %Y")}/)
       end
@@ -690,7 +694,8 @@ RSpec.describe Clover, "billing" do
 
         expect(page.status_code).to eq(200)
         text = PDF::Reader.new(StringIO.new(page.body)).pages.map(&:text).join(" ")
-        expect(text).to include("Ubicloud Inc.")
+        expect(text).to include("LayerRail")
+        expect(text).not_to include("Configure LayerRail billing address")
         expect(text).to include("ACME Inc.")
       end
 

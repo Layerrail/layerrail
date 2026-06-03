@@ -58,6 +58,16 @@ RSpec.describe Util do
       expect(Mail::TestMailer.deliveries.length).to eq 1
       expect(Mail::TestMailer.deliveries.first.html_part.body.to_s).to include("The LayerRail Team")
     end
+
+    it "renders LayerRail email theme colors" do
+      described_class.send_email("user@example.com", "Hello", greeting: "Hi", body: "Welcome", button_title: "Open", button_link: "https://console.layerrail.com")
+      body = Mail::TestMailer.deliveries.first.html_part.body.to_s
+
+      expect(body).to include("#7957E6")
+      expect(body).to include("#F6F3FF")
+      expect(body).not_to include("#ea580c")
+      expect(body).not_to include("#fef4ea")
+    end
   end
 
   describe "#parse_key" do

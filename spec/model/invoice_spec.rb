@@ -27,27 +27,27 @@ RSpec.describe Invoice do
   describe ".blob_key" do
     it "returns path with below_minimum_threshold group when status is below_minimum_threshold" do
       invoice.status = "below_minimum_threshold"
-      expect(invoice.blob_key).to eq("2025/03/below_minimum_threshold/Ubicloud-2025-03-2503-4ddfa430e8-0006.pdf")
+      expect(invoice.blob_key).to eq("2025/03/below_minimum_threshold/LayerRail-2025-03-2503-4ddfa430e8-0006.pdf")
     end
 
     it "returns path with eu_vat_reversed group when VAT info is present and has reversed set to true" do
       update_content(vat_info: {"reversed" => true})
-      expect(invoice.blob_key).to eq("2025/03/eu_vat_reversed/Ubicloud-2025-03-2503-4ddfa430e8-0006.pdf")
+      expect(invoice.blob_key).to eq("2025/03/eu_vat_reversed/LayerRail-2025-03-2503-4ddfa430e8-0006.pdf")
     end
 
     it "returns path with nl billing country is Netherlands" do
       update_content(billing_info: {"country" => "NL"})
-      expect(invoice.blob_key).to eq("2025/03/nl/Ubicloud-2025-03-2503-4ddfa430e8-0006.pdf")
+      expect(invoice.blob_key).to eq("2025/03/nl/LayerRail-2025-03-2503-4ddfa430e8-0006.pdf")
     end
 
     it "returns path with eu group when country is in EU VAT area but not NL" do
       update_content(billing_info: {"country" => "DE"})
-      expect(invoice.blob_key).to eq("2025/03/eu/Ubicloud-2025-03-2503-4ddfa430e8-0006.pdf")
+      expect(invoice.blob_key).to eq("2025/03/eu/LayerRail-2025-03-2503-4ddfa430e8-0006.pdf")
     end
 
     it "returns path with non_eu group when country is not in EU VAT area" do
       update_content(billing_info: {"country" => "US"})
-      expect(invoice.blob_key).to eq("2025/03/non_eu/Ubicloud-2025-03-2503-4ddfa430e8-0006.pdf")
+      expect(invoice.blob_key).to eq("2025/03/non_eu/LayerRail-2025-03-2503-4ddfa430e8-0006.pdf")
     end
   end
 
@@ -140,7 +140,7 @@ RSpec.describe Invoice do
     end
 
     it "not charge and wait for transfer if no payment methods" do
-      update_content(bank_transfer_info: {"Beneficiary" => "Ubicloud B.V."}, billing_info: {"id" => billing_info.id, "email" => "customer@example.com", "country" => "NL"})
+      update_content(bank_transfer_info: {"Beneficiary" => "LayerRail"}, billing_info: {"id" => billing_info.id, "email" => "customer@example.com", "country" => "NL"})
       expect(Clog).to receive(:emit).with("Invoice is waiting for transfer.", instance_of(Hash)).and_call_original
       expect(client).to receive(:put_object).with(hash_including(bucket: Config.invoices_bucket_name, key: invoice.blob_key))
       expect(invoice.charge).to be true
