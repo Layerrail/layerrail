@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security reports
+    url: mailto:support@layerrail.com?subject=%5Bsecurity%5D%20LayerRail%20security%20report
+    about: Report vulnerabilities privately. Do not open public issues for security reports.
+  - name: LayerRail support
+    url: mailto:support@layerrail.com
+    about: Contact the LayerRail team for account, deployment, or private operational support.

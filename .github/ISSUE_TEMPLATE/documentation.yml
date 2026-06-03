@@ -1,0 +1,25 @@
+name: Documentation
+description: Request a documentation fix or improvement.
+title: "[Docs]: "
+labels:
+  - documentation
+body:
+  - type: textarea
+    id: page
+    attributes:
+      label: Location
+      description: Link to the page, file, or section that needs work.
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: What should change?
+      description: Describe what is missing, confusing, outdated, or incorrect.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested wording or direction
+      description: Optional draft text or notes for maintainers.

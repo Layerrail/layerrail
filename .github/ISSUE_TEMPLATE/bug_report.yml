@@ -1,0 +1,73 @@
+name: Bug report
+description: Report a reproducible problem in LayerRail.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve LayerRail. Do not include secrets, credentials,
+        customer data, or vulnerability details in a public issue. Use SECURITY.md
+        for security reports.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide the smallest reliable reproduction you can.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Control plane
+        - Authentication or authorization
+        - Billing or usage
+        - Virtual machines
+        - Networking or firewalls
+        - Load balancers
+        - PostgreSQL
+        - Kubernetes
+        - GitHub runners
+        - AI inference
+        - CLI or API
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Branch, commit SHA, release, or deployment context.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Paste relevant sanitized output. Remove secrets and private data.
+      render: text
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: Provider, region, worker state, deployment mode, or other useful context.

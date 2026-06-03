@@ -1,0 +1,50 @@
+name: Feature request
+description: Propose a LayerRail product, infrastructure, or operator workflow improvement.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user, operator, or infrastructure problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the change you want to see.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Control plane
+        - Budget or usage evidence
+        - Deployment passport
+        - Virtual machines
+        - Networking or firewalls
+        - Load balancers
+        - PostgreSQL
+        - Kubernetes
+        - GitHub runners
+        - AI inference
+        - CLI or API
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds or alternative designs have you considered?
+  - type: textarea
+    id: impact
+    attributes:
+      label: Operational impact
+      description: Note migration, provider, billing, worker, DNS, security, or deployment impact.
