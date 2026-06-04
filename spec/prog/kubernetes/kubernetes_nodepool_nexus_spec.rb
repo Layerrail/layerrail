@@ -6,14 +6,16 @@ RSpec.describe Prog::Kubernetes::KubernetesNodepoolNexus do
   subject(:nx) { described_class.new(kn.strand) }
 
   let(:project) { Project.create(name: "default") }
-  let(:subnet) { PrivateSubnet.create(net6: "0::0", net4: "127.0.0.1", name: "x", location_id: Location::HETZNER_FSN1_ID, project_id: project.id) }
+  let(:kubernetes_location) { Option.kubernetes_locations.find { it.name == "linode-us-lax" } || Option.kubernetes_locations.first }
+  let(:kubernetes_location_id) { kubernetes_location.id }
+  let(:subnet) { PrivateSubnet.create(net6: "0::0", net4: "127.0.0.1", name: "x", location_id: kubernetes_location_id, project_id: project.id) }
   let(:kc) {
     kc = Prog::Kubernetes::KubernetesClusterNexus.assemble(
       name: "k8scluster",
       version: Option.selectable_kubernetes_versions.first,
       cp_node_count: 3,
       private_subnet_id: subnet.id,
-      location_id: Location::HETZNER_FSN1_ID,
+      location_id: kubernetes_location_id,
       project_id: project.id,
       target_node_size: "standard-2",
     ).subject
@@ -115,6 +117,7 @@ RSpec.describe Prog::Kubernetes::KubernetesNodepoolNexus do
     it "donates if there are sub-programs running" do
       kn.strand.update(label: "wait_worker_node")
       Strand.create(parent_id: kn.strand.id, prog: "Kubernetes::ProvisionKubernetesNode", label: "start", lease: Time.now + 10)
+      expect(nx).to receive(:register_deadline).with("wait", 20 * 60, allow_extension: 2 * 60 * 60)
       expect { nx.wait_worker_node }.to nap(120)
     end
   end

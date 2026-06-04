@@ -295,6 +295,19 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       expect { prog.join_control_plane }.to nap(15)
     end
 
+    it "retries later if control-plane join parameters cannot be prepared" do
+      expect(prog.vm.sshable).to receive(:d_check).with("join_control_plane").and_return("NotStarted")
+
+      sshable = Sshable.new
+      expect(kubernetes_cluster.functional_nodes.first).to receive(:sshable).and_return(sshable)
+      expect(sshable).to receive(:_cmd).with("sudo kubeadm token create --ttl 24h --usages signing,authentication", log: false)
+        .and_raise(Sshable::SshError.new("sudo kubeadm token create --ttl 24h --usages signing,authentication", "", "kubeadm unavailable", 1, nil))
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(prog.vm.sshable).not_to receive(:d_run)
+
+      expect { prog.join_control_plane }.to nap(30)
+    end
+
     it "naps if the join_control_plane script is in progress" do
       expect(prog.vm.sshable).to receive(:d_check).with("join_control_plane").and_return("InProgress")
       expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
@@ -349,6 +362,19 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
 
       expect { prog.join_worker }.to nap(15)
+    end
+
+    it "retries later if worker join parameters cannot be prepared" do
+      expect(prog.vm.sshable).to receive(:d_check).with("join_worker").and_return("NotStarted")
+
+      sshable = Sshable.new
+      expect(kubernetes_cluster.functional_nodes.first).to receive(:sshable).and_return(sshable)
+      expect(sshable).to receive(:_cmd).with("sudo kubeadm token create --ttl 24h --usages signing,authentication", log: false)
+        .and_raise(Sshable::SshError.new("sudo kubeadm token create --ttl 24h --usages signing,authentication", "", "kubeadm unavailable", 1, nil))
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(prog.vm.sshable).not_to receive(:d_run)
+
+      expect { prog.join_worker }.to nap(30)
     end
 
     it "naps if the join-worker-node script is in progress" do

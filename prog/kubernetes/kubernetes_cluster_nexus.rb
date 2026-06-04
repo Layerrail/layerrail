@@ -156,12 +156,20 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
   end
 
   label def wait_control_plane_node
+    extend_wait_deadline
     reap(:bootstrap_control_plane_nodes)
   end
 
   label def wait_nodes
-    nap 10 unless kubernetes_cluster.nodepools.all? { it.strand.label == "wait" }
+    unless kubernetes_cluster.nodepools.all? { it.strand.label == "wait" }
+      extend_wait_deadline
+      nap 10
+    end
     hop_wait
+  end
+
+  def extend_wait_deadline
+    register_deadline("wait", 20 * 60, allow_extension: 2 * 60 * 60)
   end
 
   label def update_billing_records

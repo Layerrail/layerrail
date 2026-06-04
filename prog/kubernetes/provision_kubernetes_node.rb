@@ -3,6 +3,8 @@
 class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
   subject_is :kubernetes_cluster
 
+  class JoinParameterError < RuntimeError; end
+
   def node
     @node ||= KubernetesNode[frame["node_id"]]
   end
@@ -22,6 +24,37 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
 
   def extend_provisioning_deadline(deadline_target)
     register_deadline(deadline_target, 20 * 60, allow_extension: 2 * 60 * 60)
+  end
+
+  def retry_join_parameter_preparation(exception, deadline_target: "install_cni")
+    Clog.emit("failed to prepare kubernetes join parameters", {
+      node_id: node.id,
+      node_ubid: node.ubid,
+      kubernetes_cluster_id: kubernetes_cluster.id,
+      kubernetes_cluster_ubid: kubernetes_cluster.ubid,
+      exception: Util.exception_to_hash(exception),
+    })
+    extend_provisioning_deadline(deadline_target)
+    nap 30
+  end
+
+  def fetch_join_parameter(cp_sshable, command, pattern: nil, transform: :strip)
+    output = cp_sshable.cmd(command, log: false)
+    return output.public_send(transform) unless pattern
+
+    output[pattern, 1] || fail(JoinParameterError, "Unable to parse '#{pattern.source}' from '#{command}' output")
+  end
+
+  def join_token(cp_sshable)
+    fetch_join_parameter(cp_sshable, "sudo kubeadm token create --ttl 24h --usages signing,authentication")
+  end
+
+  def discovery_token_ca_cert_hash(cp_sshable)
+    fetch_join_parameter(cp_sshable, "sudo kubeadm token create --print-join-command", pattern: /discovery-token-ca-cert-hash (\S+)/)
+  end
+
+  def certificate_key(cp_sshable)
+    fetch_join_parameter(cp_sshable, "sudo kubeadm init phase upload-certs --upload-certs", pattern: /certificate key:\n(.*)/)
   end
 
   # We need to create a random ula cidr for the cluster services subnet with
@@ -265,16 +298,20 @@ sudo touch #{marker}
       hop_install_cni
     when "NotStarted"
       cp_sshable = kubernetes_cluster.sshable
-      params = {
-        is_control_plane: true,
-        node_name: vm.name,
-        endpoint: "#{kubernetes_cluster.endpoint}:443",
-        join_token: cp_sshable.cmd("sudo kubeadm token create --ttl 24h --usages signing,authentication", log: false).chomp,
-        certificate_key: cp_sshable.cmd("sudo kubeadm init phase upload-certs --upload-certs", log: false)[/certificate key:\n(.*)/, 1],
-        discovery_token_ca_cert_hash: cp_sshable.cmd("sudo kubeadm token create --print-join-command", log: false)[/discovery-token-ca-cert-hash (\S+)/, 1],
-        node_ipv4: node_ipv4,
-        node_ipv6: vm.ip6,
-      }
+      begin
+        params = {
+          is_control_plane: true,
+          node_name: vm.name,
+          endpoint: "#{kubernetes_cluster.endpoint}:443",
+          join_token: join_token(cp_sshable),
+          certificate_key: certificate_key(cp_sshable),
+          discovery_token_ca_cert_hash: discovery_token_ca_cert_hash(cp_sshable),
+          node_ipv4: node_ipv4,
+          node_ipv6: vm.ip6,
+        }
+      rescue Sshable::SshError, JoinParameterError => ex
+        retry_join_parameter_preparation(ex, deadline_target: "install_cni")
+      end
       vm.sshable.d_run("join_control_plane", "kubernetes/bin/join-node", stdin: JSON.generate(params), log: false)
       extend_provisioning_deadline("install_cni")
       nap 15
@@ -303,15 +340,19 @@ sudo touch #{marker}
       hop_install_cni
     when "NotStarted"
       cp_sshable = kubernetes_cluster.sshable
-      params = {
-        is_control_plane: false,
-        node_name: vm.name,
-        endpoint: "#{kubernetes_cluster.endpoint}:443",
-        join_token: cp_sshable.cmd("sudo kubeadm token create --ttl 24h --usages signing,authentication", log: false).tr("\n", ""),
-        discovery_token_ca_cert_hash: cp_sshable.cmd("sudo kubeadm token create --print-join-command", log: false)[/discovery-token-ca-cert-hash (\S+)/, 1],
-        node_ipv4: node_ipv4,
-        node_ipv6: vm.ip6,
-      }
+      begin
+        params = {
+          is_control_plane: false,
+          node_name: vm.name,
+          endpoint: "#{kubernetes_cluster.endpoint}:443",
+          join_token: join_token(cp_sshable),
+          discovery_token_ca_cert_hash: discovery_token_ca_cert_hash(cp_sshable),
+          node_ipv4: node_ipv4,
+          node_ipv6: vm.ip6,
+        }
+      rescue Sshable::SshError, JoinParameterError => ex
+        retry_join_parameter_preparation(ex, deadline_target: "install_cni")
+      end
       vm.sshable.d_run("join_worker", "kubernetes/bin/join-node", stdin: JSON.generate(params), log: false)
       extend_provisioning_deadline("install_cni")
       nap 15

@@ -45,6 +45,7 @@ class Prog::Kubernetes::KubernetesNodepoolNexus < Prog::Base
   end
 
   label def wait_worker_node
+    register_deadline("wait", 20 * 60, allow_extension: 2 * 60 * 60)
     reap do
       kubernetes_nodepool.cluster.incr_update_billing_records
       hop_wait
