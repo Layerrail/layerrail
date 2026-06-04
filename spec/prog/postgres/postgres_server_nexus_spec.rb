@@ -421,8 +421,16 @@ RSpec.describe Prog::Postgres::PostgresServerNexus do
     end
 
     it "hops to refresh_certificates if initialize_empty_database command is succeeded" do
+      refresh_frame(nx, new_values: {"initialize_empty_database_try_count" => 3})
       expect(sshable).to receive(:_cmd).with("common/bin/daemonizer2 check initialize_empty_database").and_return("Succeeded")
       expect { nx.initialize_empty_database }.to hop("refresh_certificates")
+      expect(frame_value(nx, "initialize_empty_database_try_count")).to be_nil
+    end
+
+    it "extends deadline while initialize_empty_database is still in progress" do
+      expect(sshable).to receive(:_cmd).with("common/bin/daemonizer2 check initialize_empty_database").and_return("InProgress")
+      expect(nx).to receive(:register_deadline).with("wait", 10 * 60, allow_extension: 24 * 60 * 60)
+      expect { nx.initialize_empty_database }.to nap(5)
     end
 
     it "naps if script return unknown status" do
@@ -435,6 +443,22 @@ RSpec.describe Prog::Postgres::PostgresServerNexus do
       expect(sshable).to receive(:_cmd).with("common/bin/daemonizer2 check initialize_empty_database").and_return("NotStarted")
       expect(sshable).to receive(:_cmd).with("common/bin/daemonizer2 run initialize_empty_database sudo postgres/bin/initialize-empty-database 17 false", {log: true, stdin: nil})
       expect { nx.initialize_empty_database }.to nap(5)
+    end
+
+    it "increments try count on Failed" do
+      expect(sshable).to receive(:_cmd).with(/daemonizer2 run/, anything)
+      expect(sshable).to receive(:_cmd).with("common/bin/daemonizer2 check initialize_empty_database").and_return("Failed")
+      expect { nx.initialize_empty_database }.to nap(5)
+      expect(frame_value(nx, "initialize_empty_database_try_count")).to eq(1)
+    end
+
+    it "creates a page when initialize_empty_database try count reaches 3" do
+      refresh_frame(nx, new_values: {"initialize_empty_database_try_count" => 3})
+      expect(sshable).to receive(:_cmd).with(/daemonizer2 run/, anything)
+      expect(sshable).to receive(:_cmd).with("common/bin/daemonizer2 check initialize_empty_database").and_return("Failed")
+
+      expect { nx.initialize_empty_database }.to nap(5)
+      expect(Page.from_tag_parts("PGInitializeEmptyDatabaseFailed", server.id)).not_to be_nil
     end
   end
 

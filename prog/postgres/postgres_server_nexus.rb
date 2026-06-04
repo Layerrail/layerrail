@@ -182,8 +182,18 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
   label def initialize_empty_database
     case vm.sshable.d_check("initialize_empty_database")
     when "Succeeded"
+      delete_from_stack("initialize_empty_database_try_count")
       hop_refresh_certificates
+    when "InProgress"
+      register_deadline("wait", 10 * 60, allow_extension: 24 * 60 * 60)
     when "Failed", "NotStarted"
+      previous_try_count = frame["initialize_empty_database_try_count"] || 0
+      if previous_try_count >= 3
+        Prog::PageNexus.assemble("#{postgres_server.ubid} initialize empty database failed after 3 attempts",
+          ["PGInitializeEmptyDatabaseFailed", postgres_server.id], postgres_server.ubid)
+      end
+      update_stack({"initialize_empty_database_try_count" => previous_try_count + 1})
+
       strict_overcommit = resource.skip_strict_memory_overcommit_set? ? "false" : "true"
       vm.sshable.d_run("initialize_empty_database", "sudo", "postgres/bin/initialize-empty-database", postgres_server.version, strict_overcommit)
     end
