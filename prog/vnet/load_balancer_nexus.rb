@@ -16,6 +16,7 @@ class Prog::Vnet::LoadBalancerNexus < Prog::Base
     unless (ps = PrivateSubnet[private_subnet_id])
       fail "Given subnet doesn't exist with the id #{private_subnet_id}"
     end
+    Validation.validate_compute_provider_location(ps.location, resource_name: "Load balancers")
 
     stack ||= default_stack_for_private_subnet(ps)
     Validation.validate_name(name)

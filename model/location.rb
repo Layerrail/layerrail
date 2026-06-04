@@ -45,6 +45,18 @@ class Location < Sequel::Model
     end
   end
 
+  def self.default_compute_location_id
+    if Config.compute_provider
+      location = where(provider: Config.compute_provider, project_id: nil, visible: true).first ||
+        where(provider: Config.compute_provider, project_id: nil).first
+      return location.id if location
+
+      fail "No location configured for compute provider #{Config.compute_provider}"
+    end
+
+    HETZNER_FSN1_ID
+  end
+
   def visible_or_for_project?(proj_id, project_ff_visible_locations)
     (visible && project_id.nil?) || project_id == proj_id || project_ff_visible_locations&.include?(name)
   end

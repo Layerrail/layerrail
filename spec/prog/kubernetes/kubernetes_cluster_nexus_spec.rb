@@ -108,6 +108,17 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
       }.to raise_error RuntimeError, "Given subnet is not available in the project"
     end
 
+    it "rejects Kubernetes locations outside the configured compute provider in production" do
+      allow(Config).to receive(:production?).and_return(true)
+      allow(Config).to receive(:compute_provider).and_return("linode")
+      other_provider_location = Location[Location::HETZNER_FSN1_ID]
+      allow(Option).to receive(:kubernetes_locations).and_return([other_provider_location])
+
+      expect {
+        described_class.assemble(name: "normalname", project_id: customer_project.id, location_id: other_provider_location.id, cp_node_count: 3)
+      }.to raise_error Validation::ValidationFailed, "Validation failed for following fields: location"
+    end
+
     it "creates a kubernetes cluster" do
       st = described_class.assemble(name: "k8stest", version: Option.selectable_kubernetes_versions.first, private_subnet_id: subnet.id, project_id: customer_project.id, location_id: kubernetes_location_id, cp_node_count: 3, target_node_size: "standard-8", target_node_storage_size_gib: 100)
 
@@ -328,7 +339,7 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
     it "donates if there are sub-programs running" do
       st.update(label: "wait_control_plane_node")
       Strand.create(parent_id: st.id, prog: "Kubernetes::ProvisionKubernetesNode", label: "start", stack: [{}], lease: Time.now + 10)
-      expect(nx).to receive(:register_deadline).with("wait", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(nx).to receive(:register_deadline).with("wait", 20 * 60, allow_extension: 24 * 60 * 60)
       expect { nx.wait_control_plane_node }.to nap(120)
     end
   end
@@ -336,7 +347,7 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
   describe "#wait_nodes" do
     it "naps until all nodepools are ready" do
       expect(kubernetes_cluster.nodepools.first.strand.label).not_to eq "wait"
-      expect(nx).to receive(:register_deadline).with("wait", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(nx).to receive(:register_deadline).with("wait", 20 * 60, allow_extension: 24 * 60 * 60)
       expect { nx.wait_nodes }.to nap(10)
     end
 

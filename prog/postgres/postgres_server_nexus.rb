@@ -5,6 +5,9 @@ require "forwardable"
 class Prog::Postgres::PostgresServerNexus < Prog::Base
   subject_is :postgres_server
 
+  INITIAL_PROVISIONING_DEADLINE = 10 * 60
+  INITIAL_PROVISIONING_DEADLINE_EXTENSION = 24 * 60 * 60
+
   extend Forwardable
 
   def_delegators :postgres_server, :vm, :resource
@@ -94,10 +97,14 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
   end
 
   label def bootstrap_rhizome
-    register_deadline("wait", 10 * 60)
+    extend_initial_provisioning_deadline
 
     bud Prog::BootstrapRhizome, {"target_folder" => "postgres", "subject_id" => vm.id, "user" => "ubi", "no_bundler_install" => !vm.location.linode?}
     hop_wait_bootstrap_rhizome
+  end
+
+  def extend_initial_provisioning_deadline
+    register_deadline("wait", INITIAL_PROVISIONING_DEADLINE, allow_extension: INITIAL_PROVISIONING_DEADLINE_EXTENSION)
   end
 
   label def wait_bootstrap_rhizome
@@ -171,7 +178,7 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
     # AttachRolePolicy is eventually consistent on AWS.
     # Wait for wal-g to be able to connect to storage before moving.
     unless postgres_server.walg_credentials_ready?
-      register_deadline("wait", 10 * 60)
+      extend_initial_provisioning_deadline
       nap 5
     end
 
@@ -185,7 +192,7 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
       delete_from_stack("initialize_empty_database_try_count")
       hop_refresh_certificates
     when "InProgress"
-      register_deadline("wait", 10 * 60, allow_extension: 24 * 60 * 60)
+      extend_initial_provisioning_deadline
     when "Failed", "NotStarted"
       previous_try_count = frame["initialize_empty_database_try_count"] || 0
       if previous_try_count >= 3
@@ -196,6 +203,7 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
 
       strict_overcommit = resource.skip_strict_memory_overcommit_set? ? "false" : "true"
       vm.sshable.d_run("initialize_empty_database", "sudo", "postgres/bin/initialize-empty-database", postgres_server.version, strict_overcommit)
+      extend_initial_provisioning_deadline
     end
 
     nap 5
@@ -212,7 +220,7 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
       previous_disk_usage = frame["disk_usage"] || 0
       if disk_usage > previous_disk_usage
         update_stack({"disk_usage" => disk_usage})
-        register_deadline("wait", 10 * 60, allow_extension: 24 * 60 * 60)
+        extend_initial_provisioning_deadline
       end
     when "Failed", "NotStarted"
       previous_try_count = frame["initialize_database_from_backup_try_count"] || 0
@@ -229,6 +237,7 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
       end
       strict_overcommit = resource.skip_strict_memory_overcommit_set? ? "false" : "true"
       vm.sshable.d_run("initialize_database_from_backup", "sudo", "postgres/bin/initialize-database-from-backup", postgres_server.version, backup_label, strict_overcommit)
+      extend_initial_provisioning_deadline
     end
 
     nap 5

@@ -117,7 +117,7 @@ RSpec.describe Prog::Kubernetes::KubernetesNodepoolNexus do
     it "donates if there are sub-programs running" do
       kn.strand.update(label: "wait_worker_node")
       Strand.create(parent_id: kn.strand.id, prog: "Kubernetes::ProvisionKubernetesNode", label: "start", lease: Time.now + 10)
-      expect(nx).to receive(:register_deadline).with("wait", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(nx).to receive(:register_deadline).with("wait", 20 * 60, allow_extension: 24 * 60 * 60)
       expect { nx.wait_worker_node }.to nap(120)
     end
   end

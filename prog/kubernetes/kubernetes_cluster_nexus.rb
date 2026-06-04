@@ -3,6 +3,9 @@
 class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
   subject_is :kubernetes_cluster
 
+  WAIT_DEADLINE = 20 * 60
+  WAIT_DEADLINE_EXTENSION = 24 * 60 * 60
+
   def self.assemble(name:, project_id:, location_id:, version: Option.selectable_kubernetes_versions.first, private_subnet_id: nil, cp_node_count: 3, target_node_size: "standard-2", target_node_storage_size_gib: nil)
     DB.transaction do
       unless (project = Project[project_id])
@@ -13,6 +16,7 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
       Validation.validate_kubernetes_name(name)
       Validation.validate_kubernetes_cp_node_count(cp_node_count)
       Validation.validate_kubernetes_location(location_id)
+      Validation.validate_compute_provider_location(Location[location_id], resource_name: "Kubernetes clusters")
 
       ubid = KubernetesCluster.generate_ubid
       subnet = if private_subnet_id
@@ -169,7 +173,7 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
   end
 
   def extend_wait_deadline
-    register_deadline("wait", 20 * 60, allow_extension: 2 * 60 * 60)
+    register_deadline("wait", WAIT_DEADLINE, allow_extension: WAIT_DEADLINE_EXTENSION)
   end
 
   label def update_billing_records

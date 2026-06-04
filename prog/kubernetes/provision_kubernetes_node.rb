@@ -5,6 +5,9 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
 
   class JoinParameterError < RuntimeError; end
 
+  PROVISIONING_DEADLINE = 20 * 60
+  PROVISIONING_DEADLINE_EXTENSION = 24 * 60 * 60
+
   def node
     @node ||= KubernetesNode[frame["node_id"]]
   end
@@ -23,7 +26,7 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
   end
 
   def extend_provisioning_deadline(deadline_target)
-    register_deadline(deadline_target, 20 * 60, allow_extension: 2 * 60 * 60)
+    register_deadline(deadline_target, PROVISIONING_DEADLINE, allow_extension: PROVISIONING_DEADLINE_EXTENSION)
   end
 
   def retry_join_parameter_preparation(exception, deadline_target: "install_cni")
@@ -310,7 +313,7 @@ sudo touch #{marker}
           node_ipv6: vm.ip6,
         }
       rescue Sshable::SshError, JoinParameterError => ex
-        retry_join_parameter_preparation(ex, deadline_target: "install_cni")
+        return retry_join_parameter_preparation(ex, deadline_target: "install_cni")
       end
       vm.sshable.d_run("join_control_plane", "kubernetes/bin/join-node", stdin: JSON.generate(params), log: false)
       extend_provisioning_deadline("install_cni")
@@ -351,7 +354,7 @@ sudo touch #{marker}
           node_ipv6: vm.ip6,
         }
       rescue Sshable::SshError, JoinParameterError => ex
-        retry_join_parameter_preparation(ex, deadline_target: "install_cni")
+        return retry_join_parameter_preparation(ex, deadline_target: "install_cni")
       end
       vm.sshable.d_run("join_worker", "kubernetes/bin/join-node", stdin: JSON.generate(params), log: false)
       extend_provisioning_deadline("install_cni")

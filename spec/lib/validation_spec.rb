@@ -603,6 +603,24 @@ RSpec.describe Validation do
     end
   end
 
+  describe "#validate_compute_provider_location" do
+    it "allows the configured compute provider location in production" do
+      allow(Config).to receive(:production?).and_return(true)
+      allow(Config).to receive(:compute_provider).and_return("linode")
+
+      expect(described_class.validate_compute_provider_location(Location.where(provider: "linode").first)).to be_nil
+    end
+
+    it "rejects other provider locations in production" do
+      allow(Config).to receive(:production?).and_return(true)
+      allow(Config).to receive(:compute_provider).and_return("linode")
+
+      expect {
+        described_class.validate_compute_provider_location(Location[Location::HETZNER_FSN1_ID])
+      }.to raise_error described_class::ValidationFailed
+    end
+  end
+
   describe "#validate_private_location_name" do
     it "validates aws region names" do
       expect { described_class.validate_provider_location_name("aws", "us-west-2") }.not_to raise_error

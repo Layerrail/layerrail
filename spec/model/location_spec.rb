@@ -47,7 +47,25 @@ RSpec.describe Location do
     expect(p2_loc.provider_dispatcher_group_name).to eq("linode")
   end
 
+  describe ".default_compute_location_id" do
+    it "uses a visible location for the configured compute provider" do
+      allow(Config).to receive(:compute_provider).and_return("linode")
+
+      expect(described_class[described_class.default_compute_location_id].provider).to eq("linode")
+    end
+
+    it "fails when the configured compute provider has no location" do
+      allow(Config).to receive(:compute_provider).and_return("missing-provider")
+
+      expect { described_class.default_compute_location_id }.to raise_error(RuntimeError, "No location configured for compute provider missing-provider")
+    end
+  end
+
   describe ".postgres_locations" do
+    before do
+      allow(Config).to receive(:compute_provider).and_return(nil)
+    end
+
     it "without arg returns metal and AWS public locations but no GCP" do
       names = described_class.postgres_locations.map(&:name)
 

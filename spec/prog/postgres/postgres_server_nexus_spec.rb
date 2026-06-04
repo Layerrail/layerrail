@@ -401,7 +401,7 @@ RSpec.describe Prog::Postgres::PostgresServerNexus do
       expect(server.timeline).to receive(:blob_storage).and_return(instance_double(MinioCluster))
       expect(sshable).to receive(:_cmd).with("sudo -u postgres /usr/bin/wal-g st check read --config /etc/postgresql/wal-g.env")
         .and_raise(Sshable::SshError.new("cmd", "", "NoCredentialProviders", 1, nil))
-      expect(nx).to receive(:register_deadline).with("wait", 10 * 60)
+      expect(nx).to receive(:register_deadline).with("wait", 10 * 60, allow_extension: 24 * 60 * 60)
 
       expect { nx.configure_walg_credentials }.to nap(5)
     end

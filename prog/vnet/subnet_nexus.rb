@@ -8,7 +8,7 @@ class Prog::Vnet::SubnetNexus < Prog::Base
     false => {port_range: 0..65535, protocols: ["tcp", "udp"].freeze},
   }.freeze
 
-  def self.assemble(project_id, name: nil, location_id: Location::HETZNER_FSN1_ID, ipv6_range: nil, ipv4_range: nil, allow_only_ssh: nil, firewall_id: nil, firewall_name: nil, ipv4_range_size: nil, preferred_azs: [])
+  def self.assemble(project_id, name: nil, location_id: Location.default_compute_location_id, ipv6_range: nil, ipv4_range: nil, allow_only_ssh: nil, firewall_id: nil, firewall_name: nil, ipv4_range_size: nil, preferred_azs: [])
     unless (project = Project[project_id])
       fail "No existing project"
     end
@@ -16,6 +16,8 @@ class Prog::Vnet::SubnetNexus < Prog::Base
     unless (location = Location[location_id])
       fail "No existing location"
     end
+    Validation.validate_compute_provider_location(location, resource_name: "Private subnets")
+
     if allow_only_ssh && firewall_id
       fail "Cannot specify both allow_only_ssh and firewall_id"
     end

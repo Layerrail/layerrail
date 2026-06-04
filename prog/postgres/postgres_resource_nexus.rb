@@ -23,6 +23,7 @@ class Prog::Postgres::PostgresResourceNexus < Prog::Base
     unless (location = Location[location_id])
       fail "No existing location"
     end
+    Validation.validate_compute_provider_location(location, resource_name: "PostgreSQL")
 
     DB.transaction do
       superuser_password, timeline_id, timeline_access, target_version = if parent_id.nil?

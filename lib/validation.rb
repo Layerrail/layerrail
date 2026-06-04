@@ -372,6 +372,13 @@ module Validation
     fail ValidationFailed.new({location: "Kubernetes clusters are not supported in this location. Available locations: #{Option.kubernetes_locations.map(&:display_name).join(", ")}"})
   end
 
+  def self.validate_compute_provider_location(location, resource_name: "This resource")
+    return unless Config.production? && Config.compute_provider
+    return if location&.provider == Config.compute_provider
+
+    fail ValidationFailed.new({location: "#{resource_name} is only available in supported LayerRail locations."})
+  end
+
   def self.validate_victoria_metrics_username(username)
     msg = "VictoriaMetrics user must only contain lowercase letters, numbers, hyphens and underscore and cannot start with a number or hyphen. It also has a max length of 32 and a min length of 3."
     fail ValidationFailed.new({username: msg}) unless username&.match?(ALLOWED_VICTORIA_METRICS_USERNAME_PATTERN)

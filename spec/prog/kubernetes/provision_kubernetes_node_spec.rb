@@ -195,7 +195,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
 
     it "runs the Linode Kubernetes preparation script if it's not started and extends the provisioning deadline" do
       expect(prog.vm.sshable).to receive(:d_check).with("prepare_linode_kubernetes_node").and_return("NotStarted")
-      expect(prog).to receive(:register_deadline).with("assign_role", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(prog).to receive(:register_deadline).with("assign_role", 20 * 60, allow_extension: 24 * 60 * 60)
       expect(prog).to receive(:linode_kubernetes_prepare_script).and_return("prepare script")
       expect(prog.vm.sshable).to receive(:d_run).with("prepare_linode_kubernetes_node", "bash", "-s", stdin: "prepare script", log: false)
 
@@ -204,7 +204,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
 
     it "extends the provisioning deadline while Linode Kubernetes preparation is in progress" do
       expect(prog.vm.sshable).to receive(:d_check).with("prepare_linode_kubernetes_node").and_return("InProgress")
-      expect(prog).to receive(:register_deadline).with("assign_role", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(prog).to receive(:register_deadline).with("assign_role", 20 * 60, allow_extension: 24 * 60 * 60)
 
       expect { prog.prepare_node_runtime }.to nap(10)
     end
@@ -236,14 +236,14 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
         "init_kubernetes_cluster", "/home/ubi/kubernetes/bin/init-cluster",
         stdin: /{"node_name":"test-vm","cluster_name":"k8scluster","lb_hostname":"somelb\..*","port":"443","private_subnet_cidr4":"172.19.0.0\/16","private_subnet_cidr6":"fd40:1a0a:8d48:182a::\/64","node_ipv4":"#{expected_node_ipv4_regex}","node_ipv6":"#{expected_node_ipv6_regex}"/, log: false,
       )
-      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 24 * 60 * 60)
 
       expect { prog.init_cluster }.to nap(30)
     end
 
     it "naps if the init_cluster script is in progress" do
       expect(prog.vm.sshable).to receive(:d_check).with("init_kubernetes_cluster").and_return("InProgress")
-      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 24 * 60 * 60)
       expect { prog.init_cluster }.to nap(10)
     end
 
@@ -290,7 +290,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
         stdin: /{"is_control_plane":true,"node_name":"test-vm","endpoint":"somelb\..*:443","join_token":"jt","certificate_key":"ck","discovery_token_ca_cert_hash":"dtcch","node_ipv4":"#{expected_node_ipv4_regex}","node_ipv6":"#{expected_node_ipv6_regex}"}/,
         log: false,
       )
-      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 24 * 60 * 60)
 
       expect { prog.join_control_plane }.to nap(15)
     end
@@ -302,7 +302,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       expect(kubernetes_cluster.functional_nodes.first).to receive(:sshable).and_return(sshable)
       expect(sshable).to receive(:_cmd).with("sudo kubeadm token create --ttl 24h --usages signing,authentication", log: false)
         .and_raise(Sshable::SshError.new("sudo kubeadm token create --ttl 24h --usages signing,authentication", "", "kubeadm unavailable", 1, nil))
-      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 24 * 60 * 60)
       expect(prog.vm.sshable).not_to receive(:d_run)
 
       expect { prog.join_control_plane }.to nap(30)
@@ -310,7 +310,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
 
     it "naps if the join_control_plane script is in progress" do
       expect(prog.vm.sshable).to receive(:d_check).with("join_control_plane").and_return("InProgress")
-      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 24 * 60 * 60)
       expect { prog.join_control_plane }.to nap(10)
     end
 
@@ -359,7 +359,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
         stdin: /{"is_control_plane":false,"node_name":"test-vm","endpoint":"somelb\..*:443","join_token":"jt","discovery_token_ca_cert_hash":"dtcch","node_ipv4":"#{expected_node_ipv4_regex}","node_ipv6":"#{expected_node_ipv6_regex}"}/,
         log: false,
       )
-      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 24 * 60 * 60)
 
       expect { prog.join_worker }.to nap(15)
     end
@@ -371,7 +371,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       expect(kubernetes_cluster.functional_nodes.first).to receive(:sshable).and_return(sshable)
       expect(sshable).to receive(:_cmd).with("sudo kubeadm token create --ttl 24h --usages signing,authentication", log: false)
         .and_raise(Sshable::SshError.new("sudo kubeadm token create --ttl 24h --usages signing,authentication", "", "kubeadm unavailable", 1, nil))
-      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 24 * 60 * 60)
       expect(prog.vm.sshable).not_to receive(:d_run)
 
       expect { prog.join_worker }.to nap(30)
@@ -379,7 +379,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
 
     it "naps if the join-worker-node script is in progress" do
       expect(prog.vm.sshable).to receive(:d_check).with("join_worker").and_return("InProgress")
-      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 24 * 60 * 60)
       expect { prog.join_worker }.to nap(10)
     end
 

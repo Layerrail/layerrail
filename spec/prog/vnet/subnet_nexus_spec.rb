@@ -54,6 +54,16 @@ RSpec.describe Prog::Vnet::SubnetNexus do
       }.to raise_error RuntimeError, "No existing location"
     end
 
+    it "defaults to the configured compute provider location" do
+      allow(Config).to receive(:compute_provider).and_return("linode")
+      expect(described_class).to receive(:random_private_ipv4).and_return("10.0.0.0/26")
+      expect(described_class).to receive(:random_private_ipv6).and_return("fd10:9b0b:6b4b:8fbb::/64")
+
+      st = described_class.assemble(prj.id, name: "linode-default-ps")
+
+      expect(st.subject.location.provider).to eq("linode")
+    end
+
     it "uses ipv6_addr if passed and creates entities" do
       expect(described_class).to receive(:random_private_ipv4).and_return("10.0.0.0/26")
       ps = described_class.assemble(
@@ -80,7 +90,7 @@ RSpec.describe Prog::Vnet::SubnetNexus do
 
     it "uses firewall if provided" do
       fw = Firewall.create(name: "default-firewall", location_id: Location::HETZNER_FSN1_ID, project_id: prj.id)
-      ps = described_class.assemble(prj.id, firewall_id: fw.id)
+      ps = described_class.assemble(prj.id, firewall_id: fw.id, location_id: Location::HETZNER_FSN1_ID)
       expect(ps.subject.firewalls.count).to eq(1)
       expect(ps.subject.firewalls.first).to eq(fw)
     end
@@ -109,21 +119,21 @@ RSpec.describe Prog::Vnet::SubnetNexus do
 
     it "fails if provided firewall does not exist" do
       expect {
-        described_class.assemble(prj.id, firewall_id: "550e8400-e29b-41d4-a716-446655440000")
+        described_class.assemble(prj.id, firewall_id: "550e8400-e29b-41d4-a716-446655440000", location_id: Location::HETZNER_FSN1_ID)
       }.to raise_error RuntimeError, "Firewall with id 550e8400-e29b-41d4-a716-446655440000 and location hetzner-fsn1 does not exist"
     end
 
     it "fails if firewall is not in the project" do
       fw = Firewall.create(name: "default-firewall", location_id: Location::HETZNER_FSN1_ID, project_id: Project.create(name: "t2").id)
       expect {
-        described_class.assemble(prj.id, firewall_id: fw.id)
+        described_class.assemble(prj.id, firewall_id: fw.id, location_id: Location::HETZNER_FSN1_ID)
       }.to raise_error RuntimeError, "Firewall with id #{fw.id} and location hetzner-fsn1 does not exist"
     end
 
     it "fails if both allow_only_ssh and firewall_id are specified" do
       fw = Firewall.create(name: "default-firewall", location_id: Location::HETZNER_FSN1_ID, project_id: prj.id)
       expect {
-        described_class.assemble(prj.id, firewall_id: fw.id, allow_only_ssh: true)
+        described_class.assemble(prj.id, firewall_id: fw.id, allow_only_ssh: true, location_id: Location::HETZNER_FSN1_ID)
       }.to raise_error RuntimeError, "Cannot specify both allow_only_ssh and firewall_id"
     end
   end
