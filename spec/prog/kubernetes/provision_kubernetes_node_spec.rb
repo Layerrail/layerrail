@@ -44,7 +44,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
 
     lb = LoadBalancer.create(private_subnet_id: subnet.id, name: "somelb", health_check_endpoint: "/foo", project_id: Config.kubernetes_service_project_id)
     LoadBalancerPort.create(load_balancer_id: lb.id, src_port: 123, dst_port: 456)
-    Prog::Kubernetes::KubernetesNodeNexus.assemble(
+    st = Prog::Kubernetes::KubernetesNodeNexus.assemble(
       project.id,
       sshable_unix_user: "ubi",
       name: "cp-node",
@@ -56,6 +56,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       enable_ip4: true,
       kubernetes_cluster_id: kc.id,
     )
+    st.subject.update(state: "active")
     kc.update(api_server_lb_id: lb.id)
   }
 
@@ -126,6 +127,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       expect(new_vm.vcpus).to eq(4)
       expect(new_vm.strand.stack.first["storage_volumes"].first["size_gib"]).to eq(expected_standard_4_storage_size)
       expect(new_vm.boot_image).to eq("kubernetes-#{Option.selectable_kubernetes_versions.first.tr(".", "_")}")
+      expect(KubernetesNode[vm_id: new_vm.id].state).to eq("provisioning")
     end
 
     it "creates a worker node and hops if a nodepool is given" do
@@ -142,6 +144,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       expect(new_vm.vcpus).to eq(8)
       expect(new_vm.strand.stack.first["storage_volumes"].first["size_gib"]).to eq(expected_standard_8_storage_size)
       expect(new_vm.boot_image).to eq("kubernetes-#{Option.selectable_kubernetes_versions.first.tr(".", "_")}")
+      expect(KubernetesNode[vm_id: new_vm.id].state).to eq("provisioning")
     end
 
     it "assigns the default storage size if not specified" do
@@ -465,17 +468,21 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
     end
 
     it "skips approve if the csr is already approved" do
+      prog.node.update(state: "provisioning")
       expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s get csr --sort-by=.metadata.creationTimestamp | awk /Approved/' && /kubelet-serving/ && /'test-vm'/ {print $1}' | tail -1").and_return(Net::SSH::Connection::Session::StringWithExitstatus.new("csr-abc123\n", 0))
       expect { prog.approve_new_csr }.to exit({node_id: prog.node.id})
+      expect(prog.node.reload.state).to eq("active")
       expect(kubernetes_cluster.reload.sync_internal_dns_config_set?).to be true
       expect(kubernetes_cluster.reload.sync_worker_mesh_set?).to be true
     end
 
     it "approves the csr when it is pending" do
+      prog.node.update(state: "provisioning")
       expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s get csr --sort-by=.metadata.creationTimestamp | awk /Approved/' && /kubelet-serving/ && /'test-vm'/ {print $1}' | tail -1").and_return(Net::SSH::Connection::Session::StringWithExitstatus.new("\n", 0))
       expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s get csr --sort-by=.metadata.creationTimestamp | awk /Pending/' && /kubelet-serving/ && /'test-vm'/ {print $1}' | tail -1").and_return(Net::SSH::Connection::Session::StringWithExitstatus.new("csr-abc123\n", 0))
       expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s certificate approve csr-abc123").and_return(Net::SSH::Connection::Session::StringWithExitstatus.new("approved", 0))
       expect { prog.approve_new_csr }.to exit({node_id: prog.node.id})
+      expect(prog.node.reload.state).to eq("active")
       expect(kubernetes_cluster.reload.sync_internal_dns_config_set?).to be true
       expect(kubernetes_cluster.reload.sync_worker_mesh_set?).to be true
     end

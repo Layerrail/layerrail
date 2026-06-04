@@ -50,13 +50,14 @@ class Prog::Vnet::Linode::SubnetNexus < Prog::Base
     end
 
     private_subnet.nics.each(&:incr_destroy)
+    private_subnet.load_balancers.each(&:incr_destroy)
     private_subnet.remove_all_firewalls
 
     resource = private_subnet.private_subnet_linode_resource
     client.delete_firewall(resource.firewall_id) if resource&.firewall_id
     resource&.destroy
 
-    nap 1 unless private_subnet.nics.empty?
+    nap 1 unless private_subnet.nics.empty? && private_subnet.load_balancers.empty?
     private_subnet.destroy
     pop "private subnet deleted"
   end

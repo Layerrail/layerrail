@@ -149,10 +149,11 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
   label def bootstrap_control_plane_nodes
     nap 5 unless kubernetes_cluster.endpoint
 
-    ready_to_bootstrap_workers = kubernetes_cluster.nodes.count >= 1
-    kubernetes_cluster.nodepools.each(&:incr_start_bootstrapping) if ready_to_bootstrap_workers
+    control_plane_ready = kubernetes_cluster.functional_nodes.count >= kubernetes_cluster.cp_node_count
+    kubernetes_cluster.nodepools.each(&:incr_start_bootstrapping) if control_plane_ready
 
-    hop_wait_nodes if kubernetes_cluster.nodes.count >= kubernetes_cluster.cp_node_count
+    hop_wait_nodes if control_plane_ready
+    hop_wait_control_plane_node if kubernetes_cluster.nodes.count >= kubernetes_cluster.cp_node_count
 
     bud Prog::Kubernetes::ProvisionKubernetesNode, {"subject_id" => kubernetes_cluster.id}
 

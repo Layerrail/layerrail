@@ -27,7 +27,7 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
       health_check_protocol: "tcp",
     ).subject
     2.times do
-      Prog::Kubernetes::KubernetesNodeNexus.assemble(
+      st = Prog::Kubernetes::KubernetesNodeNexus.assemble(
         Config.kubernetes_service_project_id,
         sshable_unix_user: "ubi",
         name: "#{kc.ubid}-#{SecureRandom.alphanumeric(5).downcase}",
@@ -39,6 +39,7 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
         enable_ip4: true,
         kubernetes_cluster_id: kc.id,
       )
+      st.subject.update(state: "active")
     end
     kc.update(api_server_lb_id: apiserver_lb.id)
 
@@ -269,7 +270,7 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
 
   describe "#bootstrap_control_plane_nodes" do
     def assemble_cp_node
-      Prog::Kubernetes::KubernetesNodeNexus.assemble(
+      st = Prog::Kubernetes::KubernetesNodeNexus.assemble(
         Config.kubernetes_service_project_id,
         sshable_unix_user: "ubi",
         name: "#{kubernetes_cluster.ubid}-#{SecureRandom.alphanumeric(5).downcase}",
@@ -281,6 +282,8 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
         enable_ip4: true,
         kubernetes_cluster_id: kubernetes_cluster.id,
       )
+      st.subject.update(state: "active")
+      st
     end
 
     it "waits until the load balancer endpoint is set" do
@@ -311,6 +314,14 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
       expect(kubernetes_cluster.nodes.count).to eq 1
       expect { nx.bootstrap_control_plane_nodes }.to hop("wait_nodes")
       expect(kubernetes_cluster.nodepools.first.start_bootstrapping_set?).to be true
+    end
+
+    it "does not start worker nodepools before all control-plane nodes are active" do
+      kubernetes_cluster.nodes_dataset.update(state: "provisioning")
+      expect(kubernetes_cluster.reload.functional_nodes.count).to eq 0
+
+      expect { nx.bootstrap_control_plane_nodes }.to hop("wait_control_plane_node")
+      expect(kubernetes_cluster.nodepools.first.start_bootstrapping_set?).to be false
     end
 
     it "hops wait_nodes if the target number of CP nodes is reached" do

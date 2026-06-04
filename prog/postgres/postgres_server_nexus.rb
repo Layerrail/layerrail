@@ -107,6 +107,17 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
     register_deadline("wait", INITIAL_PROVISIONING_DEADLINE, allow_extension: INITIAL_PROVISIONING_DEADLINE_EXTENSION)
   end
 
+  def emit_daemonizer_progress_logs(unit_name, started_at_key, last_logged_at_key, message)
+    started_at = frame[started_at_key]
+    return unless started_at && Time.parse(started_at) < Time.now - 5 * 60
+
+    last_logged_at = frame[last_logged_at_key]
+    return if last_logged_at && Time.parse(last_logged_at) >= Time.now - 5 * 60
+
+    Clog.emit(message, {postgres_server: {ubid: postgres_server.ubid, logs: vm.sshable.d_logs(unit_name)}})
+    update_stack(last_logged_at_key => Time.now.to_s)
+  end
+
   label def wait_bootstrap_rhizome
     reap(:mount_data_disk, nap: 5)
   end
@@ -189,9 +200,15 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
   label def initialize_empty_database
     case vm.sshable.d_check("initialize_empty_database")
     when "Succeeded"
-      delete_from_stack("initialize_empty_database_try_count")
+      delete_from_stack("initialize_empty_database_try_count", "initialize_empty_database_started_at", "initialize_empty_database_last_logged_at")
       hop_refresh_certificates
     when "InProgress"
+      emit_daemonizer_progress_logs(
+        "initialize_empty_database",
+        "initialize_empty_database_started_at",
+        "initialize_empty_database_last_logged_at",
+        "initialize empty database still in progress",
+      )
       extend_initial_provisioning_deadline
     when "Failed", "NotStarted"
       previous_try_count = frame["initialize_empty_database_try_count"] || 0
@@ -203,6 +220,7 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
 
       strict_overcommit = resource.skip_strict_memory_overcommit_set? ? "false" : "true"
       vm.sshable.d_run("initialize_empty_database", "sudo", "postgres/bin/initialize-empty-database", postgres_server.version, strict_overcommit)
+      update_stack("initialize_empty_database_started_at" => Time.now.to_s)
       extend_initial_provisioning_deadline
     end
 
@@ -213,9 +231,15 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
     case vm.sshable.d_check("initialize_database_from_backup")
     when "Succeeded"
       Page.from_tag_parts("PGInitializeDatabaseFromBackupFailed", postgres_server.id)&.incr_resolve
-      delete_from_stack("disk_usage", "initialize_database_from_backup_try_count")
+      delete_from_stack("disk_usage", "initialize_database_from_backup_try_count", "initialize_database_from_backup_started_at", "initialize_database_from_backup_last_logged_at")
       hop_refresh_certificates
     when "InProgress"
+      emit_daemonizer_progress_logs(
+        "initialize_database_from_backup",
+        "initialize_database_from_backup_started_at",
+        "initialize_database_from_backup_last_logged_at",
+        "initialize database from backup still in progress",
+      )
       disk_usage = postgres_server.data_disk_usage
       previous_disk_usage = frame["disk_usage"] || 0
       if disk_usage > previous_disk_usage
@@ -237,6 +261,7 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
       end
       strict_overcommit = resource.skip_strict_memory_overcommit_set? ? "false" : "true"
       vm.sshable.d_run("initialize_database_from_backup", "sudo", "postgres/bin/initialize-database-from-backup", postgres_server.version, backup_label, strict_overcommit)
+      update_stack("initialize_database_from_backup_started_at" => Time.now.to_s)
       extend_initial_provisioning_deadline
     end
 

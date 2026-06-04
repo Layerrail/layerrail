@@ -400,12 +400,19 @@ CONFIG
   end
 
   label def approve_new_csr
-    approved_csr = kubernetes_cluster.client.get_csr(node.name, csr_status: "Approved")
-    if approved_csr.empty?
-      pending_csr = kubernetes_cluster.client.get_csr(node.name, csr_status: "Pending")
-      nap 5 if pending_csr.empty?
-      kubernetes_cluster.client.approve_csr(pending_csr)
+    client = if kubernetes_cluster.functional_nodes.empty?
+      kubernetes_cluster.client(session: vm.sshable.connect)
+    else
+      kubernetes_cluster.client
     end
+
+    approved_csr = client.get_csr(node.name, csr_status: "Approved")
+    if approved_csr.empty?
+      pending_csr = client.get_csr(node.name, csr_status: "Pending")
+      nap 5 if pending_csr.empty?
+      client.approve_csr(pending_csr)
+    end
+    node.update(state: "active")
     kubernetes_cluster.incr_sync_internal_dns_config
     kubernetes_cluster.incr_sync_worker_mesh
     pop({node_id: node.id})
