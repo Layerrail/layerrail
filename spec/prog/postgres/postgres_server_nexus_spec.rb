@@ -433,6 +433,37 @@ RSpec.describe Prog::Postgres::PostgresServerNexus do
       expect { nx.initialize_empty_database }.to nap(5)
     end
 
+    it "emits progress logs for existing in-progress empty database initialization" do
+      refresh_frame(nx, new_values: {"last_label_changed_at" => (Time.now - 6 * 60).to_s})
+      expect(sshable).to receive(:_cmd).with("common/bin/daemonizer2 check initialize_empty_database").and_return("InProgress")
+      expect(sshable).to receive(:_cmd).with("sudo journalctl -u initialize_empty_database --no-pager").and_return("postgres setup logs")
+      expect(Clog).to receive(:emit).with(
+        "initialize empty database still in progress",
+        {postgres_server: {ubid: server.ubid, logs: "postgres setup logs"}},
+      )
+      expect(nx).to receive(:register_deadline).with("wait", 10 * 60, allow_extension: 24 * 60 * 60)
+
+      expect { nx.initialize_empty_database }.to nap(5)
+
+      expect(frame_value(nx, "initialize_empty_database_started_at")).not_to be_nil
+      expect(frame_value(nx, "initialize_empty_database_last_logged_at")).not_to be_nil
+    end
+
+    it "does not fail the strand if progress log fetching fails" do
+      refresh_frame(nx, new_values: {"last_label_changed_at" => (Time.now - 6 * 60).to_s})
+      expect(sshable).to receive(:_cmd).with("common/bin/daemonizer2 check initialize_empty_database").and_return("InProgress")
+      expect(sshable).to receive(:_cmd).with("sudo journalctl -u initialize_empty_database --no-pager")
+        .and_raise(Sshable::SshError.new("journalctl", "", "locked", 124, nil))
+      expect(Clog).to receive(:emit).with(
+        "initialize empty database still in progress; failed to fetch daemonizer logs",
+        {postgres_server: {ubid: server.ubid}, exception: {class: "Sshable::SshError", message: "command exited with an error: journalctl"}},
+      )
+      expect(nx).to receive(:register_deadline).with("wait", 10 * 60, allow_extension: 24 * 60 * 60)
+
+      expect { nx.initialize_empty_database }.to nap(5)
+      expect(frame_value(nx, "initialize_empty_database_last_logged_at")).not_to be_nil
+    end
+
     it "naps if script return unknown status" do
       expect(sshable).to receive(:_cmd).with("common/bin/daemonizer2 check initialize_empty_database").and_return("Unknown")
       expect { nx.initialize_empty_database }.to nap(5)

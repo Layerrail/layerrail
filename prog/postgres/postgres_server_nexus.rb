@@ -108,13 +108,25 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
   end
 
   def emit_daemonizer_progress_logs(unit_name, started_at_key, last_logged_at_key, message)
-    started_at = frame[started_at_key]
-    return unless started_at && Time.parse(started_at) < Time.now - 5 * 60
+    started_at = frame[started_at_key] || frame["last_label_changed_at"]
+    unless started_at
+      update_stack(started_at_key => Time.now.to_s)
+      return
+    end
+
+    update_stack(started_at_key => started_at) unless frame[started_at_key]
+    return unless Time.parse(started_at) < Time.now - 5 * 60
 
     last_logged_at = frame[last_logged_at_key]
     return if last_logged_at && Time.parse(last_logged_at) >= Time.now - 5 * 60
 
-    Clog.emit(message, {postgres_server: {ubid: postgres_server.ubid, logs: vm.sshable.d_logs(unit_name)}})
+    begin
+      logs = vm.sshable.d_logs(unit_name)
+    rescue => ex
+      Clog.emit("#{message}; failed to fetch daemonizer logs", {postgres_server: {ubid: postgres_server.ubid}, exception: {class: ex.class.name, message: ex.message}})
+    else
+      Clog.emit(message, {postgres_server: {ubid: postgres_server.ubid, logs:}})
+    end
     update_stack(last_logged_at_key => Time.now.to_s)
   end
 
