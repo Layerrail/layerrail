@@ -29,7 +29,20 @@ class DnsZone < Sequel::Model
     end
   end
 
+  def self.ensure_service_zone!(project_id:, name:, service:)
+    zone = ensure_service_zone(project_id:, name:)
+    return zone if zone
+
+    missing = []
+    missing << "service project id" unless project_id
+    missing << "service hostname" unless name && !name.empty?
+    missing << "project #{project_id}" if project_id && !Project[project_id]
+    fail "#{service} DNS zone is not configured: missing #{missing.join(", ")}"
+  end
+
   def insert_record(record_name:, type:, ttl:, data:)
+    fail "DNS record data is required for #{type} #{record_name}" if data.nil? || data.to_s.empty?
+
     record_name = add_dot_if_missing(record_name)
     add_record(name: record_name, type:, ttl:, data:)
 

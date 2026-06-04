@@ -328,6 +328,22 @@ RSpec.describe Prog::Postgres::PostgresResourceNexus do
       ]
     end
 
+    it "does not create unsupported Linode IPv6 records" do
+      postgres_server
+      postgres_resource.location.update(provider: "linode")
+      postgres_server.vm.update(ephemeral_net6: nil)
+      expect(Config).to receive(:postgres_service_hostname).and_return("pg.example.com").at_least(:once)
+      dns_zone = DnsZone.create(project_id: postgres_project.id, name: "pg.example.com")
+      nx.incr_initial_provisioning
+
+      expect { nx.refresh_dns_record }.to hop("initialize_certificates")
+
+      expect(DnsRecord.where(dns_zone_id: dns_zone.id).select_order_map([:type, :name])).to eq [
+        ["A", "#{name}.pg.example.com."],
+        ["A", "private.#{name}.pg.example.com."],
+      ]
+    end
+
     it "creates CNAME DNS records for AWS instances" do
       postgres_server
       AwsInstance.create_with_id(postgres_server.vm, ipv4_dns_name: "ec2-44-224-119-46.us-west-2.compute.amazonaws.com")

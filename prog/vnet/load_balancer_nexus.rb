@@ -11,16 +11,21 @@ class Prog::Vnet::LoadBalancerNexus < Prog::Base
   def self.assemble_with_multiple_ports(private_subnet_id, ports:, name: nil, algorithm: "round_robin",
     health_check_endpoint: DEFAULT_HEALTH_CHECK_ENDPOINT, health_check_interval: 30, health_check_timeout: 15,
     health_check_up_threshold: 3, health_check_down_threshold: 2, health_check_protocol: "http",
-    custom_hostname_prefix: nil, custom_hostname_dns_zone_id: nil, stack: LoadBalancer::Stack::DUAL, cert_enabled: health_check_protocol == "https")
+    custom_hostname_prefix: nil, custom_hostname_dns_zone_id: nil, stack: nil, cert_enabled: health_check_protocol == "https")
 
     unless (ps = PrivateSubnet[private_subnet_id])
       fail "Given subnet doesn't exist with the id #{private_subnet_id}"
     end
 
+    stack ||= default_stack_for_private_subnet(ps)
     Validation.validate_name(name)
     custom_hostname = if custom_hostname_prefix
       Validation.validate_name(custom_hostname_prefix)
       "#{custom_hostname_prefix}.#{DnsZone[custom_hostname_dns_zone_id].name}"
+    end
+
+    if Config.production? && custom_hostname_dns_zone_id.nil?
+      DnsZone.ensure_service_zone!(project_id: Config.load_balancer_service_project_id, name: Config.load_balancer_service_hostname, service: "Load balancer")
     end
 
     Validation.validate_load_balancer_stack(stack)
@@ -47,10 +52,14 @@ class Prog::Vnet::LoadBalancerNexus < Prog::Base
   def self.assemble(private_subnet_id, name: nil, algorithm: "round_robin",
     health_check_endpoint: DEFAULT_HEALTH_CHECK_ENDPOINT, health_check_interval: 30, health_check_timeout: 15,
     health_check_up_threshold: 3, health_check_down_threshold: 2, health_check_protocol: "http", src_port: nil, dst_port: nil,
-    custom_hostname_prefix: nil, custom_hostname_dns_zone_id: nil, stack: LoadBalancer::Stack::DUAL, cert_enabled: health_check_protocol == "https")
+    custom_hostname_prefix: nil, custom_hostname_dns_zone_id: nil, stack: nil, cert_enabled: health_check_protocol == "https")
 
     assemble_with_multiple_ports(private_subnet_id, name:, algorithm:, health_check_endpoint:, health_check_interval:, health_check_timeout:,
       health_check_up_threshold:, health_check_down_threshold:, health_check_protocol:, ports: [[src_port, dst_port]], custom_hostname_prefix:, custom_hostname_dns_zone_id:, stack:, cert_enabled:)
+  end
+
+  def self.default_stack_for_private_subnet(private_subnet)
+    private_subnet.location.linode? ? LoadBalancer::Stack::IPV4 : LoadBalancer::Stack::DUAL
   end
 
   label def wait
@@ -171,7 +180,12 @@ class Prog::Vnet::LoadBalancerNexus < Prog::Base
             # VM will have a public IPv4 address, but it is not assigned yet
             nap 5
           end
-          ip_info << [vm.private_ipv4_string, "A", private_hostname]
+
+          if (private_ipv4 = vm.private_ipv4_string)
+            ip_info << [private_ipv4, "A", private_hostname]
+          else
+            nap 5
+          end
         end
 
         if load_balancer.ipv6_enabled?
@@ -181,7 +195,14 @@ class Prog::Vnet::LoadBalancerNexus < Prog::Base
             # VM public IPv6 address not assigned yet
             nap 5
           end
-          ip_info << [vm.private_ipv6_string, "AAAA", private_hostname]
+
+          unless vm.location.linode?
+            if (private_ipv6 = vm.private_ipv6_string)
+              ip_info << [private_ipv6, "AAAA", private_hostname]
+            else
+              nap 5
+            end
+          end
         end
       end
 

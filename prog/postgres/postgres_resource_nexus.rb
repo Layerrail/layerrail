@@ -55,6 +55,10 @@ class Prog::Postgres::PostgresResourceNexus < Prog::Base
         superuser_password:, ha_type:, target_version:, flavor:, parent_id:, tags:, restore_target:, hostname_version: "v2", user_config:, pgbouncer_user_config:,
       )
 
+      if Config.production?
+        DnsZone.ensure_service_zone!(project_id: Config.postgres_service_project_id, name: postgres_resource.hostname_suffix, service: "Postgres")
+      end
+
       PostgresInitScript.create_with_id(postgres_resource, init_script:) if init_script && !init_script.empty?
 
       # Customer firewall, will be attached to created customer subnet
@@ -134,16 +138,18 @@ class Prog::Postgres::PostgresResourceNexus < Prog::Base
       if aws
         dns_zone.insert_record(record_name:, type: "CNAME", ttl: 10, data: vm.aws_instance.ipv4_dns_name + ".")
       else
+        nap 5 unless vm.ip4_string
         dns_zone.insert_record(record_name:, type: "A", ttl: 10, data: vm.ip4_string)
         if postgres_resource.created_at >= PostgresResource::AAAA_CUTOFF ||
             !dns_zone.records_dataset.where(type: "AAAA", name: record_name + ".").empty?
-          dns_zone.insert_record(record_name:, type: "AAAA", ttl: 10, data: vm.ip6_string)
+          dns_zone.insert_record(record_name:, type: "AAAA", ttl: 10, data: vm.ip6_string) if vm.ip6_string
         end
 
         record_name = "private.#{record_name}"
         dns_zone.delete_record(record_name:)
+        nap 5 unless vm.private_ipv4_string
         dns_zone.insert_record(record_name:, type: "A", ttl: 10, data: vm.private_ipv4_string)
-        dns_zone.insert_record(record_name:, type: "AAAA", ttl: 10, data: vm.private_ipv6_string)
+        dns_zone.insert_record(record_name:, type: "AAAA", ttl: 10, data: vm.private_ipv6_string) if !vm.location.linode? && vm.private_ipv6_string
       end
     end
 

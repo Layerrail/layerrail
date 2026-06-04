@@ -52,6 +52,23 @@ RSpec.describe Prog::Vnet::LoadBalancerNexus do
       expect(LoadBalancer.count).to eq 1
       expect(lb.project).to eq ps.project
       expect(lb.hostname).to eq "test-lb2.#{ps.ubid[-5...]}.lb.ubicloud.com"
+      expect(lb.stack).to eq LoadBalancer::Stack::DUAL
+    end
+
+    it "uses ipv4 stack by default for Linode load balancers" do
+      linode_location = Location.create(
+        name: "linode-us-east",
+        display_name: "linode-us-east",
+        ui_name: "Newark, NJ",
+        visible: true,
+        provider: "linode",
+      )
+      linode_project = Project.create(name: "linode-project")
+      linode_subnet = Prog::Vnet::SubnetNexus.assemble(linode_project.id, name: "linode-ps", location_id: linode_location.id).subject
+
+      lb = described_class.assemble(linode_subnet.id, name: "linode-lb", src_port: 80, dst_port: 8080).subject
+
+      expect(lb.stack).to eq LoadBalancer::Stack::IPV4
     end
 
     it "creates a new load balancer with custom hostname" do
@@ -178,6 +195,33 @@ RSpec.describe Prog::Vnet::LoadBalancerNexus do
         .and change { cert_to_remove.strand.semaphores_dataset.where(name: "destroy").count }.from(0).to(1)
       expect(nx.load_balancer.reload.certs.count).to eq 1
       expect(st.reload.stack[0].fetch("cert")).to be_nil
+    end
+  end
+
+  describe "#rewrite_dns_records" do
+    it "writes ipv4 records for Linode default load balancers without waiting on ipv6" do
+      linode_location = Location.create(
+        name: "linode-us-east",
+        display_name: "linode-us-east",
+        ui_name: "Newark, NJ",
+        visible: true,
+        provider: "linode",
+      )
+      linode_project = Project.create(name: "linode-project")
+      linode_subnet = Prog::Vnet::SubnetNexus.assemble(linode_project.id, name: "linode-ps", location_id: linode_location.id).subject
+      linode_lb = described_class.assemble(linode_subnet.id, name: "linode-lb", src_port: 80, dst_port: 8080).subject
+      dns_zone
+      nic = Prog::Vnet::NicNexus.assemble(linode_subnet.id, name: "linode-nic", ipv4_addr: "172.0.0.10").subject
+      vm = Prog::Vm::Nexus.assemble("pub key", linode_project.id, name: "linode-vm", location_id: linode_location.id, private_subnet_id: linode_subnet.id, nic_id: nic.id).subject
+      add_ipv4_to_vm(vm, "1.2.3.4")
+      linode_lb.add_vm(vm)
+
+      expect { described_class.new(linode_lb.strand).rewrite_dns_records }.to hop("wait")
+
+      expect(DnsRecord.where(dns_zone_id: dns_zone.id).exclude(:tombstoned).select_order_map([:type, :name, :data])).to eq [
+        ["A", "linode-lb.#{linode_subnet.ubid[-5...]}.lb.ubicloud.com.", "1.2.3.4"],
+        ["A", "private.linode-lb.#{linode_subnet.ubid[-5...]}.lb.ubicloud.com.", vm.private_ipv4_string],
+      ]
     end
   end
 

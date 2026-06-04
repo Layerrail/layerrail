@@ -97,7 +97,12 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
   end
 
   label def create_load_balancers
-    custom_hostname_dns_zone_id = DnsZone.ensure_service_zone(project_id: Config.kubernetes_service_project_id, name: Config.kubernetes_service_hostname)&.id
+    dns_zone = if Config.production?
+      DnsZone.ensure_service_zone!(project_id: Config.kubernetes_service_project_id, name: Config.kubernetes_service_hostname, service: "Kubernetes")
+    else
+      DnsZone.ensure_service_zone(project_id: Config.kubernetes_service_project_id, name: Config.kubernetes_service_hostname)
+    end
+    custom_hostname_dns_zone_id = dns_zone&.id
     custom_apiserver_hostname_prefix = if custom_hostname_dns_zone_id
       "#{kubernetes_cluster.name}-apiserver-#{kubernetes_cluster.ubid.to_s[-5...]}"
     end
