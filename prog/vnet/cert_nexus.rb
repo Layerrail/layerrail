@@ -161,6 +161,12 @@ class Prog::Vnet::CertNexus < Prog::Base
       Clog.emit("Certificate is already revoked", {cert_revoke_failure: Util.exception_to_hash(ex, into: {ubid: cert.ubid})})
     rescue Acme::Client::Error::NotFound => ex
       Clog.emit("Certificate is not found", {cert_revoke_failure: Util.exception_to_hash(ex, into: {ubid: cert.ubid})})
+    rescue Acme::Client::Error::Malformed => ex
+      if ex.message.include?("Unable to JSON parse revoke request")
+        Clog.emit("Certificate revoke response is malformed", {cert_revoke_failure: Util.exception_to_hash(ex, into: {ubid: cert.ubid})})
+      else
+        raise ex
+      end
     rescue Acme::Client::Error::Unauthorized => ex
       if ex.message.include?("The certificate has expired and cannot be revoked")
         Clog.emit("Certificate is expired and cannot be revoked", {cert_revoke_failure: Util.exception_to_hash(ex, into: {ubid: cert.ubid})})

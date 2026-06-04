@@ -379,6 +379,17 @@ RSpec.describe Prog::Vnet::CertNexus do
       expect(cert).not_to exist
     end
 
+    it "emits a log and continues if the ACME revoke response is malformed" do
+      setup_order
+      cert.update(cert: "test-cert")
+      expect(client).to receive(:revoke).and_raise(Acme::Client::Error::Malformed.new("Unable to revoke :: Unable to JSON parse revoke request"))
+      expect(Clog).to receive(:emit).with("Certificate revoke response is malformed", instance_of(Hash)).and_call_original
+      DnsRecord.create(dns_zone_id: dns_zone.id, name: "test-record-name.cert-hostname.", type: "TXT", ttl: 600, data: "content")
+
+      expect { nx.destroy }.to exit({"msg" => "certificate revoked and destroyed"})
+      expect(cert).not_to exist
+    end
+
     it "emits a log and continues if the cert is revoked previously and we get Unauthorized" do
       setup_order
       cert.update(cert: "test-cert")
