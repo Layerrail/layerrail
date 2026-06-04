@@ -20,6 +20,10 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
     vm.location.linode? ? vm.ip4 : vm.private_ipv4
   end
 
+  def extend_provisioning_deadline(deadline_target)
+    register_deadline(deadline_target, 20 * 60, allow_extension: 2 * 60 * 60)
+  end
+
   # We need to create a random ula cidr for the cluster services subnet with
   # a NetMask of /108
   # For reference read here:
@@ -104,9 +108,11 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
         configure_kubernetes_node_services
         hop_assign_role
       when "NotStarted"
+        extend_provisioning_deadline("assign_role")
         vm.sshable.d_run("prepare_linode_kubernetes_node", "bash", "-s", stdin: linode_kubernetes_prepare_script, log: false)
         nap 15
       when "InProgress"
+        extend_provisioning_deadline("assign_role")
         nap 10
       when "Failed"
         Clog.emit("prepare linode kubernetes node failed", {logs: vm.sshable.d_logs("prepare_linode_kubernetes_node")})
@@ -232,8 +238,10 @@ sudo touch #{marker}
         service_subnet_cidr6: random_ula_cidr,
       }
       vm.sshable.d_run("init_kubernetes_cluster", "/home/ubi/kubernetes/bin/init-cluster", stdin: JSON.generate(params), log: false)
+      extend_provisioning_deadline("install_cni")
       nap 30
     when "InProgress"
+      extend_provisioning_deadline("install_cni")
       nap 10
     when "Failed"
       Clog.emit("init kubernetes cluster failed", {logs: vm.sshable.d_logs("init_kubernetes_cluster")})
@@ -268,8 +276,10 @@ sudo touch #{marker}
         node_ipv6: vm.ip6,
       }
       vm.sshable.d_run("join_control_plane", "kubernetes/bin/join-node", stdin: JSON.generate(params), log: false)
+      extend_provisioning_deadline("install_cni")
       nap 15
     when "InProgress"
+      extend_provisioning_deadline("install_cni")
       nap 10
     when "Failed"
       Clog.emit("join cp node to cluster failed", {logs: vm.sshable.d_logs("join_control_plane")})
@@ -303,8 +313,10 @@ sudo touch #{marker}
         node_ipv6: vm.ip6,
       }
       vm.sshable.d_run("join_worker", "kubernetes/bin/join-node", stdin: JSON.generate(params), log: false)
+      extend_provisioning_deadline("install_cni")
       nap 15
     when "InProgress"
+      extend_provisioning_deadline("install_cni")
       nap 10
     when "Failed"
       Clog.emit("join worker node to cluster failed", {logs: vm.sshable.d_logs("join_worker")})

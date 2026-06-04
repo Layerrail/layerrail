@@ -10,8 +10,24 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
   let(:project) {
     Project.create(name: "default")
   }
+  let(:kubernetes_location) {
+    Option.kubernetes_locations.find { it.name == "linode-us-lax" } || Option.kubernetes_locations.first
+  }
+  let(:kubernetes_location_id) { kubernetes_location.id }
+  let(:expected_node_ipv4) { kubernetes_location.linode? ? "203.0.113.10" : "172.19.145.65" }
+  let(:expected_node_ipv4_regex) { Regexp.escape(expected_node_ipv4) }
+  let(:expected_node_ipv6_regex) { Regexp.escape(prog.vm.ip6.to_s) }
+  let(:expected_standard_4_storage_size) {
+    kubernetes_location.linode? ? Option.linode_plan("standard", 4, size_name: "standard-4").disk_gib : 37
+  }
+  let(:expected_standard_8_storage_size) {
+    kubernetes_location.linode? ? Option.linode_plan("standard", 8, size_name: "standard-8").disk_gib : 78
+  }
+  let(:default_node_storage_size) {
+    kubernetes_location.linode? ? Option.linode_plan("standard", 4, size_name: "standard-4").disk_gib : 80
+  }
   let(:subnet) {
-    Prog::Vnet::SubnetNexus.assemble(project.id, name: "test", ipv4_range: "172.19.0.0/16", ipv6_range: "fd40:1a0a:8d48:182a::/64").subject
+    Prog::Vnet::SubnetNexus.assemble(project.id, name: "test", location_id: kubernetes_location_id, ipv4_range: "172.19.0.0/16", ipv6_range: "fd40:1a0a:8d48:182a::/64").subject
   }
 
   let(:kubernetes_cluster) {
@@ -20,7 +36,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       version: Option.selectable_kubernetes_versions.first,
       cp_node_count: 3,
       private_subnet_id: subnet.id,
-      location_id: Location::HETZNER_FSN1_ID,
+      location_id: kubernetes_location_id,
       project_id: project.id,
       target_node_size: "standard-4",
       target_node_storage_size_gib: 37,
@@ -32,7 +48,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       project.id,
       sshable_unix_user: "ubi",
       name: "cp-node",
-      location_id: Location::HETZNER_FSN1_ID,
+      location_id: kubernetes_location_id,
       size: "standard-4",
       storage_volumes: [{encrypted: true, size_gib: 40}],
       boot_image: Option.selectable_kubernetes_versions.first,
@@ -45,8 +61,9 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
 
   let(:node) {
     nic = Prog::Vnet::NicNexus.assemble(subnet.id, ipv4_addr: "172.19.145.64/26", ipv6_addr: "fd40:1a0a:8d48:182a::/79").subject
-    vm = Prog::Vm::Nexus.assemble_with_sshable(Config.kubernetes_service_project_id, name: "test-vm", private_subnet_id: subnet.id, nic_id: nic.id).subject
+    vm = Prog::Vm::Nexus.assemble_with_sshable(Config.kubernetes_service_project_id, name: "test-vm", location_id: kubernetes_location_id, private_subnet_id: subnet.id, nic_id: nic.id).subject
     vm.update(ephemeral_net6: "2001:db8:85a3:73f2:1c4a::/79", created_at: Time.now - 1)
+    AssignedVmAddress.create(dst_vm_id: vm.id, ip: "#{expected_node_ipv4}/32") if kubernetes_location.linode?
     KubernetesNode.create(vm_id: vm.id, kubernetes_cluster_id: kubernetes_cluster.id)
   }
 
@@ -107,7 +124,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       new_vm = kubernetes_cluster.cp_vms_dataset.first(name: /#{kubernetes_cluster.ubid}-/)
       expect(new_vm.sshable).not_to be_nil
       expect(new_vm.vcpus).to eq(4)
-      expect(new_vm.strand.stack.first["storage_volumes"].first["size_gib"]).to eq(37)
+      expect(new_vm.strand.stack.first["storage_volumes"].first["size_gib"]).to eq(expected_standard_4_storage_size)
       expect(new_vm.boot_image).to eq("kubernetes-#{Option.selectable_kubernetes_versions.first.tr(".", "_")}")
     end
 
@@ -123,7 +140,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       expect(new_vm.name).to start_with("#{kubernetes_nodepool.ubid}-")
       expect(new_vm.sshable).not_to be_nil
       expect(new_vm.vcpus).to eq(8)
-      expect(new_vm.strand.stack.first["storage_volumes"].first["size_gib"]).to eq(78)
+      expect(new_vm.strand.stack.first["storage_volumes"].first["size_gib"]).to eq(expected_standard_8_storage_size)
       expect(new_vm.boot_image).to eq("kubernetes-#{Option.selectable_kubernetes_versions.first.tr(".", "_")}")
     end
 
@@ -138,7 +155,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       expect(kubernetes_cluster.nodes.count).to eq(3)
 
       new_vm = kubernetes_cluster.cp_vms_dataset.first(name: /#{kubernetes_cluster.ubid}-/)
-      expect(new_vm.strand.stack.first["storage_volumes"].first["size_gib"]).to eq 80
+      expect(new_vm.strand.stack.first["storage_volumes"].first["size_gib"]).to eq default_node_storage_size
     end
   end
 
@@ -149,27 +166,8 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       expect { prog.bootstrap_rhizome }.to nap(5)
     end
 
-    it "enables kubelet and buds a bootstrap rhizome process" do
+    it "buds a bootstrap rhizome process" do
       prog.node.vm.strand.update(label: "wait")
-      sshable = prog.vm.sshable
-      expect(sshable).to receive(:_cmd).with(
-        "sudo tee /etc/nftables.conf > /dev/null",
-        stdin: satisfy { |s|
-          s.include?("#!/usr/sbin/nft -f") &&
-          s.include?("flush ruleset") &&
-          s.include?("table ip nat") &&
-          s.include?("ip saddr 172.19.145.64/26 oifname \"ens3\" masquerade") &&
-          s.include?("table ip6 pod_access") &&
-          s.include?("ip6 daddr 2001:db8:85a3:73f2:1c4a::2 ct state established,related,new counter accept") &&
-          s.include?("ip6 saddr 2001:db8:85a3:73f2:1c4a::2 ct state established,related,new counter accept") &&
-          s.include?("ip6 daddr 2001:db8:85a3:73f2:1c4a::/79 ct state established,related counter accept") &&
-          s.include?("ip6 saddr 2001:db8:85a3:73f2:1c4a::/79 ct state established,related,new counter accept") &&
-          s.include?("ip6 saddr fd40:1a0a:8d48:182a::/64 ct state established,related,new counter accept") &&
-          s.include?("ip6 daddr fd40:1a0a:8d48:182a::/64 ct state established,related,new counter accept")
-        },
-      ).ordered
-      expect(sshable).to receive(:_cmd).with("sudo systemctl enable --now nftables").ordered
-      expect(sshable).to receive(:_cmd).with("sudo systemctl enable --now kubelet").ordered
 
       expect(prog).to receive(:bud).with(Prog::BootstrapRhizome, {"target_folder" => "kubernetes", "subject_id" => prog.node.vm.id, "user" => "ubi"})
       expect { prog.bootstrap_rhizome }.to hop("wait_bootstrap_rhizome")
@@ -177,15 +175,38 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
   end
 
   describe "#wait_bootstrap_rhizome" do
-    it "hops to assign_role if there are no sub-programs running" do
+    it "hops to prepare_node_runtime if there are no sub-programs running" do
       st.update(prog: "Kubernetes::ProvisionKubernetesNode", label: "wait_bootstrap_rhizome", stack: [{}])
-      expect { prog.wait_bootstrap_rhizome }.to hop("assign_role")
+      expect { prog.wait_bootstrap_rhizome }.to hop("prepare_node_runtime")
     end
 
     it "donates if there are sub-programs running" do
       st.update(prog: "Kubernetes::ProvisionKubernetesNode", label: "wait_bootstrap_rhizome", stack: [{}])
       Strand.create(parent_id: st.id, prog: "BootstrapRhizome", label: "start", stack: [{}], lease: Time.now + 10)
       expect { prog.wait_bootstrap_rhizome }.to nap(120)
+    end
+  end
+
+  describe "#prepare_node_runtime" do
+    before do
+      allow(prog.vm).to receive(:sshable).and_return(Sshable.new)
+      allow(prog.vm.location).to receive(:linode?).and_return(true)
+    end
+
+    it "runs the Linode Kubernetes preparation script if it's not started and extends the provisioning deadline" do
+      expect(prog.vm.sshable).to receive(:d_check).with("prepare_linode_kubernetes_node").and_return("NotStarted")
+      expect(prog).to receive(:register_deadline).with("assign_role", 20 * 60, allow_extension: 2 * 60 * 60)
+      expect(prog).to receive(:linode_kubernetes_prepare_script).and_return("prepare script")
+      expect(prog.vm.sshable).to receive(:d_run).with("prepare_linode_kubernetes_node", "bash", "-s", stdin: "prepare script", log: false)
+
+      expect { prog.prepare_node_runtime }.to nap(15)
+    end
+
+    it "extends the provisioning deadline while Linode Kubernetes preparation is in progress" do
+      expect(prog.vm.sshable).to receive(:d_check).with("prepare_linode_kubernetes_node").and_return("InProgress")
+      expect(prog).to receive(:register_deadline).with("assign_role", 20 * 60, allow_extension: 2 * 60 * 60)
+
+      expect { prog.prepare_node_runtime }.to nap(10)
     end
   end
 
@@ -213,14 +234,16 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       expect(prog.vm.sshable).to receive(:d_check).with("init_kubernetes_cluster").and_return("NotStarted")
       expect(prog.vm.sshable).to receive(:d_run).with(
         "init_kubernetes_cluster", "/home/ubi/kubernetes/bin/init-cluster",
-        stdin: /{"node_name":"test-vm","cluster_name":"k8scluster","lb_hostname":"somelb\..*","port":"443","private_subnet_cidr4":"172.19.0.0\/16","private_subnet_cidr6":"fd40:1a0a:8d48:182a::\/64","node_ipv4":"172.19.145.65","node_ipv6":"2001:db8:85a3:73f2:1c4a::2"/, log: false,
+        stdin: /{"node_name":"test-vm","cluster_name":"k8scluster","lb_hostname":"somelb\..*","port":"443","private_subnet_cidr4":"172.19.0.0\/16","private_subnet_cidr6":"fd40:1a0a:8d48:182a::\/64","node_ipv4":"#{expected_node_ipv4_regex}","node_ipv6":"#{expected_node_ipv6_regex}"/, log: false,
       )
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
 
       expect { prog.init_cluster }.to nap(30)
     end
 
     it "naps if the init_cluster script is in progress" do
       expect(prog.vm.sshable).to receive(:d_check).with("init_kubernetes_cluster").and_return("InProgress")
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
       expect { prog.init_cluster }.to nap(10)
     end
 
@@ -264,15 +287,17 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       expect(sshable).to receive(:_cmd).with("sudo kubeadm token create --print-join-command", log: false).and_return("discovery-token-ca-cert-hash dtcch")
       expect(prog.vm.sshable).to receive(:d_run).with(
         "join_control_plane", "kubernetes/bin/join-node",
-        stdin: /{"is_control_plane":true,"node_name":"test-vm","endpoint":"somelb\..*:443","join_token":"jt","certificate_key":"ck","discovery_token_ca_cert_hash":"dtcch","node_ipv4":"172.19.145.65","node_ipv6":"2001:db8:85a3:73f2:1c4a::2"}/,
+        stdin: /{"is_control_plane":true,"node_name":"test-vm","endpoint":"somelb\..*:443","join_token":"jt","certificate_key":"ck","discovery_token_ca_cert_hash":"dtcch","node_ipv4":"#{expected_node_ipv4_regex}","node_ipv6":"#{expected_node_ipv6_regex}"}/,
         log: false,
       )
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
 
       expect { prog.join_control_plane }.to nap(15)
     end
 
     it "naps if the join_control_plane script is in progress" do
       expect(prog.vm.sshable).to receive(:d_check).with("join_control_plane").and_return("InProgress")
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
       expect { prog.join_control_plane }.to nap(10)
     end
 
@@ -318,15 +343,17 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       expect(sshable).to receive(:_cmd).with("sudo kubeadm token create --print-join-command", log: false).and_return("discovery-token-ca-cert-hash dtcch")
       expect(prog.vm.sshable).to receive(:d_run).with(
         "join_worker", "kubernetes/bin/join-node",
-        stdin: /{"is_control_plane":false,"node_name":"test-vm","endpoint":"somelb\..*:443","join_token":"jt","discovery_token_ca_cert_hash":"dtcch","node_ipv4":"172.19.145.65","node_ipv6":"2001:db8:85a3:73f2:1c4a::2"}/,
+        stdin: /{"is_control_plane":false,"node_name":"test-vm","endpoint":"somelb\..*:443","join_token":"jt","discovery_token_ca_cert_hash":"dtcch","node_ipv4":"#{expected_node_ipv4_regex}","node_ipv6":"#{expected_node_ipv6_regex}"}/,
         log: false,
       )
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
 
       expect { prog.join_worker }.to nap(15)
     end
 
     it "naps if the join-worker-node script is in progress" do
       expect(prog.vm.sshable).to receive(:d_check).with("join_worker").and_return("InProgress")
+      expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 2 * 60 * 60)
       expect { prog.join_worker }.to nap(10)
     end
 
@@ -359,37 +386,41 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
 
   describe "#install_cni" do
     it "configures ubicni with the VM's ephemeral prefix" do
+      expected_pod_ipv6_subnet = kubernetes_location.linode? ? "fd40:1a0a:8d48:182a::/79" : "2001:db8:85a3:73f2:1c4a::/80"
       expected_config = <<~CONFIG
         {
           "cniVersion": "1.0.0",
           "name": "ubicni-network",
           "type": "ubicni",
           "ranges":{
-              "subnet_ipv6": "2001:db8:85a3:73f2:1c4a::/80",
+              "subnet_ipv6": "#{expected_pod_ipv6_subnet}",
               "subnet_ula_ipv6": "fd40:1a0a:8d48:182a::/79",
               "subnet_ipv4": "172.19.145.64/26"
           }
         }
       CONFIG
-      expect(prog.vm.sshable).to receive(:_cmd).with("sudo tee /etc/cni/net.d/ubicni-config.json", stdin: expected_config)
+      expect(prog.vm.sshable).to receive(:_cmd).with("sudo mkdir -p /etc/cni/net.d").ordered
+      expect(prog.vm.sshable).to receive(:_cmd).with("sudo tee /etc/cni/net.d/ubicni-config.json", stdin: expected_config).ordered
       expect { prog.install_cni }.to hop("approve_new_csr")
     end
 
     it "uses the VM's actual ephemeral prefix on hosts with narrow delegations" do
       prog.vm.update(ephemeral_net6: "2607:f5b7:9:1a:0:355c::/95")
+      expected_pod_ipv6_subnet = kubernetes_location.linode? ? "fd40:1a0a:8d48:182a::/79" : "2607:f5b7:9:1a:0:355c:0:0/96"
       expected_config = <<~CONFIG
         {
           "cniVersion": "1.0.0",
           "name": "ubicni-network",
           "type": "ubicni",
           "ranges":{
-              "subnet_ipv6": "2607:f5b7:9:1a:0:355c:0:0/96",
+              "subnet_ipv6": "#{expected_pod_ipv6_subnet}",
               "subnet_ula_ipv6": "fd40:1a0a:8d48:182a::/79",
               "subnet_ipv4": "172.19.145.64/26"
           }
         }
       CONFIG
-      expect(prog.vm.sshable).to receive(:_cmd).with("sudo tee /etc/cni/net.d/ubicni-config.json", stdin: expected_config)
+      expect(prog.vm.sshable).to receive(:_cmd).with("sudo mkdir -p /etc/cni/net.d").ordered
+      expect(prog.vm.sshable).to receive(:_cmd).with("sudo tee /etc/cni/net.d/ubicni-config.json", stdin: expected_config).ordered
       expect { prog.install_cni }.to hop("approve_new_csr")
     end
   end
