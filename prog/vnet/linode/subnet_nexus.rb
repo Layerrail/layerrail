@@ -86,9 +86,34 @@ class Prog::Vnet::Linode::SubnetNexus < Prog::Base
     {
       "inbound_policy" => "DROP",
       "outbound_policy" => "ACCEPT",
-      "inbound" => firewall_rules.map { linode_rule(it) },
+      "inbound" => firewall_rules.map { linode_rule(it) } + control_plane_ssh_rules(firewall_rules),
       "outbound" => [],
     }
+  end
+
+  def control_plane_ssh_rules(firewall_rules)
+    existing_ssh_cidrs = firewall_rules
+      .select { ssh_allowed_by_rule?(it) }
+      .map { it.cidr.to_s }
+
+    Config.control_plane_outbound_cidrs.reject { existing_ssh_cidrs.include?(it) }.each_with_index.map do |cidr, index|
+      addresses = {"ipv4" => [], "ipv6" => []}
+      addresses[cidr.include?(":") ? "ipv6" : "ipv4"] = [cidr]
+      {
+        "action" => "ACCEPT",
+        "protocol" => "TCP",
+        "ports" => "22",
+        "addresses" => addresses,
+        "label" => "lr-control-plane-ssh-#{index}",
+      }
+    end
+  end
+
+  def ssh_allowed_by_rule?(rule)
+    return false unless rule.protocol == "tcp"
+
+    range = rule.port_range&.to_range
+    range.nil? || range.cover?(22)
   end
 
   def linode_rule(rule)

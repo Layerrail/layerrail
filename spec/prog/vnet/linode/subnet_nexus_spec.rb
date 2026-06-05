@@ -16,6 +16,50 @@ RSpec.describe Prog::Vnet::Linode::SubnetNexus do
     allow(client).to receive(:delete_firewall)
   end
 
+  describe "#start" do
+    it "always adds control plane SSH rules to the Linode firewall" do
+      allow(Config).to receive(:control_plane_outbound_cidrs).and_return(["203.0.113.10/32", "2001:db8::/64"])
+
+      expect(client).to receive(:create_firewall) do |label:, rules:, tags:|
+        expect(label).to start_with("lr-")
+        expect(tags).to include("LayerRail", private_subnet.project.ubid)
+        expect(rules["inbound_policy"]).to eq("DROP")
+        expect(rules["outbound_policy"]).to eq("ACCEPT")
+        expect(rules["inbound"]).to include(
+          {
+            "action" => "ACCEPT",
+            "protocol" => "TCP",
+            "ports" => "22",
+            "addresses" => {"ipv4" => ["203.0.113.10/32"], "ipv6" => []},
+            "label" => "lr-control-plane-ssh-0",
+          },
+          {
+            "action" => "ACCEPT",
+            "protocol" => "TCP",
+            "ports" => "22",
+            "addresses" => {"ipv4" => [], "ipv6" => ["2001:db8::/64"]},
+            "label" => "lr-control-plane-ssh-1",
+          },
+        )
+        {"id" => 123}
+      end
+
+      expect { nx.start }.to hop("wait")
+    end
+
+    it "does not duplicate SSH rules already present on the subnet firewall" do
+      allow(Config).to receive(:control_plane_outbound_cidrs).and_return(["0.0.0.0/0", "::/0"])
+
+      expect(client).to receive(:create_firewall) do |label:, rules:, tags:|
+        expect(rules["inbound"].filter { it["ports"] == "22" }.count).to eq(2)
+        expect(rules["inbound"].none? { it["label"].start_with?("lr-control-plane-ssh") }).to be true
+        {"id" => 123}
+      end
+
+      expect { nx.start }.to hop("wait")
+    end
+  end
+
   describe "#destroy" do
     it "waits for load balancers to be destroyed before deleting the subnet" do
       PrivateSubnetLinodeResource.create_with_id(private_subnet, firewall_id: "123")
