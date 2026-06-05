@@ -126,6 +126,49 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
     end
   end
 
+  describe "#node_kubeconfig" do
+    let(:raw_kubeconfig) {
+      {
+        "apiVersion" => "v1",
+        "clusters" => [
+          {
+            "name" => "kubernetes",
+            "cluster" => {
+              "server" => "https://somelb.example.com:443",
+              "certificate-authority-data" => "ca",
+            },
+          },
+        ],
+        "contexts" => [],
+        "users" => [],
+      }.to_yaml
+    }
+
+    it "returns the cluster kubeconfig when it is valid" do
+      expect(kubernetes_cluster).to receive(:kubeconfig).with(swallow_connection_exception: true).and_return(raw_kubeconfig)
+
+      expect(prog.node_kubeconfig).to eq raw_kubeconfig
+    end
+
+    it "raises if kubeconfig cannot be fetched" do
+      expect(kubernetes_cluster).to receive(:kubeconfig).with(swallow_connection_exception: true).and_return(nil)
+
+      expect { prog.node_kubeconfig }.to raise_error(described_class::JoinParameterError, /Unable to fetch kubeconfig/)
+    end
+  end
+
+  describe "#install_node_kubeconfig" do
+    before { allow(prog).to receive(:node_kubeconfig).and_return("apiVersion: v1\n") }
+
+    it "installs the kubeconfig for the node ssh user" do
+      expect(prog.vm.sshable).to receive(:_cmd).with("sudo install -d -m 0700 -o ubi -g ubi /home/ubi/.kube", log: false).ordered
+      expect(prog.vm.sshable).to receive(:_cmd).with("sudo tee /home/ubi/.kube/config > /dev/null", stdin: "apiVersion: v1\n", log: false).ordered
+      expect(prog.vm.sshable).to receive(:_cmd).with("sudo chown ubi:ubi /home/ubi/.kube/config && sudo chmod 600 /home/ubi/.kube/config", log: false).ordered
+
+      prog.install_node_kubeconfig
+    end
+  end
+
   describe "#before_run" do
     it "destroys itself if the kubernetes cluster is getting deleted" do
       kubernetes_cluster.strand.update(label: "something")
@@ -261,7 +304,10 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
   end
 
   describe "#init_cluster" do
-    before { allow(prog.vm).to receive(:sshable).and_return(Sshable.new) }
+    before do
+      allow(prog.vm).to receive(:sshable).and_return(Sshable.new)
+      allow(prog).to receive(:install_node_kubeconfig)
+    end
 
     it "runs the init_cluster script if it's not started" do
       expect(prog.vm.sshable).to receive(:d_check).with("init_kubernetes_cluster").and_return("NotStarted")
@@ -290,6 +336,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
     it "resolves any open page and hops if the init_cluster script is successful" do
       Prog::PageNexus.assemble("existing", ["KubernetesNodeInitClusterFailed", prog.node.ubid], prog.node.ubid)
       expect(prog.vm.sshable).to receive(:d_check).with("init_kubernetes_cluster").and_return("Succeeded")
+      expect(prog).to receive(:install_node_kubeconfig)
       expect { prog.init_cluster }.to hop("install_cni")
       page = Page.from_tag_parts("KubernetesNodeInitClusterFailed", prog.node.ubid)
       expect(page.resolve_set?).to be true
@@ -308,7 +355,10 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
   end
 
   describe "#join_control_plane" do
-    before { allow(prog.vm).to receive(:sshable).and_return(Sshable.new) }
+    before do
+      allow(prog.vm).to receive(:sshable).and_return(Sshable.new)
+      allow(prog).to receive(:install_node_kubeconfig)
+    end
 
     it "runs the join_control_plane script if it's not started" do
       expect(prog.vm.sshable).to receive(:d_check).with("join_control_plane").and_return("NotStarted")
@@ -357,6 +407,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
     it "resolves any open page and hops if the join_control_plane script is successful" do
       Prog::PageNexus.assemble("existing", ["KubernetesNodeJoinControlPlaneFailed", prog.node.ubid], prog.node.ubid)
       expect(prog.vm.sshable).to receive(:d_check).with("join_control_plane").and_return("Succeeded")
+      expect(prog).to receive(:install_node_kubeconfig)
       expect { prog.join_control_plane }.to hop("install_cni")
       page = Page.from_tag_parts("KubernetesNodeJoinControlPlaneFailed", prog.node.ubid)
       expect(page.resolve_set?).to be true
@@ -378,6 +429,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
     before {
       allow(prog.vm).to receive(:sshable).and_return(Sshable.new)
       allow(prog).to receive(:kubernetes_nodepool).and_return(kubernetes_nodepool)
+      allow(prog).to receive(:install_node_kubeconfig)
     }
 
     it "runs the join-worker-node script if it's not started" do
@@ -426,6 +478,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
     it "resolves any open page and hops if the join-worker-node script is successful" do
       Prog::PageNexus.assemble("existing", ["KubernetesNodeJoinWorkerFailed", prog.node.ubid], prog.node.ubid)
       expect(prog.vm.sshable).to receive(:d_check).with("join_worker").and_return("Succeeded")
+      expect(prog).to receive(:install_node_kubeconfig)
       expect { prog.join_worker }.to hop("install_cni")
       page = Page.from_tag_parts("KubernetesNodeJoinWorkerFailed", prog.node.ubid)
       expect(page.resolve_set?).to be true

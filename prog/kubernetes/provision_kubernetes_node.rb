@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "yaml"
+
 class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
   subject_is :kubernetes_cluster
 
@@ -7,6 +9,8 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
 
   PROVISIONING_DEADLINE = 20 * 60
   PROVISIONING_DEADLINE_EXTENSION = 24 * 60 * 60
+  KUBECONFIG_DIR = "/home/ubi/.kube".freeze
+  KUBECONFIG_PATH = "#{KUBECONFIG_DIR}/config".freeze
   LOCAL_KUBECONFIG_REWRITE = <<~'RUBY'.tr("\n", "; ").freeze
     path, server = ARGV
     data = YAML.load_file(path)
@@ -89,6 +93,30 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
     )
     cleanup = "rc=$?; sudo rm -f \"$tmp\"; exit $rc"
     NetSsh.combine(rewrite_kubeconfig, local_command, cleanup, joiner: "; ")
+  end
+
+  def node_kubeconfig
+    kubeconfig = kubernetes_cluster.kubeconfig(swallow_connection_exception: true).to_s
+    fail JoinParameterError, "Unable to fetch kubeconfig for #{node.ubid}" if kubeconfig.empty?
+
+    YAML.safe_load(kubeconfig).fetch("clusters")
+    kubeconfig
+  rescue KeyError, Psych::Exception => ex
+    fail JoinParameterError, "Unable to prepare kubeconfig for #{node.ubid}: #{ex.message}"
+  end
+
+  def install_node_kubeconfig
+    kubeconfig = node_kubeconfig
+    vm.sshable.cmd("sudo install -d -m 0700 -o ubi -g ubi :dir", dir: KUBECONFIG_DIR, log: false)
+    vm.sshable.cmd("sudo tee :path > /dev/null", path: KUBECONFIG_PATH, stdin: kubeconfig, log: false)
+    vm.sshable.cmd("sudo chown ubi:ubi :path && sudo chmod 600 :path", path: KUBECONFIG_PATH, log: false)
+  end
+
+  def finish_join_or_init
+    install_node_kubeconfig
+    hop_install_cni
+  rescue Sshable::SshError, JoinParameterError => ex
+    retry_join_parameter_preparation(ex, deadline_target: "install_cni")
   end
 
   def join_endpoint
@@ -327,7 +355,7 @@ sudo touch #{marker}
     case state
     when "Succeeded"
       Page.from_tag_parts("KubernetesNodeInitClusterFailed", node.ubid)&.incr_resolve
-      hop_install_cni
+      finish_join_or_init
     when "NotStarted"
       params = {
         node_name: vm.name,
@@ -365,7 +393,7 @@ sudo touch #{marker}
     case state
     when "Succeeded"
       Page.from_tag_parts("KubernetesNodeJoinControlPlaneFailed", node.ubid)&.incr_resolve
-      hop_install_cni
+      finish_join_or_init
     when "NotStarted"
       cp_sshable = kubernetes_cluster.sshable
       begin
@@ -407,7 +435,7 @@ sudo touch #{marker}
     case state
     when "Succeeded"
       Page.from_tag_parts("KubernetesNodeJoinWorkerFailed", node.ubid)&.incr_resolve
-      hop_install_cni
+      finish_join_or_init
     when "NotStarted"
       cp_sshable = kubernetes_cluster.sshable
       begin
