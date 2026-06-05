@@ -17,6 +17,16 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
   let(:expected_node_ipv4) { kubernetes_location.linode? ? "203.0.113.10" : "172.19.145.65" }
   let(:expected_node_ipv4_regex) { Regexp.escape(expected_node_ipv4) }
   let(:expected_node_ipv6_regex) { Regexp.escape(prog.vm.ip6.to_s) }
+  let(:expected_join_endpoint_regex) { kubernetes_location.linode? ? '[^"]+:6443' : "somelb\\..*:443" }
+  let(:join_token_command) {
+    kubernetes_location.linode? ? a_string_matching(/tmp=\$\(mktemp\).*sudo env KUBECONFIG="\$tmp" kubeadm token create --ttl 24h --usages signing,authentication.*sudo rm -f "\$tmp"/) : "sudo kubeadm token create --ttl 24h --usages signing,authentication"
+  }
+  let(:join_command_command) {
+    kubernetes_location.linode? ? a_string_matching(/tmp=\$\(mktemp\).*sudo env KUBECONFIG="\$tmp" kubeadm token create --print-join-command.*sudo rm -f "\$tmp"/) : "sudo kubeadm token create --print-join-command"
+  }
+  let(:upload_certs_command) {
+    kubernetes_location.linode? ? a_string_matching(/tmp=\$\(mktemp\).*sudo env KUBECONFIG="\$tmp" kubeadm init phase upload-certs --upload-certs.*sudo rm -f "\$tmp"/) : "sudo kubeadm init phase upload-certs --upload-certs"
+  }
   let(:expected_standard_4_storage_size) {
     kubernetes_location.linode? ? Option.linode_plan("standard", 4, size_name: "standard-4").disk_gib : 37
   }
@@ -285,12 +295,12 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
 
       sshable = Sshable.new
       expect(kubernetes_cluster.functional_nodes.first).to receive(:sshable).and_return(sshable)
-      expect(sshable).to receive(:_cmd).with("sudo kubeadm token create --ttl 24h --usages signing,authentication", log: false).and_return("jt\n")
-      expect(sshable).to receive(:_cmd).with("sudo kubeadm init phase upload-certs --upload-certs", log: false).and_return("something\ncertificate key:\nck")
-      expect(sshable).to receive(:_cmd).with("sudo kubeadm token create --print-join-command", log: false).and_return("discovery-token-ca-cert-hash dtcch")
+      expect(sshable).to receive(:_cmd).with(join_token_command, log: false).and_return("jt\n")
+      expect(sshable).to receive(:_cmd).with(upload_certs_command, log: false).and_return("something\ncertificate key:\nck")
+      expect(sshable).to receive(:_cmd).with(join_command_command, log: false).and_return("discovery-token-ca-cert-hash dtcch")
       expect(prog.vm.sshable).to receive(:d_run).with(
         "join_control_plane", "kubernetes/bin/join-node",
-        stdin: /{"is_control_plane":true,"node_name":"test-vm","endpoint":"somelb\..*:443","join_token":"jt","certificate_key":"ck","discovery_token_ca_cert_hash":"dtcch","node_ipv4":"#{expected_node_ipv4_regex}","node_ipv6":"#{expected_node_ipv6_regex}"}/,
+        stdin: /{"is_control_plane":true,"node_name":"test-vm","endpoint":"#{expected_join_endpoint_regex}","join_token":"jt","certificate_key":"ck","discovery_token_ca_cert_hash":"dtcch","node_ipv4":"#{expected_node_ipv4_regex}","node_ipv6":"#{expected_node_ipv6_regex}"}/,
         log: false,
       )
       expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 24 * 60 * 60)
@@ -303,7 +313,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
 
       sshable = Sshable.new
       expect(kubernetes_cluster.functional_nodes.first).to receive(:sshable).and_return(sshable)
-      expect(sshable).to receive(:_cmd).with("sudo kubeadm token create --ttl 24h --usages signing,authentication", log: false)
+      expect(sshable).to receive(:_cmd).with(join_token_command, log: false)
         .and_raise(Sshable::SshError.new("sudo kubeadm token create --ttl 24h --usages signing,authentication", "", "kubeadm unavailable", 1, nil))
       expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 24 * 60 * 60)
       expect(prog.vm.sshable).not_to receive(:d_run)
@@ -355,11 +365,11 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
 
       sshable = Sshable.new
       expect(kubernetes_cluster.functional_nodes.first).to receive(:sshable).and_return(sshable)
-      expect(sshable).to receive(:_cmd).with("sudo kubeadm token create --ttl 24h --usages signing,authentication", log: false).and_return("\njt\n")
-      expect(sshable).to receive(:_cmd).with("sudo kubeadm token create --print-join-command", log: false).and_return("discovery-token-ca-cert-hash dtcch")
+      expect(sshable).to receive(:_cmd).with(join_token_command, log: false).and_return("\njt\n")
+      expect(sshable).to receive(:_cmd).with(join_command_command, log: false).and_return("discovery-token-ca-cert-hash dtcch")
       expect(prog.vm.sshable).to receive(:d_run).with(
         "join_worker", "kubernetes/bin/join-node",
-        stdin: /{"is_control_plane":false,"node_name":"test-vm","endpoint":"somelb\..*:443","join_token":"jt","discovery_token_ca_cert_hash":"dtcch","node_ipv4":"#{expected_node_ipv4_regex}","node_ipv6":"#{expected_node_ipv6_regex}"}/,
+        stdin: /{"is_control_plane":false,"node_name":"test-vm","endpoint":"#{expected_join_endpoint_regex}","join_token":"jt","discovery_token_ca_cert_hash":"dtcch","node_ipv4":"#{expected_node_ipv4_regex}","node_ipv6":"#{expected_node_ipv6_regex}"}/,
         log: false,
       )
       expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 24 * 60 * 60)
@@ -372,7 +382,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
 
       sshable = Sshable.new
       expect(kubernetes_cluster.functional_nodes.first).to receive(:sshable).and_return(sshable)
-      expect(sshable).to receive(:_cmd).with("sudo kubeadm token create --ttl 24h --usages signing,authentication", log: false)
+      expect(sshable).to receive(:_cmd).with(join_token_command, log: false)
         .and_raise(Sshable::SshError.new("sudo kubeadm token create --ttl 24h --usages signing,authentication", "", "kubeadm unavailable", 1, nil))
       expect(prog).to receive(:register_deadline).with("install_cni", 20 * 60, allow_extension: 24 * 60 * 60)
       expect(prog.vm.sshable).not_to receive(:d_run)

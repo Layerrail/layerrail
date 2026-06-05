@@ -92,6 +92,7 @@ class LoadBalancer < Sequel::Model
         add_port_with_stack(port, load_balancer_vm.id)
       }
       setup_cert_server(vm.id) if cert_enabled
+      incr_update_load_balancer
       incr_rewrite_dns_records
     end
   end

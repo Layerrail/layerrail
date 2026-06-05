@@ -7,6 +7,12 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
 
   PROVISIONING_DEADLINE = 20 * 60
   PROVISIONING_DEADLINE_EXTENSION = 24 * 60 * 60
+  LOCAL_KUBECONFIG_REWRITE = <<~'RUBY'.tr("\n", "; ").freeze
+    path, server = ARGV
+    data = YAML.load_file(path)
+    data["clusters"].each { |cluster| cluster["cluster"]["server"] = server }
+    File.write(path, YAML.dump(data))
+  RUBY
 
   def node
     @node ||= KubernetesNode[frame["node_id"]]
@@ -30,12 +36,20 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
   end
 
   def retry_join_parameter_preparation(exception, deadline_target: "install_cni")
+    exception_data = Util.exception_to_hash(exception)
+    if exception.is_a?(Sshable::SshError)
+      exception_data[:stdout] = exception.stdout
+      exception_data[:stderr] = exception.stderr
+      exception_data[:exit_code] = exception.exit_code
+      exception_data[:exit_signal] = exception.exit_signal
+    end
+
     Clog.emit("failed to prepare kubernetes join parameters", {
       node_id: node.id,
       node_ubid: node.ubid,
       kubernetes_cluster_id: kubernetes_cluster.id,
       kubernetes_cluster_ubid: kubernetes_cluster.ubid,
-      exception: Util.exception_to_hash(exception),
+      exception: exception_data,
     })
     extend_provisioning_deadline(deadline_target)
     nap 30
@@ -48,16 +62,61 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
     output[pattern, 1] || fail(JoinParameterError, "Unable to parse '#{pattern.source}' from '#{command}' output")
   end
 
+  def control_plane_join_node
+    kubernetes_cluster.functional_nodes.first || fail(JoinParameterError, "No active control plane node is available")
+  end
+
+  def kubeadm_join_parameter_command(local_command, remote_command)
+    cp_node = control_plane_join_node
+    return remote_command unless cp_node.vm.location.linode?
+
+    server = "https://#{cp_node.vm.ip4}:6443"
+    rewrite_kubeconfig = NetSsh.command(
+      "tmp=$(mktemp); sudo cp /etc/kubernetes/admin.conf \"$tmp\"; ruby -ryaml -e :script \"$tmp\" :server",
+      script: LOCAL_KUBECONFIG_REWRITE,
+      server:,
+    )
+    cleanup = "rc=$?; sudo rm -f \"$tmp\"; exit $rc"
+    NetSsh.combine(rewrite_kubeconfig, local_command, cleanup, joiner: "; ")
+  end
+
+  def join_endpoint
+    cp_node = control_plane_join_node
+    return "#{cp_node.vm.ip4}:6443" if cp_node.vm.location.linode?
+
+    "#{kubernetes_cluster.endpoint}:443"
+  end
+
   def join_token(cp_sshable)
-    fetch_join_parameter(cp_sshable, "sudo kubeadm token create --ttl 24h --usages signing,authentication")
+    fetch_join_parameter(
+      cp_sshable,
+      kubeadm_join_parameter_command(
+        "sudo env KUBECONFIG=\"$tmp\" kubeadm token create --ttl 24h --usages signing,authentication",
+        "sudo kubeadm token create --ttl 24h --usages signing,authentication",
+      ),
+    )
   end
 
   def discovery_token_ca_cert_hash(cp_sshable)
-    fetch_join_parameter(cp_sshable, "sudo kubeadm token create --print-join-command", pattern: /discovery-token-ca-cert-hash (\S+)/)
+    fetch_join_parameter(
+      cp_sshable,
+      kubeadm_join_parameter_command(
+        "sudo env KUBECONFIG=\"$tmp\" kubeadm token create --print-join-command",
+        "sudo kubeadm token create --print-join-command",
+      ),
+      pattern: /discovery-token-ca-cert-hash (\S+)/,
+    )
   end
 
   def certificate_key(cp_sshable)
-    fetch_join_parameter(cp_sshable, "sudo kubeadm init phase upload-certs --upload-certs", pattern: /certificate key:\n(.*)/)
+    fetch_join_parameter(
+      cp_sshable,
+      kubeadm_join_parameter_command(
+        "sudo env KUBECONFIG=\"$tmp\" kubeadm init phase upload-certs --upload-certs",
+        "sudo kubeadm init phase upload-certs --upload-certs",
+      ),
+      pattern: /certificate key:\n(.*)/,
+    )
   end
 
   # We need to create a random ula cidr for the cluster services subnet with
@@ -305,7 +364,7 @@ sudo touch #{marker}
         params = {
           is_control_plane: true,
           node_name: vm.name,
-          endpoint: "#{kubernetes_cluster.endpoint}:443",
+          endpoint: join_endpoint,
           join_token: join_token(cp_sshable),
           certificate_key: certificate_key(cp_sshable),
           discovery_token_ca_cert_hash: discovery_token_ca_cert_hash(cp_sshable),
@@ -347,7 +406,7 @@ sudo touch #{marker}
         params = {
           is_control_plane: false,
           node_name: vm.name,
-          endpoint: "#{kubernetes_cluster.endpoint}:443",
+          endpoint: join_endpoint,
           join_token: join_token(cp_sshable),
           discovery_token_ca_cert_hash: discovery_token_ca_cert_hash(cp_sshable),
           node_ipv4: node_ipv4,

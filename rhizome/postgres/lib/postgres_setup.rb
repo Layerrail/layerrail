@@ -28,21 +28,29 @@ class PostgresSetup
   def install_packages_from_apt
     codename = r(". /etc/os-release && printf '%s' \"$VERSION_CODENAME\"").strip
     r "sudo install -d -m 0755 /etc/apt/keyrings"
-    r "sudo apt-get update"
-    r "sudo apt-get install -y ca-certificates curl gpg lsb-release acl prometheus prometheus-node-exporter prometheus-postgres-exporter pgbouncer"
+    apt_update
+    apt_install "ca-certificates curl gpg lsb-release acl prometheus prometheus-node-exporter prometheus-postgres-exporter pgbouncer"
     r "curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg.tmp"
     r "sudo mv /etc/apt/keyrings/postgresql.gpg.tmp /etc/apt/keyrings/postgresql.gpg"
     r "echo 'deb [signed-by=/etc/apt/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt #{codename}-pgdg main' | sudo tee /etc/apt/sources.list.d/pgdg.list"
     r "sudo mkdir -p /etc/postgresql-common"
     r "echo 'create_main_cluster = false' | sudo tee /etc/postgresql-common/createcluster.conf"
-    r "sudo apt-get update"
-    r "sudo apt-get install -y postgresql-#{@version} postgresql-client-#{@version} postgresql-contrib-#{@version}"
+    apt_update
+    apt_install "postgresql-#{@version} postgresql-client-#{@version} postgresql-contrib-#{@version}"
     r "sudo groupadd -f --system cert_readers"
     r "id -u prometheus >/dev/null 2>&1 || sudo useradd --system --home-dir /home/prometheus --shell /usr/sbin/nologin prometheus"
     r "sudo usermod -aG cert_readers postgres"
     r "sudo usermod -aG cert_readers prometheus"
     r "sudo install -d -o prometheus -g prometheus -m 0755 /home/prometheus /var/lib/prometheus"
     configure_exporter_services
+  end
+
+  def apt_update
+    r "sudo env DEBIAN_FRONTEND=noninteractive UCF_FORCE_CONFFOLD=1 apt-get update"
+  end
+
+  def apt_install(packages)
+    r "sudo env DEBIAN_FRONTEND=noninteractive UCF_FORCE_CONFFOLD=1 apt-get install -y -o Dpkg::Options::=--force-confold #{packages}"
   end
 
   def configure_exporter_services
