@@ -294,6 +294,9 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
     vm.sshable.write_file("/etc/ssl/certs/client.crt", resource.client_cert)
     vm.sshable.write_file("/etc/ssl/certs/client.key", resource.client_cert_key)
 
+    vm.sshable.cmd("sudo groupadd -f --system cert_readers")
+    vm.sshable.cmd("sudo usermod -aG cert_readers postgres")
+    vm.sshable.cmd("id -u prometheus >/dev/null 2>&1 && sudo usermod -aG cert_readers prometheus || true")
     vm.sshable.cmd("sudo chgrp cert_readers /etc/ssl/certs/ca.crt && sudo chmod 640 /etc/ssl/certs/ca.crt")
     vm.sshable.cmd("sudo chgrp cert_readers /etc/ssl/certs/server-ca.crt && sudo chmod 640 /etc/ssl/certs/server-ca.crt")
     vm.sshable.cmd("sudo chgrp cert_readers /etc/ssl/certs/server.crt && sudo chmod 640 /etc/ssl/certs/server.crt")

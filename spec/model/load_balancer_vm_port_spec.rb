@@ -68,6 +68,11 @@ RSpec.describe LoadBalancerVmPort do
            timeout: 15,
            vm_name: vm.inhost_name}])
 
+        allow(vm.location).to receive(:linode?).and_return(true)
+        expect(lb_vm_port.health_check_cmd(:ipv4)).to eq(["timeout :timeout bash -c true\\ \\<\\ /dev/tcp/:address/:dst_port >/dev/null 2>&1 && echo 200 || echo 400",
+          {address: "192.168.1.1", dst_port: 8080, timeout: 15, vm_name: vm.inhost_name}])
+        allow(vm.location).to receive(:linode?).and_call_original
+
         lb.update(health_check_protocol: "https")
         expect(lb_vm_port.health_check_cmd(:ipv4)).to eq(["sudo ip netns exec :vm_name curl --insecure --resolve :address --max-time :timeout --silent --output /dev/null --write-out '%{http_code}' :health_check_url",
           {address: "#{lb.hostname}:8080:192.168.1.1",

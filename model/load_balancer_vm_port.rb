@@ -57,7 +57,11 @@ class LoadBalancerVmPort < Sequel::Model
     cmd_prefix = vm.location.linode? ? "" : "sudo ip netns exec :vm_name "
     cmd = if load_balancer.health_check_protocol == "tcp"
       kw[:address] = address.to_s
-      "#{cmd_prefix}nc -z -w :timeout :address :dst_port >/dev/null 2>&1 && echo 200 || echo 400"
+      if vm.location.linode?
+        "timeout :timeout bash -c true\\ \\<\\ /dev/tcp/:address/:dst_port >/dev/null 2>&1 && echo 200 || echo 400"
+      else
+        "#{cmd_prefix}nc -z -w :timeout :address :dst_port >/dev/null 2>&1 && echo 200 || echo 400"
+      end
     else
       kw[:address] = "#{load_balancer.hostname}:#{load_balancer_port.dst_port}:#{(address.version == 6) ? "[#{address}]" : address}"
       kw[:health_check_url] = load_balancer.health_check_url(use_endpoint: true)
