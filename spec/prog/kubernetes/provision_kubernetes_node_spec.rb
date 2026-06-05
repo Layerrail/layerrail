@@ -17,7 +17,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
   let(:expected_node_ipv4) { kubernetes_location.linode? ? "203.0.113.10" : "172.19.145.65" }
   let(:expected_node_ipv4_regex) { Regexp.escape(expected_node_ipv4) }
   let(:expected_node_ipv6_regex) { Regexp.escape(prog.vm.ip6.to_s) }
-  let(:expected_join_endpoint_regex) { kubernetes_location.linode? ? '[^"]+:6443' : "somelb\\..*:443" }
+  let(:expected_join_endpoint_regex) { "somelb\\..*:443" }
   let(:join_token_command) {
     kubernetes_location.linode? ? a_string_matching(/tmp=\$\(mktemp\).*sudo env KUBECONFIG="\$tmp" kubeadm token create --ttl 24h --usages signing,authentication.*sudo rm -f "\$tmp"/) : "sudo kubeadm token create --ttl 24h --usages signing,authentication"
   }

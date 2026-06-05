@@ -81,9 +81,6 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
   end
 
   def join_endpoint
-    cp_node = control_plane_join_node
-    return "#{cp_node.vm.ip4}:6443" if cp_node.vm.location.linode?
-
     "#{kubernetes_cluster.endpoint}:443"
   end
 
