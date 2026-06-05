@@ -12,6 +12,7 @@ RSpec.describe Prog::Postgres::PostgresServerNexus do
   let(:st) { postgres_server.strand }
   let(:server) { nx.postgres_server }
   let(:sshable) { server.vm.sshable }
+  let(:cluster_ready_cmd) { "sudo test -f /etc/postgresql/17/main/postgresql.conf && sudo test -d /dat/17/data && pg_lsclusters --no-header | awk -v version=17 '$1 == version && $2 == \"main\" { found=1 } END { exit !found }'" }
   let(:service_project) { Project.create(name: "postgres-service-project") }
   let(:location_id) { Location::HETZNER_FSN1_ID }
 
@@ -423,8 +424,19 @@ RSpec.describe Prog::Postgres::PostgresServerNexus do
     it "hops to refresh_certificates if initialize_empty_database command is succeeded" do
       refresh_frame(nx, new_values: {"initialize_empty_database_try_count" => 3})
       expect(sshable).to receive(:_cmd).with("common/bin/daemonizer2 check initialize_empty_database").and_return("Succeeded")
+      expect(sshable).to receive(:_cmd).with(cluster_ready_cmd)
       expect { nx.initialize_empty_database }.to hop("refresh_certificates")
       expect(frame_value(nx, "initialize_empty_database_try_count")).to be_nil
+    end
+
+    it "reruns initialize_empty_database if the daemon succeeded without a postgres cluster" do
+      expect(sshable).to receive(:_cmd).with("common/bin/daemonizer2 check initialize_empty_database").and_return("Succeeded")
+      expect(sshable).to receive(:_cmd).with(cluster_ready_cmd).and_raise(Sshable::SshError.new(cluster_ready_cmd, "", "missing cluster", 1, nil))
+      expect(sshable).to receive(:_cmd).with("common/bin/daemonizer2 clean initialize_empty_database").and_return("Succeeded")
+      expect(sshable).to receive(:_cmd).with("common/bin/daemonizer2 run initialize_empty_database sudo postgres/bin/initialize-empty-database 17 true", {log: true, stdin: nil})
+
+      expect { nx.initialize_empty_database }.to nap(5)
+      expect(frame_value(nx, "initialize_empty_database_try_count")).to eq(1)
     end
 
     it "extends deadline while initialize_empty_database is still in progress" do
@@ -514,6 +526,7 @@ RSpec.describe Prog::Postgres::PostgresServerNexus do
       refresh_frame(nx, new_values: {"disk_usage" => 1024, "initialize_database_from_backup_try_count" => 3})
 
       expect(sshable).to receive(:_cmd).with("common/bin/daemonizer2 check initialize_database_from_backup").and_return("Succeeded")
+      expect(sshable).to receive(:_cmd).with(cluster_ready_cmd)
       expect { nx.initialize_database_from_backup }.to hop("refresh_certificates")
       expect(Semaphore.where(strand_id: page.id, name: "resolve").count).to eq(1)
 
@@ -525,6 +538,7 @@ RSpec.describe Prog::Postgres::PostgresServerNexus do
       refresh_frame(nx, new_values: {"disk_usage" => 1024, "initialize_database_from_backup_try_count" => 3})
 
       expect(sshable).to receive(:_cmd).with("common/bin/daemonizer2 check initialize_database_from_backup").and_return("Succeeded")
+      expect(sshable).to receive(:_cmd).with(cluster_ready_cmd)
       expect { nx.initialize_database_from_backup }.to hop("refresh_certificates")
 
       expect(frame_value(nx, "disk_usage")).to be_nil
@@ -665,8 +679,13 @@ RSpec.describe Prog::Postgres::PostgresServerNexus do
       nx.incr_initial_provisioning
       expect(sshable).to receive(:_cmd).with("sudo mkdir -p /usr/local/share/postgresql")
       expect(sshable).to receive(:_cmd).with("sudo tee /usr/local/share/postgresql/postgres_exporter_queries.yaml > /dev/null", stdin: anything)
+      expect(sshable).to receive(:_cmd).with("sudo mkdir -p /home/prometheus")
+      expect(sshable).to receive(:_cmd).with("sudo chown prometheus:prometheus /home/prometheus")
       expect(sshable).to receive(:_cmd).with("sudo -u prometheus tee /home/prometheus/web-config.yml > /dev/null", stdin: anything)
       expect(sshable).to receive(:_cmd).with("sudo -u prometheus tee /home/prometheus/prometheus.yml > /dev/null", stdin: anything)
+      expect(sshable).to receive(:_cmd).with("sudo tee /etc/systemd/system/node_exporter.service > /dev/null", stdin: /Prometheus Node Exporter/)
+      expect(sshable).to receive(:_cmd).with("sudo tee /etc/systemd/system/postgres_exporter.service > /dev/null", stdin: /Prometheus PostgreSQL Exporter/)
+      expect(sshable).to receive(:_cmd).with("sudo tee /etc/systemd/system/prometheus.service > /dev/null", stdin: /Description=Prometheus/)
       expect(sshable).to receive(:_cmd).with("sudo systemctl enable --now postgres_exporter")
       expect(sshable).to receive(:_cmd).with("sudo systemctl enable --now node_exporter")
       expect(sshable).to receive(:_cmd).with("sudo systemctl enable --now prometheus")
@@ -704,8 +723,13 @@ RSpec.describe Prog::Postgres::PostgresServerNexus do
       expect(nx.postgres_server.resource).to receive(:use_old_walg_command_set?).and_return(false)
       expect(sshable).to receive(:_cmd).with("sudo mkdir -p /usr/local/share/postgresql")
       expect(sshable).to receive(:_cmd).with("sudo tee /usr/local/share/postgresql/postgres_exporter_queries.yaml > /dev/null", stdin: anything)
+      expect(sshable).to receive(:_cmd).with("sudo mkdir -p /home/prometheus")
+      expect(sshable).to receive(:_cmd).with("sudo chown prometheus:prometheus /home/prometheus")
       expect(sshable).to receive(:_cmd).with("sudo -u prometheus tee /home/prometheus/web-config.yml > /dev/null", stdin: anything)
       expect(sshable).to receive(:_cmd).with("sudo -u prometheus tee /home/prometheus/prometheus.yml > /dev/null", stdin: anything)
+      expect(sshable).to receive(:_cmd).with("sudo tee /etc/systemd/system/node_exporter.service > /dev/null", stdin: /Prometheus Node Exporter/)
+      expect(sshable).to receive(:_cmd).with("sudo tee /etc/systemd/system/postgres_exporter.service > /dev/null", stdin: /Prometheus PostgreSQL Exporter/)
+      expect(sshable).to receive(:_cmd).with("sudo tee /etc/systemd/system/prometheus.service > /dev/null", stdin: /Description=Prometheus/)
       expect(sshable).to receive(:_cmd).with("sudo systemctl enable --now postgres_exporter")
       expect(sshable).to receive(:_cmd).with("sudo systemctl enable --now node_exporter")
       expect(sshable).to receive(:_cmd).with("sudo systemctl enable --now prometheus")
@@ -739,8 +763,13 @@ RSpec.describe Prog::Postgres::PostgresServerNexus do
       # Prometheus expectations
       expect(standby_sshable).to receive(:_cmd).with("sudo mkdir -p /usr/local/share/postgresql")
       expect(standby_sshable).to receive(:_cmd).with("sudo tee /usr/local/share/postgresql/postgres_exporter_queries.yaml > /dev/null", stdin: anything)
+      expect(standby_sshable).to receive(:_cmd).with("sudo mkdir -p /home/prometheus")
+      expect(standby_sshable).to receive(:_cmd).with("sudo chown prometheus:prometheus /home/prometheus")
       expect(standby_sshable).to receive(:_cmd).with("sudo -u prometheus tee /home/prometheus/web-config.yml > /dev/null", stdin: anything)
       expect(standby_sshable).to receive(:_cmd).with("sudo -u prometheus tee /home/prometheus/prometheus.yml > /dev/null", stdin: /ubicloud_resource_role: standby/)
+      expect(standby_sshable).to receive(:_cmd).with("sudo tee /etc/systemd/system/node_exporter.service > /dev/null", stdin: /Prometheus Node Exporter/)
+      expect(standby_sshable).to receive(:_cmd).with("sudo tee /etc/systemd/system/postgres_exporter.service > /dev/null", stdin: /Prometheus PostgreSQL Exporter/)
+      expect(standby_sshable).to receive(:_cmd).with("sudo tee /etc/systemd/system/prometheus.service > /dev/null", stdin: /Description=Prometheus/)
       expect(standby_sshable).to receive(:_cmd).with("sudo systemctl reload postgres_exporter || sudo systemctl restart postgres_exporter")
       expect(standby_sshable).to receive(:_cmd).with("sudo systemctl reload node_exporter || sudo systemctl restart node_exporter")
       expect(standby_sshable).to receive(:_cmd).with("sudo systemctl reload prometheus || sudo systemctl restart prometheus")
@@ -772,8 +801,13 @@ RSpec.describe Prog::Postgres::PostgresServerNexus do
       # Prometheus expectations
       expect(standby_sshable).to receive(:_cmd).with("sudo mkdir -p /usr/local/share/postgresql")
       expect(standby_sshable).to receive(:_cmd).with("sudo tee /usr/local/share/postgresql/postgres_exporter_queries.yaml > /dev/null", stdin: anything)
+      expect(standby_sshable).to receive(:_cmd).with("sudo mkdir -p /home/prometheus")
+      expect(standby_sshable).to receive(:_cmd).with("sudo chown prometheus:prometheus /home/prometheus")
       expect(standby_sshable).to receive(:_cmd).with("sudo -u prometheus tee /home/prometheus/web-config.yml > /dev/null", stdin: anything)
       expect(standby_sshable).to receive(:_cmd).with("sudo -u prometheus tee /home/prometheus/prometheus.yml > /dev/null", stdin: /ubicloud_resource_role: standby/)
+      expect(standby_sshable).to receive(:_cmd).with("sudo tee /etc/systemd/system/node_exporter.service > /dev/null", stdin: /Prometheus Node Exporter/)
+      expect(standby_sshable).to receive(:_cmd).with("sudo tee /etc/systemd/system/postgres_exporter.service > /dev/null", stdin: /Prometheus PostgreSQL Exporter/)
+      expect(standby_sshable).to receive(:_cmd).with("sudo tee /etc/systemd/system/prometheus.service > /dev/null", stdin: /Description=Prometheus/)
       expect(standby_sshable).to receive(:_cmd).with("sudo systemctl reload postgres_exporter || sudo systemctl restart postgres_exporter")
       expect(standby_sshable).to receive(:_cmd).with("sudo systemctl reload node_exporter || sudo systemctl restart node_exporter")
       expect(standby_sshable).to receive(:_cmd).with("sudo systemctl reload prometheus || sudo systemctl restart prometheus")
@@ -811,8 +845,13 @@ RSpec.describe Prog::Postgres::PostgresServerNexus do
       # Prometheus expectations
       expect(standby_sshable).to receive(:_cmd).with("sudo mkdir -p /usr/local/share/postgresql")
       expect(standby_sshable).to receive(:_cmd).with("sudo tee /usr/local/share/postgresql/postgres_exporter_queries.yaml > /dev/null", stdin: anything)
+      expect(standby_sshable).to receive(:_cmd).with("sudo mkdir -p /home/prometheus")
+      expect(standby_sshable).to receive(:_cmd).with("sudo chown prometheus:prometheus /home/prometheus")
       expect(standby_sshable).to receive(:_cmd).with("sudo -u prometheus tee /home/prometheus/web-config.yml > /dev/null", stdin: anything)
       expect(standby_sshable).to receive(:_cmd).with("sudo -u prometheus tee /home/prometheus/prometheus.yml > /dev/null", stdin: /remote_write:.*url:.*metrics\.example\.com/m)
+      expect(standby_sshable).to receive(:_cmd).with("sudo tee /etc/systemd/system/node_exporter.service > /dev/null", stdin: /Prometheus Node Exporter/)
+      expect(standby_sshable).to receive(:_cmd).with("sudo tee /etc/systemd/system/postgres_exporter.service > /dev/null", stdin: /Prometheus PostgreSQL Exporter/)
+      expect(standby_sshable).to receive(:_cmd).with("sudo tee /etc/systemd/system/prometheus.service > /dev/null", stdin: /Description=Prometheus/)
       expect(standby_sshable).to receive(:_cmd).with("sudo systemctl reload postgres_exporter || sudo systemctl restart postgres_exporter")
       expect(standby_sshable).to receive(:_cmd).with("sudo systemctl reload node_exporter || sudo systemctl restart node_exporter")
       expect(standby_sshable).to receive(:_cmd).with("sudo systemctl reload prometheus || sudo systemctl restart prometheus")

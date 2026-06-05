@@ -204,6 +204,10 @@ class PostgresSetup
 
   def create_cluster
     r "pg_createcluster #{@version} main --datadir=/dat/#{@version}/data --port=5432 --locale=C.UTF8"
+    ensure_cluster_config_directories
+  end
+
+  def ensure_cluster_config_directories
     r "sudo mkdir -p /etc/postgresql/#{@version}/main/conf.d"
   end
 end

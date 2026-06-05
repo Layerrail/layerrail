@@ -107,6 +107,21 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
     register_deadline("wait", INITIAL_PROVISIONING_DEADLINE, allow_extension: INITIAL_PROVISIONING_DEADLINE_EXTENSION)
   end
 
+  def postgres_cluster_ready?
+    version = postgres_server.version
+    vm.sshable.cmd(
+      "sudo test -f /etc/postgresql/:version/main/postgresql.conf && sudo test -d /dat/:version/data && pg_lsclusters --no-header | awk -v version=:version '$1 == version && $2 == \"main\" { found=1 } END { exit !found }'",
+      version:,
+    )
+    true
+  rescue Sshable::SshError => ex
+    Clog.emit("postgres cluster is not ready after initialization", {
+      postgres_server: {ubid: postgres_server.ubid, version:},
+      exception: {class: ex.class.name, message: ex.message},
+    })
+    false
+  end
+
   def emit_daemonizer_progress_logs(unit_name, started_at_key, last_logged_at_key, message)
     started_at = frame[started_at_key] || frame["last_label_changed_at"]
     unless started_at
@@ -212,8 +227,23 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
   label def initialize_empty_database
     case vm.sshable.d_check("initialize_empty_database")
     when "Succeeded"
-      delete_from_stack("initialize_empty_database_try_count", "initialize_empty_database_started_at", "initialize_empty_database_last_logged_at")
-      hop_refresh_certificates
+      if postgres_cluster_ready?
+        delete_from_stack("initialize_empty_database_try_count", "initialize_empty_database_started_at", "initialize_empty_database_last_logged_at")
+        hop_refresh_certificates
+      else
+        vm.sshable.d_clean("initialize_empty_database")
+        previous_try_count = frame["initialize_empty_database_try_count"] || 0
+        if previous_try_count >= 3
+          Prog::PageNexus.assemble("#{postgres_server.ubid} initialize empty database failed after 3 attempts",
+            ["PGInitializeEmptyDatabaseFailed", postgres_server.id], postgres_server.ubid)
+        end
+        update_stack({"initialize_empty_database_try_count" => previous_try_count + 1})
+
+        strict_overcommit = resource.skip_strict_memory_overcommit_set? ? "false" : "true"
+        vm.sshable.d_run("initialize_empty_database", "sudo", "postgres/bin/initialize-empty-database", postgres_server.version, strict_overcommit)
+        update_stack("initialize_empty_database_started_at" => Time.now.to_s)
+        extend_initial_provisioning_deadline
+      end
     when "InProgress"
       emit_daemonizer_progress_logs(
         "initialize_empty_database",
@@ -242,9 +272,29 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
   label def initialize_database_from_backup
     case vm.sshable.d_check("initialize_database_from_backup")
     when "Succeeded"
-      Page.from_tag_parts("PGInitializeDatabaseFromBackupFailed", postgres_server.id)&.incr_resolve
-      delete_from_stack("disk_usage", "initialize_database_from_backup_try_count", "initialize_database_from_backup_started_at", "initialize_database_from_backup_last_logged_at")
-      hop_refresh_certificates
+      if postgres_cluster_ready?
+        Page.from_tag_parts("PGInitializeDatabaseFromBackupFailed", postgres_server.id)&.incr_resolve
+        delete_from_stack("disk_usage", "initialize_database_from_backup_try_count", "initialize_database_from_backup_started_at", "initialize_database_from_backup_last_logged_at")
+        hop_refresh_certificates
+      else
+        vm.sshable.d_clean("initialize_database_from_backup")
+        previous_try_count = frame["initialize_database_from_backup_try_count"] || 0
+        if previous_try_count >= 3
+          Prog::PageNexus.assemble("#{postgres_server.ubid} initialize database from backup failed after 3 attempts",
+            ["PGInitializeDatabaseFromBackupFailed", postgres_server.id], postgres_server.ubid)
+        end
+        update_stack({"initialize_database_from_backup_try_count" => previous_try_count + 1})
+
+        backup_label = if postgres_server.standby? || postgres_server.read_replica?
+          "LATEST"
+        else
+          postgres_server.timeline.latest_backup_label_before_target(target: resource.restore_target)
+        end
+        strict_overcommit = resource.skip_strict_memory_overcommit_set? ? "false" : "true"
+        vm.sshable.d_run("initialize_database_from_backup", "sudo", "postgres/bin/initialize-database-from-backup", postgres_server.version, backup_label, strict_overcommit)
+        update_stack("initialize_database_from_backup_started_at" => Time.now.to_s)
+        extend_initial_provisioning_deadline
+      end
     when "InProgress"
       emit_daemonizer_progress_logs(
         "initialize_database_from_backup",
@@ -321,6 +371,8 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
   label def configure_metrics
     vm.sshable.cmd("sudo mkdir -p /usr/local/share/postgresql")
     vm.sshable.write_file("/usr/local/share/postgresql/postgres_exporter_queries.yaml", postgres_exporter_queries_yaml)
+    vm.sshable.cmd("sudo mkdir -p /home/prometheus")
+    vm.sshable.cmd("sudo chown prometheus:prometheus /home/prometheus")
     web_config = <<CONFIG
 tls_server_config:
   cert_file: /etc/ssl/certs/server.crt
@@ -358,6 +410,60 @@ scrape_configs:
 #{metric_destinations}
 CONFIG
     vm.sshable.write_file("/home/prometheus/prometheus.yml", prometheus_config, user: "prometheus")
+
+    node_exporter_service = <<SERVICE
+[Unit]
+Description=Prometheus Node Exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -c 'exec $(command -v prometheus-node-exporter || command -v node_exporter) --web.listen-address=127.0.0.1:9100 --collector.textfile.directory=/var/lib/node_exporter'
+Restart=always
+User=nobody
+Group=nogroup
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
+    vm.sshable.write_file("/etc/systemd/system/node_exporter.service", node_exporter_service)
+
+    postgres_exporter_service = <<SERVICE
+[Unit]
+Description=Prometheus PostgreSQL Exporter
+After=postgresql.service
+
+[Service]
+Type=simple
+Environment=DATA_SOURCE_NAME=postgresql:///postgres?host=/var/run/postgresql&sslmode=disable
+ExecStart=/bin/sh -c 'exec $(command -v prometheus-postgres-exporter || command -v postgres_exporter) --web.listen-address=127.0.0.1:9187 --extend.query-path=/usr/local/share/postgresql/postgres_exporter_queries.yaml'
+Restart=always
+User=postgres
+Group=postgres
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
+    vm.sshable.write_file("/etc/systemd/system/postgres_exporter.service", postgres_exporter_service)
+
+    prometheus_service = <<SERVICE
+[Unit]
+Description=Prometheus
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=prometheus
+Group=prometheus
+ExecStart=/bin/sh -c 'exec $(command -v prometheus) --config.file=/home/prometheus/prometheus.yml --web.config.file=/home/prometheus/web-config.yml --storage.tsdb.path=/var/lib/prometheus --web.listen-address=127.0.0.1:9090'
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
+    vm.sshable.write_file("/etc/systemd/system/prometheus.service", prometheus_service)
 
     metrics_config = postgres_server.metrics_config
     metrics_dir = metrics_config[:metrics_dir]

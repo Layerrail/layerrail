@@ -86,4 +86,11 @@ RSpec.describe PostgresSetup do
       pg_setup.configure_service_slice
     end
   end
+
+  describe "#ensure_cluster_config_directories" do
+    it "creates the postgres config drop-in directory" do
+      expect(pg_setup).to receive(:r).with("sudo mkdir -p /etc/postgresql/17/main/conf.d")
+      pg_setup.ensure_cluster_config_directories
+    end
+  end
 end
