@@ -346,8 +346,10 @@ NAT
 
       require "openssl"
       require "socket"
+      require "cgi"
 
       HOSTNAME = ENV.fetch("LAYERRAIL_LB_HOSTNAME", "layerrail.com")
+      DISPLAY_HOSTNAME = CGI.escapeHTML(HOSTNAME)
       CERT_PATH = "/etc/layerrail/load-balancer/cert.pem"
       KEY_PATH = "/etc/layerrail/load-balancer/key.pem"
 
@@ -361,12 +363,17 @@ NAT
           <style>
             :root {
               color-scheme: dark;
-              --bg: #0f0d14;
-              --panel: #17131f;
+              --bg: #08070c;
+              --surface: #111017;
+              --surface-2: #16131f;
               --text: #fefdfe;
               --muted: #bcb9c1;
-              --line: #2f2838;
+              --soft: #ebe9f1;
+              --line: rgba(209, 200, 231, 0.16);
               --accent: #8b67f2;
+              --accent-soft: #d1c8e7;
+              --deep: #5a3a38;
+              --ok: #86efac;
             }
 
             * { box-sizing: border-box; }
@@ -374,69 +381,426 @@ NAT
             body {
               margin: 0;
               min-height: 100vh;
-              display: grid;
-              place-items: center;
-              background: radial-gradient(circle at 50% 0%, #24183d 0, var(--bg) 42%);
+              background:
+                radial-gradient(circle at 18% 8%, rgba(139, 103, 242, 0.22), transparent 30rem),
+                radial-gradient(circle at 80% 16%, rgba(209, 200, 231, 0.08), transparent 28rem),
+                linear-gradient(180deg, #0b0911 0%, var(--bg) 58%, #09080d 100%);
               color: var(--text);
               font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+              overflow-x: hidden;
+            }
+
+            body::before {
+              content: "";
+              position: fixed;
+              inset: 0;
+              pointer-events: none;
+              background-image:
+                linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+              background-size: 64px 64px;
+              mask-image: linear-gradient(to bottom, rgba(0,0,0,0.62), transparent 68%);
+            }
+
+            .shell {
+              width: min(1180px, calc(100vw - 48px));
+              margin: 0 auto;
+              min-height: 100vh;
+              display: flex;
+              flex-direction: column;
+              position: relative;
+              z-index: 1;
+            }
+
+            header {
+              height: 84px;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              border-bottom: 1px solid var(--line);
+            }
+
+            .brand {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              color: var(--text);
+              font-weight: 700;
+              letter-spacing: 0;
+            }
+
+            .brand-mark {
+              width: 34px;
+              height: 34px;
+              display: grid;
+              place-items: center;
+              border: 1px solid rgba(139, 103, 242, 0.42);
+              border-radius: 8px;
+              background: linear-gradient(145deg, rgba(139, 103, 242, 0.95), rgba(209, 200, 231, 0.5));
+              box-shadow: 0 0 32px rgba(139, 103, 242, 0.28);
+              font-size: 0.82rem;
+              font-weight: 800;
+            }
+
+            .status-pill {
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+              padding: 8px 12px;
+              border: 1px solid rgba(134, 239, 172, 0.22);
+              border-radius: 999px;
+              background: rgba(134, 239, 172, 0.06);
+              color: var(--soft);
+              font-size: 0.86rem;
+              font-weight: 600;
+            }
+
+            .status-dot {
+              width: 8px;
+              height: 8px;
+              border-radius: 999px;
+              background: var(--ok);
+              box-shadow: 0 0 18px rgba(134, 239, 172, 0.85);
             }
 
             main {
-              width: min(92vw, 680px);
-              padding: 36px;
-              border: 1px solid var(--line);
-              border-radius: 8px;
-              background: color-mix(in srgb, var(--panel) 92%, transparent);
-              box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+              flex: 1;
+              display: grid;
+              grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+              gap: 64px;
+              align-items: center;
+              padding: 72px 0 84px;
             }
 
-            .mark {
-              width: 44px;
-              height: 44px;
-              display: grid;
-              place-items: center;
-              border-radius: 8px;
-              background: var(--accent);
-              color: white;
-              font-weight: 800;
+            .eyebrow {
+              display: inline-flex;
+              align-items: center;
+              gap: 10px;
               margin-bottom: 24px;
+              padding: 8px 12px;
+              border: 1px solid var(--line);
+              border-radius: 999px;
+              color: var(--accent-soft);
+              background: rgba(255, 255, 255, 0.035);
+              font-size: 0.84rem;
+              font-weight: 700;
             }
 
             h1 {
               margin: 0;
-              font-size: clamp(2rem, 5vw, 4.6rem);
-              line-height: 0.95;
+              max-width: 760px;
+              font-size: clamp(3rem, 8vw, 6.8rem);
+              line-height: 0.94;
               letter-spacing: 0;
             }
 
-            p {
-              margin: 18px 0 0;
-              max-width: 56ch;
+            .lead {
+              margin: 26px 0 0;
+              max-width: 650px;
               color: var(--muted);
-              font-size: 1.05rem;
-              line-height: 1.6;
+              font-size: clamp(1rem, 2vw, 1.18rem);
+              line-height: 1.75;
+            }
+
+            .endpoint {
+              width: min(100%, 620px);
+              margin-top: 34px;
+              padding: 16px 18px;
+              border: 1px solid var(--line);
+              border-radius: 10px;
+              background: rgba(255, 255, 255, 0.04);
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+            }
+
+            .endpoint span {
+              display: block;
+              margin-bottom: 8px;
+              color: var(--muted);
+              font-size: 0.78rem;
+              font-weight: 700;
+              letter-spacing: 0.08em;
+              text-transform: uppercase;
             }
 
             code {
-              display: inline-block;
-              margin-top: 22px;
-              padding: 8px 10px;
-              border: 1px solid var(--line);
-              border-radius: 6px;
               color: var(--text);
-              background: rgba(255, 255, 255, 0.04);
-              font: 0.92rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+              font: 0.95rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
               word-break: break-word;
+            }
+
+            .panel {
+              position: relative;
+              min-height: 470px;
+              padding: 28px;
+              border: 1px solid var(--line);
+              border-radius: 18px;
+              background:
+                linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.025)),
+                var(--surface);
+              box-shadow: 0 28px 90px rgba(0, 0, 0, 0.34);
+              overflow: hidden;
+            }
+
+            .panel::before {
+              content: "";
+              position: absolute;
+              inset: -1px;
+              background:
+                radial-gradient(circle at 70% 0%, rgba(139, 103, 242, 0.28), transparent 16rem),
+                linear-gradient(135deg, transparent 0 42%, rgba(139, 103, 242, 0.14) 42% 43%, transparent 43% 100%);
+              pointer-events: none;
+            }
+
+            .panel-content {
+              position: relative;
+              z-index: 1;
+            }
+
+            .panel-heading {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              gap: 18px;
+              margin-bottom: 42px;
+            }
+
+            .panel-title {
+              margin: 0;
+              color: var(--soft);
+              font-size: 0.95rem;
+              font-weight: 800;
+            }
+
+            .panel-label {
+              color: var(--muted);
+              font-size: 0.82rem;
+            }
+
+            .flow {
+              display: grid;
+              gap: 18px;
+            }
+
+            .flow-row {
+              display: grid;
+              grid-template-columns: 90px 1fr;
+              gap: 18px;
+              align-items: center;
+            }
+
+            .node {
+              min-height: 76px;
+              padding: 15px;
+              border: 1px solid var(--line);
+              border-radius: 12px;
+              background: rgba(8, 7, 12, 0.58);
+            }
+
+            .node strong {
+              display: block;
+              color: var(--text);
+              font-size: 0.94rem;
+            }
+
+            .node span {
+              display: block;
+              margin-top: 6px;
+              color: var(--muted);
+              font-size: 0.86rem;
+              line-height: 1.45;
+            }
+
+            .rail {
+              height: 2px;
+              background: linear-gradient(90deg, rgba(139,103,242,0), rgba(139,103,242,0.88), rgba(209,200,231,0.18));
+              position: relative;
+            }
+
+            .rail::after {
+              content: "";
+              position: absolute;
+              right: -5px;
+              top: 50%;
+              width: 10px;
+              height: 10px;
+              border-top: 2px solid rgba(209,200,231,0.8);
+              border-right: 2px solid rgba(209,200,231,0.8);
+              transform: translateY(-50%) rotate(45deg);
+            }
+
+            .metrics {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 10px;
+              margin-top: 42px;
+            }
+
+            .metric {
+              padding: 14px;
+              border: 1px solid var(--line);
+              border-radius: 12px;
+              background: rgba(255, 255, 255, 0.035);
+            }
+
+            .metric b {
+              display: block;
+              color: var(--text);
+              font-size: 0.9rem;
+            }
+
+            .metric span {
+              display: block;
+              margin-top: 6px;
+              color: var(--muted);
+              font-size: 0.78rem;
+              line-height: 1.45;
+            }
+
+            footer {
+              display: flex;
+              justify-content: space-between;
+              gap: 18px;
+              padding: 22px 0 28px;
+              border-top: 1px solid var(--line);
+              color: rgba(188, 185, 193, 0.78);
+              font-size: 0.86rem;
+            }
+
+            footer a {
+              color: var(--accent-soft);
+              text-decoration: none;
+            }
+
+            @media (max-width: 900px) {
+              .shell {
+                width: min(100vw - 28px, 720px);
+              }
+
+              header {
+                height: 72px;
+              }
+
+              main {
+                grid-template-columns: 1fr;
+                gap: 34px;
+                padding: 46px 0 56px;
+              }
+
+              .panel {
+                min-height: auto;
+              }
+            }
+
+            @media (max-width: 560px) {
+              .status-pill {
+                display: none;
+              }
+
+              h1 {
+                font-size: clamp(2.65rem, 16vw, 4.2rem);
+              }
+
+              .panel,
+              .endpoint {
+                border-radius: 14px;
+              }
+
+              .flow-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+              }
+
+              .rail {
+                width: 2px;
+                height: 34px;
+                margin-left: 18px;
+                background: linear-gradient(180deg, rgba(139,103,242,0.88), rgba(209,200,231,0.18));
+              }
+
+              .rail::after {
+                right: auto;
+                left: 50%;
+                top: auto;
+                bottom: -5px;
+                transform: translateX(-50%) rotate(135deg);
+              }
+
+              .metrics {
+                grid-template-columns: 1fr;
+              }
+
+              footer {
+                flex-direction: column;
+              }
             }
           </style>
         </head>
         <body>
-          <main>
-            <div class="mark">LR</div>
-            <h1>Endpoint ready</h1>
-            <p>This LayerRail load balancer is live. Attach a service or deployment to start serving application traffic.</p>
-            <code>#{HOSTNAME}</code>
-          </main>
+          <div class="shell">
+            <header>
+              <div class="brand">
+                <div class="brand-mark">LR</div>
+                <span>LayerRail</span>
+              </div>
+              <div class="status-pill"><span class="status-dot"></span> Load balancer online</div>
+            </header>
+
+            <main>
+              <section>
+                <div class="eyebrow">Service endpoint</div>
+                <h1>Waiting for your app.</h1>
+                <p class="lead">Traffic is reaching this LayerRail load balancer. Attach a backend service, Kubernetes route, or deployment target to start serving requests from this hostname.</p>
+                <div class="endpoint">
+                  <span>Hostname</span>
+                  <code>#{DISPLAY_HOSTNAME}</code>
+                </div>
+              </section>
+
+              <section class="panel" aria-label="Endpoint status">
+                <div class="panel-content">
+                  <div class="panel-heading">
+                    <p class="panel-title">Request path</p>
+                    <span class="panel-label">Ready for upstreams</span>
+                  </div>
+
+                  <div class="flow">
+                    <div class="flow-row">
+                      <div class="rail"></div>
+                      <div class="node">
+                        <strong>DNS route</strong>
+                        <span>The hostname resolves to LayerRail edge infrastructure.</span>
+                      </div>
+                    </div>
+                    <div class="flow-row">
+                      <div class="rail"></div>
+                      <div class="node">
+                        <strong>Load balancer</strong>
+                        <span>The endpoint is online and accepting incoming traffic.</span>
+                      </div>
+                    </div>
+                    <div class="flow-row">
+                      <div class="rail"></div>
+                      <div class="node">
+                        <strong>Application service</strong>
+                        <span>No upstream response is attached yet. Deploy or connect your service to take over this page.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="metrics">
+                    <div class="metric"><b>HTTP</b><span>Port 80 ready</span></div>
+                    <div class="metric"><b>HTTPS</b><span>TLS when configured</span></div>
+                    <div class="metric"><b>Region</b><span>LayerRail network</span></div>
+                  </div>
+                </div>
+              </section>
+            </main>
+
+            <footer>
+              <span>LayerRail managed endpoint</span>
+              <a href="https://console.layerrail.com">console.layerrail.com</a>
+            </footer>
+          </div>
         </body>
         </html>
       HTML
