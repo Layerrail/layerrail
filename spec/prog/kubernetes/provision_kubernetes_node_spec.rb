@@ -14,7 +14,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
     Option.kubernetes_locations.find { it.name == "linode-us-lax" } || Option.kubernetes_locations.first
   }
   let(:kubernetes_location_id) { kubernetes_location.id }
-  let(:expected_node_ipv4) { kubernetes_location.linode? ? "203.0.113.10" : "172.19.145.65" }
+  let(:expected_node_ipv4) { kubernetes_location.linode? ? "192.168.151.139" : "172.19.145.65" }
   let(:expected_node_ipv4_regex) { Regexp.escape(expected_node_ipv4) }
   let(:expected_node_ipv6_regex) { Regexp.escape(prog.vm.ip6.to_s) }
   let(:expected_join_endpoint_regex) { "somelb\\..*:443" }
@@ -83,6 +83,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
   before do
     allow(Config).to receive(:kubernetes_service_project_id).and_return(project.id)
     allow(prog).to receive_messages(kubernetes_cluster:, frame: {"node_id" => node.id})
+    allow(prog).to receive(:node_ipv4).and_return(expected_node_ipv4)
   end
 
   describe "random_ula_cidr" do
@@ -103,6 +104,25 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       node = KubernetesNode.create(vm_id: create_vm.id, kubernetes_cluster_id: kubernetes_cluster.id)
       expect(prog).to receive(:frame).and_return({"node_id" => node.id})
       expect(prog.node.id).to eq(node.id)
+    end
+  end
+
+  describe "#node_ipv4" do
+    before { allow(prog).to receive(:node_ipv4).and_call_original }
+
+    it "detects the provider private IPv4 for Linode nodes" do
+      allow(prog.vm.location).to receive(:linode?).and_return(true)
+      sshable = Sshable.new
+      allow(prog.vm).to receive(:sshable).and_return(sshable)
+      expect(sshable).to receive(:_cmd).with(described_class::LINODE_PRIVATE_IPV4_COMMAND).and_return("192.168.151.139\n")
+
+      expect(prog.node_ipv4).to eq "192.168.151.139"
+    end
+
+    it "uses the LayerRail private IPv4 for non-Linode nodes" do
+      allow(prog.vm.location).to receive(:linode?).and_return(false)
+
+      expect(prog.node_ipv4.to_s).to eq "172.19.145.65"
     end
   end
 

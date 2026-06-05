@@ -13,6 +13,11 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
     data["clusters"].each { |cluster| cluster["cluster"]["server"] = server }
     File.write(path, YAML.dump(data))
   RUBY
+  LINODE_PRIVATE_IPV4_COMMAND = <<~'SH'.tr("\n", " ").freeze
+    ips=$(ip -4 -o addr show scope global | awk '{print $4}' | cut -d/ -f1);
+    printf "%s\n" "$ips" | grep -E '^192\.168\.' | head -n1 ||
+      printf "%s\n" "$ips" | grep -E '^(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)' | head -n1
+  SH
 
   def node
     @node ||= KubernetesNode[frame["node_id"]]
@@ -28,7 +33,13 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
   end
 
   def node_ipv4
-    vm.location.linode? ? vm.ip4 : vm.private_ipv4
+    return vm.private_ipv4 unless vm.location.linode?
+
+    @node_ipv4 ||= begin
+      ip = vm.sshable.cmd(LINODE_PRIVATE_IPV4_COMMAND).strip
+      fail JoinParameterError, "Unable to detect Linode private IPv4 for #{vm.name}" if ip.empty?
+      ip
+    end
   end
 
   def extend_provisioning_deadline(deadline_target)

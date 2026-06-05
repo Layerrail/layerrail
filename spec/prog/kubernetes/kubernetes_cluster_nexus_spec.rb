@@ -137,18 +137,25 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
 
       internal_firewall = kc.internal_cp_vm_firewall
       expect(internal_firewall.project_id).to eq Config.kubernetes_service_project_id
-      expect(internal_firewall.firewall_rules.map { "#{it.cidr}:#{it.port_range.to_range}" }.sort).to eq [
+      expected_cp_rules = [
         "0.0.0.0/0:22...23",
         "0.0.0.0/0:443...444",
+        "#{kc.private_subnet.net4}:6443...6444",
         "#{kc.private_subnet.net4}:10250...10251",
         "::/0:22...23",
         "::/0:443...444",
+        "#{kc.private_subnet.net6}:6443...6444",
         "#{kc.private_subnet.net6}:10250...10251",
       ]
+      if kubernetes_location.linode?
+        expected_cp_rules << "192.168.0.0/16:6443...6444"
+        expected_cp_rules << "192.168.0.0/16:10250...10251"
+      end
+      expect(internal_firewall.firewall_rules.map { "#{it.cidr}:#{it.port_range.to_range}" }.sort).to eq expected_cp_rules.sort
 
       internal_firewall = kc.internal_worker_vm_firewall
       expect(internal_firewall.project_id).to eq Config.kubernetes_service_project_id
-      expect(internal_firewall.firewall_rules.map { "#{it.cidr}:#{it.port_range.to_range}" }.sort).to eq [
+      expected_worker_rules = [
         "0.0.0.0/0:22...23",
         "0.0.0.0/0:443...444",
         "0.0.0.0/0:80...81",
@@ -158,6 +165,8 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
         "::/0:80...81",
         "#{kc.private_subnet.net6}:10250...10251",
       ]
+      expected_worker_rules << "192.168.0.0/16:10250...10251" if kubernetes_location.linode?
+      expect(internal_firewall.firewall_rules.map { "#{it.cidr}:#{it.port_range.to_range}" }.sort).to eq expected_worker_rules.sort
     end
 
     it "has defaults for node size, storage size, version and subnet" do

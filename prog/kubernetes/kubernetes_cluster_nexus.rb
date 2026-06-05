@@ -5,6 +5,7 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
 
   WAIT_DEADLINE = 20 * 60
   WAIT_DEADLINE_EXTENSION = 24 * 60 * 60
+  LINODE_PRIVATE_IPV4_CIDR = "192.168.0.0/16"
 
   def self.assemble(name:, project_id:, location_id:, version: Option.selectable_kubernetes_versions.first, private_subnet_id: nil, cp_node_count: 3, target_node_size: "standard-2", target_node_storage_size_gib: nil)
     DB.transaction do
@@ -38,9 +39,11 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
         Config.control_plane_outbound_cidrs.map { {cidr: it, port_range: Sequel.pg_range(22..22)} } + [
           {cidr: "0.0.0.0/0", port_range: Sequel.pg_range(443..443)},
           {cidr: "::/0", port_range: Sequel.pg_range(443..443)},
+          {cidr: subnet.net4.to_s, port_range: Sequel.pg_range(6443..6443)},
+          {cidr: subnet.net6.to_s, port_range: Sequel.pg_range(6443..6443)},
           {cidr: subnet.net4.to_s, port_range: Sequel.pg_range(10250..10250)},
           {cidr: subnet.net6.to_s, port_range: Sequel.pg_range(10250..10250)},
-        ],
+        ] + linode_private_control_plane_rules(Location[location_id]),
       )
 
       # Internal worker node firewall, will be directly attached to kubernetes worker VMs
@@ -53,7 +56,7 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
           {cidr: "::/0", port_range: Sequel.pg_range(443..443)},
           {cidr: subnet.net4.to_s, port_range: Sequel.pg_range(10250..10250)},
           {cidr: subnet.net6.to_s, port_range: Sequel.pg_range(10250..10250)},
-        ],
+        ] + linode_private_kubelet_rules(Location[location_id]),
       )
 
       id = ubid.to_uuid
@@ -61,6 +64,21 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
 
       Strand.create_with_id(id, prog: "Kubernetes::KubernetesClusterNexus", label: "start")
     end
+  end
+
+  def self.linode_private_kubelet_rules(location)
+    return [] unless location.linode?
+
+    [{cidr: LINODE_PRIVATE_IPV4_CIDR, port_range: Sequel.pg_range(10250..10250)}]
+  end
+
+  def self.linode_private_control_plane_rules(location)
+    return [] unless location.linode?
+
+    [
+      {cidr: LINODE_PRIVATE_IPV4_CIDR, port_range: Sequel.pg_range(6443..6443)},
+      {cidr: LINODE_PRIVATE_IPV4_CIDR, port_range: Sequel.pg_range(10250..10250)}
+    ]
   end
 
   def before_destroy
