@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "excon"
+require "base64"
 require "json"
 
 class CloudflareWorkersAiClient
@@ -26,5 +27,26 @@ class CloudflareWorkersAiClient
     )
 
     [response.status, JSON.parse(response.body)]
+  end
+
+  def run_request(model_name, payload)
+    response = @connection.post(
+      path: "/client/v4/accounts/#{@account_id}/ai/run/#{model_name}",
+      body: payload.to_json,
+      expects: [200, 400, 401, 403, 404, 429, 500, 502, 503],
+    )
+
+    [response.status, parse_response_body(response)]
+  end
+
+  private
+
+  def parse_response_body(response)
+    JSON.parse(response.body)
+  rescue JSON::ParserError
+    {
+      "result" => Base64.strict_encode64(response.body),
+      "content_type" => response.headers["Content-Type"],
+    }
   end
 end

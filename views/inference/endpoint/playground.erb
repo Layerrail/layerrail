@@ -50,6 +50,7 @@
           }
         ) %>
       </div>
+      <p id="inference_task_hint" class="text-sm text-gray-500"></p>
 
       <div class="grid sm:grid-cols-2 gap-6 text-gray-900">
         <div class="space-y-2">
@@ -131,6 +132,72 @@
             </select>
           </div>
         </div>
+        <div class="grid sm:grid-cols-3 gap-6 text-gray-900">
+          <%== render(
+            "components/form/text",
+            locals: {
+              name: "inference_source_language",
+              label: "Source language",
+              attributes: {
+                "placeholder" => "en",
+              },
+            }
+          ) %>
+          <%== render(
+            "components/form/text",
+            locals: {
+              name: "inference_target_language",
+              label: "Target language",
+              attributes: {
+                "placeholder" => "fr",
+              },
+            }
+          ) %>
+          <%== render(
+            "components/form/text",
+            locals: {
+              name: "inference_top_k",
+              label: "Top K",
+              type: "number",
+              attributes: {
+                "placeholder" => 3,
+                "min" => 1,
+                "step" => 1,
+              },
+              extra_class: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            }
+          ) %>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-6 text-gray-900">
+          <%== render(
+            "components/form/text",
+            locals: {
+              name: "inference_image_width",
+              label: "Image width",
+              type: "number",
+              attributes: {
+                "placeholder" => 1024,
+                "min" => 256,
+                "step" => 64,
+              },
+              extra_class: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            }
+          ) %>
+          <%== render(
+            "components/form/text",
+            locals: {
+              name: "inference_image_height",
+              label: "Image height",
+              type: "number",
+              attributes: {
+                "placeholder" => 1024,
+                "min" => 256,
+                "step" => 64,
+              },
+              extra_class: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            }
+          ) %>
+        </div>
         <div>
           <%== render(
             "components/form/textarea",
@@ -180,12 +247,25 @@
             },
           }
         ) %>
+        <div id="inference_context_container" class="hidden mt-4">
+          <%== render(
+            "components/form/textarea",
+            locals: {
+              name: "inference_context",
+              label: "Documents / extra context",
+              attributes: {
+                "placeholder" => "For rerank tasks, add one document per line.",
+                "rows" => 4,
+              },
+            }
+          ) %>
+        </div>
         <div class="grid gap-4 pt-4 text-gray-900 sm:grid-cols-2">
           <div class="flex flex-row items-center">
             <input
               type="file"
               id="inference_files"
-              accept=".jpg,.jpeg,.png,.pdf"
+              accept=".jpg,.jpeg,.png,.pdf,.wav,.mp3,.m4a,.ogg,.webm"
               class="inline-flex items-center text-sm"
               multiple
               aria-label="Upload files"

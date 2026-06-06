@@ -62,11 +62,11 @@ RSpec.describe Clover, "inference-playground" do
       visit "#{project.path}/inference-playground"
 
       expect(page.title).to eq("Ubicloud - Playground")
-      expect(page).to have_no_content("e5-mistral-7b-it")
+      expect(page).to have_content("e5-mistral-7b-it")
       expect(page).to have_no_content("e5-mistral-8b-it")
       expect(page).to have_no_content("llama-guard-3-8b")
       expect(page).to have_no_content("llama-3-2-3b-it")
-      expect(page).to have_select("inference_endpoint", selected: "meta-llama/Llama-3.2-1B-Instruct", with_options: ["meta-llama/Llama-3.2-1B-Instruct", "mistral-small-3", "test-model"])
+      expect(page).to have_select("inference_endpoint", with_options: ["e5-mistral-7b-it", "meta-llama/Llama-3.2-1B-Instruct", "mistral-small-3", "test-model", "Embedding Model"])
     end
 
     it "gives choice of inference api keys" do

@@ -1146,6 +1146,10 @@ class Clover < Roda
         r.post "v1", "embeddings" do
           handle_cloudflare_ai_request("embeddings", "Embeddings")
         end
+
+        r.post "v1", "run" do
+          handle_cloudflare_ai_run_request
+        end
       end
 
       r.get "auth", :ubid_uuid do |id|

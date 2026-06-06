@@ -345,6 +345,61 @@ function setupPlayground() {
     return Number.isFinite(value) ? value : 0;
   }
 
+  function selectedCapability() {
+    return selectedEndpointOption().attr('data-capability') || "Text Generation";
+  }
+
+  function selectedTags() {
+    try {
+      return JSON.parse(selectedEndpointOption().attr('data-tags') || '{}');
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function selectedEndpointUsesNativeRun() {
+    return [
+      "Automatic Speech Recognition",
+      "Image Classification",
+      "Image Text to Text",
+      "Image-to-Text",
+      "Object Detection",
+      "Rerank",
+      "Summarization",
+      "Text Classification",
+      "Text-to-Image",
+      "Text-to-Speech",
+      "Translation",
+    ].includes(selectedCapability());
+  }
+
+  function selectedEndpointFileMode() {
+    const capability = selectedCapability();
+    if (capability === "Automatic Speech Recognition") return "audio";
+    if (["Image Classification", "Object Detection", "Image-to-Text"].includes(capability)) return "image-bytes";
+    if (capability === "Image Text to Text") return "image-base64";
+    if (selectedTags()['multimodal']) return "chat-multimodal";
+    return "none";
+  }
+
+  function taskHintForCapability(capability) {
+    return {
+      "Text Generation": "Chat with a text model using the OpenAI-compatible chat route.",
+      "Embeddings": "Create vectors from text using the OpenAI-compatible embeddings route.",
+      "Text-to-Image": "Generate an image from a prompt. Advanced settings can set width and height.",
+      "Text-to-Speech": "Generate speech audio from text. Set language in advanced settings when needed.",
+      "Automatic Speech Recognition": "Upload an audio file and transcribe it with Workers AI.",
+      "Translation": "Translate the prompt text. Set source and target language in advanced settings.",
+      "Summarization": "Summarize long text. Max output tokens controls summary length.",
+      "Rerank": "Use the prompt as the query and add one document per line in extra context.",
+      "Text Classification": "Classify the prompt text and return labels with confidence scores.",
+      "Image Classification": "Upload an image and classify what it contains.",
+      "Object Detection": "Upload an image and detect objects with bounding boxes.",
+      "Image-to-Text": "Upload an image and ask for a description.",
+      "Image Text to Text": "Upload an image and ask a question about it.",
+    }[capability] || "Run this model through the native Workers AI route.";
+  }
+
   function formatTokenCount(value) {
     return Number(value || 0).toLocaleString();
   }
@@ -456,16 +511,30 @@ function setupPlayground() {
 
   // Disable the file input if the selected model is not multimodal.
   function update_file_input_state() {
-    const selected_option = $('#inference_endpoint option:selected');
-    const tags = JSON.parse(selected_option.attr('data-tags') || '{}');
-    const is_multimodal = tags['multimodal'] || false;
-    $('#inference_files').prop('disabled', !is_multimodal);
+    const mode = selectedEndpointFileMode();
+    const $files = $('#inference_files');
+    $files.prop('disabled', mode === "none");
+    if (mode === "audio") {
+      $files.attr('accept', ".wav,.mp3,.m4a,.ogg,.webm");
+    } else if (["image-bytes", "image-base64", "chat-multimodal"].includes(mode)) {
+      $files.attr('accept', ".jpg,.jpeg,.png,.webp");
+    } else {
+      $files.attr('accept', "");
+    }
   }
 
   function syncSelectedEndpoint() {
+    const capability = selectedCapability();
     update_file_input_state();
     updateSelectedModelDetails();
     updateUsagePanel();
+    $('#inference_task_hint').text(taskHintForCapability(capability));
+    $('#inference_context_container').toggleClass("hidden", capability !== "Rerank");
+    const promptLabel = capability === "Embeddings" ? "Input text" :
+      capability === "Rerank" ? "Query" :
+      ["Image Classification", "Object Detection", "Automatic Speech Recognition"].includes(capability) ? "Optional prompt" :
+      "New Message";
+    $('label[for="inference_prompt"]').text(promptLabel);
   }
 
   syncSelectedEndpoint();
@@ -528,6 +597,28 @@ function setupPlayground() {
       reader.readAsDataURL(file);
     });
   }
+
+  function readFileAsBytes(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(Array.from(new Uint8Array(reader.result)));
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  async function readFirstFile(input, mode) {
+    const file = Array.from(input.files || [])[0];
+    if (!file) {
+      return null;
+    }
+    if (mode === "image-base64") {
+      const dataUrl = await readFileAsDataURL(file);
+      return dataUrl.split(",", 2)[1] || "";
+    }
+    return readFileAsBytes(file);
+  }
+
   async function readFilesFromInput(input) {
     if (input.disabled) {
       return [];
@@ -595,12 +686,140 @@ function setupPlayground() {
     });
   }
 
+  function renderJson(value) {
+    return `<pre class="max-w-full overflow-x-auto rounded-lg bg-gray-800 p-3 text-xs text-white sm:text-sm">${DOMPurify.sanitize(JSON.stringify(value, null, 2))}</pre>`;
+  }
+
+  function renderScoreList(items) {
+    if (!Array.isArray(items)) {
+      return renderJson(items);
+    }
+    const rows = items.map((item) => {
+      const label = item?.label ?? item?.index ?? "result";
+      const score = Number(item?.score);
+      const scoreText = Number.isFinite(score) ? `${(score * 100).toFixed(2)}%` : "";
+      const box = item?.box ? ` (${JSON.stringify(item.box)})` : "";
+      return `<li><span class="font-medium">${DOMPurify.sanitize(String(label))}</span>${scoreText ? ` - ${scoreText}` : ""}${DOMPurify.sanitize(box)}</li>`;
+    }).join("");
+    return `<ul class="list-disc pl-5 text-sm">${rows}</ul>`;
+  }
+
+  function renderInferenceResult(parsed, capability) {
+    const result = parsed?.result ?? parsed;
+    if (capability === "Text-to-Image" && typeof result === "string") {
+      const image = result.replace(/[^A-Za-z0-9+/=]/g, "");
+      return {
+        text: "[Generated image]",
+        html: `<img alt="Generated image" class="max-w-full rounded-lg border border-gray-200" src="data:image/png;base64,${image}">`,
+      };
+    }
+    if (capability === "Text-to-Speech") {
+      const audio = typeof result === "string" ? result : result?.audio;
+      const sanitizedAudio = audio ? audio.replace(/[^A-Za-z0-9+/=]/g, "") : "";
+      return {
+        text: "[Generated audio]",
+        html: sanitizedAudio ? `<audio controls class="w-full" src="data:audio/mpeg;base64,${sanitizedAudio}"></audio>` : renderJson(parsed),
+      };
+    }
+    if (capability === "Automatic Speech Recognition") {
+      return { text: result?.text || "", html: DOMPurify.sanitize(marked.parse(result?.text || JSON.stringify(result, null, 2))) };
+    }
+    if (capability === "Translation") {
+      const text = result?.translated_text || "";
+      return { text, html: DOMPurify.sanitize(marked.parse(text || JSON.stringify(result, null, 2))) };
+    }
+    if (capability === "Summarization") {
+      const text = result?.summary || "";
+      return { text, html: DOMPurify.sanitize(marked.parse(text || JSON.stringify(result, null, 2))) };
+    }
+    if (["Image-to-Text", "Image Text to Text"].includes(capability)) {
+      const text = result?.description || result?.response || "";
+      return { text, html: DOMPurify.sanitize(marked.parse(text || JSON.stringify(result, null, 2))) };
+    }
+    if (["Text Classification", "Image Classification", "Object Detection", "Rerank"].includes(capability)) {
+      return { text: JSON.stringify(result), html: renderScoreList(result?.response || result) };
+    }
+    if (capability === "Embeddings") {
+      const shape = result?.shape || parsed?.data?.[0]?.embedding?.length;
+      return { text: JSON.stringify(parsed), html: renderJson({ shape: shape || "unknown", preview: parsed?.data?.[0] || result }) };
+    }
+    return { text: JSON.stringify(parsed), html: renderJson(parsed) };
+  }
+
+  async function buildNativeRunPayload(capability, endpoint_name, prompt, max_tokens) {
+    const source_language = ($('#inference_source_language').val() || "").trim();
+    const target_language = ($('#inference_target_language').val() || "").trim();
+    const top_k = parseInt($('#inference_top_k').val(), 10);
+    const width = parseInt($('#inference_image_width').val(), 10);
+    const height = parseInt($('#inference_image_height').val(), 10);
+    const fileMode = selectedEndpointFileMode();
+    const filePayload = await readFirstFile(document.getElementById('inference_files'), fileMode);
+    const payload = { model: endpoint_name };
+
+    switch (capability) {
+      case "Text-to-Image":
+        payload.prompt = prompt;
+        if (Number.isInteger(width) && width > 0) payload.width = width;
+        if (Number.isInteger(height) && height > 0) payload.height = height;
+        break;
+      case "Text-to-Speech":
+        payload.prompt = prompt;
+        payload.lang = source_language || "en";
+        break;
+      case "Automatic Speech Recognition":
+        if (!filePayload) throw new Error("Please upload an audio file.");
+        payload.audio = filePayload;
+        if (source_language) payload.source_lang = source_language;
+        if (target_language) payload.target_lang = target_language;
+        break;
+      case "Translation":
+        payload.text = prompt;
+        payload.source_lang = source_language || "en";
+        payload.target_lang = target_language || "fr";
+        break;
+      case "Summarization":
+        payload.input_text = prompt;
+        if (Number.isInteger(max_tokens) && max_tokens > 0) payload.max_length = max_tokens;
+        break;
+      case "Rerank": {
+        const contexts = ($('#inference_context').val() || "").split("\n").map((line) => line.trim()).filter(Boolean).map((text) => ({ text }));
+        if (contexts.length === 0) throw new Error("Add at least one context document for rerank.");
+        payload.query = prompt;
+        payload.contexts = contexts;
+        if (Number.isInteger(top_k) && top_k > 0) payload.top_k = top_k;
+        break;
+      }
+      case "Text Classification":
+        payload.text = prompt;
+        break;
+      case "Image Classification":
+      case "Object Detection":
+        if (!filePayload) throw new Error("Please upload an image file.");
+        payload.image = filePayload;
+        break;
+      case "Image-to-Text":
+        if (!filePayload) throw new Error("Please upload an image file.");
+        payload.image = filePayload;
+        if (prompt) payload.prompt = prompt;
+        break;
+      case "Image Text to Text":
+        if (!filePayload) throw new Error("Please upload an image file.");
+        payload.image = filePayload;
+        payload.messages = [{ role: "user", content: prompt || "Describe this image." }];
+        break;
+      default:
+        payload.input = prompt;
+    }
+
+    return payload;
+  }
+
   let controller = null;
   const generate = async () => {
     if (controller) {
       controller.abort();
       $('#inference_submit').text("Submit");
-      $('#inference_files').prop('disabled', false);
+      update_file_input_state();
       controller = null;
       return;
     }
@@ -614,10 +833,6 @@ function setupPlayground() {
     const max_tokens = parseInt($('#inference_max_tokens').val(), 10);
     const response_format = $('#inference_response_format').val();
 
-    if (!prompt) {
-      alert("Please enter a prompt.");
-      return;
-    }
     if (!endpoint_name) {
       alert("Please select an inference endpoint.");
       return;
@@ -629,44 +844,78 @@ function setupPlayground() {
 
     const $selected_endpoint = $('#inference_endpoint option:selected');
     const endpoint_url = $selected_endpoint.attr('data-url');
-    const streams_response = $selected_endpoint.attr('data-provider') !== "cloudflare";
+    const capability = selectedCapability();
+    const fileOnlyTask = ["Automatic Speech Recognition", "Image Classification", "Object Detection"].includes(capability);
+    if (!prompt && !fileOnlyTask) {
+      alert("Please enter a prompt.");
+      return;
+    }
+    const native_run = selectedEndpointUsesNativeRun();
+    const embeddings_request = capability === "Embeddings";
+    const streams_response = !native_run && !embeddings_request && $selected_endpoint.attr('data-provider') !== "cloudflare";
     const request_input_price = selectedEndpointNumber('data-input-price');
     const request_output_price = selectedEndpointNumber('data-output-price');
 
     const messages = [];
-    if (system.length > 0) {
+    if (!native_run && !embeddings_request && system.length > 0) {
       messages.push({ role: "system", content: system });
     }
-    messages.push(...previous_messages);
-    let file_contents;
-    try {
-      file_contents = await readFilesFromInput(document.getElementById('inference_files'));
-    } catch (error) {
-      alert(`Failed to read file(s): ${error.message || error}`);
-      return;
+    if (!native_run && !embeddings_request) {
+      messages.push(...previous_messages);
+    }
+    let file_contents = [];
+    if (!native_run && !embeddings_request) {
+      try {
+        file_contents = await readFilesFromInput(document.getElementById('inference_files'));
+      } catch (error) {
+        alert(`Failed to read file(s): ${error.message || error}`);
+        return;
+      }
     }
     const user_message = {
       role: "user", content: [
-        { type: "text", text: prompt },
+        { type: "text", text: prompt || taskHintForCapability(capability) },
         ...file_contents,
       ]
     };
-    messages.push(user_message);
-    const request_payload = {
-      model: endpoint_name,
-      messages: messages,
-      stream: streams_response,
-      temperature: temperature,
-      top_p: top_p,
-    };
-    if (Number.isInteger(max_tokens) && max_tokens > 0) {
-      request_payload.max_tokens = max_tokens;
+    if (!native_run && !embeddings_request) {
+      messages.push(user_message);
     }
-    if (response_format === "json_object") {
-      request_payload.response_format = { type: "json_object" };
-    }
-    if (streams_response) {
-      request_payload.stream_options = { include_usage: true };
+
+    let request_payload;
+    let request_path;
+    try {
+      if (native_run) {
+        request_path = "/v1/run";
+        request_payload = await buildNativeRunPayload(capability, endpoint_name, prompt, max_tokens);
+      } else if (embeddings_request) {
+        request_path = "/v1/embeddings";
+        request_payload = {
+          model: endpoint_name,
+          input: prompt,
+        };
+      } else {
+        request_path = "/v1/chat/completions";
+        request_payload = {
+          model: endpoint_name,
+          messages: messages,
+          stream: streams_response,
+          temperature: temperature,
+          top_p: top_p,
+        };
+        if (Number.isInteger(max_tokens) && max_tokens > 0) {
+          request_payload.max_tokens = max_tokens;
+        }
+        if (response_format === "json_object") {
+          request_payload.response_format = { type: "json_object" };
+        }
+        if (streams_response) {
+          request_payload.stream_options = { include_usage: true };
+        }
+      }
+    } catch (error) {
+      alert(error.message || error);
+      return;
     }
     const payload = JSON.stringify(request_payload);
 
@@ -699,7 +948,7 @@ function setupPlayground() {
     let showing_processing = true;
 
     try {
-      const response = await fetch(`${endpoint_url}/v1/chat/completions`, {
+      const response = await fetch(`${endpoint_url}${request_path}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -721,6 +970,18 @@ function setupPlayground() {
           // Keep the plain status when the server did not return JSON.
         }
         throw new Error(error_detail);
+      }
+
+      if (native_run || embeddings_request) {
+        const parsed = await response.json();
+        const rendered = renderInferenceResult(parsed, capability);
+        const prompt_tokens = parsed?.usage?.prompt_tokens ?? estimateTokenCount(prompt || request_payload);
+        const completion_tokens = parsed?.usage?.completion_tokens ?? (["Text-to-Image", "Text-to-Speech", "Embeddings"].includes(capability) ? 1 : estimateTokenCount(rendered.text || parsed));
+        recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price);
+
+        assistant_message.content[0].text = rendered.text;
+        $assistant_message_container.html(rendered.html);
+        return;
       }
 
       if (!streams_response) {
@@ -806,7 +1067,7 @@ function setupPlayground() {
       $(`#inference_message_info_${assistant_message_id}`).text(errorMessage);
     } finally {
       $("#inference_submit").text("Submit");
-      $("#inference_files").prop("disabled", false);
+      update_file_input_state();
       controller = null;
     }
   };

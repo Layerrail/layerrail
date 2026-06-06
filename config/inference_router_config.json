@@ -34,7 +34,7 @@
     },
     {
       "name": "inference",
-      "path": "^/v1/(chat/completions|completions|embeddings)$",
+      "path": "^/v1/(chat/completions|completions|embeddings|run)$",
       "app": "inference"
     },
     {

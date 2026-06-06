@@ -3,8 +3,11 @@
 <%== render("inference/tabbar") %>
 
 <%
-  text_generation_models = @inference_models.count { it.tags["capability"] == "Text Generation" }
-  embedding_models = @inference_models.count { it.tags["capability"] == "Embeddings" }
+  capability_counts = @inference_models.each_with_object(Hash.new(0)) { |ie, counts| counts[ie.tags["capability"]] += 1 }
+  text_generation_models = capability_counts["Text Generation"]
+  embedding_models = capability_counts["Embeddings"]
+  native_task_models = @inference_models.length - text_generation_models - embedding_models
+  capability_options = capability_counts.keys.compact.sort
   first_model_url = @inference_models.first&.load_balancer&.health_check_url
 %>
 
@@ -38,10 +41,10 @@
   </div>
   <div class="rounded-lg bg-white p-4 shadow ring-1 ring-black ring-opacity-5">
     <div class="flex items-center gap-3">
-      <%== part("components/icon", name: "hero-banknotes", classes: "h-7 w-7 text-layerrail-600") %>
+      <%== part("components/icon", name: "hero-cpu-chip", classes: "h-7 w-7 text-layerrail-600") %>
       <div>
-        <p class="text-sm text-gray-500">Free quota</p>
-        <p class="text-2xl font-semibold text-gray-900" data-free-quota-value="<%= @remaining_free_quota.to_i %>"><%= @remaining_free_quota.to_i %></p>
+        <p class="text-sm text-gray-500">Native AI tasks</p>
+        <p class="text-2xl font-semibold text-gray-900"><%= native_task_models %></p>
       </div>
     </div>
   </div>
@@ -65,8 +68,9 @@
       <label for="inference_capability_filter" class="block text-sm font-medium leading-6 text-gray-900">Capability</label>
       <select id="inference_capability_filter" class="mt-2 block w-full rounded-md border-0 py-2 pl-3 pr-10 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-layerrail-600">
         <option value="">All capabilities</option>
-        <option value="Text Generation">Text generation</option>
-        <option value="Embeddings">Embeddings</option>
+        <% capability_options.each do |capability| %>
+          <option value="<%= capability %>"><%= capability %></option>
+        <% end %>
       </select>
     </div>
   </div>
@@ -109,10 +113,30 @@ MSG
         ]
       when "Embeddings"
         ["/v1/embeddings", "hero-document-arrow-down", "\"input\": \"embed me!\"\n"]
-      # :nocov:
+      when "Text-to-Image"
+        ["/v1/run", "hero-document-arrow-down", "\"prompt\": \"a clean cloud control plane floating above violet network rails\"\n"]
+      when "Text-to-Speech"
+        ["/v1/run", "hero-chat-bubble-bottom-center-text", "\"prompt\": \"LayerRail infrastructure is ready.\",\n    \"lang\": \"en\"\n"]
+      when "Automatic Speech Recognition"
+        ["/v1/run", "hero-chat-bubble-bottom-center-text", "\"audio\": [82, 73, 70, 70]\n"]
+      when "Translation"
+        ["/v1/run", "hero-globe-alt", "\"text\": \"Deploy infrastructure clearly.\",\n    \"source_lang\": \"en\",\n    \"target_lang\": \"fr\"\n"]
+      when "Summarization"
+        ["/v1/run", "hero-document-text", "\"input_text\": \"Long text to summarize...\",\n    \"max_length\": 120\n"]
+      when "Rerank"
+        ["/v1/run", "hero-document-text", "\"query\": \"Which server is best for production?\",\n    \"contexts\": [{\"text\": \"Small test VM\"}, {\"text\": \"Dedicated production VM\"}]\n"]
+      when "Text Classification"
+        ["/v1/run", "hero-finger-print", "\"text\": \"The deployment completed successfully.\"\n"]
+      when "Image Classification"
+        ["/v1/run", "hero-document-arrow-down", "\"image\": [137, 80, 78, 71]\n"]
+      when "Object Detection"
+        ["/v1/run", "hero-magnifying-glass", "\"image\": [137, 80, 78, 71]\n"]
+      when "Image-to-Text"
+        ["/v1/run", "hero-document-text", "\"image\": [137, 80, 78, 71],\n    \"prompt\": \"Describe this image\"\n"]
+      when "Image Text to Text"
+        ["/v1/run", "hero-document-text", "\"image\": \"<base64-image>\",\n    \"messages\": [{\"role\": \"user\", \"content\": \"What is in this image?\"}]\n"]
       else
-        fail "Unknown model capability"
-      # :nocov:
+        ["/v1/run", "hero-cpu-chip", "\"input\": \"example input\"\n"]
     end
 
     display_name = ie.tags["display_name"] || ie.model_name
@@ -121,6 +145,20 @@ MSG
     completion_price = BillingRate.million_token_price(ie.completion_billing_resource)
     context_length = ie.tags.fetch("context_length", "Full")
     capability = ie.tags["capability"]
+    modalities = case capability
+      when "Automatic Speech Recognition"
+        "Audio to text"
+      when "Image Classification", "Object Detection", "Image-to-Text"
+        "Image input"
+      when "Image Text to Text"
+        "Text and image"
+      when "Text-to-Image"
+        "Text to image"
+      when "Text-to-Speech"
+        "Text to audio"
+      else
+        ie.tags["multimodal"] ? "Text, image, PDF" : "Text"
+    end
     search_text = [
       display_name,
       ie.model_name,
@@ -190,7 +228,7 @@ curl #{ie.load_balancer.health_check_url(path:)} \\
       </div>
       <div>
         <h3 class="text-sm font-semibold text-gray-900">Modalities</h3>
-        <p class="text-gray-500"><%= ie.tags["multimodal"] ? "Text, image, PDF" : "Text" %></p>
+        <p class="text-gray-500"><%= modalities %></p>
       </div>
       <div class="min-w-0 sm:col-span-2">
         <h3 class="text-sm font-semibold text-gray-900">URL</h3>
@@ -208,7 +246,6 @@ curl #{ie.load_balancer.health_check_url(path:)} \\
           <pre class="max-w-full overflow-x-auto rounded-lg bg-gray-800 p-3 text-xs text-white sm:text-sm"><%== curl_snippet_html %></pre>
         </div>
       </div>
-      <% if capability == "Text Generation" %>
       <%== render(
         "components/button",
         locals: {
@@ -219,7 +256,6 @@ curl #{ie.load_balancer.health_check_url(path:)} \\
           }
         }
       ) %>
-      <% end %>
     </div>
   </div>
   <% end %>

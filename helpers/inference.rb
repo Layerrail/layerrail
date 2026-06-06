@@ -1,13 +1,27 @@
 # frozen_string_literal: true
 
 class Clover
+  CLOUDFLARE_NATIVE_CAPABILITIES = [
+    "Automatic Speech Recognition",
+    "Image Classification",
+    "Image Text to Text",
+    "Image-to-Text",
+    "Object Detection",
+    "Rerank",
+    "Summarization",
+    "Text Classification",
+    "Text-to-Image",
+    "Text-to-Speech",
+    "Translation",
+  ].freeze
+
   def cloudflare_inference_provider?
     Config.ai_inference_provider == "cloudflare"
   end
 
   def cloudflare_inference_models
     Option::AI_MODELS
-      .select { it["provider"] == "cloudflare" }
+      .select { it["provider"] == "cloudflare" && it.fetch("enabled", true) }
       .map { CloudflareInferenceModel.new(it) }
   end
 
@@ -72,6 +86,35 @@ class Clover
     body
   end
 
+  def handle_cloudflare_ai_run_request
+    no_authorization_needed
+    no_audit_log
+
+    unless Config.ai_inference_enabled && cloudflare_inference_provider?
+      fail CloverError.new(501, "NotEnabled", "Cloudflare AI Inference is not enabled.")
+    end
+
+    api_key = inference_api_key_from_authorization_header
+    fail CloverError.new(401, "InvalidCredentials", "invalid inference API key provided in Authorization header") unless api_key
+    fail CloverError.new(403, "ProjectInactive", "the project for this inference API key is not active") unless api_key.project&.active?
+
+    payload = parse_inference_payload
+    model_name = payload.delete("model")
+    fail CloverError.new(400, "InvalidRequest", "model is required") if model_name.to_s.empty?
+
+    model = cloudflare_inference_models.find { it.model_name == model_name }
+    fail CloverError.new(400, "InvalidRequest", "model is not enabled") unless model
+    unless CLOUDFLARE_NATIVE_CAPABILITIES.include?(model.tags["capability"])
+      fail CloverError.new(400, "InvalidRequest", "model is not enabled for the native run route")
+    end
+
+    payload.delete("stream")
+    status, body = CloudflareWorkersAiClient.new.run_request(model.model_name, payload)
+    response.status = status
+    record_cloudflare_inference_usage(api_key, model, body, payload) if status == 200
+    body
+  end
+
   def inference_api_key_from_authorization_header
     raw_key = env["HTTP_AUTHORIZATION"].to_s.sub(/\ABearer:?\s+/i, "")
     return if raw_key.empty?
@@ -115,9 +158,9 @@ class Clover
     completion_tokens = usage["completion_tokens"].to_i
     total_tokens = usage["total_tokens"].to_i
 
-    prompt_tokens = estimate_inference_tokens(payload["messages"] || payload["input"]) if prompt_tokens.zero?
+    prompt_tokens = estimate_inference_tokens(cloudflare_request_text(body, payload)) if prompt_tokens.zero?
     completion_tokens = [total_tokens - prompt_tokens, 0].max if completion_tokens.zero? && total_tokens.positive?
-    completion_tokens = estimate_inference_tokens(cloudflare_response_text(body)) if completion_tokens.zero? && model.tags["capability"] == "Text Generation"
+    completion_tokens = estimate_inference_tokens(cloudflare_response_text(body)) if completion_tokens.zero? && !["Embeddings", "Text-to-Image", "Text-to-Speech"].include?(model.tags["capability"])
 
     record_inference_tokens(api_key, model.prompt_billing_resource, prompt_tokens)
     record_inference_tokens(api_key, model.completion_billing_resource, completion_tokens)
@@ -177,10 +220,24 @@ class Clover
         value.values.map { estimate_inference_text(it) }.join("\n")
       end
     when Array
+      return "" if value.all? { it.is_a?(Numeric) }
+
       value.map { estimate_inference_text(it) }.join("\n")
     else
       value.to_s
     end
+  end
+
+  def cloudflare_request_text(_body, payload)
+    [
+      payload["messages"],
+      payload["input"],
+      payload["prompt"],
+      payload["text"],
+      payload["input_text"],
+      payload["query"],
+      payload["contexts"],
+    ].compact
   end
 
   def cloudflare_response_text(body)
@@ -190,6 +247,10 @@ class Clover
       body.dig("choices", 0, "text"),
       result["response"],
       result["text"],
+      result["translated_text"],
+      result["summary"],
+      result["description"],
+      *Array(body["result"]).map { it.is_a?(Hash) ? [it["label"], it["score"]].compact.join(" ") : nil },
     ].compact.join("\n")
   end
 end
