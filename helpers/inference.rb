@@ -68,7 +68,7 @@ class Clover
 
     status, body = CloudflareWorkersAiClient.new.openai_request(path, payload)
     response.status = status
-    record_cloudflare_inference_usage(api_key, model, body) if status == 200
+    record_cloudflare_inference_usage(api_key, model, body, payload) if status == 200
     body
   end
 
@@ -108,17 +108,26 @@ class Clover
     end
   end
 
-  def record_cloudflare_inference_usage(api_key, model, body)
-    usage = body["usage"] || {}
-    record_inference_tokens(api_key, model.prompt_billing_resource, usage["prompt_tokens"].to_i)
-    record_inference_tokens(api_key, model.completion_billing_resource, usage["completion_tokens"].to_i)
+  def record_cloudflare_inference_usage(api_key, model, body, payload)
+    result = body["result"].is_a?(Hash) ? body["result"] : {}
+    usage = body["usage"] || result["usage"] || {}
+    prompt_tokens = usage["prompt_tokens"].to_i
+    completion_tokens = usage["completion_tokens"].to_i
+    total_tokens = usage["total_tokens"].to_i
+
+    prompt_tokens = estimate_inference_tokens(payload["messages"] || payload["input"]) if prompt_tokens.zero?
+    completion_tokens = [total_tokens - prompt_tokens, 0].max if completion_tokens.zero? && total_tokens.positive?
+    completion_tokens = estimate_inference_tokens(cloudflare_response_text(body)) if completion_tokens.zero? && model.tags["capability"] == "Text Generation"
+
+    record_inference_tokens(api_key, model.prompt_billing_resource, prompt_tokens)
+    record_inference_tokens(api_key, model.completion_billing_resource, completion_tokens)
   end
 
   def record_inference_tokens(api_key, resource_family, tokens)
     return unless tokens.positive?
 
     rate = BillingRate.from_resource_properties("InferenceTokens", resource_family, "global")
-    return if !rate || rate["unit_price"].zero?
+    return unless rate
 
     begin_time = Time.now.to_date.to_time
     end_time = begin_time + 24 * 60 * 60
@@ -143,5 +152,44 @@ class Clover
     end
   rescue Sequel::Error => ex
     Clog.emit("Failed to update Cloudflare inference billing record", Util.exception_to_hash(ex, into: {project_id: api_key.project_id, resource_family:, tokens:}))
+  end
+
+  def estimate_inference_tokens(value)
+    text = case value
+    when Array
+      value.map { estimate_inference_text(it) }.join("\n")
+    else
+      estimate_inference_text(value)
+    end
+    [(text.length / 4.0).ceil, 1].max
+  end
+
+  def estimate_inference_text(value)
+    case value
+    when Hash
+      if value.key?("content")
+        estimate_inference_text(value["content"])
+      elsif value.key?("text")
+        value["text"].to_s
+      elsif value.key?("input")
+        estimate_inference_text(value["input"])
+      else
+        value.values.map { estimate_inference_text(it) }.join("\n")
+      end
+    when Array
+      value.map { estimate_inference_text(it) }.join("\n")
+    else
+      value.to_s
+    end
+  end
+
+  def cloudflare_response_text(body)
+    result = body["result"].is_a?(Hash) ? body["result"] : {}
+    [
+      body.dig("choices", 0, "message", "content"),
+      body.dig("choices", 0, "text"),
+      result["response"],
+      result["text"],
+    ].compact.join("\n")
   end
 end

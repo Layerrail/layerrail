@@ -8,7 +8,7 @@
     <div class="ml-3">
       <h3 class="text-sm font-medium">
         <span>You have
-          <%= @remaining_free_quota.to_i %>
+          <span data-free-quota-value="<%= @remaining_free_quota.to_i %>"><%= @remaining_free_quota.to_i %></span>
           free
           <%= @free_quota_unit %>
           available (few-minute delay).</span>

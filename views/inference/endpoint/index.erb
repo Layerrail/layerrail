@@ -41,7 +41,7 @@
       <%== part("components/icon", name: "hero-banknotes", classes: "h-7 w-7 text-layerrail-600") %>
       <div>
         <p class="text-sm text-gray-500">Free quota</p>
-        <p class="text-2xl font-semibold text-gray-900"><%= @remaining_free_quota.to_i %></p>
+        <p class="text-2xl font-semibold text-gray-900" data-free-quota-value="<%= @remaining_free_quota.to_i %>"><%= @remaining_free_quota.to_i %></p>
       </div>
     </div>
   </div>
@@ -140,7 +140,7 @@ curl #{ie.load_balancer.health_check_url(path:)} \\
   CURL
     %>
   <div
-    class="overflow-hidden rounded-lg shadow ring-1 ring-black ring-opacity-5 bg-white p-4"
+    class="min-w-0 overflow-hidden rounded-lg shadow ring-1 ring-black ring-opacity-5 bg-white p-4"
     data-inference-model-card
     data-capability="<%= capability %>"
     data-search="<%= search_text %>"
@@ -152,7 +152,7 @@ curl #{ie.load_balancer.health_check_url(path:)} \\
       </div>
       <span class="inline-flex shrink-0 items-center rounded-full bg-layerrail-50 px-2 py-1 text-xs font-medium text-layerrail-700"><%= provider %></span>
     </div>
-    <div class="grid sm:grid-cols-2 gap-4">
+    <div class="grid min-w-0 sm:grid-cols-2 gap-4">
       <div>
         <h3 class="text-sm font-semibold text-gray-900">Model card</h3>
         <div class="flex items-center gap-1 text-gray-500">
@@ -192,20 +192,20 @@ curl #{ie.load_balancer.health_check_url(path:)} \\
         <h3 class="text-sm font-semibold text-gray-900">Modalities</h3>
         <p class="text-gray-500"><%= ie.tags["multimodal"] ? "Text, image, PDF" : "Text" %></p>
       </div>
-      <div class="sm:col-span-2">
+      <div class="min-w-0 sm:col-span-2">
         <h3 class="text-sm font-semibold text-gray-900">URL</h3>
-        <div class="text-gray-500"><%== part("components/copyable_content", content: ie.load_balancer.health_check_url, message: "Copied URL") %></div>
+        <div class="min-w-0 break-all text-gray-500"><%== part("components/copyable_content", content: ie.load_balancer.health_check_url, message: "Copied URL") %></div>
       </div>
-      <div class="sm:col-span-2">
+      <div class="min-w-0 sm:col-span-2">
         <h3 class="text-sm font-semibold text-gray-900">Model ID</h3>
-        <div class="text-gray-500"><%== part("components/copyable_content", content: ie.model_name, message: "Copied model ID") %></div>
+        <div class="min-w-0 break-all text-gray-500"><%== part("components/copyable_content", content: ie.model_name, message: "Copied model ID") %></div>
       </div>
-      <div class="sm:col-span-2">
+      <div class="min-w-0 sm:col-span-2">
         <h3 class="text-sm font-semibold text-gray-900">
           CURL usage example
         </h3>
-        <div class="mt-2">
-          <pre class="text-sm bg-gray-800 text-white p-2 rounded-lg overflow-scroll"><%== curl_snippet_html %></pre>
+        <div class="mt-2 min-w-0 max-w-full">
+          <pre class="max-w-full overflow-x-auto rounded-lg bg-gray-800 p-3 text-xs text-white sm:text-sm"><%== curl_snippet_html %></pre>
         </div>
       </div>
       <% if capability == "Text Generation" %>

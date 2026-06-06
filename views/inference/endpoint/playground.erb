@@ -180,7 +180,7 @@
             },
           }
         ) %>
-        <div class="grid grid-cols-2 gap-6 text-gray-900 flex pt-4">
+        <div class="grid gap-4 pt-4 text-gray-900 sm:grid-cols-2">
           <div class="flex flex-row items-center">
             <input
               type="file"
@@ -265,7 +265,7 @@
         </div>
         <div>
           <dt class="text-gray-500">Free quota remaining</dt>
-          <dd class="font-medium text-gray-900"><%= @remaining_free_quota.to_i %> inference tokens</dd>
+          <dd class="font-medium text-gray-900"><span data-free-quota-value="<%= @remaining_free_quota.to_i %>"><%= @remaining_free_quota.to_i %></span> inference tokens</dd>
         </div>
       </dl>
     </div>

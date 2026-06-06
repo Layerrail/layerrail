@@ -219,7 +219,7 @@ class Prog::Ai::InferenceEndpointReplicaNexus < Prog::Base
   def update_billing_records(project_usage, token_type, usage_key)
     resource_family = "#{inference_endpoint.model_name}-#{token_type}"
     rate = BillingRate.from_resource_properties("InferenceTokens", resource_family, "global")
-    return if rate["unit_price"].zero?
+    return unless rate
 
     rate_id = rate["id"]
     begin_time = Time.now.to_date.to_time

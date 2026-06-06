@@ -503,9 +503,9 @@ RSpec.describe Prog::Ai::InferenceEndpointReplicaNexus do
       expect(BillingRecord.count).to eq(0)
     end
 
-    it "does not update if price is zero" do
-      expect(BillingRate).to receive(:from_resource_properties).with("InferenceTokens", "#{inference_endpoint.model_name}-input", "global").and_return({"unit_price" => 0.0000000000})
-      expect(BillingRate).to receive(:from_resource_properties).with("InferenceTokens", "#{inference_endpoint.model_name}-output", "global").and_return({"unit_price" => 0.0000000000})
+    it "updates quota records if price is zero" do
+      expect(BillingRate).to receive(:from_resource_properties).with("InferenceTokens", "#{inference_endpoint.model_name}-input", "global").and_return({"id" => "00000000-0000-0000-0000-000000000001", "unit_price" => 0.0000000000})
+      expect(BillingRate).to receive(:from_resource_properties).with("InferenceTokens", "#{inference_endpoint.model_name}-output", "global").and_return({"id" => "00000000-0000-0000-0000-000000000002", "unit_price" => 0.0000000000})
       expect(BillingRecord.count).to eq(0)
       nx.update_billing_records(
         [{"ubid" => p1.ubid, "request_count" => 1, "prompt_token_count" => 2, "completion_token_count" => 3}],
@@ -515,7 +515,7 @@ RSpec.describe Prog::Ai::InferenceEndpointReplicaNexus do
         [{"ubid" => p1.ubid, "request_count" => 1, "prompt_token_count" => 2, "completion_token_count" => 3}],
         "output", "completion_token_count",
       )
-      expect(BillingRecord.count).to eq(0)
+      expect(BillingRecord.count).to eq(2)
     end
 
     it "failure in updating single record doesn't impact others" do

@@ -162,8 +162,9 @@ RSpec.describe Clover, "inference-endpoint" do
       lb = LoadBalancer.create(private_subnet_id: ps.id, name: "dummy-lb-1", health_check_endpoint: "/up", project_id: project.id)
       LoadBalancerPort.create(load_balancer_id: lb.id, src_port: 80, dst_port: 80)
       ie = InferenceEndpoint.create(name: "ie1", model_name: "test-model", project_id: project.id, is_public: true, visible: true, location_id: Location::HETZNER_FSN1_ID, vm_size: "size", replica_count: 1, boot_image: "image", storage_volumes: [], engine_params: "", engine: "vllm", private_subnet_id: ps.id, load_balancer_id: lb.id)
+      free_inference_tokens = FreeQuota.free_quotas["inference-tokens"]["value"]
       visit "#{project.path}/inference-api-key"
-      expect(page.text).to include("You have 500000 free inference tokens available (few-minute delay). Free quota refreshes next month.")
+      expect(page.text).to include("You have #{free_inference_tokens} free inference tokens available (few-minute delay). Free quota refreshes next month.")
 
       BillingRecord.create(
         project_id: project.id,
@@ -174,7 +175,7 @@ RSpec.describe Clover, "inference-endpoint" do
         amount: 100000,
       )
       visit "#{project.path}/inference-api-key"
-      expect(page.text).to include("You have 400000 free inference tokens available (few-minute delay). Free quota refreshes next month.")
+      expect(page.text).to include("You have #{[free_inference_tokens - 100000, 0].max} free inference tokens available (few-minute delay). Free quota refreshes next month.")
 
       BillingRecord.create(
         project_id: project.id,

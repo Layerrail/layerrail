@@ -315,6 +315,7 @@ function setupPlayground() {
   const previous_messages = [];
   const previous_message_containers = [];
   const session_usage = { prompt_tokens: 0, completion_tokens: 0, cost: 0 };
+  let remaining_free_quota = Number($('[data-free-quota-value]').first().attr('data-free-quota-value') || 0);
 
   const prompt_templates = {
     summarize: {
@@ -365,6 +366,11 @@ function setupPlayground() {
     return (prompt_tokens * input_price + completion_tokens * output_price) / 1_000_000;
   }
 
+  function estimateTokenCount(value) {
+    const text = typeof value === "string" ? value : JSON.stringify(value || "");
+    return Math.max(Math.ceil(text.length / 4), 1);
+  }
+
   function updateMessageCount() {
     const count = previous_messages.length;
     $('#inference_session_message_count').text(`${count} message${count === 1 ? "" : "s"} in this session`);
@@ -375,10 +381,18 @@ function setupPlayground() {
     $('#inference_session_cost').text(formatEstimatedCost(session_usage.cost));
   }
 
+  function updateFreeQuotaDisplay() {
+    $('[data-free-quota-value]').each(function () {
+      $(this).attr('data-free-quota-value', remaining_free_quota);
+      $(this).text(formatTokenCount(remaining_free_quota));
+    });
+  }
+
   function recordUsage(prompt_tokens, completion_tokens, message_id, input_price, output_price) {
     prompt_tokens = Number(prompt_tokens || 0);
     completion_tokens = Number(completion_tokens || 0);
     const cost = estimateCost(prompt_tokens, completion_tokens, input_price, output_price);
+    const total_tokens = prompt_tokens + completion_tokens;
     const summary = `Usage: ${formatTokenCount(prompt_tokens)} input tokens and ${formatTokenCount(completion_tokens)} output tokens. Estimated cost: ${formatEstimatedCost(cost)}.`;
 
     $(`#inference_message_info_${message_id}`).text(summary);
@@ -387,7 +401,9 @@ function setupPlayground() {
     session_usage.prompt_tokens += prompt_tokens;
     session_usage.completion_tokens += completion_tokens;
     session_usage.cost += cost;
+    remaining_free_quota = Math.max(remaining_free_quota - total_tokens, 0);
     updateUsagePanel();
+    updateFreeQuotaDisplay();
   }
 
   function updateSelectedModelDetails() {
@@ -709,15 +725,11 @@ function setupPlayground() {
 
       if (!streams_response) {
         const parsed = await response.json();
-        const prompt_tokens = parsed?.usage?.prompt_tokens;
-        const completion_tokens = parsed?.usage?.completion_tokens;
-        if (prompt_tokens !== undefined && completion_tokens !== undefined) {
-          recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price);
-        } else {
-          $(`#inference_message_info_${assistant_message_id}`).text("");
-        }
-
         content = parsed?.choices?.[0]?.message?.content || "";
+        const prompt_tokens = parsed?.usage?.prompt_tokens ?? estimateTokenCount(messages);
+        const completion_tokens = parsed?.usage?.completion_tokens ?? estimateTokenCount(content);
+        recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price);
+
         assistant_message.content[0].text = content;
         const rendered_response = DOMPurify.sanitize(marked.parse(content));
         $assistant_message_container.html(rendered_response);
