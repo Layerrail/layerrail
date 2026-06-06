@@ -66,7 +66,18 @@ class Account < Sequel::Model(:accounts)
     identities.map(&:provider).join(", ")
   end
 
+  def self.login_streak_columns_available?
+    return @login_streak_columns_available unless @login_streak_columns_available.nil?
+
+    @login_streak_columns_available = DB[:information_schema__columns]
+      .where(table_schema: "public", table_name: "accounts", column_name: %w[login_streak login_streak_longest login_streak_last_seen_on])
+      .count == 3
+  rescue Sequel::DatabaseError
+    @login_streak_columns_available = false
+  end
+
   def record_console_visit!(today = Date.today)
+    return self unless self.class.login_streak_columns_available?
     return self if login_streak_last_seen_on == today
 
     next_streak =
@@ -84,6 +95,8 @@ class Account < Sequel::Model(:accounts)
   end
 
   def login_streak_badge
+    return unless self.class.login_streak_columns_available?
+
     streak = login_streak.to_i
     return if streak < 1
 

@@ -94,10 +94,23 @@ RSpec.describe Account do
         .to change { account.reload.login_streak }.from(2).to(1)
         .and not_change { account.reload.login_streak_longest }.from(2)
     end
+
+    it "does not block login if the production migration is not applied yet" do
+      allow(described_class).to receive(:login_streak_columns_available?).and_return(false)
+
+      expect { account.record_console_visit!(today) }
+        .not_to change { account.reload.values.slice(:login_streak, :login_streak_longest, :login_streak_last_seen_on) }
+    end
   end
 
   describe "#login_streak_badge" do
     it "returns no badge without a streak" do
+      expect(account.login_streak_badge).to be_nil
+    end
+
+    it "stays hidden if the production migration is not applied yet" do
+      allow(described_class).to receive(:login_streak_columns_available?).and_return(false)
+
       expect(account.login_streak_badge).to be_nil
     end
 
