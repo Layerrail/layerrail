@@ -143,3 +143,5 @@ end
 #  vm_storage_volume_storage_device_id_fkey        | (storage_device_id) REFERENCES storage_device(id)
 #  vm_storage_volume_vhost_block_backend_id_fkey   | (vhost_block_backend_id) REFERENCES vhost_block_backend(id)
 #  vm_storage_volume_vm_id_fkey                    | (vm_id) REFERENCES vm(id)
+# Referenced By:
+#  linode_storage_volume | linode_storage_volume_id_fkey | (id) REFERENCES vm_storage_volume(id) ON DELETE CASCADE

@@ -60,4 +60,56 @@ RSpec.describe Account do
       expect(project.reputation).to eq("new")
     end
   end
+
+  describe "#record_console_visit!" do
+    let(:today) { Date.new(2026, 6, 6) }
+
+    it "starts a streak on the first console visit" do
+      expect { account.record_console_visit!(today) }
+        .to change { account.reload.login_streak }.from(0).to(1)
+        .and change { account.reload.login_streak_longest }.from(0).to(1)
+        .and change { account.reload.login_streak_last_seen_on }.from(nil).to(today)
+    end
+
+    it "does not double-count same-day visits" do
+      account.record_console_visit!(today)
+
+      expect { account.record_console_visit!(today) }
+        .not_to change { account.reload.values.slice(:login_streak, :login_streak_longest, :login_streak_last_seen_on) }
+    end
+
+    it "increments consecutive daily visits" do
+      account.record_console_visit!(today)
+
+      expect { account.record_console_visit!(today + 1) }
+        .to change { account.reload.login_streak }.from(1).to(2)
+        .and change { account.reload.login_streak_longest }.from(1).to(2)
+    end
+
+    it "resets after a missed day but keeps the longest streak" do
+      account.record_console_visit!(today)
+      account.record_console_visit!(today + 1)
+
+      expect { account.record_console_visit!(today + 3) }
+        .to change { account.reload.login_streak }.from(2).to(1)
+        .and not_change { account.reload.login_streak_longest }.from(2)
+    end
+  end
+
+  describe "#login_streak_badge" do
+    it "returns no badge without a streak" do
+      expect(account.login_streak_badge).to be_nil
+    end
+
+    it "returns an emoji badge payload for long streaks" do
+      account.update(login_streak: 10_001, login_streak_longest: 10_001, login_streak_last_seen_on: Date.new(2026, 6, 6))
+
+      badge = account.login_streak_badge
+      expect(badge[:primary]).not_to be_empty
+      expect(badge[:accent]).not_to be_empty
+      expect(badge[:theme]).to contain_exactly(a_string_starting_with("#"), a_string_starting_with("#"), a_string_starting_with("#"))
+      expect(badge[:count_label]).to eq("10.0k")
+      expect(badge[:label]).to eq("10001 day streak")
+    end
+  end
 end

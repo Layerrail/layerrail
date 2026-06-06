@@ -280,12 +280,14 @@ end
 #  vm_vm_host_slice_id_fkey | (vm_host_slice_id) REFERENCES vm_host_slice(id)
 # Referenced By:
 #  assigned_vm_address        | assigned_vm_address_dst_vm_id_fkey    | (dst_vm_id) REFERENCES vm(id)
+#  deploy_app                 | deploy_app_vm_id_fkey                 | (vm_id) REFERENCES vm(id) ON DELETE SET NULL
 #  dns_servers_vms            | dns_servers_vms_vm_id_fkey            | (vm_id) REFERENCES vm(id)
 #  firewalls_vms              | firewalls_vms_vm_id_fkey              | (vm_id) REFERENCES vm(id) ON DELETE CASCADE
 #  gpu_partition              | gpu_partition_vm_id_fkey              | (vm_id) REFERENCES vm(id)
 #  inference_endpoint_replica | inference_endpoint_replica_vm_id_fkey | (vm_id) REFERENCES vm(id)
 #  inference_router_replica   | inference_router_replica_vm_id_fkey   | (vm_id) REFERENCES vm(id)
 #  kubernetes_node            | kubernetes_node_vm_id_fkey            | (vm_id) REFERENCES vm(id)
+#  linode_instance            | linode_instance_id_fkey               | (id) REFERENCES vm(id) ON DELETE CASCADE
 #  load_balancers_vms         | load_balancers_vms_vm_id_fkey         | (vm_id) REFERENCES vm(id)
 #  minio_server               | minio_server_vm_id_fkey               | (vm_id) REFERENCES vm(id)
 #  nic                        | nic_vm_id_fkey                        | (vm_id) REFERENCES vm(id)

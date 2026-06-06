@@ -30,3 +30,26 @@ class DeployDeployment < Sequel::Model(:deploy_deployment)
     validates_includes(TRIGGERS, :trigger)
   end
 end
+
+# Table: deploy_deployment
+# Columns:
+#  id              | uuid                     | PRIMARY KEY
+#  app_id          | uuid                     | NOT NULL
+#  status          | text                     | NOT NULL DEFAULT 'queued'::text
+#  trigger         | text                     | NOT NULL DEFAULT 'manual'::text
+#  commit_sha      | text                     |
+#  commit_message  | text                     |
+#  log             | text                     |
+#  failure_message | text                     |
+#  started_at      | timestamp with time zone |
+#  finished_at     | timestamp with time zone |
+#  created_at      | timestamp with time zone | NOT NULL DEFAULT now()
+#  updated_at      | timestamp with time zone | NOT NULL DEFAULT now()
+# Indexes:
+#  deploy_deployment_pkey                    | PRIMARY KEY btree (id)
+#  deploy_deployment_app_id_created_at_index | btree (app_id, created_at)
+#  deploy_deployment_app_id_index            | btree (app_id)
+# Check constraints:
+#  valid_deploy_deployment_status | (status = ANY (ARRAY['queued'::text, 'provisioning'::text, 'building'::text, 'live'::text, 'failed'::text, 'canceled'::text]))
+# Foreign key constraints:
+#  deploy_deployment_app_id_fkey | (app_id) REFERENCES deploy_app(id)

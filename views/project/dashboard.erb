@@ -117,7 +117,11 @@ cards = [
   ]
 ].compact.select(&check_perms) %>
 
-<%== part("components/page_header", title: "Hi, #{current_account.name}") %>
+<%== part(
+  "components/page_header",
+  title: "Hi, #{current_account.name}",
+  title_suffix: part("components/login_streak_badge", account: current_account)
+) %>
 
 <div id="tiles" class="grid gap-6">
   <div

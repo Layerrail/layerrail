@@ -78,3 +78,44 @@ class DeployApp < Sequel::Model(:deploy_app)
     ex.details.each { |key, message| errors.add(key, message) }
   end
 end
+
+# Table: deploy_app
+# Columns:
+#  id               | uuid                     | PRIMARY KEY
+#  project_id       | uuid                     | NOT NULL
+#  installation_id  | uuid                     | NOT NULL
+#  vm_id            | uuid                     |
+#  location_id      | uuid                     | NOT NULL
+#  name             | text                     | NOT NULL
+#  repository       | text                     | NOT NULL
+#  branch           | text                     | NOT NULL DEFAULT 'main'::text
+#  root_directory   | text                     | NOT NULL DEFAULT ''::text
+#  install_command  | text                     | NOT NULL DEFAULT 'npm install'::text
+#  build_command    | text                     |
+#  start_command    | text                     |
+#  output_directory | text                     |
+#  app_port         | integer                  | NOT NULL DEFAULT 3000
+#  status           | text                     | NOT NULL DEFAULT 'idle'::text
+#  hostname         | text                     |
+#  vm_size          | text                     | NOT NULL DEFAULT 'nanode-1'::text
+#  framework        | text                     | NOT NULL DEFAULT 'node'::text
+#  failure_message  | text                     |
+#  created_at       | timestamp with time zone | NOT NULL DEFAULT now()
+#  updated_at       | timestamp with time zone | NOT NULL DEFAULT now()
+# Indexes:
+#  deploy_app_pkey                  | PRIMARY KEY btree (id)
+#  deploy_app_project_id_name_index | UNIQUE btree (project_id, name)
+#  deploy_app_installation_id_index | btree (installation_id)
+#  deploy_app_project_id_index      | btree (project_id)
+#  deploy_app_vm_id_index           | btree (vm_id)
+# Check constraints:
+#  valid_deploy_app_port   | (app_port >= 1 AND app_port <= 65535)
+#  valid_deploy_app_status | (status = ANY (ARRAY['idle'::text, 'provisioning'::text, 'deploying'::text, 'live'::text, 'failed'::text, 'deleting'::text]))
+# Foreign key constraints:
+#  deploy_app_installation_id_fkey | (installation_id) REFERENCES github_installation(id)
+#  deploy_app_location_id_fkey     | (location_id) REFERENCES location(id)
+#  deploy_app_project_id_fkey      | (project_id) REFERENCES project(id)
+#  deploy_app_vm_id_fkey           | (vm_id) REFERENCES vm(id) ON DELETE SET NULL
+# Referenced By:
+#  deploy_deployment | deploy_deployment_app_id_fkey | (app_id) REFERENCES deploy_app(id)
+#  deploy_variable   | deploy_variable_app_id_fkey   | (app_id) REFERENCES deploy_app(id)

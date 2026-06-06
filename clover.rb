@@ -513,6 +513,7 @@ class Clover < Roda
     end
 
     after_login do
+      Account[account_session_value]&.record_console_visit!
       remember_login if scope.typecast_params.str("remember-me") == "on"
       if omniauth_identity
         if (groups = omniauth_info["groups"]) &&
@@ -536,7 +537,8 @@ class Clover < Roda
     end
 
     update_session do
-      if Account[account_session_value].suspended_at
+      account = Account[account_session_value]
+      if account.suspended_at
         flash["error"] = "Your account has been suspended. " \
           "If you believe there's a mistake, or if you need further assistance, " \
           "please reach out to our support team at support@layerrail.com."
@@ -545,6 +547,7 @@ class Clover < Roda
         redirect login_route
       end
       super()
+      account.record_console_visit!
     end
 
     create_account_view { view "auth/create_account", "Create Account" }

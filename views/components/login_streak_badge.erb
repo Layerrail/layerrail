@@ -1,0 +1,23 @@
+<%# locals: (account:) %>
+<% if (badge = account.login_streak_badge) %>
+  <% theme = badge[:theme] %>
+  <span
+    class="inline-flex items-center gap-1.5 rounded-full border border-layerrail-200 bg-white/90 px-2.5 py-1 text-sm shadow-sm ring-1 ring-white"
+    style="box-shadow: 0 8px 24px -16px <%= theme[0] %>;"
+    title="<%= badge[:title] %>"
+    aria-label="<%= badge[:label] %>"
+  >
+    <span
+      class="relative inline-grid h-7 w-7 place-items-center rounded-full text-base text-white shadow-inner shadow-white/15"
+      style="background-image: linear-gradient(135deg, <%= theme[0] %>, <%= theme[1] %>);"
+    >
+      <span aria-hidden="true"><%= badge[:primary] %></span>
+      <span
+        class="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border border-white bg-layerrail-50 text-[0.55rem] leading-none text-layerrail-700 shadow-sm"
+        style="background-color: <%= theme[2] %>;"
+        aria-hidden="true"
+      ><%= badge[:accent] %></span>
+    </span>
+    <span class="font-semibold tabular-nums text-layerrail-700"><%= badge[:count_label] %></span>
+  </span>
+<% end %>
