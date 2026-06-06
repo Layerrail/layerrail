@@ -538,7 +538,7 @@ class Clover < Roda
 
     update_session do
       account = Account[account_session_value]
-      if account.suspended_at
+      if account&.suspended_at
         flash["error"] = "Your account has been suspended. " \
           "If you believe there's a mistake, or if you need further assistance, " \
           "please reach out to our support team at support@layerrail.com."
@@ -547,7 +547,7 @@ class Clover < Roda
         redirect login_route
       end
       super()
-      account.record_console_visit!
+      account&.record_console_visit!
     end
 
     create_account_view { view "auth/create_account", "Create Account" }

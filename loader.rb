@@ -25,6 +25,29 @@ require "mail"
 require "warning"
 require "rack/unreloader"
 
+if ENV["SENTRY_DSN"]
+  stackprof_loaded = false
+  begin
+    require "stackprof"
+    stackprof_loaded = true
+  rescue LoadError
+    nil
+  end
+  require "sentry-ruby"
+  require "sentry/rack/capture_exceptions"
+
+  Sentry.init do |config|
+    config.dsn = ENV["SENTRY_DSN"]
+    config.environment = Config.rack_env
+    config.release = ENV["GIT_COMMIT_HASH"]
+    config.send_default_pii = true
+    config.enable_logs = true
+    config.enabled_patches = [:logger]
+    config.traces_sample_rate = ENV.fetch("SENTRY_TRACES_SAMPLE_RATE", "0.0").to_f
+    config.profiles_sample_rate = ENV.fetch("SENTRY_PROFILES_SAMPLE_RATE", "0.0").to_f if stackprof_loaded
+  end
+end
+
 REPL = false unless defined? REPL
 Warning.ignore(/To use (retry|multipart) middleware with Faraday v2\.0\+, install `faraday-(retry|multipart)` gem/)
 

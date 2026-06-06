@@ -2,30 +2,61 @@
 
 Sequel.migration do
   up do
-    alter_table(:accounts) do
-      add_column :login_streak, Integer, null: false, default: 0
-      add_column :login_streak_longest, Integer, null: false, default: 0
-      add_column :login_streak_last_seen_on, Date
-    end
-
     run <<~SQL
       ALTER TABLE accounts
-        ADD CONSTRAINT valid_login_streak_non_negative
-        CHECK (login_streak >= 0);
+        ADD COLUMN IF NOT EXISTS login_streak integer NOT NULL DEFAULT 0;
 
       ALTER TABLE accounts
-        ADD CONSTRAINT valid_login_streak_longest_non_negative
-        CHECK (login_streak_longest >= 0);
+        ADD COLUMN IF NOT EXISTS login_streak_longest integer NOT NULL DEFAULT 0;
+
+      ALTER TABLE accounts
+        ADD COLUMN IF NOT EXISTS login_streak_last_seen_on date;
+
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1
+          FROM information_schema.table_constraints
+          WHERE table_schema = 'public'
+            AND table_name = 'accounts'
+            AND constraint_name = 'valid_login_streak_non_negative'
+        ) THEN
+          ALTER TABLE accounts
+            ADD CONSTRAINT valid_login_streak_non_negative
+            CHECK (login_streak >= 0);
+        END IF;
+
+        IF NOT EXISTS (
+          SELECT 1
+          FROM information_schema.table_constraints
+          WHERE table_schema = 'public'
+            AND table_name = 'accounts'
+            AND constraint_name = 'valid_login_streak_longest_non_negative'
+        ) THEN
+          ALTER TABLE accounts
+            ADD CONSTRAINT valid_login_streak_longest_non_negative
+            CHECK (login_streak_longest >= 0);
+        END IF;
+      END $$;
     SQL
   end
 
   down do
-    alter_table(:accounts) do
-      drop_constraint :valid_login_streak_non_negative
-      drop_constraint :valid_login_streak_longest_non_negative
-      drop_column :login_streak
-      drop_column :login_streak_longest
-      drop_column :login_streak_last_seen_on
-    end
+    run <<~SQL
+      ALTER TABLE accounts
+        DROP CONSTRAINT IF EXISTS valid_login_streak_non_negative;
+
+      ALTER TABLE accounts
+        DROP CONSTRAINT IF EXISTS valid_login_streak_longest_non_negative;
+
+      ALTER TABLE accounts
+        DROP COLUMN IF EXISTS login_streak;
+
+      ALTER TABLE accounts
+        DROP COLUMN IF EXISTS login_streak_longest;
+
+      ALTER TABLE accounts
+        DROP COLUMN IF EXISTS login_streak_last_seen_on;
+    SQL
   end
 end

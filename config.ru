@@ -30,6 +30,8 @@ else
   Clover.app
 end
 
+use Sentry::Rack::CaptureExceptions if defined?(Sentry)
+
 run(app)
 
 Tilt.finalize! unless Config.development?

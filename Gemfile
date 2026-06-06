@@ -60,6 +60,7 @@ gem "roda", ">= 3.103.0"
 gem "rodauth", ">= 2.41"
 gem "rodauth-omniauth", ">= 0.6.2"
 gem "rodish", ">= 2.0.1"
+gem "sentry-ruby"
 gem "rotp"
 gem "rqrcode"
 gem "sequel", ">= 5.103.0"
@@ -113,4 +114,8 @@ end
 
 group :test, :development do
   gem "sequel-annotate"
+end
+
+install_if -> { RUBY_PLATFORM !~ /mswin|mingw|ucrt/ } do
+  gem "stackprof"
 end
