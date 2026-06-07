@@ -1,6 +1,37 @@
 # frozen_string_literal: true
 
 class Clover
+  AI_APP_TEMPLATES = [
+    {
+      id: "support-assistant",
+      name: "Support assistant",
+      description: "Answers product questions from your docs and support notes.",
+      prompt: "You are a concise support assistant. Answer from the provided context first. If the context is missing, say what you need next.",
+      tools: ["knowledge_search"],
+    },
+    {
+      id: "docs-search",
+      name: "Docs search",
+      description: "Turns technical documentation into API-ready answers.",
+      prompt: "You are a developer documentation assistant. Prefer exact commands, links, and short examples when the context supports them.",
+      tools: ["knowledge_search"],
+    },
+    {
+      id: "sales-engineer",
+      name: "Sales engineer",
+      description: "Explains product fit, tradeoffs, and implementation paths.",
+      prompt: "You are a technical sales engineer. Give practical guidance, avoid hype, and make infrastructure tradeoffs clear.",
+      tools: ["knowledge_search"],
+    },
+    {
+      id: "game-server-helper",
+      name: "Game server helper",
+      description: "Helps customers choose server sizes and troubleshoot hosting basics.",
+      prompt: "You are a game server infrastructure assistant. Keep answers practical, performance-aware, and easy to act on.",
+      tools: ["knowledge_search"],
+    },
+  ].freeze
+
   CLOUDFLARE_NATIVE_CAPABILITIES = [
     "Automatic Speech Recognition",
     "Image Classification",
@@ -61,6 +92,14 @@ class Clover
     dataset.order(:created_at)
   end
 
+  def ai_agent_ds
+    dataset_authorize(@project.ai_agents_dataset.reverse(:created_at), "Project:view")
+  end
+
+  def ai_knowledge_base_ds
+    dataset_authorize(@project.ai_knowledge_bases_dataset.reverse(:created_at), "Project:view")
+  end
+
   def handle_cloudflare_ai_request(path, capability)
     no_authorization_needed
     no_audit_log
@@ -115,6 +154,63 @@ class Clover
     body
   end
 
+  def handle_ai_agent_message_request(agent_ref)
+    no_authorization_needed
+    no_audit_log
+
+    unless Config.ai_inference_enabled && cloudflare_inference_provider?
+      fail CloverError.new(501, "NotEnabled", "Cloudflare AI Models are not enabled.")
+    end
+
+    api_key = inference_api_key_from_authorization_header
+    fail CloverError.new(401, "InvalidCredentials", "invalid inference API key provided in Authorization header") unless api_key
+    fail CloverError.new(403, "ProjectInactive", "the project for this inference API key is not active") unless api_key.project&.active?
+
+    agent = ai_agent_from_ref(api_key.project, agent_ref)
+    fail CloverError.new(404, "NotFound", "AI agent not found") unless agent
+    fail CloverError.new(403, "AgentDisabled", "AI agent is disabled") unless agent.active?
+
+    payload = parse_inference_payload
+    messages = ai_agent_messages(payload)
+    fail CloverError.new(400, "InvalidRequest", "message or messages is required") if messages.empty?
+
+    model = cloudflare_inference_models.find { it.model_name == agent.model_name && it.tags["capability"] == "Text Generation" }
+    fail CloverError.new(400, "InvalidRequest", "agent model is not enabled for text generation") unless model
+
+    user_query = ai_agent_user_query(messages)
+    context_chunks = agent.retrieval_context(user_query)
+    request_payload = ai_agent_cloudflare_payload(agent, model, messages, context_chunks, payload)
+
+    started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    status, body = CloudflareWorkersAiClient.new.openai_request("chat/completions", request_payload)
+    latency_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000).round
+    response.status = status
+
+    if status == 200
+      record_cloudflare_inference_usage(api_key, model, body, request_payload)
+      record_ai_agent_event(agent, api_key, model, body, request_payload, latency_ms:, status: "ok")
+    else
+      record_ai_agent_event(agent, api_key, model, body, request_payload, latency_ms:, status: "error")
+    end
+
+    {
+      agent: {
+        id: agent.ubid,
+        name: agent.name,
+        model: agent.model_name,
+      },
+      context: context_chunks.map { |chunk|
+        {
+          document_id: chunk.document.ubid,
+          title: chunk.document.title,
+          content: chunk.content,
+        }
+      },
+      output: ai_agent_response_text(body),
+      response: body,
+    }
+  end
+
   def inference_api_key_from_authorization_header
     raw_key = env["HTTP_AUTHORIZATION"].to_s.sub(/\ABearer:?\s+/i, "")
     return if raw_key.empty?
@@ -130,6 +226,91 @@ class Clover
     JSON.parse(request.body.read)
   rescue JSON::ParserError
     fail CloverError.new(400, "InvalidRequest", "request body must be valid JSON")
+  end
+
+  def ai_agent_from_ref(project, agent_ref)
+    if (uuid = UBID.to_uuid(agent_ref.to_s))
+      project.ai_agents_dataset.first(id: uuid)
+    else
+      project.ai_agents_dataset.first(public_slug: agent_ref.to_s)
+    end
+  end
+
+  def ai_agent_messages(payload)
+    if payload["messages"].is_a?(Array)
+      payload["messages"].filter_map do |message|
+        next unless message.is_a?(Hash)
+        role = message["role"].to_s
+        content = estimate_inference_text(message["content"]).strip
+        next if role.empty? || content.empty?
+
+        {"role" => role, "content" => content}
+      end
+    elsif payload["message"] || payload["prompt"] || payload["input"]
+      [{"role" => "user", "content" => (payload["message"] || payload["prompt"] || payload["input"]).to_s}]
+    else
+      []
+    end
+  end
+
+  def ai_agent_user_query(messages)
+    messages.reverse.find { it["role"] == "user" }&.fetch("content", nil).to_s
+  end
+
+  def ai_agent_cloudflare_payload(agent, model, messages, context_chunks, payload)
+    system_prompt = [
+      agent.system_prompt.to_s.strip,
+      ai_agent_context_prompt(context_chunks),
+    ].reject(&:empty?).join("\n\n")
+
+    request_messages = []
+    request_messages << {"role" => "system", "content" => system_prompt} unless system_prompt.empty?
+    request_messages.concat(messages)
+
+    {
+      "model" => model.model_name,
+      "messages" => request_messages,
+      "stream" => false,
+      "temperature" => payload["temperature"],
+      "top_p" => payload["top_p"],
+      "max_tokens" => payload["max_tokens"],
+    }.compact
+  end
+
+  def ai_agent_context_prompt(context_chunks)
+    return "" if context_chunks.empty?
+
+    context = context_chunks.each_with_index.map do |chunk, index|
+      "Source #{index + 1}: #{chunk.document.title}\n#{chunk.content}"
+    end.join("\n\n")
+
+    "Use this project knowledge when it is relevant. Do not invent details that are not supported by the context.\n\n#{context}"
+  end
+
+  def ai_agent_response_text(body)
+    [
+      body.dig("choices", 0, "message", "content"),
+      body.dig("choices", 0, "text"),
+      body.dig("result", "response"),
+      body.dig("result", "text"),
+    ].compact.first.to_s
+  end
+
+  def record_ai_agent_event(agent, api_key, model, body, payload, latency_ms:, status:)
+    prompt_tokens = estimate_inference_tokens(cloudflare_request_text(body, payload))
+    completion_tokens = status == "ok" ? estimate_inference_tokens(ai_agent_response_text(body)) : 0
+    AiAgentEvent.create(
+      agent_id: agent.id,
+      api_key_id: api_key.id,
+      model_name: model.model_name,
+      prompt_tokens:,
+      completion_tokens:,
+      status:,
+      latency_ms:,
+      error_message: status == "ok" ? nil : body.to_json[0, 1000],
+    )
+  rescue Sequel::Error => ex
+    Clog.emit("Failed to record AI agent event", Util.exception_to_hash(ex, into: {agent_id: agent.id, project_id: agent.project_id}))
   end
 
   def normalize_cloudflare_payload!(payload, path)

@@ -1,0 +1,85 @@
+<% @page_title = @ai_agent.name %>
+<%== render("components/free_quota") %>
+<%== render("inference/tabbar") %>
+
+<div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+  <div class="grid gap-4 content-start">
+    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5 sm:p-6">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p class="text-sm font-semibold uppercase tracking-wide text-layerrail-600">AI App</p>
+          <h1 class="mt-1 text-2xl font-bold tracking-tight text-gray-950"><%= @ai_agent.name %></h1>
+          <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600"><%= @ai_agent.description.empty? ? "Managed agent endpoint for developer products." : @ai_agent.description %></p>
+        </div>
+        <span class="rounded-full bg-layerrail-50 px-3 py-1 text-sm font-medium text-layerrail-700"><%= @ai_agent.status %></span>
+      </div>
+
+      <dl class="mt-6 grid gap-4 sm:grid-cols-2">
+        <div class="rounded-lg bg-gray-50 p-4">
+          <dt class="text-sm text-gray-500">Model</dt>
+          <dd class="mt-1 break-all text-sm font-medium text-gray-950"><%= @ai_agent.model_name %></dd>
+        </div>
+        <div class="rounded-lg bg-gray-50 p-4">
+          <dt class="text-sm text-gray-500">Knowledge base</dt>
+          <dd class="mt-1 text-sm font-medium text-gray-950"><%= @ai_agent.knowledge_base ? @ai_agent.knowledge_base.name : "Not attached" %></dd>
+        </div>
+        <div class="rounded-lg bg-gray-50 p-4 sm:col-span-2">
+          <dt class="text-sm text-gray-500">Endpoint</dt>
+          <dd class="mt-1 min-w-0 break-all text-sm font-medium text-gray-950"><%== part("components/copyable_content", content: @ai_agent.public_url, message: "Copied endpoint") %></dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5 sm:p-6">
+      <h2 class="text-lg font-semibold text-gray-950">System prompt</h2>
+      <pre class="mt-4 max-h-80 overflow-auto rounded-lg bg-gray-900 p-4 text-sm text-white"><%= @ai_agent.system_prompt %></pre>
+    </div>
+
+    <%== part(
+      "components/table_card",
+      title: "Recent calls",
+      headers: ["Time", "Status", "Tokens", "Latency"],
+      empty_state: {
+        icon: "hero-clock",
+        title: "No calls yet",
+        description: "Agent calls will appear here after developers start using this endpoint."
+      },
+      rows: @events.map do |event|
+        [
+          [
+            event.created_at.strftime("%Y-%m-%d %H:%M"),
+            event.status,
+            "#{event.prompt_tokens + event.completion_tokens} tokens",
+            event.latency_ms ? "#{event.latency_ms} ms" : "-"
+          ],
+          {id: "event-#{event.ubid}"}
+        ]
+      end
+    ) %>
+  </div>
+
+  <div class="grid gap-4 content-start">
+    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5 sm:p-6">
+      <h2 class="text-lg font-semibold text-gray-950">Use from your product</h2>
+      <% if @inference_api_keys.empty? %>
+        <p class="mt-2 text-sm leading-6 text-gray-600">Create an inference API key before calling this agent.</p>
+        <div class="mt-4">
+          <%== render("components/button", locals: {text: "Create API Key", link: "#{@project.path}/inference-api-key"}) %>
+        </div>
+      <% else %>
+        <pre class="mt-4 overflow-x-auto rounded-lg bg-gray-900 p-3 text-xs text-white">curl <%= @ai_agent.public_url %> \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $INFERENCE_API_KEY" \
+  -d '{"message":"What should I build next?"}'</pre>
+      <% end %>
+    </div>
+
+    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5 sm:p-6">
+      <h2 class="text-lg font-semibold text-gray-950">Danger zone</h2>
+      <p class="mt-2 text-sm leading-6 text-gray-600">Deleting an AI app removes the agent endpoint and its usage events. Knowledge bases are kept.</p>
+      <div class="mt-4">
+        <%== part("components/delete_button", text: "Delete AI App", confirmation: @ai_agent.name) %>
+      </div>
+    </div>
+  </div>
+</div>

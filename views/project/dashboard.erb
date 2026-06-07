@@ -23,6 +23,7 @@ tiles = [
     "#{@project.path}/kubernetes-cluster",
     "KubernetesCluster:create"
   ] if Config.kubernetes_enabled),
+  (["AI Apps", @project.ai_agents_dataset.count, "#{@project.path}/ai-app", "Project:edit"] if Config.ai_inference_enabled),
   [
     "GitHub Runners",
     @project.github_runners_dataset.count,
@@ -87,6 +88,13 @@ cards = [
     "#{@project.path}/kubernetes-cluster",
     "KubernetesCluster:create"
   ] if Config.kubernetes_enabled),
+  ([
+    "hero-sparkles",
+    "Create AI App",
+    "Build a managed AI endpoint with a model, system prompt, and project knowledge that developers can call from any product.",
+    "#{@project.path}/ai-app",
+    "Project:edit"
+  ] if Config.ai_inference_enabled),
   [
     "hero-users",
     "Add User to Project",

@@ -23,12 +23,14 @@ class Project < Sequel::Model
   one_to_many :firewalls, read_only: true
   one_to_many :load_balancers, read_only: true
   one_to_many :inference_endpoints, read_only: true
+  one_to_many :ai_knowledge_bases, read_only: true
+  one_to_many :ai_agents, read_only: true
   one_to_many :kubernetes_clusters, read_only: true
   one_to_many :machine_images, read_only: true
   one_to_many :machine_image_stores, read_only: true
   one_to_many :ssh_public_keys, order: :name, remover: nil, clearer: nil
 
-  RESOURCE_ASSOCIATIONS = %i[vms deploy_apps game_vpses minio_clusters private_subnets postgres_resources firewalls load_balancers kubernetes_clusters github_runners]
+  RESOURCE_ASSOCIATIONS = %i[vms deploy_apps game_vpses minio_clusters private_subnets postgres_resources firewalls load_balancers kubernetes_clusters github_runners ai_agents ai_knowledge_bases]
   RESOURCE_ASSOCIATION_DATASET_METHODS = RESOURCE_ASSOCIATIONS.map { :"#{it}_dataset" }
 
   one_to_many :invoices, order: Sequel.desc(:created_at), read_only: true
@@ -57,6 +59,8 @@ class Project < Sequel::Model
     access_control_entries: :destroy,
     accounts: :nullify,
     action_tags: :destroy,
+    ai_agents: :destroy,
+    ai_knowledge_bases: :destroy,
     api_keys: :destroy,
     billing_info: :destroy,
     github_installations: :destroy,

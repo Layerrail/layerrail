@@ -96,6 +96,8 @@ class Clover < Roda
   [
     Firewall,
     GameVps,
+    AiAgent,
+    AiKnowledgeBase,
     DeployApp,
     [GithubInstallation, /([A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?)/],
     [GithubRepository, /([A-Za-z0-9\-_.]{1,100})/],
@@ -134,6 +136,8 @@ class Clover < Roda
   under_project_path = -> { "#{@project.path}#{it.path}" }
   %w[
     ActionTag
+    AiAgent
+    AiKnowledgeBase
     ApiKey
     DeployApp
     DeployDeployment
@@ -1149,6 +1153,10 @@ class Clover < Roda
 
         r.post "v1", "run" do
           handle_cloudflare_ai_run_request
+        end
+
+        r.post "v1", "agents", String, "messages" do |agent_ref|
+          handle_ai_agent_message_request(agent_ref)
         end
       end
 

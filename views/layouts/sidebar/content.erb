@@ -63,9 +63,9 @@
             <% if Config.ai_inference_enabled %>
               <%== part(
                 "layouts/sidebar/item",
-                name: "AI Inference",
+                name: "AI Models",
                 url: "#{@project.path}/inference-endpoint",
-                is_active: request.path.start_with?("#{@project.path}/inference"),
+                is_active: request.path.start_with?("#{@project.path}/inference") || request.path.start_with?("#{@project.path}/ai-app"),
                 icon: "tabler-robot"
               ) %>
             <% end %>
