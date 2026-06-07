@@ -1,58 +1,130 @@
-<% @page_title = "AI Apps" %>
+<% @page_title = "App Endpoints" %>
 <%== render("components/free_quota") %>
 <%== render("inference/tabbar") %>
 
-<div class="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-  <div class="grid gap-4 content-start">
-    <div class="overflow-hidden rounded-lg bg-white shadow ring-1 ring-black ring-opacity-5">
-      <div class="p-5 sm:p-6">
-        <div class="flex items-start gap-4">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-layerrail-600 text-white">
-            <%== part("components/icon", name: "hero-sparkles", classes: "h-7 w-7") %>
-          </div>
-          <div class="min-w-0">
-            <p class="text-sm font-semibold uppercase tracking-wide text-layerrail-600">Next Layer</p>
-            <h1 class="mt-1 text-2xl font-bold tracking-tight text-gray-950 sm:text-3xl">Build AI apps developers can call from their products.</h1>
-            <p class="mt-3 max-w-3xl text-sm leading-6 text-gray-600">
-              Create a managed agent, attach a knowledge base, and expose it through a stable LayerRail API endpoint. Raw models stay available, but AI Apps gives your product a ready layer for support assistants, docs search, and workflow copilots.
-            </p>
-          </div>
+<%
+  app_tabs = [
+    ["Overview", "overview"],
+    ["Create App", "create"],
+    ["Agents", "agents"],
+    ["Knowledge", "knowledge"],
+    ["API", "api"]
+  ]
+  active_tab = typecast_query_params.str("tab").to_s
+  active_tab = "overview" unless app_tabs.map(&:last).include?(active_tab)
+
+  stat_cards = [
+    ["Agents", @ai_agents.length],
+    ["Knowledge bases", @ai_knowledge_bases.length],
+    ["API keys", @inference_api_keys.length],
+    ["Templates", @ai_app_templates.length]
+  ]
+%>
+
+<div class="grid gap-6">
+  <section class="overflow-hidden rounded-lg bg-white shadow ring-1 ring-black ring-opacity-5">
+    <div class="p-5 sm:p-6">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-layerrail-600 text-white">
+          <%== part("components/icon", name: "hugeicons-workflow-square-01", classes: "h-7 w-7") %>
         </div>
-      </div>
-      <div class="grid border-t border-gray-200 bg-gray-50 sm:grid-cols-4">
-        <% [
-          ["Agents", @ai_agents.length],
-          ["Knowledge bases", @ai_knowledge_bases.length],
-          ["API keys", @inference_api_keys.length],
-          ["Templates", @ai_app_templates.length],
-        ].each do |label, value| %>
-          <div class="border-b border-gray-200 px-5 py-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
-            <p class="text-sm text-gray-500"><%= label %></p>
-            <p class="mt-1 text-2xl font-semibold text-layerrail-600"><%= value %></p>
-          </div>
-        <% end %>
+        <div class="min-w-0">
+          <p class="text-sm font-semibold text-layerrail-600">Managed app endpoints</p>
+          <h1 class="mt-1 text-2xl font-bold tracking-tight text-gray-950 sm:text-3xl">Package models, instructions, and knowledge into one API.</h1>
+          <p class="mt-3 max-w-4xl text-sm leading-6 text-gray-600">
+            Create a stable endpoint for product assistants, docs search, and workflow automation. AI Models remain available for raw inference, while app endpoints add product-ready behavior your developers can call directly.
+          </p>
+        </div>
       </div>
     </div>
 
-    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5 sm:p-6">
-      <div class="md:flex md:items-start md:justify-between md:gap-6">
-        <div>
-          <h2 class="text-lg font-semibold text-gray-950">Create an AI app</h2>
-          <p class="mt-1 text-sm leading-6 text-gray-600">Pick a template, choose a model, optionally attach project knowledge, then call it from any product using your inference API key.</p>
+    <div class="grid border-t border-gray-200 bg-gray-50 sm:grid-cols-2 xl:grid-cols-4">
+      <% stat_cards.each do |label, value| %>
+        <div class="border-b border-gray-200 px-5 py-4 last:border-b-0 sm:border-r xl:border-b-0 xl:last:border-r-0">
+          <p class="text-sm text-gray-500"><%= label %></p>
+          <p class="mt-1 text-2xl font-semibold text-layerrail-600"><%= value %></p>
         </div>
+      <% end %>
+    </div>
+  </section>
+
+  <nav class="overflow-x-auto rounded-lg bg-white shadow ring-1 ring-black ring-opacity-5" aria-label="AI app sections">
+    <div class="flex min-w-max divide-x divide-gray-200">
+      <% app_tabs.each do |label, tab| %>
+        <% active = active_tab == tab %>
+        <a
+          href="<%= @project.path %>/ai-app?tab=<%= tab %>"
+          class="px-5 py-4 text-center text-sm font-semibold transition <%= active ? "bg-layerrail-50 text-layerrail-700" : "text-gray-600 hover:bg-layerrail-50 hover:text-layerrail-700" %>"
+        >
+          <%= label %>
+        </a>
+      <% end %>
+    </div>
+  </nav>
+
+  <% if active_tab == "overview" %>
+    <section class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5 sm:p-6">
+        <h2 class="text-lg font-semibold text-gray-950">How the layer works</h2>
+        <p class="mt-2 text-sm leading-6 text-gray-600">
+          App endpoints sit above raw model endpoints. You choose the model, define the behavior, attach knowledge if needed, then expose a predictable API surface for your product.
+        </p>
+
+        <div class="mt-6 grid gap-3 sm:grid-cols-2">
+          <% [
+            ["Agent endpoint", "One stable URL for app behavior instead of wiring prompts in every product client."],
+            ["Knowledge retrieval", "Attach docs, policies, and support notes so answers can use project context."],
+            ["API access", "Use existing inference API keys and keep product calls under your project boundary."],
+            ["Usage tracking", "Keep AI traffic visible beside the rest of your LayerRail infrastructure."]
+          ].each do |title, description| %>
+            <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <h3 class="text-sm font-semibold text-gray-950"><%= title %></h3>
+              <p class="mt-2 text-sm leading-6 text-gray-600"><%= description %></p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="rounded-lg bg-layerrail-50 p-5 ring-1 ring-layerrail-200 sm:p-6">
+        <h2 class="text-base font-semibold text-layerrail-900">Request flow</h2>
+        <div class="mt-5 grid gap-3">
+          <% [
+            ["Product", "Sends a message with an inference key"],
+            ["LayerRail agent", "Applies system instructions and project context"],
+            ["Model endpoint", "Runs the selected text model"],
+            ["Response", "Returns an app-ready answer"]
+          ].each_with_index do |(title, description), index| %>
+            <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-layerrail-100">
+              <div class="flex items-start gap-3">
+                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-layerrail-600 text-xs font-semibold text-white"><%= index + 1 %></span>
+                <div>
+                  <h3 class="text-sm font-semibold text-gray-950"><%= title %></h3>
+                  <p class="mt-1 text-sm leading-5 text-gray-600"><%= description %></p>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </section>
+  <% elsif active_tab == "create" %>
+    <section class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5 sm:p-6">
+      <div class="max-w-3xl">
+        <h2 class="text-lg font-semibold text-gray-950">Create an app endpoint</h2>
+        <p class="mt-1 text-sm leading-6 text-gray-600">Pick a template, choose a model, optionally attach project knowledge, then call the endpoint using an inference API key.</p>
       </div>
 
       <% if @ai_app_text_models.empty? %>
         <div class="mt-5 rounded-md bg-yellow-50 p-4 text-sm text-yellow-800">
-          No text generation model is currently enabled for AI Apps.
+          No text generation model is currently enabled for app endpoints.
         </div>
       <% else %>
         <% form(action: "#{@project.path}/ai-app", method: :post, class: "mt-6 grid gap-5") do %>
-          <div class="grid gap-5 sm:grid-cols-2">
+          <div class="grid gap-5 lg:grid-cols-2">
             <%== render("components/form/text", locals: {name: "name", label: "App name", attributes: {"placeholder" => "support-agent"}}) %>
             <%== render("components/form/text", locals: {name: "public_slug", label: "Endpoint slug", attributes: {"placeholder" => "support-agent"}}) %>
           </div>
-          <div class="grid gap-5 sm:grid-cols-2">
+          <div class="grid gap-5 lg:grid-cols-2">
             <%== render("components/form/select", locals: {
               name: "template",
               label: "Template",
@@ -72,7 +144,7 @@
             placeholder: "No knowledge base",
             options: @ai_knowledge_bases.map { [it.ubid, "#{it.name} (#{it.document_count} docs)"] },
           }) %>
-          <%== render("components/form/text", locals: {name: "description", label: "Description", attributes: {"placeholder" => "Answers docs and support questions for customers"}}) %>
+          <%== render("components/form/text", locals: {name: "description", label: "Description", attributes: {"placeholder" => "Answers product and support questions"}}) %>
           <%== render("components/form/textarea", locals: {
             name: "system_prompt",
             label: "System prompt",
@@ -80,20 +152,20 @@
             attributes: {"rows" => 4, "placeholder" => "You are a concise product assistant..."},
           }) %>
           <div class="flex justify-end">
-            <%== part("components/form/submit_button", text: "Create AI App") %>
+            <%== part("components/form/submit_button", text: "Create App") %>
           </div>
         <% end %>
       <% end %>
-    </div>
-
+    </section>
+  <% elsif active_tab == "agents" %>
     <%== part(
       "components/table_card",
-      title: "AI Apps",
+      title: "App endpoints",
       headers: ["Name", "Model", "Knowledge", "Endpoint"],
       empty_state: {
-        icon: "hero-sparkles",
-        title: "No AI apps yet",
-        description: "Create your first AI app to expose a managed agent endpoint for developers."
+        icon: "hugeicons-workflow-square-01",
+        title: "No app endpoints yet",
+        description: "Create an endpoint to expose a managed model workflow for your product."
       },
       allow_wrap: true,
       rows: @ai_agents.map do |agent|
@@ -108,63 +180,93 @@
         ]
       end
     ) %>
-  </div>
-
-  <div class="grid gap-4 content-start">
-    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5 sm:p-6">
-      <h2 class="text-lg font-semibold text-gray-950">Knowledge bases</h2>
-      <p class="mt-1 text-sm leading-6 text-gray-600">Store docs, policies, support answers, or product data that AI Apps can retrieve at request time.</p>
-
-      <% form(action: "#{@project.path}/ai-app/knowledge-base", method: :post, class: "mt-5 grid gap-4") do %>
-        <%== render("components/form/text", locals: {name: "name", label: "Name", attributes: {"placeholder" => "product-docs"}}) %>
-        <%== render("components/form/text", locals: {name: "description", label: "Description", attributes: {"placeholder" => "Public docs and support notes"}}) %>
-        <div class="flex justify-end">
-          <%== part("components/form/submit_button", text: "Create Knowledge Base") %>
-        </div>
-      <% end %>
-    </div>
-
-    <% @ai_knowledge_bases.each do |kb| %>
+  <% elsif active_tab == "knowledge" %>
+    <section class="grid gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
       <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5 sm:p-6">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <h3 class="text-base font-semibold text-gray-950"><%= kb.name %></h3>
-            <p class="mt-1 text-sm text-gray-500"><%= kb.description.empty? ? "No description" : kb.description %></p>
-          </div>
-          <span class="shrink-0 rounded-full bg-layerrail-50 px-2 py-1 text-xs font-medium text-layerrail-700"><%= kb.document_count %> docs</span>
-        </div>
-        <% form(action: "#{@project.path}/ai-app/knowledge-base/#{kb.ubid}/document", method: :post, class: "mt-5 grid gap-4") do %>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <%== render("components/form/text", locals: {name: "title", label: "Document title", attributes: {"placeholder" => "Getting started"}}) %>
-            <%== render("components/form/select", locals: {
-              name: "source_type",
-              label: "Source type",
-              options: [["text", "Text"], ["url", "URL"], ["api", "API"]],
-              selected: "text",
-            }) %>
-          </div>
-          <%== render("components/form/text", locals: {name: "source_url", label: "Source URL", attributes: {"placeholder" => "https://docs.example.com/page"}}) %>
-          <%== render("components/form/textarea", locals: {
-            name: "content",
-            label: "Content",
-            attributes: {"rows" => 5, "placeholder" => "Paste the knowledge this AI app should use..."},
-          }) %>
+        <h2 class="text-lg font-semibold text-gray-950">Create a knowledge base</h2>
+        <p class="mt-1 text-sm leading-6 text-gray-600">Store docs, policies, support answers, and product data that app endpoints can retrieve at request time.</p>
+
+        <% form(action: "#{@project.path}/ai-app/knowledge-base", method: :post, class: "mt-5 grid gap-4") do %>
+          <%== render("components/form/text", locals: {name: "name", label: "Name", attributes: {"placeholder" => "product-docs"}}) %>
+          <%== render("components/form/text", locals: {name: "description", label: "Description", attributes: {"placeholder" => "Public docs and support notes"}}) %>
           <div class="flex justify-end">
-            <%== part("components/form/submit_button", text: "Add Document") %>
+            <%== part("components/form/submit_button", text: "Create Knowledge Base") %>
           </div>
         <% end %>
       </div>
-    <% end %>
 
-    <div class="rounded-lg bg-layerrail-50 p-5 ring-1 ring-layerrail-200">
-      <h2 class="text-base font-semibold text-layerrail-900">Developer API</h2>
-      <p class="mt-2 text-sm leading-6 text-layerrail-800">
-        Agents use the same inference API keys as AI Models. Send a message to an agent endpoint and LayerRail adds the selected system prompt and project knowledge before calling the model.
-      </p>
-      <pre class="mt-4 overflow-x-auto rounded-lg bg-gray-900 p-3 text-xs text-white">curl <%= Config.base_url.chomp("/") %>/ai/v1/agents/&lt;agent-id&gt;/messages \
+      <div class="grid gap-4">
+        <% if @ai_knowledge_bases.empty? %>
+          <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5 sm:p-6">
+            <div class="flex items-start gap-4">
+              <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-layerrail-50 text-layerrail-600">
+                <%== part("components/icon", name: "hero-document-text", classes: "h-6 w-6") %>
+              </div>
+              <div>
+                <h3 class="text-base font-semibold text-gray-950">No knowledge bases yet</h3>
+                <p class="mt-1 text-sm leading-6 text-gray-600">Create one, then add text or URL-backed documents that your app endpoints can use.</p>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <% @ai_knowledge_bases.each do |kb| %>
+          <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5 sm:p-6">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 class="text-base font-semibold text-gray-950"><%= kb.name %></h3>
+                <p class="mt-1 text-sm text-gray-500"><%= kb.description.to_s.empty? ? "No description" : kb.description %></p>
+              </div>
+              <span class="w-fit shrink-0 rounded-full bg-layerrail-50 px-2 py-1 text-xs font-medium text-layerrail-700"><%= kb.document_count %> docs</span>
+            </div>
+            <% form(action: "#{@project.path}/ai-app/knowledge-base/#{kb.ubid}/document", method: :post, class: "mt-5 grid gap-4") do %>
+              <div class="grid gap-4 lg:grid-cols-2">
+                <%== render("components/form/text", locals: {name: "title", label: "Document title", attributes: {"placeholder" => "Getting started"}}) %>
+                <%== render("components/form/select", locals: {
+                  name: "source_type",
+                  label: "Source type",
+                  options: [["text", "Text"], ["url", "URL"], ["api", "API"]],
+                  selected: "text",
+                }) %>
+              </div>
+              <%== render("components/form/text", locals: {name: "source_url", label: "Source URL", attributes: {"placeholder" => "https://docs.example.com/page"}}) %>
+              <%== render("components/form/textarea", locals: {
+                name: "content",
+                label: "Content",
+                attributes: {"rows" => 5, "placeholder" => "Paste the knowledge this app endpoint should use..."},
+              }) %>
+              <div class="flex justify-end">
+                <%== part("components/form/submit_button", text: "Add Document") %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </section>
+  <% elsif active_tab == "api" %>
+    <section class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5 sm:p-6">
+        <h2 class="text-lg font-semibold text-gray-950">Call app endpoints from your product</h2>
+        <p class="mt-2 text-sm leading-6 text-gray-600">
+          App endpoints use the same inference API keys as AI Models. The endpoint adds the selected instructions and knowledge before calling the model.
+        </p>
+        <div class="mt-5 max-w-full overflow-hidden rounded-lg bg-gray-900">
+          <pre class="overflow-x-auto p-4 text-xs leading-6 text-white"><code>curl <%= Config.base_url.chomp("/") %>/ai/v1/agents/&lt;agent-id&gt;/messages \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $INFERENCE_API_KEY" \
-  -d '{"message":"How do I deploy this?"}'</pre>
-    </div>
-  </div>
+  -d '{"message":"How do I deploy this?"}'</code></pre>
+        </div>
+      </div>
+
+      <div class="rounded-lg bg-layerrail-50 p-5 ring-1 ring-layerrail-200 sm:p-6">
+        <h2 class="text-base font-semibold text-layerrail-900">API checklist</h2>
+        <ul class="mt-4 grid gap-3 text-sm leading-6 text-layerrail-900">
+          <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-layerrail-600"></span>Create or reuse an inference API key.</li>
+          <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-layerrail-600"></span>Create an app endpoint with a text model.</li>
+          <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-layerrail-600"></span>Attach a knowledge base when product context is required.</li>
+          <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-layerrail-600"></span>Call the endpoint from your application backend.</li>
+        </ul>
+      </div>
+    </section>
+  <% end %>
 </div>

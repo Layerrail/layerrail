@@ -32,7 +32,7 @@ class Clover
       )
       audit_log(kb, "create")
       flash["notice"] = "Knowledge base created"
-      r.redirect "#{@project.path}/ai-app"
+      r.redirect "#{@project.path}/ai-app?tab=knowledge"
     end
 
     r.post "knowledge-base", :ubid_uuid, "document" do |knowledge_base_id|
@@ -52,7 +52,7 @@ class Clover
       document.refresh_chunks!
       audit_log(document, "create")
       flash["notice"] = "Document added to #{kb.name}"
-      r.redirect "#{@project.path}/ai-app"
+      r.redirect "#{@project.path}/ai-app?tab=knowledge"
     end
 
     r.post true do
