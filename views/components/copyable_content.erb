@@ -1,10 +1,12 @@
 <%# locals: (content:, message: "Copied", revealable: false, classes: "") %>
 
-<div class="copyable-content inline-flex items-center gap-1 <%= classes %>" data-content="<%= content %>" data-message="<%= message %>">
-  <% if revealable %>
-    <%== part("components/revealable_content", content:) %>
-  <% else %>
-    <%= content %>
-  <% end %>
-  <img src="/icons/hero-clipboard-document.svg" width="18px" class="inline-block copy-button cursor-pointer ms1"/>
+<div class="copyable-content inline-flex max-w-full min-w-0 items-center gap-1 align-middle <%= classes %>" data-content="<%= content %>" data-message="<%= message %>">
+  <span class="min-w-0 break-all">
+    <% if revealable %>
+      <%== part("components/revealable_content", content:) %>
+    <% else %>
+      <%= content %>
+    <% end %>
+  </span>
+  <img src="/icons/hero-clipboard-document.svg" width="18px" class="inline-block shrink-0 copy-button cursor-pointer ms1"/>
 </div>
