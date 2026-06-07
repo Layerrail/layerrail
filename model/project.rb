@@ -23,8 +23,8 @@ class Project < Sequel::Model
   one_to_many :firewalls, read_only: true
   one_to_many :load_balancers, read_only: true
   one_to_many :inference_endpoints, read_only: true
-  one_to_many :ai_knowledge_bases, read_only: true
-  one_to_many :ai_agents, read_only: true
+  one_to_many :ai_knowledge_bases, class: :AiKnowledgeBase, read_only: true
+  one_to_many :ai_agents, class: :AiAgent, read_only: true
   one_to_many :kubernetes_clusters, read_only: true
   one_to_many :machine_images, read_only: true
   one_to_many :machine_image_stores, read_only: true
