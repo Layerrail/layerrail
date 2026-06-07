@@ -7,9 +7,9 @@
     <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5 sm:p-6">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p class="text-sm font-semibold uppercase tracking-wide text-layerrail-600">AI App</p>
+          <p class="text-sm font-semibold text-layerrail-600">App endpoint</p>
           <h1 class="mt-1 text-2xl font-bold tracking-tight text-gray-950"><%= @ai_agent.name %></h1>
-          <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600"><%= @ai_agent.description.empty? ? "Managed agent endpoint for developer products." : @ai_agent.description %></p>
+          <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600"><%= @ai_agent.description.empty? ? "Managed endpoint for developer products." : @ai_agent.description %></p>
         </div>
         <span class="rounded-full bg-layerrail-50 px-3 py-1 text-sm font-medium text-layerrail-700"><%= @ai_agent.status %></span>
       </div>
@@ -40,9 +40,9 @@
       title: "Recent calls",
       headers: ["Time", "Status", "Tokens", "Latency"],
       empty_state: {
-        icon: "hero-clock",
+        icon: "hugeicons-clock-01",
         title: "No calls yet",
-        description: "Agent calls will appear here after developers start using this endpoint."
+        description: "Endpoint calls will appear here after developers start using this endpoint."
       },
       rows: @events.map do |event|
         [
@@ -76,9 +76,9 @@
 
     <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5 sm:p-6">
       <h2 class="text-lg font-semibold text-gray-950">Danger zone</h2>
-      <p class="mt-2 text-sm leading-6 text-gray-600">Deleting an AI app removes the agent endpoint and its usage events. Knowledge bases are kept.</p>
+      <p class="mt-2 text-sm leading-6 text-gray-600">Deleting an app endpoint removes the endpoint and its usage events. Knowledge bases are kept.</p>
       <div class="mt-4">
-        <%== part("components/delete_button", text: "Delete AI App", confirmation: @ai_agent.name) %>
+        <%== part("components/delete_button", text: "Delete App Endpoint", confirmation: @ai_agent.name) %>
       </div>
     </div>
   </div>

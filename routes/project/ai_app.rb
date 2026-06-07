@@ -62,7 +62,7 @@ class Clover
 
       model_name = typecast_params.nonempty_str!("model_name")
       unless ai_app_text_model_names.include?(model_name)
-        fail Validation::ValidationFailed.new({model_name: "is not available for AI Apps"})
+        fail Validation::ValidationFailed.new({model_name: "is not available for app endpoints"})
       end
 
       template = ai_app_template(typecast_params.str("template"))
@@ -83,7 +83,7 @@ class Clover
         tools: template[:tools],
       )
       audit_log(agent, "create")
-      flash["notice"] = "AI app created"
+      flash["notice"] = "App endpoint created"
       r.redirect path(agent)
     end
 
@@ -105,7 +105,7 @@ class Clover
           @ai_agent.destroy
           audit_log(@ai_agent, "destroy")
         end
-        flash["notice"] = "AI app deleted"
+        flash["notice"] = "App endpoint deleted"
         r.redirect "#{@project.path}/ai-app"
       end
     end
