@@ -49,6 +49,31 @@ RSpec.describe Option do
     end
   end
 
+  describe ".vm_size_options" do
+    let(:linode_location) { instance_double(Location, provider: "linode") }
+
+    it "only exposes VM sizes backed by a Linode plan in Linode locations" do
+      names = described_class.vm_size_options(location: linode_location).map(&:display_name)
+
+      expect(names).to include("nanode-1", "nanode-2", "nanode-4", "nanode-8", "standard-2", "standard-4", "standard-8", "standard-16")
+      expect(names).not_to include("standard-30", "standard-60")
+    end
+
+    it "only exposes the supported Linode GPU VM size for GPU creation" do
+      expect(described_class.vm_size_options(location: linode_location, gpu: true).map(&:display_name)).to eq(["standard-4"])
+    end
+  end
+
+  describe ".kubernetes_worker_size_options" do
+    let(:linode_location) { instance_double(Location, provider: "linode") }
+
+    it "only exposes Linode dedicated CPU sizes supported for Kubernetes workers" do
+      names = described_class.kubernetes_worker_size_options(location: linode_location).map(&:display_name)
+
+      expect(names).to eq(["standard-2", "standard-4", "standard-8", "standard-16"])
+    end
+  end
+
   describe "GCP Postgres options" do
     it "defines all GCP family options" do
       expect(Option::GCP_FAMILY_OPTIONS).to eq(["c4a-standard", "c4a-highmem"])

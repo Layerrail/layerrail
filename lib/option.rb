@@ -104,6 +104,35 @@ module Option
     LINODE_PLANS.find { it.id == id }
   end
 
+  def self.linode_vm_size_names(gpu: false)
+    LINODE_PLANS
+      .select { |plan| gpu ? plan.gpu_count.positive? : plan.gpu_count.zero? }
+      .map(&:size_name)
+      .uniq
+  end
+
+  def self.linode_vm_size_available?(vm_size, gpu: false)
+    linode_vm_size_names(gpu:).include?(vm_size.display_name)
+  end
+
+  def self.vm_size_options(location: nil, gpu: false)
+    sizes = VmSizes.select { it.visible && it.arch == "x64" }
+    return sizes unless linode_location?(location)
+
+    sizes.select { linode_vm_size_available?(it, gpu:) }
+  end
+
+  def self.kubernetes_worker_size_options(location: nil)
+    sizes = VmSizes.select { it.visible && it.arch == "x64" && it.family == "standard" && it.vcpus <= 16 }
+    return sizes unless linode_location?(location)
+
+    linode_standard_sizes = LINODE_PLANS
+      .select { it.family == "standard" && it.gpu_count.zero? }
+      .map(&:size_name)
+      .uniq
+    sizes.select { linode_standard_sizes.include?(it.display_name) }
+  end
+
   MACHINE_IMAGE_SEARCH_LOCATIONS = {
     Location::HETZNER_FSN1_ID => [Location::HETZNER_FSN1_ID, Location::HETZNER_HEL1_ID],
     Location::HETZNER_HEL1_ID => [Location::HETZNER_HEL1_ID, Location::HETZNER_FSN1_ID],

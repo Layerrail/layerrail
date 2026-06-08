@@ -5,7 +5,7 @@ require_relative "../loader"
 
 abort "Set POLAR_ACCESS_TOKEN first." unless Config.polar_access_token
 
-amount_cents = Integer(ENV.fetch("POLAR_VERIFICATION_AMOUNT_CENTS", "100"), 10)
+amount_cents = Integer(ENV.fetch("POLAR_VERIFICATION_AMOUNT_CENTS", "400"), 10)
 currency = ENV.fetch("POLAR_VERIFICATION_CURRENCY", "usd")
 name = ENV.fetch("POLAR_VERIFICATION_PRODUCT_NAME", "LayerRail Verification Package")
 description = ENV.fetch(

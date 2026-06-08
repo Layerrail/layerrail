@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "time"
 require "yaml"
 
 class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
@@ -68,6 +69,21 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
     })
     extend_provisioning_deadline(deadline_target)
     nap 30
+  end
+
+  def emit_daemonizer_progress_logs(unit_name, started_at_key, last_logged_at_key, message)
+    started_at = frame[started_at_key] || frame["last_label_changed_at"]
+    unless started_at
+      update_stack(started_at_key => Time.now.to_s)
+      return
+    end
+
+    update_stack(started_at_key => started_at) unless frame[started_at_key]
+    return unless Time.parse(started_at) < Time.now - 5 * 60
+    return if frame[last_logged_at_key] && Time.parse(frame[last_logged_at_key]) > Time.now - 5 * 60
+
+    Clog.emit(message, {kubernetes_daemonizer_progress: {unit_name:, node_ubid: node.ubid, logs: vm.sshable.d_logs(unit_name)}})
+    update_stack(last_logged_at_key => Time.now.to_s)
   end
 
   def fetch_join_parameter(cp_sshable, command, pattern: nil, transform: :strip)
@@ -236,13 +252,27 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
       state = vm.sshable.d_check("prepare_linode_kubernetes_node")
       case state
       when "Succeeded"
+        update_stack(
+          "prepare_linode_kubernetes_node_started_at" => nil,
+          "prepare_linode_kubernetes_node_last_logged_at" => nil,
+        )
         configure_kubernetes_node_services
         hop_assign_role
       when "NotStarted"
         extend_provisioning_deadline("assign_role")
+        update_stack(
+          "prepare_linode_kubernetes_node_started_at" => Time.now.to_s,
+          "prepare_linode_kubernetes_node_last_logged_at" => nil,
+        )
         vm.sshable.d_run("prepare_linode_kubernetes_node", "bash", "-s", stdin: linode_kubernetes_prepare_script, log: false)
         nap 15
       when "InProgress"
+        emit_daemonizer_progress_logs(
+          "prepare_linode_kubernetes_node",
+          "prepare_linode_kubernetes_node_started_at",
+          "prepare_linode_kubernetes_node_last_logged_at",
+          "prepare linode kubernetes node still in progress",
+        )
         extend_provisioning_deadline("assign_role")
         nap 10
       when "Failed"
@@ -354,6 +384,10 @@ sudo touch #{marker}
     state = vm.sshable.d_check("init_kubernetes_cluster")
     case state
     when "Succeeded"
+      update_stack(
+        "init_kubernetes_cluster_started_at" => nil,
+        "init_kubernetes_cluster_last_logged_at" => nil,
+      )
       Page.from_tag_parts("KubernetesNodeInitClusterFailed", node.ubid)&.incr_resolve
       finish_join_or_init
     when "NotStarted"
@@ -368,10 +402,20 @@ sudo touch #{marker}
         node_ipv6: vm.ip6,
         service_subnet_cidr6: random_ula_cidr,
       }
+      update_stack(
+        "init_kubernetes_cluster_started_at" => Time.now.to_s,
+        "init_kubernetes_cluster_last_logged_at" => nil,
+      )
       vm.sshable.d_run("init_kubernetes_cluster", "/home/ubi/kubernetes/bin/init-cluster", stdin: JSON.generate(params), log: false)
       extend_provisioning_deadline("install_cni")
       nap 30
     when "InProgress"
+      emit_daemonizer_progress_logs(
+        "init_kubernetes_cluster",
+        "init_kubernetes_cluster_started_at",
+        "init_kubernetes_cluster_last_logged_at",
+        "init kubernetes cluster still in progress",
+      )
       extend_provisioning_deadline("install_cni")
       nap 10
     when "Failed"
@@ -392,6 +436,10 @@ sudo touch #{marker}
     state = vm.sshable.d_check("join_control_plane")
     case state
     when "Succeeded"
+      update_stack(
+        "join_control_plane_started_at" => nil,
+        "join_control_plane_last_logged_at" => nil,
+      )
       Page.from_tag_parts("KubernetesNodeJoinControlPlaneFailed", node.ubid)&.incr_resolve
       finish_join_or_init
     when "NotStarted"
@@ -410,10 +458,20 @@ sudo touch #{marker}
       rescue Sshable::SshError, JoinParameterError => ex
         return retry_join_parameter_preparation(ex, deadline_target: "install_cni")
       end
+      update_stack(
+        "join_control_plane_started_at" => Time.now.to_s,
+        "join_control_plane_last_logged_at" => nil,
+      )
       vm.sshable.d_run("join_control_plane", "kubernetes/bin/join-node", stdin: JSON.generate(params), log: false)
       extend_provisioning_deadline("install_cni")
       nap 15
     when "InProgress"
+      emit_daemonizer_progress_logs(
+        "join_control_plane",
+        "join_control_plane_started_at",
+        "join_control_plane_last_logged_at",
+        "join control plane still in progress",
+      )
       extend_provisioning_deadline("install_cni")
       nap 10
     when "Failed"
@@ -434,6 +492,10 @@ sudo touch #{marker}
     state = vm.sshable.d_check("join_worker")
     case state
     when "Succeeded"
+      update_stack(
+        "join_worker_started_at" => nil,
+        "join_worker_last_logged_at" => nil,
+      )
       Page.from_tag_parts("KubernetesNodeJoinWorkerFailed", node.ubid)&.incr_resolve
       finish_join_or_init
     when "NotStarted"
@@ -451,10 +513,20 @@ sudo touch #{marker}
       rescue Sshable::SshError, JoinParameterError => ex
         return retry_join_parameter_preparation(ex, deadline_target: "install_cni")
       end
+      update_stack(
+        "join_worker_started_at" => Time.now.to_s,
+        "join_worker_last_logged_at" => nil,
+      )
       vm.sshable.d_run("join_worker", "kubernetes/bin/join-node", stdin: JSON.generate(params), log: false)
       extend_provisioning_deadline("install_cni")
       nap 15
     when "InProgress"
+      emit_daemonizer_progress_logs(
+        "join_worker",
+        "join_worker_started_at",
+        "join_worker_last_logged_at",
+        "join worker still in progress",
+      )
       extend_provisioning_deadline("install_cni")
       nap 10
     when "Failed"

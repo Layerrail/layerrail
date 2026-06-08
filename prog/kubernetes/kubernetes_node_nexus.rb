@@ -56,12 +56,24 @@ class Prog::Kubernetes::KubernetesNodeNexus < Prog::Base
   end
 
   label def unavailable
-    if available?
+    availability = begin
+      kubernetes_node.check_mesh_availability
+    rescue => ex
+      {available: false, exception: Util.exception_to_hash(ex)}
+    end
+
+    if availability[:available]
       decr_checkup
       hop_wait
     end
 
-    Clog.emit("KubernetesNode is unavailable due to mesh connectivity issues", {kubernetes_node_unavailable: {ubid: kubernetes_node.ubid, name: kubernetes_node.name}})
+    Clog.emit("KubernetesNode is unavailable due to mesh connectivity issues", {
+      kubernetes_node_unavailable: {
+        ubid: kubernetes_node.ubid,
+        name: kubernetes_node.name,
+        availability:,
+      },
+    })
     register_deadline("wait", 15 * 60)
     nap 15
   end

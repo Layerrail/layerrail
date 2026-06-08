@@ -11,6 +11,9 @@ class Clover
     node_count = typecast_params.pos_int("worker_nodes", 1)
     cp_node_count = typecast_params.pos_int("cp_nodes", 1)
     node_size = Validation.validate_vm_size(target_node_size, "x64")
+    if @location.linode? && !Option.kubernetes_worker_size_options(location: @location).include?(node_size)
+      fail Validation::ValidationFailed.new({worker_size: "#{node_size.display_name} is not available for LayerRail Kubernetes on Linode"})
+    end
 
     requested_kubernetes_vcpu_count = cp_node_count * 2 # since default control plane size is standard-2
     requested_kubernetes_vcpu_count += node_count * node_size.vcpus
@@ -65,15 +68,8 @@ class Clover
     options.add_option(name: "location", values: Option.kubernetes_locations)
     options.add_option(name: "version", values: Option.selectable_kubernetes_versions)
     options.add_option(name: "cp_nodes", values: Option::KubernetesCPOptions.map(&:cp_node_count), parent: "location")
-    options.add_option(name: "worker_size", values: Option::VmSizes.select { it.visible && it.vcpus <= 16 }.map { it.display_name }, parent: "location") do |location, size|
-      vm_size = Option::VmSizes.find { it.display_name == size && it.arch == "x64" }
-      next false unless vm_size.family == "standard"
-      next true unless location.linode?
-
-      Option.linode_plan("standard", vm_size.vcpus)
-      true
-    rescue Validation::ValidationFailed
-      false
+    options.add_option(name: "worker_size", values: Option.kubernetes_worker_size_options.map(&:display_name), parent: "location") do |location, size|
+      !!Option.kubernetes_worker_size_options(location:).find { it.display_name == size }
     end
     options.add_option(name: "worker_nodes", values: (1..10).map { {value: it, display_name: "#{it} Node#{"s" unless it == 1}"} }, parent: "worker_size")
 

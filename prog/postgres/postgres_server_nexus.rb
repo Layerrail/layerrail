@@ -640,6 +640,11 @@ CONFIG
     case vm.sshable.d_check("configure_postgres")
     when "Succeeded"
       vm.sshable.d_clean("configure_postgres")
+      update_stack(
+        "configure_postgres_try_count" => nil,
+        "configure_postgres_started_at" => nil,
+        "configure_postgres_last_logged_at" => nil,
+      )
 
       when_initial_provisioning_set? do
         hop_update_superuser_password if postgres_server.primary?
@@ -657,13 +662,52 @@ CONFIG
       end
 
       hop_wait
-    when "Failed", "NotStarted"
+    when "InProgress"
+      emit_daemonizer_progress_logs(
+        "configure_postgres",
+        "configure_postgres_started_at",
+        "configure_postgres_last_logged_at",
+        "configure postgres still in progress",
+      )
+      extend_initial_provisioning_deadline
+    when "Failed"
+      Clog.emit("configure postgres failed", {logs: vm.sshable.d_logs("configure_postgres")})
+      previous_try_count = frame["configure_postgres_try_count"] || 0
+      if previous_try_count >= 5
+        Prog::PageNexus.assemble(
+          "configure postgres failed repeatedly for server #{postgres_server.ubid}",
+          ["PostgresConfigureFailed", postgres_server.ubid],
+          [postgres_server.ubid, resource.ubid],
+        )
+        nap 30
+      end
+
+      vm.sshable.d_clean("configure_postgres")
+      update_stack(
+        "configure_postgres_try_count" => previous_try_count + 1,
+        "configure_postgres_started_at" => Time.now.to_s,
+        "configure_postgres_last_logged_at" => nil,
+      )
+
       if postgres_server.use_physical_slot_set?
         postgres_server.update(physical_slot_ready_id: postgres_server.resource.representative_server.id)
         decr_use_physical_slot
       end
       configure_hash = postgres_server.configure_hash
       vm.sshable.d_run("configure_postgres", "sudo", "postgres/bin/configure", postgres_server.version, stdin: JSON.generate(configure_hash))
+      extend_initial_provisioning_deadline
+    when "NotStarted"
+      update_stack(
+        "configure_postgres_started_at" => Time.now.to_s,
+        "configure_postgres_last_logged_at" => nil,
+      )
+      if postgres_server.use_physical_slot_set?
+        postgres_server.update(physical_slot_ready_id: postgres_server.resource.representative_server.id)
+        decr_use_physical_slot
+      end
+      configure_hash = postgres_server.configure_hash
+      vm.sshable.d_run("configure_postgres", "sudo", "postgres/bin/configure", postgres_server.version, stdin: JSON.generate(configure_hash))
+      extend_initial_provisioning_deadline
     end
 
     nap 5

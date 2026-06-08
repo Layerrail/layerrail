@@ -86,6 +86,10 @@ class Clover
 
     if @location.linode?
       linode_size = parsed_size || Validation.validate_vm_size(Prog::Vm::Nexus::DEFAULT_SIZE, "x64", only_visible: true)
+      unless Option.vm_size_options(location: @location, gpu: gpu_count.positive?).include?(linode_size)
+        fail Validation::ValidationFailed.new({size: "#{linode_size.display_name} is not available on Linode"})
+      end
+
       plan = Option.linode_plan(
         linode_size.family,
         linode_size.vcpus,
@@ -235,8 +239,9 @@ class Clover
       !!BillingRate.from_resource_properties("VmVCpu", family, location.name)
     end
 
-    options.add_option(name: "size", values: Option::VmSizes.select(&:visible).map(&:display_name), parent: "family") do |location, family, size|
-      vm_size = Option::VmSizes.find { it.display_name == size && it.arch == "x64" }
+    options.add_option(name: "size", values: Option.vm_size_options.map(&:display_name), parent: "family") do |location, family, size|
+      vm_size = Option.vm_size_options(location:, gpu: !!@show_gpu).find { it.display_name == size && it.arch == "x64" }
+      next false unless vm_size
       next false unless vm_size.family == family
       if location.linode?
         begin
