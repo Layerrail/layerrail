@@ -2296,6 +2296,7 @@ paths:
                 init_script:
                   description: VM init script
                   type: string
+                  maxLength: 20000
                 enable_ip4:
                   description: Enable IPv4
                   type: boolean

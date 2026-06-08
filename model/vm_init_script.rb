@@ -7,7 +7,7 @@ class VmInitScript < Sequel::Model
 
   def validate
     super
-    validates_max_length(2000, :init_script)
+    validates_max_length(20000, :init_script)
   end
 end
 
