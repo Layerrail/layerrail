@@ -96,7 +96,8 @@ module ContentGenerator
       gpu_count, device = gpu.split(":", 2)
       gpu_count = gpu_count.to_i
       return self.gpu(location, family, gpu) unless location.linode? && gpu_count.positive?
-      plan = Option.linode_plan(family, 4, gpu_count:, gpu_device: device)
+      plan = Option::LINODE_PLANS.find { it.family == family && it.gpu_count == gpu_count && it.gpu_device == device } ||
+        Option.linode_plan(family, 4, gpu_count:, gpu_device: device)
 
       [
         "NVIDIA #{plan.label}",

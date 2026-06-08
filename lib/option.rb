@@ -63,6 +63,7 @@ module Option
   }.freeze
 
   def self.linode_plan(family, vcpu_count, gpu_count: 0, gpu_device: nil, size_name: nil, memory_gib: nil)
+    gpu_suffix = gpu_count.to_i.positive? ? " with #{gpu_count} GPU(s)" : ""
     LINODE_PLANS.find {
       it.family == family &&
         it.vcpus == vcpu_count &&
@@ -70,13 +71,14 @@ module Option
         it.gpu_device == gpu_device &&
         (size_name.nil? || it.size_name == size_name) &&
         (memory_gib.nil? || it.memory_gib == memory_gib)
-    } || raise(Validation::ValidationFailed.new({size: "#{family}-#{vcpu_count} is not available on Linode"}))
+    } || raise(Validation::ValidationFailed.new({size: "#{family}-#{vcpu_count}#{gpu_suffix} is not available on Linode"}))
   end
 
   def self.linode_instance_type_name(family, vcpu_count, gpu_count: 0, gpu_device: nil, size_name: nil, memory_gib: nil)
     linode_plan(family, vcpu_count, gpu_count:, gpu_device:, size_name:, memory_gib:).id
   rescue KeyError
-    raise Validation::ValidationFailed.new({size: "#{family}-#{vcpu_count} is not available on Linode"})
+    gpu_suffix = gpu_count.to_i.positive? ? " with #{gpu_count} GPU(s)" : ""
+    raise Validation::ValidationFailed.new({size: "#{family}-#{vcpu_count}#{gpu_suffix} is not available on Linode"})
   end
 
   def self.linode_gpu_location?(location_name)

@@ -1,17 +1,14 @@
 <%# locals: (account:) %>
 <% if (badge = account.login_streak_badge) %>
   <span
-    class="inline-flex items-center gap-1.5 rounded-full border border-layerrail-200 bg-white/90 px-2.5 py-1 text-sm shadow-sm shadow-layerrail-100/60 ring-1 ring-white"
+    class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-sm leading-5 text-slate-600 shadow-sm"
     title="<%= badge[:title] %>"
     aria-label="<%= badge[:label] %>"
   >
-    <span class="relative inline-grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-layerrail-500 via-layerrail-600 to-[#5A3A38] text-base text-white shadow-inner shadow-white/15">
-      <span aria-hidden="true"><%= badge[:primary] %></span>
-      <span
-        class="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full border border-white bg-layerrail-50 text-[0.55rem] leading-none text-layerrail-700 shadow-sm"
-        aria-hidden="true"
-      ><%= badge[:accent] %></span>
+    <span class="relative inline-grid h-4 w-4 shrink-0 place-items-center text-sm leading-none" aria-hidden="true">
+      <span><%= badge[:primary] %></span>
+      <span class="absolute -right-1 -top-1 text-[0.5rem] leading-none"><%= badge[:accent] %></span>
     </span>
-    <span class="font-semibold tabular-nums text-layerrail-700"><%= badge[:count_label] %></span>
+    <span class="whitespace-nowrap"><%= badge[:label] %></span>
   </span>
 <% end %>

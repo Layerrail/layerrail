@@ -28,6 +28,24 @@ class Prog::Vm::Linode::Nexus < Prog::Base
       label: vm.name,
     )
     hop_wait_instance_created
+  rescue LinodeAPIError => ex
+    failure = {
+      vm_ubid: vm.ubid,
+      location: linode_region,
+      linode_type: linode_type,
+      image: linode_image,
+      status: ex.status,
+      body: ex.body,
+    }
+    Clog.emit("Linode VM create failed", {linode_vm_create_failed: failure})
+    vm.update(display_state: "failed")
+    Prog::PageNexus.assemble(
+      "#{vm.ubid} Linode VM create failed",
+      ["LinodeCreateFailed", vm.id],
+      vm.ubid,
+      extra_data: failure,
+    )
+    nap 6 * 60 * 60
   end
 
   label def wait_instance_created
