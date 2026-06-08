@@ -127,11 +127,17 @@ module ContentGenerator
 
     def self.size(flavor, location, family, size)
       size = Option::POSTGRES_SIZE_OPTIONS[size]
+      memory_gib = if location.linode?
+        linode_family = (family == "hobby") ? "burstable" : family
+        Option.linode_plan(linode_family, size.vcpu_count).memory_gib
+      else
+        size.memory_gib
+      end
       unit_price = BillingRate.unit_price_from_resource_properties("PostgresVCpu", "#{flavor}-#{family}", location.name, location.byoc)
 
       [
         size.name,
-        "#{size.vcpu_count} vCPUs / #{size.memory_gib} GB RAM",
+        "#{size.vcpu_count} vCPUs / #{memory_gib} GB RAM",
         "$#{"%.2f" % (size.vcpu_count * unit_price * 60 * 672)}/mo",
         "$#{"%.3f" % (size.vcpu_count * unit_price * 60)}/hour",
       ]

@@ -513,6 +513,8 @@ class PostgresResource < Sequel::Model
     end
 
     options.add_option(name: "family", values: Option::POSTGRES_FAMILY_OPTIONS.keys, parent: "location") do |flavor, location, family|
+      next false unless Option.postgres_family_options(location:).key?(family)
+
       if location.aws?
         ["m8gd", "i8g"].include?(family) || (Option::AWS_FAMILY_OPTIONS.include?(family) && project.send(:"get_ff_enable_#{family}"))
       elsif location.gcp?
@@ -525,6 +527,8 @@ class PostgresResource < Sequel::Model
     end
 
     options.add_option(name: "size", values: Option::POSTGRES_SIZE_OPTIONS.keys, parent: "family") do |flavor, location, family, size|
+      next false unless Option.postgres_size_options(location:).key?(size)
+
       pg_size = Option::POSTGRES_SIZE_OPTIONS[size]
       next false unless pg_size.family == family
       next true unless location.linode?

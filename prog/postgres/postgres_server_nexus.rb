@@ -17,6 +17,21 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
       ubid = PostgresServer.generate_ubid
 
       postgres_resource = PostgresResource[resource_id]
+      target_vm_size = postgres_resource.target_vm_size
+      if postgres_resource.location.linode?
+        target_vm_size = Option.safe_linode_postgres_size_name(target_vm_size)
+        if target_vm_size != postgres_resource.target_vm_size
+          Clog.emit("Postgres VM size is not available on Linode, falling back to a safe size", {
+            postgres_linode_size_fallback: {
+              postgres_resource_ubid: postgres_resource.ubid,
+              requested_size: postgres_resource.target_vm_size,
+              fallback_size: target_vm_size,
+            },
+          })
+          postgres_resource.update_target_sizes_with_replicas(target_vm_size:, target_storage_size_gib: postgres_resource.target_storage_size_gib)
+        end
+      end
+
       # For read replicas and representative servers (initial creation), use
       # target_version. For standbys, match the representative server's version
       # so in-place upgrades work correctly.
@@ -26,7 +41,8 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
         postgres_resource.version
       end
 
-      arch = Option::VmSizes.find { it.name == postgres_resource.target_vm_size.gsub("hobby", "burstable") }.arch
+      vm_size_name = target_vm_size.gsub("hobby", "burstable")
+      arch = Option::VmSizes.find { it.name == vm_size_name }.arch
       boot_image = postgres_resource.boot_image(server_version, arch)
 
       vm_st = Prog::Vm::Nexus.assemble_with_sshable(
@@ -34,7 +50,7 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
         sshable_unix_user: "ubi",
         location_id: postgres_resource.location_id,
         name: ubid.to_s,
-        size: postgres_resource.target_vm_size.gsub("hobby", "burstable"),
+        size: vm_size_name,
         storage_volumes: [
           {encrypted: true, size_gib: 16, vring_workers: 1},
           {encrypted: true, size_gib: postgres_resource.target_storage_size_gib, vring_workers: 1},
@@ -48,7 +64,7 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
         exclude_availability_zones:,
         availability_zone:,
         exclude_data_centers:,
-        swap_size_bytes: postgres_resource.target_vm_size.start_with?("hobby") ? 4 * 1024 * 1024 * 1024 : nil,
+        swap_size_bytes: target_vm_size.start_with?("hobby") ? 4 * 1024 * 1024 * 1024 : nil,
       )
 
       synchronization_status = (is_representative && !postgres_resource.read_replica?) ? "ready" : "catching_up"

@@ -137,6 +137,10 @@ class Clover
   def validate_postgres_input(name, postgres_params)
     Validation.validate_name(name)
 
+    unless Option.postgres_size_options(location: postgres_params["location"]).key?(postgres_params["size"])
+      fail Validation::ValidationFailed.new({size: "Invalid size."})
+    end
+
     option_tree, option_parents = PostgresResource.generate_postgres_options(@project)
 
     begin

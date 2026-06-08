@@ -497,6 +497,32 @@ module Option
     ["burstable-2", POSTGRES_SIZE_OPTIONS["hobby-2"]],
   ].to_h).freeze
 
+  LINODE_POSTGRES_SIZE_NAMES = %w[hobby-1 hobby-2 standard-2 standard-4].freeze
+
+  def self.linode_location?(location)
+    location&.provider == "linode" || Config.compute_provider == "linode"
+  end
+
+  def self.postgres_family_options(location: nil)
+    return POSTGRES_FAMILY_OPTIONS unless linode_location?(location)
+
+    POSTGRES_FAMILY_OPTIONS.select { |name,| %w[standard hobby].include?(name) }
+  end
+
+  def self.postgres_size_options(location: nil)
+    return POSTGRES_SIZE_OPTIONS unless linode_location?(location)
+
+    POSTGRES_SIZE_OPTIONS.select { |name,| LINODE_POSTGRES_SIZE_NAMES.include?(name) }
+  end
+
+  def self.safe_linode_postgres_size_name(size_name)
+    name = size_name.to_s.gsub("burstable", "hobby")
+    return name if LINODE_POSTGRES_SIZE_NAMES.include?(name)
+
+    parsed = POSTGRES_SIZE_OPTIONS[name]
+    parsed&.family == "standard" ? "standard-4" : "hobby-2"
+  end
+
   POSTGRES_FAMILY_FALLBACK_CHAINS = [
     ["c6gd", "c7gd", "c8gd"],
     ["c6id", "c8id"],
