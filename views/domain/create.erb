@@ -1,0 +1,84 @@
+<% @page_title = "Register Domain" %>
+
+<%== part(
+  "components/page_header",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Domains", "#{@project.path}/domain"], ["Register", "#"]],
+  right_items: [part("components/button", text: "Back to Domains", link: "#{@project.path}/domain", icon: "hero-chevron-left")]
+) %>
+
+<div class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+  <div class="space-y-6">
+    <% form(action: "#{@project.path}/domain/search", method: :post, class: "space-y-5 rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5") do %>
+      <div class="grid gap-5 md:grid-cols-[1fr_140px]">
+        <%== part("components/form/text", name: "domain", label: "Domain", value: @domain, attributes: {placeholder: "example.com", autocomplete: "off"}) %>
+        <%== part(
+          "components/form/select",
+          name: "years",
+          label: "Years",
+          selected: @years,
+          options: (1..10).map { |year| [year, "#{year} year#{year == 1 ? "" : "s"}"] }
+        ) %>
+      </div>
+      <div class="flex justify-end">
+        <%== part("components/form/submit_button", text: "Check Availability", icon: "hero-magnifying-glass") %>
+      </div>
+    <% end %>
+
+    <% if @search_result %>
+      <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+        <% if @search_result[:available] %>
+          <div class="mb-4 inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700 ring-1 ring-inset ring-green-200">
+            <span>Available</span>
+          </div>
+          <p class="text-sm text-gray-500">We found <%= @domain %> and it can be registered right now.</p>
+
+          <div class="mt-6 grid gap-4 md:grid-cols-3">
+            <div class="rounded-lg bg-gray-50 p-4">
+              <div class="text-sm font-medium text-gray-500">Registration</div>
+              <div class="mt-1 text-2xl font-bold text-gray-900">$<%= format("%0.2f", @pricing[:registration_price_cents] / 100.0) %>/yr</div>
+              <% if @pricing[:discount_cents].to_i.positive? %>
+                <div class="mt-1 text-xs font-medium text-layerrail-600">Intro discount applied</div>
+              <% end %>
+            </div>
+            <div class="rounded-lg bg-gray-50 p-4">
+              <div class="text-sm font-medium text-gray-500">Renewal</div>
+              <div class="mt-1 text-2xl font-bold text-gray-900">$<%= format("%0.2f", @pricing[:renewal_price_cents] / 100.0) %>/yr</div>
+            </div>
+            <div class="rounded-lg bg-gray-50 p-4">
+              <div class="text-sm font-medium text-gray-500">Total</div>
+              <div class="mt-1 text-2xl font-bold text-gray-900">$<%= format("%0.2f", DomainRegistration.amount_for_years(@pricing[:registration_price_cents], @years) / 100.0) %></div>
+            </div>
+          </div>
+
+          <% form(action: "#{@project.path}/domain/cart", method: :post, class: "mt-6 flex justify-end") do %>
+            <%== part("components/form/hidden", domain: @domain, years: @years) %>
+            <%== part("components/form/submit_button", text: "Add to Cart", icon: "hero-banknotes") %>
+          <% end %>
+        <% else %>
+          <div class="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1 text-sm font-medium text-red-700 ring-1 ring-inset ring-red-200">
+            <span>Unavailable</span>
+          </div>
+          <p class="mt-4 text-sm text-gray-500">That domain is not available right now. Try another name or TLD.</p>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="space-y-6">
+    <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+      <h3 class="text-lg font-semibold text-gray-900">What happens next</h3>
+      <ul class="mt-4 space-y-3 text-sm text-gray-600">
+        <li>1. Search for the domain you want.</li>
+        <li>2. Add it to your cart and check out with Polar.</li>
+        <li>3. LayerRail registers it through NameSilo and tracks it in your project.</li>
+      </ul>
+    </div>
+    <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+      <h3 class="text-lg font-semibold text-gray-900">Phase 1 scope</h3>
+      <p class="mt-3 text-sm leading-6 text-gray-600">
+        This first phase covers search, cart, billing handoff, and live registration tracking.
+        DNS delegation, nameserver automation, transfer flows, and bulk domain management come later.
+      </p>
+    </div>
+  </div>
+</div>

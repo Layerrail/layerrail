@@ -1,0 +1,65 @@
+<% @page_title = "Domains" %>
+
+<%== part(
+  "components/page_header",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Domains", "#"]],
+  right_items: [part("components/button", text: "Register Domain", link: "#{@project.path}/domain/create", icon: "hero-globe-alt")]
+) %>
+
+<div class="grid gap-6">
+  <% cart = @domain_registrations.select { |domain_registration| domain_registration.status == "cart" } %>
+  <% if cart.any? %>
+    <%== part(
+      "components/table_card",
+      title: "Cart",
+      headers: ["Domain", "Years", "Amount", "State"],
+      rows: cart.map do |domain_registration|
+        [
+          [
+            [
+              [domain_registration.domain, {link: path(domain_registration)}],
+              [domain_registration.ubid, {copyable: true}]
+            ],
+            domain_registration.years,
+            domain_registration.amount_label,
+            domain_registration.display_state
+          ],
+          {id: "domain-cart-#{domain_registration.ubid}"}
+        ]
+      end
+    ) %>
+
+    <% form(action: "#{@project.path}/domain/checkout", method: :post, class: "flex justify-end") do %>
+      <%== part("components/button", text: "Checkout Domains", icon: "hero-banknotes", attributes: {"type" => "submit"}) %>
+    <% end %>
+  <% end %>
+
+  <%== part(
+    "components/table_card",
+    title: "Domain Registrations",
+    headers: ["Domain", "Years", "Price", "State", "Checkout", "Created"],
+    rows: @domain_registrations.map do |domain_registration|
+      [
+        [
+          [
+            [domain_registration.domain, {link: path(domain_registration)}],
+            [domain_registration.ubid, {copyable: true}]
+          ],
+          domain_registration.years,
+          domain_registration.unit_price_label,
+          domain_registration.display_state,
+          domain_registration.checkout_id || "-",
+          domain_registration.created_at.strftime("%Y-%m-%d")
+        ],
+        {id: "domain-registration-#{domain_registration.ubid}"}
+      ]
+    end,
+    empty_state: {
+      icon: "hero-globe-alt",
+      title: "No domains yet",
+      description: "Search for a domain name, add it to your cart, and register it through the LayerRail console.",
+      button_link: "#{@project.path}/domain/create",
+      button_title: "Register Domain"
+    }
+  ) %>
+</div>

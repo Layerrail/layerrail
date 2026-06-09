@@ -51,6 +51,15 @@
                 request.path.start_with?("#{@project.path}/load-balancer"),
               icon: "hero-globe-alt"
             ) %>
+            <% if Config.domains_enabled %>
+              <%== part(
+                "layouts/sidebar/item",
+                name: "Domains",
+                url: "#{@project.path}/domain",
+                is_active: request.path.start_with?("#{@project.path}/domain"),
+                icon: "hero-globe-alt"
+              ) %>
+            <% end %>
             <% if Config.postgres_enabled %>
               <%== part(
                 "layouts/sidebar/item",

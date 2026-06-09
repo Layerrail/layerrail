@@ -285,6 +285,15 @@ module Config
   optional :cloudflare_dns_zone_id, string, clear: true
   override :cloudflare_dns_proxied, false, bool
 
+  # Domains
+  override :domains_enabled, false, bool
+  override :domains_provider, "namesilo", string
+  optional :namesilo_api_key, string, clear: true
+  override :namesilo_api_base_url, "https://www.namesilo.com/api", string
+  optional :polar_domain_product_id, uuid
+  override :domain_registration_markup_percent, 0.0, float
+  override :domain_registration_discount_percent, 0.0, float
+
   # Kubernetes
   override :kubernetes_enabled, true, bool
   optional :kubernetes_service_project_id, uuid
