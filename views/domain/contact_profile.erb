@@ -1,0 +1,28 @@
+<% editing = @contact_profile.id %>
+<% @page_title = editing ? @contact_profile.name : "New Domain Contact Profile" %>
+
+<%== part(
+  "components/page_header",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Domains", "#{@project.path}/domain"], ["Contact Profiles", "#{@project.path}/domain/contact-profile"], [@page_title, "#"]],
+  right_items: [part("components/button", text: "Back to Profiles", link: "#{@project.path}/domain/contact-profile", icon: "hero-chevron-left")]
+) %>
+
+<% form(action: editing ? "#{@project.path}#{@contact_profile.path}" : "#{@project.path}/domain/contact-profile", method: :post, class: "mx-auto grid max-w-4xl gap-5 rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5") do %>
+  <div class="grid gap-5 md:grid-cols-2">
+    <%== part("components/form/text", name: "name", label: "Profile name", value: @contact_profile.name, attributes: {placeholder: "Primary owner", required: true}) %>
+    <%== part("components/form/text", name: "email", label: "Email", type: "email", value: @contact_profile.email, attributes: {placeholder: "owner@example.com", required: true}) %>
+    <%== part("components/form/text", name: "first_name", label: "First name", value: @contact_profile.first_name, attributes: {required: true}) %>
+    <%== part("components/form/text", name: "last_name", label: "Last name", value: @contact_profile.last_name, attributes: {required: true}) %>
+    <%== part("components/form/text", name: "organization", label: "Organization", value: @contact_profile.organization, attributes: {placeholder: "Optional"}) %>
+    <%== part("components/form/text", name: "phone", label: "Phone", value: @contact_profile.phone, attributes: {placeholder: "+1.5551234567", required: true}) %>
+    <%== part("components/form/text", name: "address1", label: "Address line 1", value: @contact_profile.address1, attributes: {required: true}) %>
+    <%== part("components/form/text", name: "address2", label: "Address line 2", value: @contact_profile.address2, attributes: {placeholder: "Optional"}) %>
+    <%== part("components/form/text", name: "city", label: "City", value: @contact_profile.city, attributes: {required: true}) %>
+    <%== part("components/form/text", name: "state", label: "State / Province", value: @contact_profile.state, attributes: {required: true}) %>
+    <%== part("components/form/text", name: "postal_code", label: "Postal code", value: @contact_profile.postal_code, attributes: {required: true}) %>
+    <%== part("components/form/text", name: "country_code", label: "Country code", value: @contact_profile.country_code, attributes: {placeholder: "US", maxlength: 2, required: true}) %>
+  </div>
+  <div class="flex justify-end">
+    <%== part("components/form/submit_button", text: editing ? "Save Contact Profile" : "Create Contact Profile", icon: "hero-check") %>
+  </div>
+<% end %>

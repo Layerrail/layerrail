@@ -1,0 +1,71 @@
+<% @page_title = "#{@domain_order.display_kind.capitalize}: #{@domain_order.domain}" %>
+
+<%== part(
+  "components/page_header",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Domains", "#{@project.path}/domain"], [@page_title, "#"]],
+  right_items: [part("components/button", text: "Back to Domains", link: "#{@project.path}/domain", icon: "hero-chevron-left")]
+) %>
+
+<div class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+  <div class="space-y-6">
+    <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div class="text-sm font-medium text-layerrail-600"><%= @domain_order.display_kind.capitalize %></div>
+          <h2 class="mt-2 text-3xl font-bold tracking-tight text-gray-900"><%= @domain_order.domain %></h2>
+        </div>
+        <div class="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700"><%= @domain_order.display_state %></div>
+      </div>
+
+      <dl class="mt-6 grid gap-4 sm:grid-cols-2">
+        <div class="rounded-lg bg-gray-50 p-4">
+          <dt class="text-sm font-medium text-gray-500">Amount</dt>
+          <dd class="mt-1 text-lg font-semibold text-gray-900"><%= @domain_order.amount_label %></dd>
+        </div>
+        <div class="rounded-lg bg-gray-50 p-4">
+          <dt class="text-sm font-medium text-gray-500">Years</dt>
+          <dd class="mt-1 text-lg font-semibold text-gray-900"><%= @domain_order.years %></dd>
+        </div>
+        <div class="rounded-lg bg-gray-50 p-4">
+          <dt class="text-sm font-medium text-gray-500">Checkout</dt>
+          <dd class="mt-1 text-lg font-semibold text-gray-900"><%= @domain_order.checkout_id || "Not attached yet" %></dd>
+        </div>
+        <div class="rounded-lg bg-gray-50 p-4">
+          <dt class="text-sm font-medium text-gray-500">Provider order</dt>
+          <dd class="mt-1 text-lg font-semibold text-gray-900"><%= @domain_order.provider_order_id || "-" %></dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+      <h3 class="text-lg font-semibold text-gray-900">Provider details</h3>
+      <div class="mt-4 overflow-hidden rounded-lg bg-gray-50 p-4 text-sm text-gray-700">
+        <pre class="whitespace-pre-wrap break-words"><%= JSON.pretty_generate(@domain_order.provider_payload || {}) %></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="space-y-6">
+    <% if @domain_order.failure_message %>
+      <div class="rounded-lg border border-red-200 bg-red-50 p-6">
+        <h3 class="text-lg font-semibold text-red-900">Order failed</h3>
+        <p class="mt-2 text-sm text-red-800"><%= @domain_order.failure_message %></p>
+        <% if @domain_order.status == "failed" %>
+          <% form(action: "#{path(@domain_order)}/retry", method: :post, class: "mt-4") do %>
+            <%== part("components/form/submit_button", text: "Retry order", icon: "hero-arrow-path") %>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if %w[cart pending_payment].include?(@domain_order.status) %>
+      <% form(action: "#{path(@domain_order)}/remove", method: :post, class: "rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5") do %>
+        <h3 class="text-lg font-semibold text-gray-900">Cart actions</h3>
+        <p class="mt-3 text-sm text-gray-600">Remove this order from your cart if you no longer want to continue.</p>
+        <div class="mt-4 flex justify-end">
+          <%== part("components/button", text: "Remove from Cart", type: "danger", icon: "hero-trash", attributes: {"type" => "submit"}) %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</div>

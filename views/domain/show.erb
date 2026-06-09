@@ -31,10 +31,31 @@
           <dd class="mt-1 text-lg font-semibold text-gray-900"><%= @domain_registration.years %></dd>
         </div>
         <div class="rounded-lg bg-gray-50 p-4">
-          <dt class="text-sm font-medium text-gray-500">Checkout</dt>
-          <dd class="mt-1 text-lg font-semibold text-gray-900"><%= @domain_registration.checkout_id || "Not attached yet" %></dd>
+          <dt class="text-sm font-medium text-gray-500">Expires</dt>
+          <dd class="mt-1 text-lg font-semibold text-gray-900"><%= @domain_registration.expires_at_label %></dd>
+        </div>
+        <div class="rounded-lg bg-gray-50 p-4">
+          <dt class="text-sm font-medium text-gray-500">DNS zone</dt>
+          <dd class="mt-1 text-lg font-semibold text-gray-900"><%= @domain_registration.dns_zone_label %></dd>
+        </div>
+        <div class="rounded-lg bg-gray-50 p-4">
+          <dt class="text-sm font-medium text-gray-500">Contact profile</dt>
+          <dd class="mt-1 text-lg font-semibold text-gray-900"><%= @domain_registration.contact_profile&.name || "Provider default" %></dd>
         </div>
       </dl>
+    </div>
+
+    <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+      <h3 class="text-lg font-semibold text-gray-900">Nameservers</h3>
+      <% if @domain_registration.nameservers.to_a.any? %>
+        <ul class="mt-4 space-y-2 text-sm text-gray-700">
+          <% @domain_registration.nameservers.each do |nameserver| %>
+            <li><code class="rounded bg-gray-100 px-2 py-1"><%= nameserver %></code></li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="mt-3 text-sm text-gray-600">Provider defaults are being used.</p>
+      <% end %>
     </div>
 
     <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
@@ -46,6 +67,25 @@
   </div>
 
   <div class="space-y-6">
+    <% if @domain_registration.active? %>
+      <% form(action: "#{path(@domain_registration)}/renew", method: :post, class: "rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5") do %>
+        <h3 class="text-lg font-semibold text-gray-900">Renew domain</h3>
+        <p class="mt-3 text-sm text-gray-600">Add a renewal order to your cart and checkout through Polar.</p>
+        <div class="mt-4">
+          <%== part(
+            "components/form/select",
+            name: "years",
+            label: "Years",
+            selected: 1,
+            options: (1..10).map { |year| [year, "#{year} year#{year == 1 ? "" : "s"}"] }
+          ) %>
+        </div>
+        <div class="mt-4 flex justify-end">
+          <%== part("components/form/submit_button", text: "Add Renewal to Cart", icon: "hero-arrow-path") %>
+        </div>
+      <% end %>
+    <% end %>
+
     <% if @domain_registration.failure_message %>
       <div class="rounded-lg border border-red-200 bg-red-50 p-6">
         <h3 class="text-lg font-semibold text-red-900">Registration failed</h3>

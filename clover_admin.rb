@@ -8,6 +8,7 @@ require "tilt/erubi"
 require "openssl"
 require "json"
 require "time"
+require "bigdecimal"
 
 class CloverAdmin < Roda
   include AuditLog
@@ -1234,6 +1235,71 @@ class CloverAdmin < Roda
       @linode_plans = Option::LINODE_PLANS
       @linode_markup = Option::LINODE_MARKUP
       view("linode_catalog")
+    end
+
+    r.on "domain-tlds" do
+      parse_price_cents = lambda do |value|
+        dollars = value.to_s.strip
+        dollars.empty? ? 0 : (BigDecimal(dollars.delete("$")) * 100).round(0).to_i
+      end
+
+      r.get true do
+        @domain_tlds = DomainTld.order(:tld).all
+        @domain_tld_values = {
+          "tld" => "",
+          "registration_price" => "",
+          "renewal_price" => "",
+          "transfer_price" => "",
+          "base_registration_price" => "",
+          "base_renewal_price" => "",
+          "base_transfer_price" => "",
+          "markup_percent" => "0",
+          "intro_discount_percent" => "0"
+        }
+        view("domain_tlds")
+      end
+
+      r.post "save" do
+        @domain_tld_values = request.params.slice(
+          "tld",
+          "registration_price",
+          "renewal_price",
+          "transfer_price",
+          "base_registration_price",
+          "base_renewal_price",
+          "base_transfer_price",
+          "markup_percent",
+          "intro_discount_percent"
+        )
+        begin
+          DomainTld.upsert_from_admin(
+            tld: typecast_params.nonempty_str!("tld"),
+            enabled: request.params["enabled"] == "on",
+            registration_price_cents: parse_price_cents.call(request.params["registration_price"]),
+            renewal_price_cents: parse_price_cents.call(request.params["renewal_price"]),
+            transfer_price_cents: parse_price_cents.call(request.params["transfer_price"]),
+            base_registration_price_cents: parse_price_cents.call(request.params["base_registration_price"]),
+            base_renewal_price_cents: parse_price_cents.call(request.params["base_renewal_price"]),
+            base_transfer_price_cents: parse_price_cents.call(request.params["base_transfer_price"]),
+            markup_percent: request.params["markup_percent"].to_s.empty? ? 0 : request.params["markup_percent"].to_f,
+            intro_discount_percent: request.params["intro_discount_percent"].to_s.empty? ? 0 : request.params["intro_discount_percent"].to_f
+          )
+          flash["notice"] = "Domain TLD pricing saved."
+          r.redirect "/domain-tlds"
+        rescue => ex
+          flash["error"] = ex.message
+          @domain_tlds = DomainTld.order(:tld).all
+          view("domain_tlds")
+        end
+      end
+
+      r.post :ubid, "toggle" do |ubid|
+        tld = DomainTld[ubid]
+        next 404 unless tld
+        tld.update(enabled: !tld.enabled, updated_at: Time.now)
+        flash["notice"] = ".#{tld.tld} #{tld.enabled ? "enabled" : "disabled"}."
+        r.redirect "/domain-tlds"
+      end
     end
 
     r.get "github-runner-usage" do

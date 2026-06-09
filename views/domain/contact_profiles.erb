@@ -1,0 +1,39 @@
+<% @page_title = "Domain Contact Profiles" %>
+
+<%== part(
+  "components/page_header",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Domains", "#{@project.path}/domain"], ["Contact Profiles", "#"]],
+  right_items: [
+    part("components/button", text: "New Contact Profile", link: "#{@project.path}/domain/contact-profile/new", icon: "hero-user-plus"),
+    part("components/button", text: "Back to Domains", link: "#{@project.path}/domain", icon: "hero-chevron-left")
+  ]
+) %>
+
+<%== part(
+  "components/table_card",
+  title: "Contact Profiles",
+  headers: ["Name", "Registrant", "Email", "Country", "Provider Contact", "Created"],
+  rows: @contact_profiles.map do |profile|
+    [
+      [
+        [
+          [profile.name, {link: "#{@project.path}#{profile.path}"}],
+          [profile.ubid, {copyable: true}]
+        ],
+        profile.full_name,
+        profile.email,
+        profile.country_code,
+        profile.provider_contact_id || "-",
+        profile.created_at.strftime("%Y-%m-%d")
+      ],
+      {id: "domain-contact-profile-#{profile.ubid}"}
+    ]
+  end,
+  empty_state: {
+    icon: "hero-user",
+    title: "No contact profiles yet",
+    description: "Create a reusable registrant profile for domain registrations and transfers.",
+    button_link: "#{@project.path}/domain/contact-profile/new",
+    button_title: "New Contact Profile"
+  }
+) %>

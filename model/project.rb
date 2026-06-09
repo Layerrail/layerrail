@@ -23,6 +23,8 @@ class Project < Sequel::Model
   one_to_many :firewalls, read_only: true
   one_to_many :load_balancers, read_only: true
   one_to_many :domain_registrations, read_only: true
+  one_to_many :domain_contact_profiles, read_only: true
+  one_to_many :domain_orders, read_only: true
   one_to_many :inference_endpoints, read_only: true
   one_to_many :ai_knowledge_bases, class: :AiKnowledgeBase, read_only: true
   one_to_many :ai_agents, class: :AiAgent, read_only: true
@@ -64,6 +66,8 @@ class Project < Sequel::Model
     ai_knowledge_bases: :destroy,
     api_keys: :destroy,
     billing_info: :destroy,
+    domain_contact_profiles: :destroy,
+    domain_orders: :destroy,
     domain_registrations: :destroy,
     github_installations: :destroy,
     invitations: :destroy,

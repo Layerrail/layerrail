@@ -1,0 +1,43 @@
+<% @page_title = "Transfer Domain" %>
+
+<%== part(
+  "components/page_header",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Domains", "#{@project.path}/domain"], ["Transfer", "#"]],
+  right_items: [part("components/button", text: "Back to Domains", link: "#{@project.path}/domain", icon: "hero-chevron-left")]
+) %>
+
+<div class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+  <% form(action: "#{@project.path}/domain/transfer", method: :post, class: "space-y-5 rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5") do %>
+    <%== part("components/form/text", name: "domain", label: "Domain", value: @domain, attributes: {placeholder: "example.com", autocomplete: "off", required: true}) %>
+    <%== part("components/form/text", name: "auth_code", label: "Transfer authorization code", attributes: {placeholder: "EPP/Auth code", required: true}) %>
+    <%== part(
+      "components/form/select",
+      name: "years",
+      label: "Years",
+      selected: @years,
+      options: (1..10).map { |year| [year, "#{year} year#{year == 1 ? "" : "s"}"] }
+    ) %>
+    <% if @contact_profiles.any? %>
+      <%== part(
+        "components/form/select",
+        name: "contact_profile_id",
+        label: "Registrant contact profile",
+        placeholder: "Use provider default contact",
+        options: @contact_profiles.map { |profile| [profile.ubid, profile.label] }
+      ) %>
+    <% end %>
+    <div class="flex justify-end">
+      <%== part("components/form/submit_button", text: "Add Transfer to Cart", icon: "hero-arrow-right") %>
+    </div>
+  <% end %>
+
+  <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+    <h3 class="text-lg font-semibold text-gray-900">Before you transfer</h3>
+    <ul class="mt-4 space-y-3 text-sm text-gray-600">
+      <li>Unlock the domain at your current registrar.</li>
+      <li>Copy the EPP/Auth code exactly.</li>
+      <li>Make sure the domain is eligible for transfer.</li>
+      <li>After payment, LayerRail starts the transfer through NameSilo.</li>
+    </ul>
+  </div>
+</div>

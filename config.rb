@@ -309,6 +309,7 @@ module Config
 
   # Billing
   optional :polar_access_token, string, clear: true
+  optional :polar_webhook_secret, string, clear: true
   override :polar_api_base_url, "https://api.polar.sh/v1", string
   optional :polar_organization_id, uuid
   optional :polar_verification_product_id, uuid

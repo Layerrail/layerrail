@@ -20,16 +20,21 @@ class Prog::Domain::DomainRegistrationNexus < Prog::Base
     domain_registration.update(status: "registering", failure_message: nil, updated_at: Time.now)
     availability = client.check_register_availability(domain_registration.domain)
     fail "#{domain_registration.domain} is no longer available" unless availability[:available]
+    sync_contact_profile if domain_registration.contact_profile
 
     reply = client.register_domain(domain_registration)
+    nameserver_reply = client.change_nameservers(domain_registration.domain, domain_registration.nameservers)
+    zone = DnsZone.ensure_service_zone(project_id: domain_registration.project_id, name: domain_registration.domain)
     provider_payload = domain_registration.provider_payload || {}
     provider_payload = provider_payload.merge(
       "availability" => availability[:raw],
-      "registration" => reply
+      "registration" => reply,
+      "nameservers" => nameserver_reply
     )
 
     domain_registration.update(
       status: "active",
+      dns_zone_id: zone&.id,
       provider_order_id: reply["order_id"] || reply["orderid"] || reply.dig("order", "id"),
       provider_domain_id: reply["domain_id"] || reply["domainid"] || reply.dig("domain", "id"),
       provider_payload:,
@@ -51,5 +56,17 @@ class Prog::Domain::DomainRegistrationNexus < Prog::Base
 
   def client
     @client ||= NameSiloClient.new
+  end
+
+  def sync_contact_profile
+    contact_profile = domain_registration.contact_profile
+    return if contact_profile.provider_contact_id
+
+    reply, contact_id = client.create_contact_profile(contact_profile)
+    contact_profile.update(
+      provider_contact_id: contact_id,
+      provider_payload: (contact_profile.provider_payload || {}).merge("contact_add" => reply),
+      updated_at: Time.now
+    )
   end
 end

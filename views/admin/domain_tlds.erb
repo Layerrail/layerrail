@@ -1,0 +1,75 @@
+<% @page_title = "Domain TLD Pricing" %>
+
+<div class="container">
+  <h1>Domain TLD Pricing</h1>
+
+  <form action="/domain-tlds/save" method="post" class="stack">
+    <%== csrf_tag("/domain-tlds/save") %>
+    <fieldset>
+      <legend>Add or update TLD</legend>
+      <p>
+        <label>TLD<br>
+          <input name="tld" value="<%= @domain_tld_values["tld"] %>" placeholder="com" required>
+        </label>
+      </p>
+      <p>
+        <label><input type="checkbox" name="enabled" checked> Enabled</label>
+      </p>
+      <div class="grid-3">
+        <label>Registration price<br><input name="registration_price" value="<%= @domain_tld_values["registration_price"] %>" placeholder="12.99"></label>
+        <label>Renewal price<br><input name="renewal_price" value="<%= @domain_tld_values["renewal_price"] %>" placeholder="14.99"></label>
+        <label>Transfer price<br><input name="transfer_price" value="<%= @domain_tld_values["transfer_price"] %>" placeholder="14.99"></label>
+        <label>Base registration<br><input name="base_registration_price" value="<%= @domain_tld_values["base_registration_price"] %>" placeholder="10.00"></label>
+        <label>Base renewal<br><input name="base_renewal_price" value="<%= @domain_tld_values["base_renewal_price"] %>" placeholder="10.00"></label>
+        <label>Base transfer<br><input name="base_transfer_price" value="<%= @domain_tld_values["base_transfer_price"] %>" placeholder="10.00"></label>
+        <label>Markup %<br><input name="markup_percent" value="<%= @domain_tld_values["markup_percent"] %>" placeholder="30"></label>
+        <label>Intro discount %<br><input name="intro_discount_percent" value="<%= @domain_tld_values["intro_discount_percent"] %>" placeholder="0"></label>
+      </div>
+      <p><button type="submit">Save TLD</button></p>
+    </fieldset>
+  </form>
+
+  <table class="page-table">
+    <caption>Configured TLDs</caption>
+    <thead>
+      <tr>
+        <th>TLD</th>
+        <th>Enabled</th>
+        <th>Registration</th>
+        <th>Renewal</th>
+        <th>Transfer</th>
+        <th>Base</th>
+        <th>Markup</th>
+        <th>Intro discount</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @domain_tlds.each do |tld| %>
+        <tr>
+          <td>.#{tld.tld}</td>
+          <td><%= tld.enabled ? "yes" : "no" %></td>
+          <td><%= tld.price_label(:registration_price_cents) %></td>
+          <td><%= tld.price_label(:renewal_price_cents) %></td>
+          <td><%= tld.price_label(:transfer_price_cents) %></td>
+          <td>
+            <%= tld.price_label(:base_registration_price_cents) %> /
+            <%= tld.price_label(:base_renewal_price_cents) %> /
+            <%= tld.price_label(:base_transfer_price_cents) %>
+          </td>
+          <td><%= tld.markup_percent %>%</td>
+          <td><%= tld.intro_discount_percent %>%</td>
+          <td>
+            <form action="/domain-tlds/<%= tld.ubid %>/toggle" method="post">
+              <%== csrf_tag("/domain-tlds/#{tld.ubid}/toggle") %>
+              <button type="submit"><%= tld.enabled ? "Disable" : "Enable" %></button>
+            </form>
+          </td>
+        </tr>
+      <% end %>
+      <% if @domain_tlds.empty? %>
+        <tr><td colspan="9">No TLDs configured. Provider pricing fallback is active.</td></tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

@@ -62,23 +62,68 @@ class NameSiloClient
     registration_price_before_discount_cents = apply_markup(base_registration_price_cents)
     registration_price_cents = apply_registration_discount(registration_price_before_discount_cents)
 
-    {
+    DomainTld.apply_admin_pricing(domain, {
       base_registration_price_cents:,
       registration_price_cents:,
       discount_cents: [registration_price_before_discount_cents - registration_price_cents, 0].max,
       renewal_price_cents:,
       transfer_price_cents:,
       raw: reply
-    }
+    })
   end
 
   def register_domain(domain_registration)
-    request(
-      "registerDomain",
+    params = {
       domain: domain_registration.domain,
       years: domain_registration.years,
       private: 1,
-      auto_renew: 0
+      auto_renew: domain_registration.auto_renew ? 1 : 0
+    }
+    contact_profile = domain_registration.contact_profile
+    if contact_profile&.provider_contact_id
+      params[:contact_id] = contact_profile.provider_contact_id
+      params[:registrant_contact_id] = contact_profile.provider_contact_id
+      params[:administrative_contact_id] = contact_profile.provider_contact_id
+      params[:technical_contact_id] = contact_profile.provider_contact_id
+      params[:billing_contact_id] = contact_profile.provider_contact_id
+    end
+    nameservers_from(domain_registration.nameservers).each_with_index do |nameserver, index|
+      params[:"ns#{index + 1}"] = nameserver
+    end
+
+    request("registerDomain", params)
+  end
+
+  def create_contact_profile(contact_profile)
+    reply = request("contactAdd", contact_profile.to_namesilo_params)
+    contact_id = reply["contact_id"] || reply["contactid"] || reply.dig("contact", "id") || reply["id"]
+    [reply, contact_id]
+  end
+
+  def change_nameservers(domain, nameservers)
+    nameservers = nameservers_from(nameservers)
+    return {} if nameservers.empty?
+
+    params = {domain: DomainRegistration.normalize_domain(domain)}
+    nameservers.each_with_index { |nameserver, index| params[:"ns#{index + 1}"] = nameserver }
+    request("changeNameServers", params)
+  end
+
+  def renew_domain(domain_order)
+    request(
+      "renewDomain",
+      domain: domain_order.domain,
+      years: domain_order.years
+    )
+  end
+
+  def transfer_domain(domain_order)
+    request(
+      "transferDomain",
+      domain: domain_order.domain,
+      auth: domain_order.auth_code,
+      years: domain_order.years,
+      private: 1
     )
   end
 
@@ -200,5 +245,13 @@ class NameSiloClient
     return cents if discount_percent <= 0
 
     [(cents * (1 - (discount_percent / 100.0))).round, 0].max
+  end
+
+  def nameservers_from(value)
+    Array(value).flat_map { it.to_s.split(/[\s,]+/) }
+      .map { it.strip.downcase.delete_suffix(".") }
+      .reject(&:empty?)
+      .uniq
+      .first(13)
   end
 end

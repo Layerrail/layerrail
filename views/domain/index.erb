@@ -3,28 +3,35 @@
 <%== part(
   "components/page_header",
   breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Domains", "#"]],
-  right_items: [part("components/button", text: "Register Domain", link: "#{@project.path}/domain/create", icon: "hero-globe-alt")]
+  right_items: [
+    part("components/button", text: "Contact Profiles", link: "#{@project.path}/domain/contact-profile", icon: "hero-user"),
+    part("components/button", text: "Transfer Domain", link: "#{@project.path}/domain/transfer", icon: "hero-arrow-right"),
+    part("components/button", text: "Register Domain", link: "#{@project.path}/domain/create", icon: "hero-globe-alt")
+  ]
 ) %>
 
 <div class="grid gap-6">
-  <% cart = @domain_registrations.select { |domain_registration| domain_registration.status == "cart" } %>
+  <% registration_cart = @domain_registrations.select { |domain_registration| domain_registration.status == "cart" } %>
+  <% order_cart = @domain_orders.select { |domain_order| domain_order.status == "cart" } %>
+  <% cart = registration_cart + order_cart %>
   <% if cart.any? %>
     <%== part(
       "components/table_card",
       title: "Cart",
-      headers: ["Domain", "Years", "Amount", "State"],
-      rows: cart.map do |domain_registration|
+      headers: ["Item", "Kind", "Years", "Amount", "State"],
+      rows: cart.map do |item|
         [
           [
             [
-              [domain_registration.domain, {link: path(domain_registration)}],
-              [domain_registration.ubid, {copyable: true}]
+              [item.domain, {link: path(item)}],
+              [item.ubid, {copyable: true}]
             ],
-            domain_registration.years,
-            domain_registration.amount_label,
-            domain_registration.display_state
+            item.is_a?(DomainRegistration) ? "registration" : item.display_kind,
+            item.years,
+            item.amount_label,
+            item.display_state
           ],
-          {id: "domain-cart-#{domain_registration.ubid}"}
+          {id: "domain-cart-#{item.ubid}"}
         ]
       end
     ) %>
@@ -37,7 +44,7 @@
   <%== part(
     "components/table_card",
     title: "Domain Registrations",
-    headers: ["Domain", "Years", "Price", "State", "Checkout", "Created"],
+    headers: ["Domain", "Years", "Price", "State", "DNS Zone", "Expires"],
     rows: @domain_registrations.map do |domain_registration|
       [
         [
@@ -48,8 +55,8 @@
           domain_registration.years,
           domain_registration.unit_price_label,
           domain_registration.display_state,
-          domain_registration.checkout_id || "-",
-          domain_registration.created_at.strftime("%Y-%m-%d")
+          domain_registration.dns_zone_label,
+          domain_registration.expires_at_label
         ],
         {id: "domain-registration-#{domain_registration.ubid}"}
       ]
@@ -61,5 +68,27 @@
       button_link: "#{@project.path}/domain/create",
       button_title: "Register Domain"
     }
+  ) %>
+
+  <%== part(
+    "components/table_card",
+    title: "Renewals and Transfers",
+    headers: ["Domain", "Kind", "Years", "Amount", "State", "Created"],
+    rows: @domain_orders.map do |domain_order|
+      [
+        [
+          [
+            [domain_order.domain, {link: path(domain_order)}],
+            [domain_order.ubid, {copyable: true}]
+          ],
+          domain_order.display_kind,
+          domain_order.years,
+          domain_order.amount_label,
+          domain_order.display_state,
+          domain_order.created_at.strftime("%Y-%m-%d")
+        ],
+        {id: "domain-order-#{domain_order.ubid}"}
+      ]
+    end
   ) %>
 </div>

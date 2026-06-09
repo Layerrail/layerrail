@@ -50,9 +50,26 @@
             </div>
           </div>
 
-          <% form(action: "#{@project.path}/domain/cart", method: :post, class: "mt-6 flex justify-end") do %>
+          <% form(action: "#{@project.path}/domain/cart", method: :post, class: "mt-6 space-y-5") do %>
             <%== part("components/form/hidden", domain: @domain, years: @years) %>
-            <%== part("components/form/submit_button", text: "Add to Cart", icon: "hero-banknotes") %>
+            <% if @contact_profiles.any? %>
+              <%== part(
+                "components/form/select",
+                name: "contact_profile_id",
+                label: "Registrant contact profile",
+                placeholder: "Use provider default contact",
+                options: @contact_profiles.map { |profile| [profile.ubid, profile.label] }
+              ) %>
+            <% else %>
+              <div class="rounded-lg bg-layerrail-50 p-4 text-sm text-layerrail-900">
+                Create a contact profile if you want LayerRail to submit registrant details with the provider.
+                <a class="font-semibold text-layerrail-700" href="<%= @project.path %>/domain/contact-profile/new">Create profile</a>
+              </div>
+            <% end %>
+            <%== part("components/form/textarea", name: "nameservers", label: "Nameservers", value: "", attributes: {placeholder: "Optional. One nameserver per line, or leave empty to keep provider defaults.", rows: 4}) %>
+            <div class="flex justify-end">
+              <%== part("components/form/submit_button", text: "Add to Cart", icon: "hero-banknotes") %>
+            </div>
           <% end %>
         <% else %>
           <div class="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1 text-sm font-medium text-red-700 ring-1 ring-inset ring-red-200">
@@ -70,14 +87,14 @@
       <ul class="mt-4 space-y-3 text-sm text-gray-600">
         <li>1. Search for the domain you want.</li>
         <li>2. Add it to your cart and check out with Polar.</li>
-        <li>3. LayerRail registers it through NameSilo and tracks it in your project.</li>
+        <li>3. LayerRail registers it through NameSilo and creates a managed DNS zone.</li>
       </ul>
     </div>
     <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
       <h3 class="text-lg font-semibold text-gray-900">Phase 1 scope</h3>
       <p class="mt-3 text-sm leading-6 text-gray-600">
-        This first phase covers search, cart, billing handoff, and live registration tracking.
-        DNS delegation, nameserver automation, transfer flows, and bulk domain management come later.
+        This phase covers search, cart, contact profiles, billing reconciliation, registration,
+        DNS zone creation, renewals, transfers, and admin TLD controls.
       </p>
     </div>
   </div>

@@ -98,7 +98,10 @@ class Clover < Roda
     GameVps,
     AiAgent,
     AiKnowledgeBase,
+    DomainContactProfile,
+    DomainOrder,
     DomainRegistration,
+    DomainTld,
     DeployApp,
     [GithubInstallation, /([A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?)/],
     [GithubRepository, /([A-Za-z0-9\-_.]{1,100})/],
@@ -140,7 +143,10 @@ class Clover < Roda
     AiAgent
     AiKnowledgeBase
     ApiKey
+    DomainContactProfile
+    DomainOrder
     DomainRegistration
+    DomainTld
     DeployApp
     DeployDeployment
     DeployVariable
