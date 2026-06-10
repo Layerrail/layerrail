@@ -110,7 +110,7 @@ View pricing
 Products dropdown:
 
 ```text
-Virtual Machines
+Virtual Machine
 PostgreSQL
 Kubernetes
 Load Balancers
