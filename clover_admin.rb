@@ -1509,11 +1509,6 @@ class CloverAdmin < Roda
         r.redirect("/search?q=#{Rack::Utils.escape(id)}")
       end
 
-      @grouped_pages = Page.active
-        .reverse(:created_at, :summary)
-        .exclude(severity: "info")
-        .left_join(:page_root_resource, page_id: :id)
-        .to_hash_groups(:root_resource_id)
       @classes = available_classes
       @info_pages = Page.active.where(severity: "info").reverse(:created_at).all
 
