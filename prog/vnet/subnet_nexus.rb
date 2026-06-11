@@ -73,6 +73,8 @@ class Prog::Vnet::SubnetNexus < Prog::Base
         "Vnet::Gcp::SubnetNexus"
       elsif location.linode?
         "Vnet::Linode::SubnetNexus"
+      elsif location.azure?
+        "Vnet::Azure::SubnetNexus"
       else
         "Vnet::Metal::SubnetNexus"
       end

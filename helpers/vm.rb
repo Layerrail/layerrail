@@ -58,6 +58,7 @@ class Clover
     if assemble_params[:boot_image]
       Validation.validate_boot_image(assemble_params[:boot_image])
       Option.linode_image_name(assemble_params[:boot_image]) if @location.linode?
+      Option.azure_image_reference(assemble_params[:boot_image]) if @location.azure?
     end
 
     # Same as above, moved the size validation here to not allow users to
@@ -84,22 +85,31 @@ class Clover
       end
     end
 
-    if @location.linode?
-      linode_size = parsed_size || Validation.validate_vm_size(Prog::Vm::Nexus::DEFAULT_SIZE, "x64", only_visible: true)
-      unless Option.vm_size_options(location: @location, gpu: gpu_count.positive?).include?(linode_size)
-        fail Validation::ValidationFailed.new({size: "#{linode_size.display_name} is not available on Linode"})
+    if @location.linode? || @location.azure?
+      provider_size = parsed_size || Validation.validate_vm_size(Prog::Vm::Nexus::DEFAULT_SIZE, "x64", only_visible: true)
+      provider_name = @location.linode? ? "Linode" : "Azure"
+      unless Option.vm_size_options(location: @location, gpu: gpu_count.positive?).include?(provider_size)
+        fail Validation::ValidationFailed.new({size: "#{provider_size.display_name} is not available on #{provider_name}"})
       end
 
-      plan = Option.linode_plan(
-        linode_size.family,
-        linode_size.vcpus,
-        gpu_count:,
-        gpu_device:,
-        size_name: linode_size.display_name,
-      )
+      plan = if @location.linode?
+        Option.linode_plan(
+          provider_size.family,
+          provider_size.vcpus,
+          gpu_count:,
+          gpu_device:,
+          size_name: provider_size.display_name,
+        )
+      else
+        Option.azure_plan(
+          provider_size.family,
+          provider_size.vcpus,
+          size_name: provider_size.display_name,
+        )
+      end
 
       if assemble_params[:storage_size] && assemble_params[:storage_size] != plan.disk_gib
-        fail Validation::ValidationFailed.new({storage_size: "Linode #{plan.label} includes #{plan.disk_gib} GB storage. Custom root disk sizes are not enabled yet."})
+        fail Validation::ValidationFailed.new({storage_size: "#{provider_name} #{plan.label} includes #{plan.disk_gib} GB storage. Custom root disk sizes are not enabled yet."})
       end
       assemble_params[:storage_volumes] = [{size_gib: plan.disk_gib, encrypted: true}]
       assemble_params.delete(:storage_size)
@@ -254,6 +264,13 @@ class Clover
         rescue Validation::ValidationFailed
           false
         end
+      elsif location.azure?
+        begin
+          Option.azure_plan(family, vm_size.vcpus, size_name: vm_size.display_name)
+          true
+        rescue Validation::ValidationFailed
+          false
+        end
       else
         true
       end
@@ -269,6 +286,12 @@ class Clover
             Option.linode_plan(family, vm_size.vcpus, size_name: vm_size.display_name)
           end
           plan.disk_gib == storage_size.to_i
+        rescue Validation::ValidationFailed
+          false
+        end
+      elsif location.azure?
+        begin
+          Option.azure_plan(family, vm_size.vcpus, size_name: vm_size.display_name).disk_gib == storage_size.to_i
         rescue Validation::ValidationFailed
           false
         end
@@ -300,6 +323,7 @@ class Clover
       end
     end
     boot_images.select! { Option.linode_boot_image?(it) } if locations.any?(&:linode?)
+    boot_images.select! { Option.azure_boot_image?(it) } if locations.any?(&:azure?)
     options.add_option(name: "boot_image", values: boot_images)
     options.add_option(name: "unix_user")
     options.add_option(name: "ssh_public_key", values: @project.ssh_public_keys)

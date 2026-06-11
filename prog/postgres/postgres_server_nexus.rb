@@ -30,6 +30,18 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
           })
           postgres_resource.update_target_sizes_with_replicas(target_vm_size:, target_storage_size_gib: postgres_resource.target_storage_size_gib)
         end
+      elsif postgres_resource.location.azure?
+        target_vm_size = Option.safe_azure_postgres_size_name(target_vm_size)
+        if target_vm_size != postgres_resource.target_vm_size
+          Clog.emit("Postgres VM size is not available on Azure, falling back to a safe size", {
+            postgres_azure_size_fallback: {
+              postgres_resource_ubid: postgres_resource.ubid,
+              requested_size: postgres_resource.target_vm_size,
+              fallback_size: target_vm_size,
+            },
+          })
+          postgres_resource.update_target_sizes_with_replicas(target_vm_size:, target_storage_size_gib: postgres_resource.target_storage_size_gib)
+        end
       end
 
       # For read replicas and representative servers (initial creation), use
@@ -115,7 +127,7 @@ class Prog::Postgres::PostgresServerNexus < Prog::Base
   label def bootstrap_rhizome
     extend_initial_provisioning_deadline
 
-    bud Prog::BootstrapRhizome, {"target_folder" => "postgres", "subject_id" => vm.id, "user" => "ubi", "no_bundler_install" => !vm.location.linode?}
+    bud Prog::BootstrapRhizome, {"target_folder" => "postgres", "subject_id" => vm.id, "user" => "ubi", "no_bundler_install" => !(vm.location.linode? || vm.location.azure?)}
     hop_wait_bootstrap_rhizome
   end
 
@@ -570,7 +582,7 @@ TIMER
   label def configure_logs
     nap 5 if ParseableResource.for_project(Config.postgres_service_project_id) && resource.parseable_password.nil?
 
-    if vm.location.linode? && postgres_server.logs_config[:log_destinations].empty?
+    if (vm.location.linode? || vm.location.azure?) && postgres_server.logs_config[:log_destinations].empty?
       when_initial_provisioning_set? do
         hop_setup_hugepages
       end

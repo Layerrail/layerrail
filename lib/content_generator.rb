@@ -31,13 +31,14 @@ module ContentGenerator
 
     def self.size(location, family, size)
       size = Option::VmSizes.find { it.display_name == size }
-      if location.linode?
-        plan = Option.linode_plan(family, size.vcpus, size_name: size.display_name)
+      if location.linode? || location.azure?
+        plan = location.linode? ? Option.linode_plan(family, size.vcpus, size_name: size.display_name) : Option.azure_plan(family, size.vcpus, size_name: size.display_name)
+        markup = location.linode? ? Option::LINODE_MARKUP : Option::AZURE_MARKUP
         return [
           size.display_name,
           "#{plan.vcpus} vCPUs / #{plan.memory_gib} GB RAM / #{plan.disk_gib} GB storage",
-          "$#{"%.2f" % (plan.monthly_price * Option::LINODE_MARKUP)}/mo",
-          "$#{"%.3f" % (plan.hourly_price * Option::LINODE_MARKUP)}/hour",
+          "$#{"%.2f" % (plan.monthly_price * markup)}/mo",
+          "$#{"%.3f" % (plan.hourly_price * markup)}/hour",
         ]
       end
 
@@ -128,9 +129,13 @@ module ContentGenerator
 
     def self.size(flavor, location, family, size)
       size = Option::POSTGRES_SIZE_OPTIONS[size]
-      memory_gib = if location.linode?
-        linode_family = (family == "hobby") ? "burstable" : family
-        Option.linode_plan(linode_family, size.vcpu_count).memory_gib
+      memory_gib = if location.linode? || location.azure?
+        provider_family = (family == "hobby") ? "burstable" : family
+        if location.linode?
+          Option.linode_plan(provider_family, size.vcpu_count).memory_gib
+        else
+          Option.azure_plan(provider_family, size.vcpu_count).memory_gib
+        end
       else
         size.memory_gib
       end

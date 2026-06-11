@@ -110,7 +110,12 @@ module Config
   override :clover_database_rds_iam_auth_enabled, false, bool
   optional :linode_access_token, string, clear: true
   override :linode_api_base_url, "https://api.linode.com/v4", string
-  override :compute_provider, "linode", string
+  optional :azure_subscription_id, string, clear: true
+  optional :azure_tenant_id, string, clear: true
+  optional :azure_client_id, string, clear: true
+  optional :azure_client_secret, string, clear: true
+  override :azure_arm_base_url, "https://management.azure.com", string
+  override :compute_provider, "azure", string
   override :game_vps_enabled, false, bool
   override :game_vps_provider, "ionos", string
   optional :ionos_api_token, string, clear: true

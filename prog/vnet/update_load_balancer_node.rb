@@ -12,7 +12,7 @@ class Prog::Vnet::UpdateLoadBalancerNode < Prog::Base
   end
 
   def run_nft_rules(rules)
-    if vm.location.linode?
+    if provider_backed_vm?
       vm.sshable.cmd("sudo nft --file -", stdin: rules)
     else
       vm.vm_host.sshable.cmd("sudo ip netns exec :inhost_name nft --file -", inhost_name:, stdin: rules)
@@ -33,7 +33,7 @@ class Prog::Vnet::UpdateLoadBalancerNode < Prog::Base
       load_balancer.remove_vm_port(load_balancer_vm_port)
     end
 
-    # If there is literally no up resource to balance to, keep Linode-backed
+    # If there is literally no up resource to balance to, keep provider-backed
     # empty load balancers reachable with a small holding page.
     if load_balancer.active_vm_ports.count == 0
       if linode_waiting_page_enabled? && !force_remove_waiting_page?
@@ -45,13 +45,13 @@ class Prog::Vnet::UpdateLoadBalancerNode < Prog::Base
       hop_remove_load_balancer
     end
 
-    remove_linode_waiting_page if vm.location.linode?
+    remove_linode_waiting_page if provider_backed_vm?
     run_nft_rules(generate_lb_based_nat_rules)
     pop "load balancer is updated"
   end
 
   label def remove_load_balancer
-    if vm.location.linode?
+    if provider_backed_vm?
       remove_linode_waiting_page if force_remove_waiting_page? || !linode_waiting_page_enabled?
       run_nft_rules(generate_flush_nat_rules)
     else
@@ -85,7 +85,7 @@ class Prog::Vnet::UpdateLoadBalancerNode < Prog::Base
         port = vm_port.load_balancer_port
         ipv4_map_def = generate_lb_map_defs_ipv4(port)
         modulo = ipv4_map_def.count
-        local_private_rule = unless vm.location.linode?
+        local_private_rule = unless provider_backed_vm?
           "ip daddr #{private_ipv4} tcp dport #{port.src_port} ct state established,related,new counter dnat to #{private_ipv4}:#{port.dst_port}"
         end
         <<-IPV4_PREROUTING
@@ -101,7 +101,7 @@ ip daddr #{public_ipv4} tcp dport #{port.src_port} ct state established,related,
         port = vm_port.load_balancer_port
         ipv6_map_def = generate_lb_map_defs_ipv6(port)
         modulo = ipv6_map_def.count
-        local_private_rule = unless vm.location.linode?
+        local_private_rule = unless provider_backed_vm?
           "ip6 daddr #{private_ipv6} tcp dport #{port.src_port} ct state established,related,new counter dnat to [#{public_ipv6}]:#{port.dst_port}"
         end
         <<-IPV6_PREROUTING
@@ -112,7 +112,7 @@ ip6 daddr #{public_ipv6} tcp dport #{port.src_port} ct state established,related
       end.join("\n")
     end
 
-    ipv4_output = if vm.location.linode? && load_balancer.ipv4_enabled?
+    ipv4_output = if provider_backed_vm? && load_balancer.ipv4_enabled?
       load_balancer_ports_to_work_on
         .select { |vm_port| vm_port.stack == "ipv4" && vm_port.load_balancer_vm.vm_id == vm.id }
         .uniq(&:load_balancer_port_id)
@@ -122,7 +122,7 @@ ip6 daddr #{public_ipv6} tcp dport #{port.src_port} ct state established,related
         end.join("\n")
     end
 
-    ipv6_output = if vm.location.linode? && load_balancer.ipv6_enabled?
+    ipv6_output = if provider_backed_vm? && load_balancer.ipv6_enabled?
       load_balancer_ports_to_work_on
         .select { |vm_port| vm_port.stack == "ipv6" && vm_port.load_balancer_vm.vm_id == vm.id }
         .uniq(&:load_balancer_port_id)
@@ -135,22 +135,22 @@ ip6 daddr #{public_ipv6} tcp dport #{port.src_port} ct state established,related
     sorted_ports = load_balancer.ports.sort_by { |port| port.src_port }
     ipv4_postrouting_rule = sorted_ports.map do |port|
       if load_balancer.ipv4_enabled?
-        snat_address = vm.location.linode? ? public_ipv4 : private_ipv4
+        snat_address = provider_backed_vm? ? public_ipv4 : private_ipv4
         "ip daddr @neighbor_ips_v4 tcp dport #{port.src_port} ct state established,related,new counter snat to #{snat_address}"
       end
     end.join("\n")
 
     ipv6_postrouting_rule = sorted_ports.map do |port|
       if load_balancer.ipv6_enabled?
-        snat_address = vm.location.linode? ? public_ipv6 : private_ipv6
+        snat_address = provider_backed_vm? ? public_ipv6 : private_ipv6
         "ip6 daddr @neighbor_ips_v6 tcp dport #{port.src_port} ct state established,related,new counter snat to #{snat_address}"
       end
     end.join("\n")
 
-    basic_prerouting_rule = unless vm.location.linode?
+    basic_prerouting_rule = unless provider_backed_vm?
       "# Basic NAT for public IPv4 to private IPv4\n    ip daddr #{public_ipv4} dnat to #{private_ipv4}"
     end
-    basic_postrouting_rule = unless vm.location.linode?
+    basic_postrouting_rule = unless provider_backed_vm?
       <<~RULE.chomp
         # Basic NAT for private IPv4 to public IPv4
             ip saddr #{private_ipv4} ip daddr != { 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 } snat to #{public_ipv4}
@@ -234,11 +234,11 @@ TEMPLATE
   end
 
   def backend_ipv4(backend_vm)
-    vm.location.linode? ? backend_vm.ip4 : backend_vm.private_ipv4
+    provider_backed_vm? ? backend_vm.ip4 : backend_vm.private_ipv4
   end
 
   def backend_ipv6(backend_vm)
-    vm.location.linode? ? backend_vm.ip6 : backend_vm.private_ipv6
+    provider_backed_vm? ? backend_vm.ip6 : backend_vm.private_ipv6
   end
 
   def generate_nat_rules(current_public_ipv4, current_private_ipv4)
@@ -271,11 +271,15 @@ NAT
   end
 
   def linode_waiting_page_enabled?
-    vm.location.linode? && load_balancer.ports_dataset.empty?
+    provider_backed_vm? && load_balancer.ports_dataset.empty?
   end
 
   def force_remove_waiting_page?
     frame["remove_waiting_page"] == true
+  end
+
+  def provider_backed_vm?
+    vm.location.linode? || vm.location.azure?
   end
 
   def setup_linode_waiting_page

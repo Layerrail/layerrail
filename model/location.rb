@@ -82,13 +82,17 @@ class Location < Sequel::Model
     provider == "linode"
   end
 
+  def azure?
+    provider == "azure"
+  end
+
   def metal?
-    !aws? && !gcp? && !linode?
+    !aws? && !azure? && !gcp? && !linode?
   end
 
   def provider_dispatcher_group_name
     case provider
-    when "aws", "gcp", "linode"
+    when "aws", "azure", "gcp", "linode"
       provider
     else
       "metal"

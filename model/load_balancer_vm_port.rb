@@ -44,7 +44,7 @@ class LoadBalancerVmPort < Sequel::Model
 
   def health_check_cmd(type)
     address = if type == :ipv4
-      vm.location.linode? ? vm.ip4 : vm.private_ipv4
+      provider_backed_vm? ? vm.ip4 : vm.private_ipv4
     else
       vm.ip6
     end
@@ -54,10 +54,10 @@ class LoadBalancerVmPort < Sequel::Model
       dst_port: load_balancer_port.dst_port,
     }
 
-    cmd_prefix = vm.location.linode? ? "" : "sudo ip netns exec :vm_name "
+    cmd_prefix = provider_backed_vm? ? "" : "sudo ip netns exec :vm_name "
     cmd = if load_balancer.health_check_protocol == "tcp"
       kw[:address] = address.to_s
-      if vm.location.linode?
+      if provider_backed_vm?
         "timeout :timeout bash -c true\\ \\<\\ /dev/tcp/:address/:dst_port >/dev/null 2>&1 && echo 200 || echo 400"
       else
         "#{cmd_prefix}nc -z -w :timeout :address :dst_port >/dev/null 2>&1 && echo 200 || echo 400"
@@ -72,7 +72,11 @@ class LoadBalancerVmPort < Sequel::Model
   end
 
   def health_check_sshable
-    vm.location.linode? ? vm.sshable : vm.vm_host.sshable
+    provider_backed_vm? ? vm.sshable : vm.vm_host.sshable
+  end
+
+  def provider_backed_vm?
+    vm.location.linode? || vm.location.azure?
   end
 
   def check_pulse(session:, previous_pulse:)

@@ -22,6 +22,7 @@ class Vm < Sequel::Model
   many_to_one :vm_host_slice, read_only: true
   many_to_one :location
   one_to_one :aws_instance, key: :id, read_only: true
+  one_to_one :azure_instance, key: :id, read_only: true
   one_to_one :linode_instance, key: :id, read_only: true
   one_to_one :vm_gcp_resource, key: :id, read_only: true
   one_to_one :init_script, class: :VmInitScript, key: :id, read_only: true
@@ -37,7 +38,7 @@ class Vm < Sequel::Model
     before_add: :validate_firewall_cap,
     after_add: :fire_firewall_rules_update_for_vm_firewall
 
-  plugin :association_dependencies, sshable: :destroy, assigned_vm_address: :destroy, vm_storage_volumes: :destroy, load_balancer_vm: :destroy, init_script: :destroy, linode_instance: :destroy
+  plugin :association_dependencies, sshable: :destroy, assigned_vm_address: :destroy, vm_storage_volumes: :destroy, load_balancer_vm: :destroy, init_script: :destroy, linode_instance: :destroy, azure_instance: :destroy
 
   dataset_module Pagination
 
@@ -60,6 +61,10 @@ class Vm < Sequel::Model
   def display_gpu
     if (plan = linode_instance && Option.linode_plan_by_id(linode_instance.linode_type)) && plan.gpu_count.positive?
       return "#{plan.gpu_count}x #{PciDevice.device_name(plan.gpu_device)}"
+    end
+
+    if (plan = azure_instance && Option.azure_plan_by_id(azure_instance.vm_size)) && plan.gpu_count.positive?
+      return "#{plan.gpu_count}x #{plan.gpu_device}"
     end
 
     gpu_devices = pci_devices.select { |d| ["0300", "0302"].include?(d.device_class) }

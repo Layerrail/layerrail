@@ -60,7 +60,7 @@ class Prog::Vnet::LoadBalancerNexus < Prog::Base
   end
 
   def self.default_stack_for_private_subnet(private_subnet)
-    private_subnet.location.linode? ? LoadBalancer::Stack::IPV4 : LoadBalancer::Stack::DUAL
+    (private_subnet.location.linode? || private_subnet.location.azure?) ? LoadBalancer::Stack::IPV4 : LoadBalancer::Stack::DUAL
   end
 
   label def wait
@@ -197,7 +197,7 @@ class Prog::Vnet::LoadBalancerNexus < Prog::Base
             nap 5
           end
 
-          unless vm.location.linode?
+          unless vm.location.linode? || vm.location.azure?
             if (private_ipv6 = vm.private_ipv6_string)
               ip_info << [private_ipv6, "AAAA", private_hostname]
             else

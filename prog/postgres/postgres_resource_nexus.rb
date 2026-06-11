@@ -150,7 +150,7 @@ class Prog::Postgres::PostgresResourceNexus < Prog::Base
         dns_zone.delete_record(record_name:)
         nap 5 unless vm.private_ipv4_string
         dns_zone.insert_record(record_name:, type: "A", ttl: 10, data: vm.private_ipv4_string)
-        dns_zone.insert_record(record_name:, type: "AAAA", ttl: 10, data: vm.private_ipv6_string) if !vm.location.linode? && vm.private_ipv6_string
+        dns_zone.insert_record(record_name:, type: "AAAA", ttl: 10, data: vm.private_ipv6_string) if !(vm.location.linode? || vm.location.azure?) && vm.private_ipv6_string
       end
     end
 

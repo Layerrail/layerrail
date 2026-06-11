@@ -19,7 +19,7 @@ class Prog::Vnet::CertServer < Prog::Base
   end
 
   label def setup_cert_server
-    if vm.location.linode?
+    if provider_backed_vm?
       vm.sshable.cmd("sudo install -d -m 0755 /etc/layerrail/load-balancer")
       hop_put_certificate
     end
@@ -35,7 +35,7 @@ class Prog::Vnet::CertServer < Prog::Base
   end
 
   label def remove_cert_server
-    if vm.location.linode?
+    if provider_backed_vm?
       vm.sshable.cmd("sudo rm -f /etc/layerrail/load-balancer/cert.pem /etc/layerrail/load-balancer/key.pem")
       vm.sshable.cmd("sudo systemctl restart layerrail-lb-waiting-page || true")
       pop "certificate resources and server are removed"
@@ -52,7 +52,7 @@ class Prog::Vnet::CertServer < Prog::Base
     cert_payload = cert.cert
     cert_key_payload = OpenSSL::PKey::EC.new(cert.csr_key).to_pem
 
-    if vm.location.linode?
+    if provider_backed_vm?
       vm.sshable.cmd("sudo install -d -m 0755 /etc/layerrail/load-balancer")
       vm.sshable.cmd("sudo tee /etc/layerrail/load-balancer/cert.pem > /dev/null", stdin: cert_payload.to_s)
       vm.sshable.cmd("sudo tee /etc/layerrail/load-balancer/key.pem > /dev/null", stdin: cert_key_payload.to_s)
@@ -66,5 +66,9 @@ class Prog::Vnet::CertServer < Prog::Base
 
   def inhost_name
     vm.inhost_name
+  end
+
+  def provider_backed_vm?
+    vm.location.linode? || vm.location.azure?
   end
 end

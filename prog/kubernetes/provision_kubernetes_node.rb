@@ -99,7 +99,7 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
 
   def kubeadm_join_parameter_command(local_command, remote_command)
     cp_node = control_plane_join_node
-    return remote_command unless cp_node.vm.location.linode?
+    return remote_command unless provider_backed_vm?(cp_node.vm)
 
     server = "https://#{cp_node.vm.ip4}:6443"
     rewrite_kubeconfig = NetSsh.command(
@@ -248,7 +248,7 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
   end
 
   label def prepare_node_runtime
-    if vm.location.linode?
+    if provider_backed_vm?(vm)
       state = vm.sshable.d_check("prepare_linode_kubernetes_node")
       case state
       when "Succeeded"
@@ -294,7 +294,7 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
   end
 
   def configure_kubernetes_node_services
-    outbound_interface = vm.location.linode? ? "eth0" : "ens3"
+    outbound_interface = provider_backed_vm?(vm) ? "eth0" : "ens3"
     nft_rules = <<~NFT
       #!/usr/sbin/nft -f
       flush ruleset
@@ -544,7 +544,7 @@ sudo touch #{marker}
   end
 
   label def install_cni
-    pod_ipv6_subnet = if vm.location.linode?
+    pod_ipv6_subnet = if provider_backed_vm?(vm)
       vm.nics.first.private_ipv6
     else
       NetAddr::IPv6Net.new(vm.ephemeral_net6.network, NetAddr::Mask128.new(vm.ephemeral_net6.netmask.prefix_len + 1))
@@ -583,5 +583,9 @@ CONFIG
     kubernetes_cluster.incr_sync_internal_dns_config
     kubernetes_cluster.incr_sync_worker_mesh
     pop({node_id: node.id})
+  end
+
+  def provider_backed_vm?(target_vm)
+    target_vm.location.linode? || target_vm.location.azure?
   end
 end

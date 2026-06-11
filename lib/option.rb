@@ -32,6 +32,7 @@ module Option
 
   LinodePlan = Data.define(:id, :label, :family, :size_name, :vcpus, :memory_gib, :disk_gib, :monthly_price, :hourly_price, :gpu_count, :gpu_device, :billing_family)
   LINODE_MARKUP = 1.30
+  AZURE_MARKUP = 1.30
   LINODE_GPU_DEVICE = "27b0"
   LINODE_LOCATIONS = [
     ["linode-de-fra-2", "de-fra-2", "Frankfurt, DE"],
@@ -60,6 +61,34 @@ module Option
     "debian-12" => "linode/debian12",
     "almalinux-9" => "linode/almalinux9",
     "rocky-9" => "linode/rocky9",
+  }.freeze
+
+  AzurePlan = Data.define(:id, :label, :family, :size_name, :vcpus, :memory_gib, :disk_gib, :monthly_price, :hourly_price, :gpu_count, :gpu_device, :billing_family)
+  AZURE_LOCATIONS = [
+    ["azure-eastus", "eastus", "East US"],
+    ["azure-westus3", "westus3", "West US 3"],
+    ["azure-westeurope", "westeurope", "West Europe"],
+    ["azure-northeurope", "northeurope", "North Europe"],
+  ].map(&:freeze).freeze
+  AZURE_PLANS = [
+    AzurePlan.new("Standard_B1s", "Starter 1GB", "nanode", "nanode-1", 1, 1, 25, 5, 0.0075, 0, nil, "nanode"),
+    AzurePlan.new("Standard_B1ms", "Starter 2GB", "nanode", "nanode-2", 1, 2, 50, 12, 0.018, 0, nil, "nanode-2"),
+    AzurePlan.new("Standard_B2s", "Starter 4GB", "nanode", "nanode-4", 2, 4, 80, 24, 0.036, 0, nil, "nanode-4"),
+    AzurePlan.new("Standard_B4ms", "Starter 16GB", "nanode", "nanode-8", 4, 16, 160, 48, 0.072, 0, nil, "nanode-8"),
+    AzurePlan.new("Standard_B1ms", "Shared 2GB", "burstable", "burstable-1", 1, 2, 50, 12, 0.018, 0, nil, "burstable"),
+    AzurePlan.new("Standard_B2s", "Shared 4GB", "burstable", "burstable-2", 2, 4, 80, 24, 0.036, 0, nil, "burstable"),
+    AzurePlan.new("Standard_D2s_v5", "Dedicated 8GB", "standard", "standard-2", 2, 8, 80, 43, 0.0645, 0, nil, "standard"),
+    AzurePlan.new("Standard_D4s_v5", "Dedicated 16GB", "standard", "standard-4", 4, 16, 160, 86, 0.129, 0, nil, "standard"),
+    AzurePlan.new("Standard_D8s_v5", "Dedicated 32GB", "standard", "standard-8", 8, 32, 320, 173, 0.2595, 0, nil, "standard"),
+    AzurePlan.new("Standard_D16s_v5", "Dedicated 64GB", "standard", "standard-16", 16, 64, 640, 346, 0.519, 0, nil, "standard"),
+  ].freeze
+  AZURE_BOOT_IMAGES = {
+    "ubuntu-noble" => {publisher: "Canonical", offer: "ubuntu-24_04-lts", sku: "server", version: "latest"},
+    "ubuntu-jammy" => {publisher: "Canonical", offer: "0001-com-ubuntu-server-jammy", sku: "22_04-lts-gen2", version: "latest"},
+    "gpu-ubuntu-noble" => {publisher: "Canonical", offer: "ubuntu-24_04-lts", sku: "server", version: "latest"},
+    "debian-12" => {publisher: "Debian", offer: "debian-12", sku: "12-gen2", version: "latest"},
+    "almalinux-9" => {publisher: "almalinux", offer: "almalinux-x86_64", sku: "9-gen2", version: "latest"},
+    "rocky-9" => {publisher: "resf", offer: "rockylinux-x86_64", sku: "9-base", version: "latest"},
   }.freeze
 
   def self.linode_plan(family, vcpu_count, gpu_count: 0, gpu_device: nil, size_name: nil, memory_gib: nil)
@@ -106,6 +135,50 @@ module Option
     LINODE_PLANS.find { it.id == id }
   end
 
+  def self.azure_plan(family, vcpu_count, gpu_count: 0, gpu_device: nil, size_name: nil, memory_gib: nil)
+    gpu_suffix = gpu_count.to_i.positive? ? " with #{gpu_count} GPU(s)" : ""
+    AZURE_PLANS.find {
+      it.family == family &&
+        it.vcpus == vcpu_count &&
+        it.gpu_count == gpu_count.to_i &&
+        it.gpu_device == gpu_device &&
+        (size_name.nil? || it.size_name == size_name) &&
+        (memory_gib.nil? || it.memory_gib == memory_gib)
+    } || raise(Validation::ValidationFailed.new({size: "#{family}-#{vcpu_count}#{gpu_suffix} is not available on Azure"}))
+  end
+
+  def self.azure_plan_by_id(id)
+    AZURE_PLANS.find { it.id == id }
+  end
+
+  def self.azure_image_reference(boot_image)
+    image = if boot_image.start_with?("kubernetes-")
+      AZURE_BOOT_IMAGES.fetch("ubuntu-noble")
+    elsif boot_image == "postgres-ubuntu-2204"
+      AZURE_BOOT_IMAGES.fetch("ubuntu-jammy")
+    else
+      AZURE_BOOT_IMAGES.fetch(boot_image)
+    end
+    image.transform_keys(&:to_s)
+  rescue KeyError
+    raise Validation::ValidationFailed.new({boot_image: "#{boot_image} is not available on Azure"})
+  end
+
+  def self.azure_boot_image?(boot_image)
+    AZURE_BOOT_IMAGES.key?(boot_image) || boot_image.start_with?("kubernetes-") || boot_image == "postgres-ubuntu-2204"
+  end
+
+  def self.azure_vm_size_names(gpu: false)
+    AZURE_PLANS
+      .select { |plan| gpu ? plan.gpu_count.positive? : plan.gpu_count.zero? }
+      .map(&:size_name)
+      .uniq
+  end
+
+  def self.azure_vm_size_available?(vm_size, gpu: false)
+    azure_vm_size_names(gpu:).include?(vm_size.display_name)
+  end
+
   def self.linode_vm_size_names(gpu: false)
     LINODE_PLANS
       .select { |plan| gpu ? plan.gpu_count.positive? : plan.gpu_count.zero? }
@@ -119,6 +192,7 @@ module Option
 
   def self.vm_size_options(location: nil, gpu: false)
     sizes = VmSizes.select { it.visible && it.arch == "x64" }
+    return sizes.select { azure_vm_size_available?(it, gpu:) } if azure_location?(location)
     return sizes unless linode_location?(location)
 
     sizes.select { linode_vm_size_available?(it, gpu:) }
@@ -126,6 +200,13 @@ module Option
 
   def self.kubernetes_worker_size_options(location: nil)
     sizes = VmSizes.select { it.visible && it.arch == "x64" && it.family == "standard" && it.vcpus <= 16 }
+    if azure_location?(location)
+      azure_standard_sizes = AZURE_PLANS
+        .select { it.family == "standard" && it.gpu_count.zero? }
+        .map(&:size_name)
+        .uniq
+      return sizes.select { azure_standard_sizes.include?(it.display_name) }
+    end
     return sizes unless linode_location?(location)
 
     linode_standard_sizes = LINODE_PLANS
@@ -529,21 +610,36 @@ module Option
   ].to_h).freeze
 
   LINODE_POSTGRES_SIZE_NAMES = %w[hobby-1 hobby-2 standard-2 standard-4].freeze
+  AZURE_POSTGRES_SIZE_NAMES = %w[hobby-1 hobby-2 standard-2 standard-4].freeze
+
+  def self.azure_location?(location)
+    location&.provider == "azure" || Config.compute_provider == "azure"
+  end
 
   def self.linode_location?(location)
     location&.provider == "linode" || Config.compute_provider == "linode"
   end
 
   def self.postgres_family_options(location: nil)
+    return POSTGRES_FAMILY_OPTIONS.select { |name,| %w[standard hobby].include?(name) } if azure_location?(location)
     return POSTGRES_FAMILY_OPTIONS unless linode_location?(location)
 
     POSTGRES_FAMILY_OPTIONS.select { |name,| %w[standard hobby].include?(name) }
   end
 
   def self.postgres_size_options(location: nil)
+    return POSTGRES_SIZE_OPTIONS.select { |name,| AZURE_POSTGRES_SIZE_NAMES.include?(name) } if azure_location?(location)
     return POSTGRES_SIZE_OPTIONS unless linode_location?(location)
 
     POSTGRES_SIZE_OPTIONS.select { |name,| LINODE_POSTGRES_SIZE_NAMES.include?(name) }
+  end
+
+  def self.safe_azure_postgres_size_name(size_name)
+    name = size_name.to_s.gsub("burstable", "hobby")
+    return name if AZURE_POSTGRES_SIZE_NAMES.include?(name)
+
+    parsed = POSTGRES_SIZE_OPTIONS[name]
+    parsed&.family == "standard" ? "standard-4" : "hobby-2"
   end
 
   def self.safe_linode_postgres_size_name(size_name)

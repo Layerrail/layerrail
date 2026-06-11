@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ProviderDispatcher
-  PROVIDERS = %i[Aws Gcp Linode Metal].freeze
+  PROVIDERS = %i[Aws Azure Gcp Linode Metal].freeze
 
   def self.configure(model, file)
     dir, file = File.split(file)

@@ -23,6 +23,8 @@ class Prog::Vnet::NicNexus < Prog::Base
         ["Vnet::Gcp::NicNexus", (ipv4_addr || subnet.random_private_ipv4).to_s, nil, "active", nil]
       elsif subnet.location.linode?
         ["Vnet::Linode::NicNexus", (ipv4_addr || subnet.random_private_ipv4).to_s, nil, "active", nil]
+      elsif subnet.location.azure?
+        ["Vnet::Azure::NicNexus", (ipv4_addr || subnet.random_private_ipv4).to_s, nil, "active", nil]
       else
         ["Vnet::Metal::NicNexus", (ipv4_addr || subnet.random_private_ipv4).to_s, gen_mac, "initializing", nil]
       end
