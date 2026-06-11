@@ -312,6 +312,254 @@ paths:
           $ref: '#/components/responses/Error'
       tags:
         - Inference Endpoint
+  /project/{project_id}/domain:
+    parameters:
+      - $ref: '#/components/parameters/project_id'
+    get:
+      operationId: listProjectDomains
+      summary: List domain registrations, orders, contact profiles, and bundles
+      responses:
+        '200':
+          $ref: '#/components/responses/DomainOverview'
+        default:
+          $ref: '#/components/responses/Error'
+      tags:
+        - Domain
+  /project/{project_id}/domain/search:
+    parameters:
+      - $ref: '#/components/parameters/project_id'
+    post:
+      operationId: searchDomain
+      summary: Check domain registration availability and pricing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                domain:
+                  type: string
+                years:
+                  type: integer
+              required:
+                - domain
+              additionalProperties: false
+      responses:
+        '200':
+          $ref: '#/components/responses/DomainAvailability'
+        default:
+          $ref: '#/components/responses/Error'
+      tags:
+        - Domain
+  /project/{project_id}/domain/bulk-search:
+    parameters:
+      - $ref: '#/components/parameters/project_id'
+    post:
+      operationId: bulkSearchDomains
+      summary: Check availability for multiple domains
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                domains:
+                  type: array
+                  maxItems: 50
+                  items:
+                    type: string
+              required:
+                - domains
+              additionalProperties: false
+      responses:
+        '200':
+          $ref: '#/components/responses/DomainBulkAvailability'
+        default:
+          $ref: '#/components/responses/Error'
+      tags:
+        - Domain
+  /project/{project_id}/domain/cart:
+    parameters:
+      - $ref: '#/components/parameters/project_id'
+    post:
+      operationId: addDomainToCart
+      summary: Add an available domain registration to cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                domain:
+                  type: string
+                years:
+                  type: integer
+                contact_profile_id:
+                  type: string
+                nameservers:
+                  type: string
+              required:
+                - domain
+              additionalProperties: false
+      responses:
+        '200':
+          $ref: '#/components/responses/DomainRegistration'
+        default:
+          $ref: '#/components/responses/Error'
+      tags:
+        - Domain
+  /project/{project_id}/domain/transfer:
+    parameters:
+      - $ref: '#/components/parameters/project_id'
+    post:
+      operationId: createDomainTransfer
+      summary: Add a domain transfer to cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                domain:
+                  type: string
+                auth_code:
+                  type: string
+                years:
+                  type: integer
+                contact_profile_id:
+                  type: string
+              required:
+                - domain
+                - auth_code
+              additionalProperties: false
+      responses:
+        '200':
+          $ref: '#/components/responses/DomainOrder'
+        default:
+          $ref: '#/components/responses/Error'
+      tags:
+        - Domain
+  /project/{project_id}/domain/contact-profile:
+    parameters:
+      - $ref: '#/components/parameters/project_id'
+    get:
+      operationId: listDomainContactProfiles
+      summary: List domain contact profiles
+      responses:
+        '200':
+          $ref: '#/components/responses/DomainContactProfiles'
+        default:
+          $ref: '#/components/responses/Error'
+      tags:
+        - Domain
+    post:
+      operationId: createDomainContactProfile
+      summary: Create a domain contact profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DomainContactProfileCreate'
+      responses:
+        '200':
+          $ref: '#/components/responses/DomainContactProfile'
+        default:
+          $ref: '#/components/responses/Error'
+      tags:
+        - Domain
+  /project/{project_id}/domain/bundle:
+    parameters:
+      - $ref: '#/components/parameters/project_id'
+    get:
+      operationId: listDomainBundles
+      summary: List domain marketplace bundles
+      responses:
+        '200':
+          $ref: '#/components/responses/DomainBundles'
+        default:
+          $ref: '#/components/responses/Error'
+      tags:
+        - Domain
+    post:
+      operationId: createDomainBundle
+      summary: Create a domain marketplace bundle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                slug:
+                  type: string
+                bundle_type:
+                  type: string
+                status:
+                  type: string
+                description:
+                  type: string
+                domain_registration_id:
+                  type: string
+                deploy_app_id:
+                  type: string
+              required:
+                - name
+                - domain_registration_id
+              additionalProperties: false
+      responses:
+        '200':
+          $ref: '#/components/responses/DomainBundle'
+        default:
+          $ref: '#/components/responses/Error'
+      tags:
+        - Domain
+  /project/{project_id}/domain/{domain_registration_id}:
+    parameters:
+      - $ref: '#/components/parameters/project_id'
+      - $ref: '#/components/parameters/domain_registration_id'
+    get:
+      operationId: getDomainRegistration
+      summary: Get domain registration details
+      responses:
+        '200':
+          $ref: '#/components/responses/DomainRegistration'
+        default:
+          $ref: '#/components/responses/Error'
+      tags:
+        - Domain
+  /project/{project_id}/domain/{domain_registration_id}/attach-deploy-app:
+    parameters:
+      - $ref: '#/components/parameters/project_id'
+      - $ref: '#/components/parameters/domain_registration_id'
+    post:
+      operationId: attachDomainDeployApp
+      summary: Attach a registered domain to a deploy app
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deploy_app_id:
+                  type: string
+              required:
+                - deploy_app_id
+              additionalProperties: false
+      responses:
+        '200':
+          $ref: '#/components/responses/DomainRegistration'
+        default:
+          $ref: '#/components/responses/Error'
+      tags:
+        - Domain
   /project/{project_id}/kubernetes-cluster:
     get:
       operationId: listProjectKubernetesClusters
@@ -2722,6 +2970,15 @@ components:
         type: string
         example: akkkmx0f2vke4h36nk9cm8v8q0
         pattern: ^ak[0-9a-hj-km-np-tv-z]{24}$
+    domain_registration_id:
+      description: ID of the domain registration
+      in: path
+      name: domain_registration_id
+      required: true
+      schema:
+        type: string
+        example: dnkkmx0f2vke4h36nk9cm8v8q0
+        pattern: ^dn[0-9a-hj-km-np-tv-z]{24}$
     kubernetes_cluster_reference:
       description: Kubernetes cluster ID or name
       examples:
@@ -3022,6 +3279,141 @@ components:
       required:
         - name
         - public_key
+    DomainAvailability:
+      type: object
+      properties:
+        domain:
+          type: string
+        available:
+          type: boolean
+        tld_enabled:
+          type: boolean
+          nullable: true
+        years:
+          type: integer
+        registration_price_cents:
+          type: integer
+          nullable: true
+        renewal_price_cents:
+          type: integer
+          nullable: true
+        transfer_price_cents:
+          type: integer
+          nullable: true
+        amount_cents:
+          type: integer
+          nullable: true
+        error:
+          type: string
+          nullable: true
+      additionalProperties: false
+      required:
+        - domain
+        - available
+    DomainRegistration:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: string
+        domain:
+          type: string
+        state:
+          type: string
+      required:
+        - id
+        - domain
+        - state
+    DomainOrder:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: string
+        domain:
+          type: string
+        kind:
+          type: string
+        state:
+          type: string
+      required:
+        - id
+        - domain
+        - kind
+        - state
+    DomainContactProfile:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+      required:
+        - id
+        - name
+        - email
+    DomainContactProfileCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        organization:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address1:
+          type: string
+        address2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        postal_code:
+          type: string
+        country_code:
+          type: string
+      additionalProperties: false
+      required:
+        - name
+        - first_name
+        - last_name
+        - email
+        - phone
+        - address1
+        - city
+        - state
+        - postal_code
+        - country_code
+    DomainBundle:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        type:
+          type: string
+        state:
+          type: string
+      required:
+        - id
+        - name
+        - slug
+        - type
+        - state
     FirewallRuleUpdate:
       anyOf:
         - type: object
@@ -4094,6 +4486,107 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+    DomainOverview:
+      description: A domain workspace overview
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              registrations:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DomainRegistration'
+              orders:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DomainOrder'
+              contact_profiles:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DomainContactProfile'
+              bundles:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DomainBundle'
+            additionalProperties: false
+            required:
+              - registrations
+              - orders
+              - contact_profiles
+              - bundles
+    DomainAvailability:
+      description: Domain availability and pricing
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DomainAvailability'
+    DomainBulkAvailability:
+      description: Domain availability and pricing for multiple domains
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DomainAvailability'
+            additionalProperties: false
+            required:
+              - items
+    DomainRegistration:
+      description: A domain registration
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DomainRegistration'
+    DomainOrder:
+      description: A domain order
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DomainOrder'
+    DomainContactProfile:
+      description: A domain contact profile
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DomainContactProfile'
+    DomainContactProfiles:
+      description: A list of domain contact profiles
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DomainContactProfile'
+            additionalProperties: false
+            required:
+              - items
+    DomainBundle:
+      description: A domain bundle
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DomainBundle'
+    DomainBundles:
+      description: A list of domain bundles
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DomainBundle'
+            additionalProperties: false
+            required:
+              - items
     PrivateLocation:
       description: A Private Location
       content:

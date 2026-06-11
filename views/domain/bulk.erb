@@ -1,0 +1,76 @@
+<% @page_title = "Bulk Domain Tools" %>
+
+<%== part(
+  "components/page_header",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Domains", "#{@project.path}/domain"], ["Bulk Tools", "#"]],
+  right_items: [part("components/button", text: "Back to Domains", link: "#{@project.path}/domain", icon: "hero-chevron-left")]
+) %>
+
+<div class="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+  <% form(action: "#{@project.path}/domain/bulk-search", method: :post, class: "rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5") do %>
+    <h2 class="text-xl font-semibold text-gray-900">Search domains in bulk</h2>
+    <p class="mt-2 text-sm text-gray-600">Paste up to 50 domains. LayerRail will check availability and show the domains that can be added to cart.</p>
+    <label class="mt-5 block text-sm font-medium leading-6 text-gray-900" for="domains">Domains</label>
+    <textarea class="mt-2 block min-h-56 w-full rounded-md border-0 px-3 py-2 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-layerrail-600" id="domains" name="domains" placeholder="example.com&#10;example.dev"><%= @bulk_domains %></textarea>
+    <div class="mt-5 flex justify-end">
+      <%== part("components/form/submit_button", text: "Check Availability", icon: "hero-magnifying-glass") %>
+    </div>
+  <% end %>
+
+  <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+    <h2 class="text-xl font-semibold text-gray-900">Results</h2>
+    <% if @bulk_results %>
+      <% form(action: "#{@project.path}/domain/bulk-cart", method: :post, class: "mt-5") do %>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 text-left text-sm">
+            <thead class="text-gray-500">
+              <tr>
+                <th class="py-2 pr-4 font-medium">Add</th>
+                <th class="py-2 pr-4 font-medium">Domain</th>
+                <th class="py-2 pr-4 font-medium">State</th>
+                <th class="py-2 pr-4 font-medium">First year</th>
+                <th class="py-2 pr-4 font-medium">Renewal</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-gray-700">
+              <% @bulk_results.each do |result| %>
+                <% available = result[:available] && result[:tld_enabled] != false %>
+                <tr>
+                  <td class="py-3 pr-4">
+                    <% if available %>
+                      <input class="h-4 w-4 rounded border-gray-300 text-layerrail-600 focus:ring-layerrail-600" type="checkbox" name="domains[]" value="<%= result[:domain] %>" checked>
+                    <% else %>
+                      -
+                    <% end %>
+                  </td>
+                  <td class="py-3 pr-4 font-medium text-gray-900"><%= result[:domain] %></td>
+                  <td class="py-3 pr-4"><%= available ? "Available" : (result[:error] || "Unavailable") %></td>
+                  <td class="py-3 pr-4"><%= result[:registration_price_cents] ? "$#{format("%0.2f", result[:registration_price_cents] / 100.0)}" : "-" %></td>
+                  <td class="py-3 pr-4"><%= result[:renewal_price_cents] ? "$#{format("%0.2f", result[:renewal_price_cents] / 100.0)}" : "-" %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-5 grid gap-4 md:grid-cols-2">
+          <%== part(
+            "components/form/select",
+            name: "contact_profile_id",
+            label: "Contact profile",
+            options: [["", "Provider default"]] + @contact_profiles.map { [it.ubid, it.label] }
+          ) %>
+          <div>
+            <label class="text-sm font-medium leading-6 text-gray-900" for="nameservers">Nameservers</label>
+            <input class="mt-2 block w-full rounded-md border-0 px-3 py-2 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-layerrail-600" id="nameservers" name="nameservers" placeholder="ns1.layerrail.com, ns2.layerrail.com">
+          </div>
+        </div>
+        <div class="mt-5 flex justify-end">
+          <%== part("components/form/submit_button", text: "Add Selected to Cart", icon: "hero-banknotes") %>
+        </div>
+      <% end %>
+    <% else %>
+      <p class="mt-4 text-sm text-gray-600">Run a bulk search to review domain availability.</p>
+    <% end %>
+  </div>
+</div>

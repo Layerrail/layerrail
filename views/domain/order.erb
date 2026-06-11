@@ -34,6 +34,18 @@
           <dt class="text-sm font-medium text-gray-500">Provider order</dt>
           <dd class="mt-1 text-lg font-semibold text-gray-900"><%= @domain_order.provider_order_id || "-" %></dd>
         </div>
+        <div class="rounded-lg bg-gray-50 p-4">
+          <dt class="text-sm font-medium text-gray-500">Due</dt>
+          <dd class="mt-1 text-lg font-semibold text-gray-900"><%= @domain_order.due_at_label %></dd>
+        </div>
+        <div class="rounded-lg bg-gray-50 p-4">
+          <dt class="text-sm font-medium text-gray-500">Completed</dt>
+          <dd class="mt-1 text-lg font-semibold text-gray-900"><%= @domain_order.completed_at_label %></dd>
+        </div>
+        <div class="rounded-lg bg-gray-50 p-4">
+          <dt class="text-sm font-medium text-gray-500">Created by</dt>
+          <dd class="mt-1 text-lg font-semibold text-gray-900"><%= @domain_order.scheduled_by_automation ? "Auto-renewal" : "User" %></dd>
+        </div>
       </dl>
     </div>
 

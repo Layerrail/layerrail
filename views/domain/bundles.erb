@@ -1,0 +1,88 @@
+<% @page_title = "Domain Bundles" %>
+
+<%== part(
+  "components/page_header",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Domains", "#{@project.path}/domain"], ["Bundles", "#"]],
+  right_items: [part("components/button", text: "Back to Domains", link: "#{@project.path}/domain", icon: "hero-chevron-left")]
+) %>
+
+<div class="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+  <% form(action: "#{@project.path}/domain/bundle", method: :post, class: "rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5") do %>
+    <h2 class="text-xl font-semibold text-gray-900">Create marketplace bundle</h2>
+    <p class="mt-2 text-sm text-gray-600">Package a domain with an app or infrastructure pattern so teams can reuse it later.</p>
+    <div class="mt-5 space-y-4">
+      <div>
+        <label class="text-sm font-medium leading-6 text-gray-900" for="name">Bundle name</label>
+        <input class="mt-2 block w-full rounded-md border-0 px-3 py-2 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-layerrail-600" id="name" name="name" placeholder="SaaS launch kit">
+      </div>
+      <div>
+        <label class="text-sm font-medium leading-6 text-gray-900" for="slug">Slug</label>
+        <input class="mt-2 block w-full rounded-md border-0 px-3 py-2 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-layerrail-600" id="slug" name="slug" placeholder="saas-launch-kit">
+      </div>
+      <%== part(
+        "components/form/select",
+        name: "domain_registration_id",
+        label: "Domain",
+        options: @domains.map { [it.ubid, it.domain] }
+      ) %>
+      <%== part(
+        "components/form/select",
+        name: "deploy_app_id",
+        label: "Deploy app",
+        options: [["", "No app attached"]] + @deploy_apps.map { [it.ubid, it.name] }
+      ) %>
+      <%== part(
+        "components/form/select",
+        name: "bundle_type",
+        label: "Bundle type",
+        selected: "startup",
+        options: DomainBundle::TYPES.map { [it, it.tr("_", " ")] }
+      ) %>
+      <div>
+        <label class="text-sm font-medium leading-6 text-gray-900" for="description">Description</label>
+        <textarea class="mt-2 block min-h-28 w-full rounded-md border-0 px-3 py-2 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-layerrail-600" id="description" name="description"></textarea>
+      </div>
+    </div>
+    <div class="mt-5 flex justify-end">
+      <%== part("components/form/submit_button", text: "Create Bundle", icon: "hero-folder-open") %>
+    </div>
+  <% end %>
+
+  <%== part(
+    "components/table_card",
+    title: "Bundles",
+    headers: ["Name", "Type", "State", "Domain", "Deploy app"],
+    rows: @domain_bundles.map do |bundle|
+      [
+        [
+          [
+            [bundle.name],
+            [bundle.ubid, {copyable: true}]
+          ],
+          bundle.display_type,
+          bundle.display_state,
+          bundle.domain_registration&.domain || "-",
+          bundle.deploy_app&.name || "-"
+        ],
+        {id: "domain-bundle-#{bundle.ubid}"}
+      ]
+    end
+  ) %>
+</div>
+
+<% if @domain_bundles.any? %>
+  <div class="mt-6 grid gap-4 lg:grid-cols-3">
+    <% @domain_bundles.each do |bundle| %>
+      <% form(action: "#{@project.path}/domain/bundle/#{bundle.ubid}/status", method: :post, class: "rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5") do %>
+        <div class="text-sm font-medium text-layerrail-600"><%= bundle.display_type.capitalize %></div>
+        <h3 class="mt-1 text-lg font-semibold text-gray-900"><%= bundle.name %></h3>
+        <p class="mt-2 min-h-12 text-sm text-gray-600"><%= bundle.description || "Reusable LayerRail domain and deployment bundle." %></p>
+        <div class="mt-4 flex gap-2">
+          <% DomainBundle::STATUSES.each do |status| %>
+            <%== part("components/button", text: status.capitalize, attributes: {"type" => "submit", "name" => "status", "value" => status}) %>
+          <% end %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>

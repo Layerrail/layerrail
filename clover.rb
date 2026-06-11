@@ -98,6 +98,7 @@ class Clover < Roda
     GameVps,
     AiAgent,
     AiKnowledgeBase,
+    DomainBundle,
     DomainContactProfile,
     DomainOrder,
     DomainRegistration,
@@ -143,6 +144,7 @@ class Clover < Roda
     AiAgent
     AiKnowledgeBase
     ApiKey
+    DomainBundle
     DomainContactProfile
     DomainOrder
     DomainRegistration

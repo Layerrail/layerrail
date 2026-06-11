@@ -1,0 +1,48 @@
+<% @page_title = "ICANN Accreditation Plan" %>
+
+<%== part(
+  "components/page_header",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Domains", "#{@project.path}/domain"], ["ICANN Plan", "#"]],
+  right_items: [part("components/button", text: "Back to Domains", link: "#{@project.path}/domain", icon: "hero-chevron-left")]
+) %>
+
+<div class="grid gap-6 lg:grid-cols-[1fr_0.85fr]">
+  <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+    <h2 class="text-2xl font-semibold text-gray-900">Accreditation evaluation</h2>
+    <p class="mt-3 text-sm leading-6 text-gray-600">
+      LayerRail can operate with a registrar reseller first, then evaluate ICANN accreditation once volume, support coverage, abuse handling, and compliance workflows are mature enough.
+    </p>
+    <div class="mt-6 grid gap-4 md:grid-cols-2">
+      <% [
+        ["Reseller launch", "Use provider APIs, checkout reconciliation, contact profiles, DNS automation, renewals, and transfer flows."],
+        ["Compliance controls", "WHOIS/RDAP data handling, abuse review, suspension workflow, audit logs, and customer notifications."],
+        ["Operational readiness", "24/7 escalation path, renewal failure handling, data escrow planning, incident response, and billing controls."],
+        ["Accreditation review", "Evaluate ICANN costs, insurance, registry integrations, technical testing, and long-term support load."]
+      ].each do |title, body| %>
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <h3 class="font-semibold text-gray-900"><%= title %></h3>
+          <p class="mt-2 text-sm leading-6 text-gray-600"><%= body %></p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+    <h2 class="text-xl font-semibold text-gray-900">Phase 3 checklist</h2>
+    <ul class="mt-5 space-y-3 text-sm text-gray-700">
+      <% [
+        "Public domain API for search and domain details",
+        "Bulk search and cart workflow",
+        "Domain-to-deploy app attachment",
+        "Team policy metadata for domain operations",
+        "Marketplace bundle records",
+        "Admin TLD controls inherited from Phase 1"
+      ].each do |item| %>
+        <li class="flex gap-3">
+          <span class="mt-0.5 text-layerrail-600"><%== part("components/icon", name: "hero-check-circle-mini") %></span>
+          <span><%= item %></span>
+        </li>
+      <% end %>
+    </ul>
+  </div>
+</div>

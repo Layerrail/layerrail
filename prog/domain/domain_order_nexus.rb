@@ -43,8 +43,10 @@ class Prog::Domain::DomainOrderNexus < Prog::Base
     registration.update(
       expires_at: (registration.expires_at || Time.now) + (domain_order.years * 365 * 24 * 60 * 60),
       last_renewed_at: Time.now,
+      next_auto_renewal_at: registration.auto_renew ? ((registration.expires_at || Time.now) + (domain_order.years * 365 * 24 * 60 * 60) - (30 * 24 * 60 * 60)) : nil,
       updated_at: Time.now
     )
+    notify_domain(registration, "LayerRail domain renewed: #{registration.domain}", ["#{registration.domain} was renewed for #{domain_order.years} year#{domain_order.years == 1 ? "" : "s"}." ])
     finish_with(reply)
   end
 
@@ -70,11 +72,14 @@ class Prog::Domain::DomainOrderNexus < Prog::Base
     registration.update(
       status: "active",
       dns_zone_id: zone&.id,
+      project_attached_at: Time.now,
       transferred_at: Time.now,
       provider_payload: (registration.provider_payload || {}).merge("transfer" => reply),
+      expires_at: Time.now + (domain_order.years * 365 * 24 * 60 * 60),
       updated_at: Time.now
     )
     domain_order.update(domain_registration_id: registration.id)
+    notify_domain(registration, "LayerRail domain transfer started: #{registration.domain}", ["#{registration.domain} has been accepted by the registrar transfer flow and is now visible in LayerRail."])
     finish_with(reply)
   end
 
@@ -83,9 +88,16 @@ class Prog::Domain::DomainOrderNexus < Prog::Base
       status: "succeeded",
       provider_order_id: reply["order_id"] || reply["orderid"] || reply.dig("order", "id"),
       provider_payload: (domain_order.provider_payload || {}).merge("provider_reply" => reply),
+      completed_at: Time.now,
       updated_at: Time.now
     )
     Clog.emit("NameSilo domain order processed", {namesilo_domain_order_processed: {domain_order_ubid: domain_order.ubid, kind: domain_order.kind, domain: domain_order.domain}})
+  end
+
+  def notify_domain(registration, subject, body)
+    registration.send_domain_notification!(subject, body)
+  rescue => ex
+    Clog.emit("domain order notification failed", Util.exception_to_hash(ex, into: {domain_order_notification_failed: {domain_order_ubid: domain_order.ubid, domain_registration_ubid: registration.ubid}}))
   end
 
   def client

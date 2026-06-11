@@ -30,6 +30,14 @@ class DomainOrder < Sequel::Model(:domain_order)
     "$#{format("%0.2f", amount_cents.to_i / 100.0)}"
   end
 
+  def completed_at_label
+    completed_at ? completed_at.strftime("%Y-%m-%d") : "-"
+  end
+
+  def due_at_label
+    due_at ? due_at.strftime("%Y-%m-%d") : "-"
+  end
+
   def validate
     super
     validates_includes(KINDS, :kind)

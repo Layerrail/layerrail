@@ -35,12 +35,26 @@ class Prog::Domain::DomainRegistrationNexus < Prog::Base
     domain_registration.update(
       status: "active",
       dns_zone_id: zone&.id,
+      project_attached_at: Time.now,
       provider_order_id: reply["order_id"] || reply["orderid"] || reply.dig("order", "id"),
       provider_domain_id: reply["domain_id"] || reply["domainid"] || reply.dig("domain", "id"),
       provider_payload:,
       expires_at: Time.now + (domain_registration.years * 365 * 24 * 60 * 60),
+      next_auto_renewal_at: domain_registration.auto_renew ? Time.now + ((domain_registration.years * 365 - 30) * 24 * 60 * 60) : nil,
       updated_at: Time.now
     )
+
+    begin
+      domain_registration.reload.send_domain_notification!(
+        "LayerRail domain active: #{domain_registration.domain}",
+        [
+          "#{domain_registration.domain} is now active.",
+          "A LayerRail DNS zone has been created and attached to your project."
+        ]
+      )
+    rescue => ex
+      Clog.emit("domain registration notification failed", Util.exception_to_hash(ex, into: {domain_registration_notification_failed: {domain_registration_ubid: domain_registration.ubid}}))
+    end
 
     Clog.emit("NameSilo domain registered", {namesilo_domain_registered: {domain_registration_ubid: domain_registration.ubid, domain: domain_registration.domain}})
     pop "domain registered"

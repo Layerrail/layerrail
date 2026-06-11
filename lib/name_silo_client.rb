@@ -15,7 +15,7 @@ class NameSiloAPIError < StandardError
 end
 
 class NameSiloClient
-  SUCCESS_CODES = %w[300 301 302].freeze
+  SUCCESS_CODES = %w[250 251 252 253 254 260 261 262 263 264 265 280 281 300 301 302].freeze
   DEFAULT_TLD_PRICES_CENTS = {
     "com" => 1395,
     "net" => 1495,
@@ -124,6 +124,54 @@ class NameSiloClient
       auth: domain_order.auth_code,
       years: domain_order.years,
       private: 1
+    )
+  end
+
+  def enable_auto_renew(domain)
+    request("addAutoRenewal", domain: DomainRegistration.normalize_domain(domain))
+  end
+
+  def disable_auto_renew(domain)
+    request("removeAutoRenewal", domain: DomainRegistration.normalize_domain(domain))
+  end
+
+  def enable_domain_lock(domain)
+    request("domainLock", domain: DomainRegistration.normalize_domain(domain))
+  end
+
+  def disable_domain_lock(domain)
+    request("domainUnlock", domain: DomainRegistration.normalize_domain(domain))
+  end
+
+  def add_dnssec_record(domain, keytag:, algorithm:, digest_type:, digest:)
+    request(
+      "dnsSecAddRecord",
+      domain: DomainRegistration.normalize_domain(domain),
+      keytag:,
+      alg: algorithm,
+      digesttype: digest_type,
+      digest:
+    )
+  end
+
+  def delete_dnssec_record(domain, keytag:, algorithm:, digest_type:, digest:)
+    request(
+      "dnsSecDeleteRecord",
+      domain: DomainRegistration.normalize_domain(domain),
+      keytag:,
+      alg: algorithm,
+      digesttype: digest_type,
+      digest:
+    )
+  end
+
+  def forward_domain(domain, target_url:, forwarding_type: "302")
+    request(
+      "domainForward",
+      domain: DomainRegistration.normalize_domain(domain),
+      protocol: URI(target_url).scheme || "https",
+      address: target_url,
+      method: forwarding_type == "301" ? 301 : 302
     )
   end
 

@@ -436,6 +436,42 @@ class CloverAdmin < Roda
         end
       end,
     },
+    "DomainRegistration" => {
+      "set_abuse_status" => object_action("Set Abuse Status", flash: "Domain abuse status updated", params: {
+        status: {
+          typecast: :nonempty_str!,
+          type: "select",
+          add_blank: true,
+          required: true,
+          options: DomainRegistration::ABUSE_STATUSES.map { [it, it.tr("_", " ")] },
+        },
+        reason: {
+          typecast: :str,
+          required: nil,
+          placeholder: "Visible to support/admin context",
+        },
+      }) do |obj, status, reason|
+        fail CloverError.new(400, "InvalidRequest", "invalid abuse status") unless DomainRegistration::ABUSE_STATUSES.include?(status)
+
+        provider_payload = obj.provider_payload || {}
+        if obj.active? && NameSiloClient.configured?
+          begin
+            provider_reply = (status == "locked") ? NameSiloClient.new.enable_domain_lock(obj.domain) : NameSiloClient.new.disable_domain_lock(obj.domain)
+            provider_payload = provider_payload.merge("abuse_lock_sync" => provider_reply)
+          rescue => ex
+            Clog.emit("domain abuse registrar sync failed", Util.exception_to_hash(ex, into: {domain_abuse_registrar_sync_failed: {domain_registration_ubid: obj.ubid, status:}}))
+          end
+        end
+
+        obj.update(
+          abuse_status: status,
+          abuse_reason: reason.to_s.strip.empty? ? nil : reason.to_s.strip,
+          abuse_flagged_at: (status == "clear") ? nil : Time.now,
+          provider_payload:,
+          updated_at: Time.now
+        )
+      end,
+    },
     "Strand" => {
       "subject" => object_action("Subject", type: :direct) do |obj|
         "/model/#{obj.subject.class}/#{obj.subject.ubid}"
@@ -530,6 +566,7 @@ class CloverAdmin < Roda
   SEARCH_QUERIES = {
     "Account" => [:email, :name],
     "BillingInfo" => [:stripe_id],
+    "DomainRegistration" => [:domain],
     "GithubInstallation" => [:name],
     "GithubRepository" => [:name],
     "Invoice" => [:invoice_number],

@@ -4,6 +4,9 @@
   "components/page_header",
   breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Domains", "#"]],
   right_items: [
+    part("components/button", text: "Bulk Tools", link: "#{@project.path}/domain/bulk", icon: "hero-squares-plus"),
+    part("components/button", text: "Bundles", link: "#{@project.path}/domain/bundle", icon: "hero-folder-open"),
+    part("components/button", text: "ICANN Plan", link: "#{@project.path}/domain/icann", icon: "hero-document-text"),
     part("components/button", text: "Contact Profiles", link: "#{@project.path}/domain/contact-profile", icon: "hero-user"),
     part("components/button", text: "Transfer Domain", link: "#{@project.path}/domain/transfer", icon: "hero-arrow-right"),
     part("components/button", text: "Register Domain", link: "#{@project.path}/domain/create", icon: "hero-globe-alt")
@@ -44,7 +47,7 @@
   <%== part(
     "components/table_card",
     title: "Domain Registrations",
-    headers: ["Domain", "Years", "Price", "State", "DNS Zone", "Expires"],
+    headers: ["Domain", "Years", "Price", "State", "DNS", "Auto-renew", "Expires"],
     rows: @domain_registrations.map do |domain_registration|
       [
         [
@@ -55,7 +58,8 @@
           domain_registration.years,
           domain_registration.unit_price_label,
           domain_registration.display_state,
-          domain_registration.dns_zone_label,
+          domain_registration.project_attachment_label,
+          domain_registration.auto_renew ? "On" : "Off",
           domain_registration.expires_at_label
         ],
         {id: "domain-registration-#{domain_registration.ubid}"}
@@ -73,7 +77,7 @@
   <%== part(
     "components/table_card",
     title: "Renewals and Transfers",
-    headers: ["Domain", "Kind", "Years", "Amount", "State", "Created"],
+    headers: ["Domain", "Kind", "Years", "Amount", "State", "Due", "Completed"],
     rows: @domain_orders.map do |domain_order|
       [
         [
@@ -85,7 +89,8 @@
           domain_order.years,
           domain_order.amount_label,
           domain_order.display_state,
-          domain_order.created_at.strftime("%Y-%m-%d")
+          domain_order.due_at_label,
+          domain_order.completed_at_label
         ],
         {id: "domain-order-#{domain_order.ubid}"}
       ]
