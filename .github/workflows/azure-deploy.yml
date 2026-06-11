@@ -1,0 +1,85 @@
+name: Deploy LayerRail to Azure
+
+on:
+  push:
+    branches:
+      - layerrail-rebrand-start
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AZURE_CLIENT_ID: c2494d2b-1b17-4123-ae06-60bb30487d9b
+  AZURE_TENANT_ID: 0621cf68-51e6-470a-818e-e97563de3974
+  AZURE_SUBSCRIPTION_ID: 2b5d6bd8-700a-4f94-b0c0-c55ae046c080
+  AZURE_RESOURCE_GROUP: rg-layerrail-prod
+  ACR_NAME: layerrailregistry
+  IMAGE_NAME: layerrail
+  WEB_APP_NAME: layerrail-web
+  RESPIRATE_APP_NAME: layerrail-respirate
+  MONITOR_APP_NAME: layerrail-monitor
+
+jobs:
+  build-and-deploy:
+    name: Build and deploy container
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Log in to Azure Container Registry
+        run: az acr login --name "$ACR_NAME"
+
+      - name: Build and push image
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOGIN_SERVER="$(az acr show --name "$ACR_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --query loginServer -o tsv)"
+          IMAGE_SHA="$LOGIN_SERVER/$IMAGE_NAME:${GITHUB_SHA}"
+          IMAGE_PROD="$LOGIN_SERVER/$IMAGE_NAME:prod"
+
+          docker build \
+            --tag "$IMAGE_SHA" \
+            --tag "$IMAGE_PROD" \
+            .
+
+          docker push "$IMAGE_SHA"
+          docker push "$IMAGE_PROD"
+
+          echo "IMAGE_SHA=$IMAGE_SHA" >> "$GITHUB_ENV"
+
+      - name: Deploy web app
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.WEB_APP_NAME }}
+          images: ${{ env.IMAGE_SHA }}
+
+      - name: Deploy respirate worker
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.RESPIRATE_APP_NAME }}
+          images: ${{ env.IMAGE_SHA }}
+
+      - name: Deploy monitor worker
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.MONITOR_APP_NAME }}
+          images: ${{ env.IMAGE_SHA }}
+
+      - name: Restart apps
+        shell: bash
+        run: |
+          set -euo pipefail
+          az webapp restart --resource-group "$AZURE_RESOURCE_GROUP" --name "$WEB_APP_NAME"
+          az webapp restart --resource-group "$AZURE_RESOURCE_GROUP" --name "$RESPIRATE_APP_NAME"
+          az webapp restart --resource-group "$AZURE_RESOURCE_GROUP" --name "$MONITOR_APP_NAME"
