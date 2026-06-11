@@ -250,8 +250,6 @@ end
 #  id                       | uuid                     | PRIMARY KEY
 #  project_id               | uuid                     | NOT NULL
 #  dns_zone_id              | uuid                     |
-#  contact_profile_id       | uuid                     |
-#  deploy_app_id            | uuid                     |
 #  domain                   | text                     | NOT NULL
 #  status                   | text                     | NOT NULL DEFAULT 'cart'::text
 #  provider                 | text                     | NOT NULL DEFAULT 'namesilo'::text
@@ -269,27 +267,50 @@ end
 #  provider_payload         | jsonb                    | NOT NULL DEFAULT '{}'::jsonb
 #  failure_message          | text                     |
 #  expires_at               | timestamp with time zone |
+#  created_at               | timestamp with time zone | NOT NULL DEFAULT CURRENT_TIMESTAMP
+#  updated_at               | timestamp with time zone | NOT NULL DEFAULT CURRENT_TIMESTAMP
+#  contact_profile_id       | uuid                     |
 #  nameservers              | jsonb                    | NOT NULL DEFAULT '[]'::jsonb
 #  auto_renew               | boolean                  | NOT NULL DEFAULT false
 #  last_renewed_at          | timestamp with time zone |
 #  transferred_at           | timestamp with time zone |
+#  dnssec_enabled           | boolean                  | NOT NULL DEFAULT false
+#  dnssec_records           | jsonb                    | NOT NULL DEFAULT '[]'::jsonb
+#  forwarding_enabled       | boolean                  | NOT NULL DEFAULT false
+#  forwarding_url           | text                     |
+#  forwarding_type          | text                     |
+#  project_attached_at      | timestamp with time zone |
+#  abuse_status             | text                     | NOT NULL DEFAULT 'clear'::text
+#  abuse_reason             | text                     |
+#  abuse_flagged_at         | timestamp with time zone |
+#  notifications_enabled    | boolean                  | NOT NULL DEFAULT true
+#  last_notification_at     | timestamp with time zone |
+#  next_auto_renewal_at     | timestamp with time zone |
+#  deploy_app_id            | uuid                     |
 #  deploy_attached_at       | timestamp with time zone |
 #  team_policy              | jsonb                    | NOT NULL DEFAULT '{}'::jsonb
-#  created_at               | timestamp with time zone | NOT NULL DEFAULT CURRENT_TIMESTAMP
-#  updated_at               | timestamp with time zone | NOT NULL DEFAULT CURRENT_TIMESTAMP
 # Indexes:
-#  domain_registration_pkey                    | PRIMARY KEY btree (id)
-#  domain_registration_project_id_domain_index | UNIQUE btree (project_id, domain)
-#  domain_registration_checkout_id_index       | btree (checkout_id)
-#  domain_registration_dns_zone_id_index       | btree (dns_zone_id)
-#  domain_registration_project_id_status_index | btree (project_id, status)
-#  domain_registration_contact_profile_id_index | btree (contact_profile_id)
+#  domain_registration_pkey                          | PRIMARY KEY btree (id)
+#  domain_registration_project_id_domain_index       | UNIQUE btree (project_id, domain)
+#  domain_registration_checkout_id_index             | btree (checkout_id)
+#  domain_registration_contact_profile_id_index      | btree (contact_profile_id)
+#  domain_registration_deploy_app_id_index           | btree (deploy_app_id)
+#  domain_registration_dns_zone_id_index             | btree (dns_zone_id)
+#  domain_registration_next_auto_renewal_at_index    | btree (next_auto_renewal_at)
+#  domain_registration_project_id_abuse_status_index | btree (project_id, abuse_status)
+#  domain_registration_project_id_status_index       | btree (project_id, status)
 # Check constraints:
-#  valid_domain_registration_amount   | (registration_price_cents >= 0 AND renewal_price_cents >= 0 AND transfer_price_cents >= 0 AND discount_cents >= 0 AND amount_cents >= 0)
-#  valid_domain_registration_provider | (provider = 'namesilo'::text)
-#  valid_domain_registration_status   | (status = ANY (ARRAY['cart'::text, 'pending_payment'::text, 'registering'::text, 'active'::text, 'failed'::text, 'cancelled'::text]))
-#  valid_domain_registration_years    | (years >= 1 AND years <= 10)
+#  valid_domain_registration_abuse_status    | (abuse_status = ANY (ARRAY['clear'::text, 'review'::text, 'locked'::text]))
+#  valid_domain_registration_amount          | (registration_price_cents >= 0 AND renewal_price_cents >= 0 AND transfer_price_cents >= 0 AND discount_cents >= 0 AND amount_cents >= 0)
+#  valid_domain_registration_forwarding_type | (forwarding_type IS NULL OR (forwarding_type = ANY (ARRAY['301'::text, '302'::text, 'masked'::text])))
+#  valid_domain_registration_provider        | (provider = 'namesilo'::text)
+#  valid_domain_registration_status          | (status = ANY (ARRAY['cart'::text, 'pending_payment'::text, 'registering'::text, 'active'::text, 'failed'::text, 'cancelled'::text]))
+#  valid_domain_registration_years           | (years >= 1 AND years <= 10)
 # Foreign key constraints:
 #  domain_registration_contact_profile_id_fkey | (contact_profile_id) REFERENCES domain_contact_profile(id) ON DELETE SET NULL
-#  domain_registration_dns_zone_id_fkey | (dns_zone_id) REFERENCES dns_zone(id) ON DELETE SET NULL
-#  domain_registration_project_id_fkey  | (project_id) REFERENCES project(id)
+#  domain_registration_deploy_app_id_fkey      | (deploy_app_id) REFERENCES deploy_app(id) ON DELETE SET NULL
+#  domain_registration_dns_zone_id_fkey        | (dns_zone_id) REFERENCES dns_zone(id) ON DELETE SET NULL
+#  domain_registration_project_id_fkey         | (project_id) REFERENCES project(id)
+# Referenced By:
+#  domain_bundle | domain_bundle_domain_registration_id_fkey | (domain_registration_id) REFERENCES domain_registration(id) ON DELETE SET NULL
+#  domain_order  | domain_order_domain_registration_id_fkey  | (domain_registration_id) REFERENCES domain_registration(id) ON DELETE SET NULL

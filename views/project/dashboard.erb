@@ -11,7 +11,6 @@ tiles = [
   ["Virtual Machines", @project.vms_dataset.count, "#{@project.path}/vm", "Vm:create"],
   (["Deploy Apps", @project.deploy_apps_dataset.count, "#{@project.path}/deploy", "Vm:create"] if Config.deploy_enabled),
   (["Databases", @project.postgres_resources_dataset.count, "#{@project.path}/postgres", "Postgres:create"] if Config.postgres_enabled),
-  (["Domains", @project.domain_registrations_dataset.exclude(status: "cancelled").count, "#{@project.path}/domain", "Project:view"] if Config.domains_enabled),
   [
     "Load Balancers",
     @project.load_balancers_dataset.count,
@@ -88,13 +87,6 @@ cards = [
     "#{@project.path}/kubernetes-cluster",
     "KubernetesCluster:create"
   ] if Config.kubernetes_enabled),
-  ([
-    "hero-globe-alt",
-    "Register a Domain",
-    "Search and register domains from your LayerRail workspace, then connect them to your infrastructure.",
-    "#{@project.path}/domain/create",
-    "Project:billing"
-  ] if Config.domains_enabled),
   [
     "hero-users",
     "Add User to Project",

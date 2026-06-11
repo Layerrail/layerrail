@@ -70,10 +70,14 @@ end
 #  failure_message           | text                     |
 #  created_at                | timestamp with time zone | NOT NULL DEFAULT CURRENT_TIMESTAMP
 #  updated_at                | timestamp with time zone | NOT NULL DEFAULT CURRENT_TIMESTAMP
+#  scheduled_by_automation   | boolean                  | NOT NULL DEFAULT false
+#  due_at                    | timestamp with time zone |
+#  completed_at              | timestamp with time zone |
 # Indexes:
 #  domain_order_pkey                         | PRIMARY KEY btree (id)
 #  domain_order_checkout_id_index            | btree (checkout_id)
 #  domain_order_domain_registration_id_index | btree (domain_registration_id)
+#  domain_order_due_at_index                 | btree (due_at)
 #  domain_order_project_id_domain_index      | btree (project_id, domain)
 #  domain_order_project_id_status_index      | btree (project_id, status)
 # Check constraints:
