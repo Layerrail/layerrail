@@ -130,6 +130,8 @@ module Prog::Vm; end
 
 module Prog::Vm::Aws; end
 
+module Prog::Vm::Azure; end
+
 module Prog::Vm::Gcp; end
 
 module Prog::Vm::Linode; end
@@ -139,6 +141,8 @@ module Prog::Vm::Metal; end
 module Prog::Vnet; end
 
 module Prog::Vnet::Aws; end
+
+module Prog::Vnet::Azure; end
 
 module Prog::Vnet::Gcp; end
 
@@ -154,7 +158,7 @@ module Parseable; end
 
 module VictoriaMetrics; end
 
-provider_dirs = %w[aws metal gcp linode]
+provider_dirs = %w[aws azure metal gcp linode]
 autoload_normal.call("model", flat: true, exclude_dirs: provider_dirs)
 %w[lib clover.rb clover_admin.rb].each { autoload_normal.call(it) }
 %w[scheduling prog serializers].each { autoload_normal.call(it, include_first: true) }
