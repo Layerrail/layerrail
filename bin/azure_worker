@@ -1,0 +1,67 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "json"
+require "socket"
+require "time"
+
+command = ARGV
+abort "usage: bin/azure_worker <command> [args...]" if command.empty?
+
+port = Integer(ENV.fetch("PORT", "3000"))
+site_name = ENV["WEBSITE_SITE_NAME"] || ENV["PROCESS_TYPE"] || "worker"
+child_pid = nil
+
+health_thread = Thread.new do
+  server = TCPServer.new("0.0.0.0", port)
+
+  loop do
+    socket = server.accept
+    Thread.new(socket) do |client|
+      begin
+        request_line = client.gets
+        while (line = client.gets)
+          break if line == "\r\n"
+        end
+
+        child_running = child_pid && begin
+          Process.kill(0, child_pid)
+          true
+        rescue Errno::ESRCH
+          false
+        end
+
+        status = child_running ? 200 : 503
+        body = {
+          status: child_running ? "ok" : "starting",
+          service: site_name,
+          checked_at: Time.now.utc.iso8601
+        }.to_json
+
+        client.write "HTTP/1.1 #{status} #{status == 200 ? "OK" : "Service Unavailable"}\r\n"
+        client.write "Content-Type: application/json\r\n"
+        client.write "Content-Length: #{body.bytesize}\r\n"
+        client.write "Connection: close\r\n"
+        client.write "\r\n"
+        client.write body
+      rescue => ex
+        warn "azure_worker health response failed: #{ex.class}: #{ex.message}"
+      ensure
+        client&.close
+      end
+    end
+  end
+end
+
+child_pid = Process.spawn(*command)
+
+%w[INT TERM].each do |signal|
+  trap(signal) do
+    Process.kill(signal, child_pid) if child_pid
+    health_thread.kill
+  end
+end
+
+_, status = Process.wait2(child_pid)
+health_thread.kill
+exit(status.exitstatus || 1)
