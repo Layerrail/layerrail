@@ -51,16 +51,18 @@ class Clover
     return false unless polar_webhook_timestamp_valid?(timestamp)
 
     signed_content = "#{message_id}.#{timestamp}.#{body}"
-    expected_signature = Base64.strict_encode64(
-      OpenSSL::HMAC.digest("sha256", polar_webhook_secret_bytes, signed_content)
-    )
+    expected_signatures = polar_webhook_secret_candidates.map do |secret|
+      Base64.strict_encode64(OpenSSL::HMAC.digest("sha256", secret, signed_content))
+    end
 
     signature.split.any? do |candidate|
       version, actual_signature = candidate.split(",", 2)
       next false unless version == "v1" && actual_signature
-      next false unless actual_signature.bytesize == expected_signature.bytesize
 
-      Rack::Utils.secure_compare(actual_signature, expected_signature)
+      expected_signatures.any? do |expected_signature|
+        actual_signature.bytesize == expected_signature.bytesize &&
+          Rack::Utils.secure_compare(actual_signature, expected_signature)
+      end
     end
   rescue ArgumentError
     false
@@ -73,9 +75,14 @@ class Clover
     false
   end
 
-  def polar_webhook_secret_bytes
-    secret = Config.polar_webhook_secret.delete_prefix("whsec_")
-    secret += "=" * ((4 - secret.length % 4) % 4)
-    Base64.strict_decode64(secret)
+  def polar_webhook_secret_candidates
+    secret = Config.polar_webhook_secret.to_s
+    candidates = [secret]
+    encoded_secret = secret.delete_prefix("whsec_")
+    padded_secret = encoded_secret + ("=" * ((4 - encoded_secret.length % 4) % 4))
+    candidates << Base64.strict_decode64(padded_secret)
+    candidates.uniq
+  rescue ArgumentError
+    candidates
   end
 end

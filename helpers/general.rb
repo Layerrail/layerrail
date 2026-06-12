@@ -110,6 +110,7 @@ class Clover < Roda
     associate
     attach_vm
     cancel_storage_auto_scale
+    checkout
     connect
     create
     create_cert

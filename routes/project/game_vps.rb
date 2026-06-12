@@ -45,7 +45,7 @@ class Clover
     return unless game_vps
 
     game_vps.reload
-    if game_vps.status == "pending_payment" && !game_vps.checkout_id && !game_vps.server_id
+    if game_vps.status == "pending_payment" && !game_vps.values[:checkout_id] && !game_vps.values[:server_id]
       game_vps.destroy
     else
       game_vps.update(failure_message: exception.message.to_s.slice(0, 1000), updated_at: Time.now)

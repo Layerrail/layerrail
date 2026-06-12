@@ -264,6 +264,9 @@ end
 #  txadmin_password   | text                     |
 #  failure_message    | text                     |
 #  access_notes       | text                     |
+#  checkout_id        | text                     |
+#  paid_until         | timestamp with time zone |
+#  subscription_amount_cents | integer           |
 #  cores              | integer                  | NOT NULL
 #  ram_gib            | integer                  | NOT NULL
 #  disk_gib           | integer                  | NOT NULL
@@ -271,10 +274,11 @@ end
 #  created_at         | timestamp with time zone | NOT NULL DEFAULT now()
 #  updated_at         | timestamp with time zone | NOT NULL DEFAULT now()
 # Indexes:
+#  game_vps_checkout_id_index     | btree (checkout_id)
 #  game_vps_pkey                  | PRIMARY KEY btree (id)
 #  game_vps_project_id_name_index | UNIQUE btree (project_id, name)
 #  game_vps_project_id_index      | btree (project_id)
 # Check constraints:
-#  valid_game_vps_status | (status = ANY (ARRAY['creating'::text, 'running'::text, 'failed'::text, 'deleting'::text, 'deleted'::text]))
+#  valid_game_vps_status | (status = ANY (ARRAY['pending_payment'::text, 'creating'::text, 'running'::text, 'failed'::text, 'deleting'::text, 'deleted'::text]))
 # Foreign key constraints:
 #  game_vps_project_id_fkey | (project_id) REFERENCES project(id)
