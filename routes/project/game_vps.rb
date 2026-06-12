@@ -62,7 +62,6 @@ class Clover
             ram_gib: plan[:ram_gib],
             disk_gib: plan[:disk_gib],
             monthly_price: BigDecimal(plan[:monthly_price]),
-            subscription_amount_cents: GameVps.amount_cents(plan),
             rdp_username: Config.game_vps_provider == "azure" ? "layerrail" : "Administrator",
           )
           Prog::GameVpsNexus.assemble(game_vps) if Config.game_vps_provider == "ionos"

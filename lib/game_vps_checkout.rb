@@ -12,7 +12,13 @@ class GameVpsCheckout
   end
 
   def self.mark_pending!(game_vps, checkout_id)
-    game_vps.update(checkout_id:, status: "pending_payment", updated_at: Time.now)
+    GameVps.where(id: game_vps.id).update(
+      checkout_id:,
+      subscription_amount_cents: game_vps.amount_cents,
+      status: "pending_payment",
+      updated_at: Time.now
+    )
+    game_vps.refresh
   end
 
   def self.reconcile!(checkout_id, project: nil, checkout_session: nil)
@@ -35,7 +41,8 @@ class GameVpsCheckout
 
     DB.transaction do
       items.each do |game_vps|
-        game_vps.update(status: "creating", failure_message: nil, paid_until: Time.now + (30 * 24 * 60 * 60), updated_at: Time.now)
+        GameVps.where(id: game_vps.id).update(status: "creating", failure_message: nil, paid_until: Time.now + (30 * 24 * 60 * 60), updated_at: Time.now)
+        game_vps.refresh
         Prog::GameVpsNexus.assemble(game_vps)
       end
     end

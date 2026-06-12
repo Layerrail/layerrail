@@ -174,7 +174,7 @@ class GameVps < Sequel::Model(:game_vps)
   end
 
   def amount_cents
-    subscription_amount_cents || (BigDecimal(monthly_price.to_s) * 100).to_i
+    values[:subscription_amount_cents] || (BigDecimal(monthly_price.to_s) * 100).to_i
   end
 
   def polar_product_id
@@ -182,7 +182,7 @@ class GameVps < Sequel::Model(:game_vps)
   end
 
   def prepaid?
-    !!checkout_id
+    !!values[:checkout_id]
   end
 
   def display_state
