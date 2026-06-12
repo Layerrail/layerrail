@@ -32,7 +32,7 @@ module Option
 
   LinodePlan = Data.define(:id, :label, :family, :size_name, :vcpus, :memory_gib, :disk_gib, :monthly_price, :hourly_price, :gpu_count, :gpu_device, :billing_family)
   LINODE_MARKUP = 1.30
-  AZURE_MARKUP = 1.30
+  AZURE_MARKUP = 1.00
   LINODE_GPU_DEVICE = "27b0"
   LINODE_LOCATIONS = [
     ["linode-de-fra-2", "de-fra-2", "Frankfurt, DE"],
@@ -71,13 +71,13 @@ module Option
     ["azure-northeurope", "northeurope", "North Europe"],
   ].map(&:freeze).freeze
   AZURE_PLANS = [
-    AzurePlan.new("Standard_D2lds_v7", "Starter 4GB", "nanode", "nanode-4", 2, 4, 80, 24, 0.036, 0, nil, "nanode-4"),
-    AzurePlan.new("Standard_D4lds_v7", "Starter 8GB", "nanode", "nanode-8", 4, 8, 160, 48, 0.072, 0, nil, "nanode-8"),
-    AzurePlan.new("Standard_D2ds_v7", "Shared 8GB", "burstable", "burstable-2", 2, 8, 80, 43, 0.0645, 0, nil, "burstable"),
-    AzurePlan.new("Standard_D2ds_v7", "Dedicated 8GB", "standard", "standard-2", 2, 8, 80, 43, 0.0645, 0, nil, "standard"),
-    AzurePlan.new("Standard_D4ds_v7", "Dedicated 16GB", "standard", "standard-4", 4, 16, 160, 86, 0.129, 0, nil, "standard"),
-    AzurePlan.new("Standard_D8ds_v7", "Dedicated 32GB", "standard", "standard-8", 8, 32, 320, 173, 0.2595, 0, nil, "standard"),
-    AzurePlan.new("Standard_D16ds_v7", "Dedicated 64GB", "standard", "standard-16", 16, 64, 640, 346, 0.519, 0, nil, "standard"),
+    AzurePlan.new("Standard_D2lds_v7", "Starter 4GB", "nanode", "nanode-4", 2, 4, 80, 4, 0.006, 0, nil, "nanode-4"),
+    AzurePlan.new("Standard_D4lds_v7", "Starter 8GB", "nanode", "nanode-8", 4, 8, 160, 6, 0.009, 0, nil, "nanode-8"),
+    AzurePlan.new("Standard_D2ds_v7", "Shared 8GB", "burstable", "burstable-2", 2, 8, 80, 10, 0.015, 0, nil, "burstable-2"),
+    AzurePlan.new("Standard_D2ds_v7", "Dedicated 8GB", "standard", "standard-2", 2, 8, 80, 20, 0.030, 0, nil, "standard-2"),
+    AzurePlan.new("Standard_D4ds_v7", "Dedicated 16GB", "standard", "standard-4", 4, 16, 160, 50, 0.075, 0, nil, "standard-4"),
+    AzurePlan.new("Standard_D8ds_v7", "Dedicated 32GB", "standard", "standard-8", 8, 32, 320, 95, 0.1425, 0, nil, "standard-8"),
+    AzurePlan.new("Standard_D16ds_v7", "Dedicated 64GB", "standard", "standard-16", 16, 64, 640, 180, 0.270, 0, nil, "standard-16"),
   ].freeze
   AZURE_BOOT_IMAGES = {
     "ubuntu-noble" => {publisher: "Canonical", offer: "ubuntu-24_04-lts", sku: "server", version: "latest"},
