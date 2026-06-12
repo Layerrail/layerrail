@@ -3,6 +3,57 @@
 require "bigdecimal"
 
 class Clover
+  def start_game_vps_checkout(game_vps)
+    product_id = game_vps.polar_product_id
+    checkout = PolarClient.create_checkout(
+      {
+        products: [product_id],
+        external_customer_id: @project.ubid,
+        customer_name: current_account.name || current_account.email,
+        customer_email: current_account.email,
+        customer_metadata: {
+          project_id: @project.ubid,
+          account_id: current_account.ubid
+        },
+        metadata: {
+          kind: "game_vps_checkout",
+          project_id: @project.ubid,
+          game_vps_id: game_vps.ubid,
+          plan: game_vps.plan,
+          image_alias: game_vps.image_alias,
+          product_id:,
+          amount_cents: game_vps.amount_cents
+        },
+        require_billing_address: true,
+        success_url: "#{Config.base_url}#{@project.path}/game-vps/success?checkout_id={CHECKOUT_ID}",
+        return_url: "#{Config.base_url}#{@project.path}/game-vps"
+      }
+    )
+
+    checkout_id = checkout["id"] || checkout["checkout_id"] || checkout["checkoutId"]
+    raise "Polar did not return a checkout id." unless checkout_id
+
+    checkout_url = checkout["url"] || checkout["checkout_url"] || checkout["checkoutUrl"]
+    raise "Polar did not return a checkout URL." unless checkout_url
+
+    GameVpsCheckout.mark_pending!(game_vps, checkout_id)
+    audit_log(game_vps, "checkout")
+    checkout_url
+  end
+
+  def cleanup_unstarted_game_vps_checkout(game_vps, exception)
+    return unless game_vps
+
+    game_vps.reload
+    if game_vps.status == "pending_payment" && !game_vps.checkout_id && !game_vps.server_id
+      game_vps.destroy
+    else
+      game_vps.update(failure_message: exception.message.to_s.slice(0, 1000), updated_at: Time.now)
+    end
+  rescue Sequel::NoExistingObject
+    nil
+  end
+
   hash_branch(:project_prefix, "game-vps") do |r|
     raise CloverError.new(404, "NotFound", "Game VPS is not enabled") unless Config.game_vps_enabled
 
@@ -74,47 +125,17 @@ class Clover
         end
 
         if Config.game_vps_provider == "azure"
-          product_id = game_vps.polar_product_id
-          checkout = PolarClient.create_checkout(
-            {
-              products: [product_id],
-              external_customer_id: @project.ubid,
-              customer_name: current_account.name,
-              customer_email: current_account.email,
-              customer_metadata: {
-                project_id: @project.ubid,
-                account_id: current_account.ubid
-              },
-              metadata: {
-                kind: "game_vps_checkout",
-                project_id: @project.ubid,
-                game_vps_id: game_vps.ubid,
-                plan: plan_key,
-                image_alias:,
-                product_id:,
-                amount_cents: game_vps.amount_cents
-              },
-              require_billing_address: true,
-              success_url: "#{Config.base_url}#{@project.path}/game-vps/success?checkout_id={CHECKOUT_ID}",
-              return_url: "#{Config.base_url}#{@project.path}/game-vps"
-            }
-          )
-
-          checkout_id = checkout["id"] || checkout["checkout_id"] || checkout["checkoutId"]
-          raise_web_error("Polar did not return a checkout id.") unless checkout_id
-
-          GameVpsCheckout.mark_pending!(game_vps, checkout_id)
-          audit_log(game_vps, "checkout")
-          checkout_url = checkout["url"] || checkout["checkout_url"] || checkout["checkoutUrl"]
-          raise_web_error("Polar did not return a checkout URL.") unless checkout_url
-          r.redirect checkout_url, 303
+          begin
+            r.redirect start_game_vps_checkout(game_vps), 303
+          rescue PolarAPIError, Sequel::Error, RuntimeError => ex
+            cleanup_unstarted_game_vps_checkout(game_vps, ex)
+            Clog.emit("game vps checkout failed", Util.exception_to_hash(ex, into: {game_vps_checkout_failed: {game_vps_ubid: game_vps&.ubid, project_ubid: @project.ubid}}))
+            raise_web_error("We couldn't start checkout. #{ex.message}")
+          end
         end
 
         flash["notice"] = "Game VPS is being created"
         r.redirect game_vps
-      rescue PolarAPIError => ex
-        game_vps&.update(status: "failed", failure_message: ex.message.to_s.slice(0, 1000), updated_at: Time.now)
-        raise_web_error(ex.message)
       end
 
       r.get "success" do
@@ -137,7 +158,8 @@ class Clover
 
     r.on GAME_VPS_NAME_OR_UBID do |name, id|
       authorized_game_vpses = dataset_authorize(@project.game_vpses_dataset, "Vm:view")
-      @game_vps = name ? authorized_game_vpses.first(name:) : authorized_game_vpses.first(id:)
+      matched_id = id || (UBID.to_uuid(name) if name)
+      @game_vps = matched_id ? authorized_game_vpses.first(id: matched_id) : authorized_game_vpses.first(name:)
       check_found_object(@game_vps)
 
       r.get "rdp" do
@@ -161,6 +183,20 @@ class Clover
 
       r.get true do
         view "game_vps/show"
+      end
+
+      r.post "checkout" do
+        handle_validation_failure("game_vps/show")
+        authorize("Vm:create", @project)
+        raise_web_error("This Game VPS has already been paid for.") unless @game_vps.status == "pending_payment"
+
+        begin
+          r.redirect start_game_vps_checkout(@game_vps), 303
+        rescue PolarAPIError, Sequel::Error, RuntimeError => ex
+          @game_vps.update(failure_message: ex.message.to_s.slice(0, 1000), updated_at: Time.now)
+          Clog.emit("game vps checkout retry failed", Util.exception_to_hash(ex, into: {game_vps_checkout_retry_failed: {game_vps_ubid: @game_vps.ubid, project_ubid: @project.ubid}}))
+          raise_web_error("We couldn't restart checkout. #{ex.message}")
+        end
       end
 
       r.post "delete" do

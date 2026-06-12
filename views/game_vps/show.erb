@@ -2,6 +2,11 @@
 <div class="auto-refresh hidden" data-interval="10"></div>
 
 <% right_items = [part("components/game_vps_state_label", state: @game_vps.display_state, extra_class: "text-md")]
+if @game_vps.status == "pending_payment" && has_permission?("Vm:create", @project)
+  right_items << form({action: "#{path(@game_vps)}/checkout", method: :post}, emit: false) do |f|
+    f << part("components/button", text: "Continue checkout")
+  end
+end
 right_items << part("components/button", text: "Download RDP", link: "#{path(@game_vps)}/rdp") if @game_vps.primary_ip
 right_items << part(
   "components/delete_button",
@@ -103,7 +108,14 @@ right_items << part(
   </div>
 </div>
 
-<% if @game_vps.failure_message %>
+<% if @game_vps.status == "pending_payment" %>
+  <div class="mt-6 rounded-lg bg-yellow-50 p-4 text-sm text-yellow-900 ring-1 ring-yellow-200">
+    This Game VPS is reserved but not active yet. Continue checkout to start monthly billing and provisioning.
+    <% if @game_vps.failure_message %>
+      <div class="mt-2 font-medium"><%= @game_vps.failure_message %></div>
+    <% end %>
+  </div>
+<% elsif @game_vps.failure_message %>
   <div class="mt-6 rounded-lg bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
     <%= @game_vps.failure_message %>
   </div>

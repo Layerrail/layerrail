@@ -16,6 +16,7 @@ class GameVpsCheckout
       checkout_id:,
       subscription_amount_cents: game_vps.amount_cents,
       status: "pending_payment",
+      failure_message: nil,
       updated_at: Time.now
     )
     game_vps.refresh
