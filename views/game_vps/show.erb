@@ -16,7 +16,7 @@ right_items << part(
   right_items:
 ) %>
 
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
   <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
     <h3 class="text-base font-semibold leading-6 text-gray-900">Server</h3>
     <dl class="mt-4 space-y-3 text-sm">
@@ -79,6 +79,24 @@ right_items << part(
       <div class="flex justify-between gap-4">
         <dt class="text-gray-500">Ports</dt>
         <dd class="font-medium text-gray-900 text-right">3389, 30120, 40120</dd>
+      </div>
+    </dl>
+  </div>
+
+  <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+    <h3 class="text-base font-semibold leading-6 text-gray-900">Subscription</h3>
+    <dl class="mt-4 space-y-3 text-sm">
+      <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">Billing</dt>
+        <dd class="font-medium text-gray-900"><%= @game_vps.prepaid? ? "Prepaid monthly" : "Usage billed" %></dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">Checkout</dt>
+        <dd class="font-medium text-gray-900"><%== part("components/copyable_content", content: @game_vps.checkout_id || "-") %></dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">Paid until</dt>
+        <dd class="font-medium text-gray-900"><%= @game_vps.paid_until&.strftime("%Y-%m-%d") || "Not paid yet" %></dd>
       </div>
     </dl>
   </div>

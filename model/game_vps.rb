@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
+require "bigdecimal"
 require_relative "../model"
 
 class GameVps < Sequel::Model(:game_vps)
-  STATUSES = %w[creating running failed deleting deleted].freeze
+  STATUSES = %w[pending_payment creating running failed deleting deleted].freeze
   AZURE_LOCATIONS = {
     "azure-eastus" => {name: "East US", region: "United States", azure_region: "eastus"},
     "azure-eastus2" => {name: "East US 2", region: "United States", azure_region: "eastus2"},
@@ -74,6 +75,11 @@ class GameVps < Sequel::Model(:game_vps)
     },
   }.freeze
   WINDOWS_IMAGES = {
+    "windows-11-pro" => {
+      name: "Windows 11 Pro",
+      description: "Desktop gaming tools",
+      azure_image: {publisher: "MicrosoftWindowsDesktop", offer: "windows-11", sku: "win11-25h2-pro", version: "latest"},
+    },
     "windows-server-2022" => {
       name: "Windows Server 2022",
       description: "Recommended",
@@ -122,6 +128,10 @@ class GameVps < Sequel::Model(:game_vps)
     "$#{format("%0.2f", plan[:monthly_price].to_f)}/mo"
   end
 
+  def self.amount_cents(plan)
+    (BigDecimal(plan.fetch(:monthly_price)) * 100).to_i
+  end
+
   def location_label
     LOCATIONS.dig(location, :name) || location
   end
@@ -144,6 +154,14 @@ class GameVps < Sequel::Model(:game_vps)
 
   def price_label
     "$#{format("%0.2f", monthly_price.to_f)}/mo"
+  end
+
+  def amount_cents
+    subscription_amount_cents || (BigDecimal(monthly_price.to_s) * 100).to_i
+  end
+
+  def prepaid?
+    !!checkout_id
   end
 
   def display_state

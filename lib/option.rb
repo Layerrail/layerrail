@@ -71,13 +71,18 @@ module Option
     ["azure-northeurope", "northeurope", "North Europe"],
   ].map(&:freeze).freeze
   AZURE_PLANS = [
-    AzurePlan.new("Standard_D2lds_v7", "Starter 4GB", "nanode", "nanode-4", 2, 4, 80, 4, 0.006, 0, nil, "nanode-4"),
-    AzurePlan.new("Standard_D4lds_v7", "Starter 8GB", "nanode", "nanode-8", 4, 8, 160, 6, 0.009, 0, nil, "nanode-8"),
+    AzurePlan.new("Standard_B1s", "Starter 1GB", "nanode", "nanode-1", 1, 1, 25, 4, 0.006, 0, nil, "nanode-1"),
+    AzurePlan.new("Standard_B1ms", "Starter 2GB", "nanode", "nanode-2", 1, 2, 50, 6, 0.009, 0, nil, "nanode-2"),
+    AzurePlan.new("Standard_B2s", "Starter 4GB", "nanode", "nanode-4", 2, 4, 80, 10, 0.015, 0, nil, "nanode-4"),
+    AzurePlan.new("Standard_D4lds_v7", "Starter 8GB", "nanode", "nanode-8", 4, 8, 160, 20, 0.030, 0, nil, "nanode-8"),
     AzurePlan.new("Standard_D2ds_v7", "Shared 8GB", "burstable", "burstable-2", 2, 8, 80, 10, 0.015, 0, nil, "burstable-2"),
+    AzurePlan.new("Standard_B4ms", "Shared 16GB", "burstable", "burstable-4", 4, 16, 160, 20, 0.030, 0, nil, "burstable-4"),
+    AzurePlan.new("Standard_B8ms", "Shared 32GB", "burstable", "burstable-8", 8, 32, 320, 50, 0.075, 0, nil, "burstable-8"),
     AzurePlan.new("Standard_D2ds_v7", "Dedicated 8GB", "standard", "standard-2", 2, 8, 80, 20, 0.030, 0, nil, "standard-2"),
     AzurePlan.new("Standard_D4ds_v7", "Dedicated 16GB", "standard", "standard-4", 4, 16, 160, 50, 0.075, 0, nil, "standard-4"),
     AzurePlan.new("Standard_D8ds_v7", "Dedicated 32GB", "standard", "standard-8", 8, 32, 320, 95, 0.1425, 0, nil, "standard-8"),
     AzurePlan.new("Standard_D16ds_v7", "Dedicated 64GB", "standard", "standard-16", 16, 64, 640, 180, 0.270, 0, nil, "standard-16"),
+    AzurePlan.new("Standard_D32ds_v7", "Dedicated 128GB", "standard", "standard-30", 30, 128, 1280, 350, 0.525, 0, nil, "standard-30"),
   ].freeze
   AZURE_BOOT_IMAGES = {
     "ubuntu-noble" => {publisher: "Canonical", offer: "ubuntu-24_04-lts", sku: "server", version: "latest"},
@@ -373,11 +378,11 @@ module Option
   }).concat([2, 4, 8, 16, 30].map {
     storage_size_options = [it * 20, it * 40]
     VmSize.new("premium-#{it}", "premium", it, it * 100, 0, it * 4, storage_size_options, NO_IO_LIMITS, vring_workers(it), false, "x64")
-  }).concat([1, 2].map {
+  }).concat([1, 2, 4, 8].map {
     storage_size_options = [it * 10, it * 20]
     io_limits = IoLimits.new(it * 50, it * 50)
     VmSize.new("burstable-#{it}", "burstable", it, it * 50, it * 50, it * 2, storage_size_options, io_limits, 1, true, "x64")
-  }).concat([1, 2].map {
+  }).concat([1, 2, 4, 8].map {
     storage_size_options = [it * 10, it * 20]
     io_limits = IoLimits.new(it * 50, it * 50)
     VmSize.new("burstable-#{it}", "burstable", it, it * 50, it * 50, (it * 1.6).to_i, storage_size_options, io_limits, 1, false, "arm64")

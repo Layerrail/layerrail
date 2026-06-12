@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "bigdecimal"
+
 class Clover
   hash_branch(:project_prefix, "game-vps") do |r|
     raise CloverError.new(404, "NotFound", "Game VPS is not enabled") unless Config.game_vps_enabled
@@ -18,12 +20,13 @@ class Clover
       r.post true do
         handle_validation_failure("game_vps/create")
         authorize("Vm:create", @project)
-        raise_web_error("Billing verification is required before creating a Game VPS.") unless @project.has_valid_payment_method?
         case Config.game_vps_provider
         when "azure"
           raise_web_error("Azure credentials are not configured yet.") unless AzureClient.enabled?
+          raise_web_error("Polar Game VPS checkout is not configured. Set POLAR_GAME_VPS_PRODUCT_ID.") unless Config.polar_game_vps_product_id
         when "ionos"
           raise_web_error("IONOS credentials are not configured yet.") unless IonosClient.enabled?
+          raise_web_error("Billing verification is required before creating a Game VPS.") unless @project.has_valid_payment_method?
         else
           raise_web_error("Game VPS provider #{Config.game_vps_provider} is not supported.")
         end
@@ -47,7 +50,7 @@ class Clover
             project_id: @project.id,
             name:,
             provider: Config.game_vps_provider,
-            status: "creating",
+            status: Config.game_vps_provider == "azure" ? "pending_payment" : "creating",
             plan: plan_key,
             location: location_key,
             image_alias:,
@@ -55,14 +58,70 @@ class Clover
             ram_gib: plan[:ram_gib],
             disk_gib: plan[:disk_gib],
             monthly_price: BigDecimal(plan[:monthly_price]),
+            subscription_amount_cents: GameVps.amount_cents(plan),
             rdp_username: Config.game_vps_provider == "azure" ? "layerrail" : "Administrator",
           )
-          Prog::GameVpsNexus.assemble(game_vps)
+          Prog::GameVpsNexus.assemble(game_vps) if Config.game_vps_provider == "ionos"
           audit_log(game_vps, "create")
+        end
+
+        if Config.game_vps_provider == "azure"
+          checkout = PolarClient.create_checkout(
+            {
+              products: [Config.polar_game_vps_product_id],
+              external_customer_id: @project.ubid,
+              customer_name: current_account.name,
+              customer_email: current_account.email,
+              customer_metadata: {
+                project_id: @project.ubid,
+                account_id: current_account.ubid
+              },
+              metadata: {
+                kind: "game_vps_checkout",
+                project_id: @project.ubid,
+                game_vps_id: game_vps.ubid,
+                plan: plan_key,
+                image_alias:,
+                amount_cents: game_vps.amount_cents
+              },
+              require_billing_address: true,
+              success_url: "#{Config.base_url}#{@project.path}/game-vps/success?checkout_id={CHECKOUT_ID}",
+              return_url: "#{Config.base_url}#{@project.path}/game-vps"
+            }.merge(amount: game_vps.amount_cents, currency: "usd")
+          )
+
+          checkout_id = checkout["id"] || checkout["checkout_id"] || checkout["checkoutId"]
+          raise_web_error("Polar did not return a checkout id.") unless checkout_id
+
+          GameVpsCheckout.mark_pending!(game_vps, checkout_id)
+          audit_log(game_vps, "checkout")
+          checkout_url = checkout["url"] || checkout["checkout_url"] || checkout["checkoutUrl"]
+          raise_web_error("Polar did not return a checkout URL.") unless checkout_url
+          r.redirect checkout_url, 303
         end
 
         flash["notice"] = "Game VPS is being created"
         r.redirect game_vps
+      rescue PolarAPIError => ex
+        game_vps&.update(status: "failed", failure_message: ex.message.to_s.slice(0, 1000), updated_at: Time.now)
+        raise_web_error(ex.message)
+      end
+
+      r.get "success" do
+        authorize("Vm:create", @project)
+        handle_validation_failure("game_vps/index")
+        checkout_id = typecast_params.nonempty_str("checkout_id") || typecast_params.nonempty_str("session_id")
+        raise_web_error("Missing Polar checkout id") unless checkout_id
+
+        begin
+          result = GameVpsCheckout.reconcile!(checkout_id, project: @project)
+        rescue PolarAPIError => ex
+          raise_web_error("We couldn't validate your Polar checkout. #{ex.message}")
+        end
+
+        raise_web_error("Game VPS checkout was not successful.") unless result[:status] == "provisioning"
+        flash["notice"] = "Game VPS payment received. Provisioning started."
+        r.redirect "#{@project.path}/game-vps"
       end
     end
 

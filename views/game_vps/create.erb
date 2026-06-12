@@ -38,6 +38,12 @@ option_tree, option_parents = options.serialize %>
   breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Game VPS", "#{@project.path}/game-vps"], ["Create", "#"]]
 ) %>
 
+<% if Config.game_vps_provider == "azure" %>
+  <div class="mb-6 rounded-lg bg-white p-4 text-sm text-gray-600 shadow ring-1 ring-black ring-opacity-5">
+    Windows Game VPS plans are prepaid monthly subscriptions. You will be sent to Polar to pay first; provisioning starts automatically after payment succeeds, and the receipt is available from billing.
+  </div>
+<% end %>
+
 <%== part(
   "components/form/resource_creation_form",
   action: "#{@project.path}/game-vps",
@@ -47,6 +53,6 @@ option_tree, option_parents = options.serialize %>
   pre_selected_values: {
     "location" => Config.game_vps_provider == "ionos" ? "de/fra" : "azure-eastus",
     "plan" => "starter",
-    "image_alias" => Config.game_vps_provider == "ionos" ? Config.ionos_windows_image_alias : "windows-server-2022",
+    "image_alias" => Config.game_vps_provider == "ionos" ? Config.ionos_windows_image_alias : "windows-11-pro",
   }
 ) %>

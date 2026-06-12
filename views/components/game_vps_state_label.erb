@@ -2,10 +2,12 @@
 
 <% color = Hash.new("bg-slate-100 text-slate-800").merge(
   "running" => "bg-green-100 text-green-800",
+  "pending_payment" => "bg-violet-100 text-violet-800",
   "creating" => "bg-yellow-100 text-yellow-800",
   "deleting" => "bg-red-100 text-red-800",
   "deleted" => "bg-red-100 text-red-800",
   "failed" => "bg-red-100 text-red-800"
 )[state] %>
 
-<%== part("components/state_label", state:, color:, extra_class:) %>
+<% label = {"pending_payment" => "pending payment"}.fetch(state, state) %>
+<%== part("components/state_label", state: label, color:, extra_class:) %>

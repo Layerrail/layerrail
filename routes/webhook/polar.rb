@@ -24,11 +24,20 @@ class Clover
     data = event["data"] || {}
     checkout_id = data["checkout_id"] || data["checkoutId"] || data.dig("checkout", "id") || data["id"]
     kind = (data["metadata"] || {})["kind"] || (event["metadata"] || {})["kind"]
-    return {message: "Polar webhook ignored", event: event["type"]} unless checkout_id && kind == "domain_checkout"
+    return {message: "Polar webhook ignored", event: event["type"]} unless checkout_id
 
-    result = DomainCheckout.reconcile!(checkout_id)
-    Clog.emit("polar domain checkout webhook received", {polar_domain_checkout_webhook: {event_type: event["type"], checkout_id:, result:}})
-    {message: "Polar domain checkout webhook received", event: event["type"], result:}
+    case kind
+    when "domain_checkout"
+      result = DomainCheckout.reconcile!(checkout_id)
+      Clog.emit("polar domain checkout webhook received", {polar_domain_checkout_webhook: {event_type: event["type"], checkout_id:, result:}})
+      {message: "Polar domain checkout webhook received", event: event["type"], result:}
+    when "game_vps_checkout"
+      result = GameVpsCheckout.reconcile!(checkout_id)
+      Clog.emit("polar game vps checkout webhook received", {polar_game_vps_checkout_webhook: {event_type: event["type"], checkout_id:, result:}})
+      {message: "Polar game vps checkout webhook received", event: event["type"], result:}
+    else
+      {message: "Polar webhook ignored", event: event["type"]}
+    end
   rescue PolarAPIError => ex
     response.status = 502
     {error: {message: ex.message}}

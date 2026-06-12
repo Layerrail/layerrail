@@ -92,7 +92,7 @@ class Prog::GameVpsNexus < Prog::Base
       updated_at: Time.now,
     )
     Clog.emit("IONOS Game VPS provisioned", {ionos_game_vps_provisioned: {game_vps_ubid: game_vps.ubid, datacenter_id: game_vps.datacenter_id, server_id: game_vps.server_id}})
-    hop_create_billing_record
+    game_vps.prepaid? ? hop_wait : hop_create_billing_record
   rescue => ex
     mark_failed(ex)
   end
@@ -167,7 +167,7 @@ class Prog::GameVpsNexus < Prog::Base
         updated_at: Time.now,
       )
       Clog.emit("Azure Game VPS provisioned", {azure_game_vps_provisioned: {game_vps_ubid: game_vps.ubid, resource_group: azure_resource_group, vm_name: azure_vm_name}})
-      hop_create_billing_record
+      game_vps.prepaid? ? hop_wait : hop_create_billing_record
     end
 
     Clog.emit("Azure Game VPS is not running yet", {azure_game_vps_status: {game_vps_ubid: game_vps.ubid, vm_name: azure_vm_name, statuses:}})
@@ -181,6 +181,7 @@ class Prog::GameVpsNexus < Prog::Base
 
   label def create_billing_record
     hop_wait unless game_vps.project.billable
+    hop_wait if game_vps.prepaid?
     hop_wait unless game_vps.active_billing_records.empty?
 
     BillingRecord.create(
@@ -200,11 +201,16 @@ class Prog::GameVpsNexus < Prog::Base
 
   def before_destroy
     register_deadline(nil, 10 * 60)
-    game_vps.active_billing_records.each(&:finalize)
+    game_vps.active_billing_records.each(&:finalize) unless game_vps.prepaid?
   end
 
   label def destroy
     decr_destroy
+    if game_vps.status == "pending_payment" && game_vps.datacenter_id.nil? && game_vps.server_id.nil?
+      game_vps.destroy
+      pop "game vps pending checkout destroyed"
+    end
+
     game_vps.update(status: "deleting", updated_at: Time.now) unless game_vps.status == "deleting"
 
     if game_vps.provider == "azure"
