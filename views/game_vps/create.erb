@@ -1,25 +1,36 @@
 <% @page_title = "Create Game VPS"
+provider_label = Config.game_vps_provider == "ionos" ? "IONOS" : "Azure"
 
 location_content = lambda do |location_key|
   location = GameVps.locations.fetch(location_key)
-  [location[:name], location[:region], location_key, "IONOS"]
+  [location[:name], location[:region], location_key, provider_label]
 end
 
 plan_content = lambda do |plan_key|
   plan = GameVps.plans.fetch(plan_key)
-  [plan[:name], plan[:description], GameVps.price_label(plan), "#{plan[:cores]} vCPU / #{plan[:ram_gib]} GB"]
+  [plan[:name], plan[:description], GameVps.price_label(plan), "#{plan[:cores]} vCPU / #{plan[:ram_gib]} GB / #{plan[:disk_gib]} GB"]
+end
+
+image_content = lambda do |image_key|
+  image = GameVps.windows_images.fetch(image_key)
+  [image[:name], image[:description], image_key, "Windows"]
 end
 
 form_elements = [
   {name: "name", type: "text", label: "Name", required: "required", placeholder: "fivem-rp-1"},
   {name: "location", type: "radio_small_cards", label: "Location", required: "required", content_generator: location_content},
   {name: "plan", type: "radio_small_cards", label: "Plan", required: "required", content_generator: plan_content},
-  {name: "image_alias", type: "text", label: "Windows image alias", placeholder: Config.ionos_windows_image_alias, value: Config.ionos_windows_image_alias},
 ]
+if Config.game_vps_provider == "ionos"
+  form_elements << {name: "image_alias", type: "text", label: "Windows image alias", placeholder: Config.ionos_windows_image_alias, value: Config.ionos_windows_image_alias}
+else
+  form_elements << {name: "image_alias", type: "radio_small_cards", label: "Windows image", required: "required", content_generator: image_content}
+end
 
 options = OptionTreeGenerator.new
 options.add_option(name: "location", values: GameVps.locations.keys)
 options.add_option(name: "plan", values: GameVps.plans.keys)
+options.add_option(name: "image_alias", values: Config.game_vps_provider == "ionos" ? [Config.ionos_windows_image_alias] : GameVps.windows_images.keys)
 option_tree, option_parents = options.serialize %>
 
 <%== part(
@@ -34,8 +45,8 @@ option_tree, option_parents = options.serialize %>
   option_tree:,
   option_parents:,
   pre_selected_values: {
-    "location" => "de/fra",
-    "plan" => "community",
-    "image_alias" => Config.ionos_windows_image_alias,
+    "location" => Config.game_vps_provider == "ionos" ? "de/fra" : "azure-eastus",
+    "plan" => "starter",
+    "image_alias" => Config.game_vps_provider == "ionos" ? Config.ionos_windows_image_alias : "windows-server-2022",
   }
 ) %>

@@ -19,7 +19,6 @@ class Prog::GameVpsNexus < Prog::Base
 
   label def start
     fail "Game VPS provisioning is disabled" unless Config.game_vps_enabled
-    fail "IONOS is the only supported Game VPS provider" unless Config.game_vps_provider == "ionos"
 
     game_vps.update(
       rdp_password: game_vps.rdp_password || secure_windows_password,
@@ -28,6 +27,15 @@ class Prog::GameVpsNexus < Prog::Base
       updated_at: Time.now,
     )
 
+    hop_start_ionos if game_vps.provider == "ionos"
+    hop_start_azure if game_vps.provider == "azure"
+
+    fail "Game VPS provider #{game_vps.provider} is not supported"
+  rescue => ex
+    mark_failed(ex)
+  end
+
+  label def start_ionos
     result = client.create_datacenter(name: resource_name, location: game_vps.location)
     game_vps.update(datacenter_id: result.body.fetch("id"), request_status_url: result.status_url, updated_at: Time.now)
     hop_wait_datacenter
@@ -89,6 +97,88 @@ class Prog::GameVpsNexus < Prog::Base
     mark_failed(ex)
   end
 
+  label def start_azure
+    register_deadline("wait_azure_server", 20 * 60)
+    azure_client.create_resource_group(name: azure_resource_group, region: azure_region, tags: azure_tags)
+    nsg = azure_client.create_game_network_security_group(resource_group: azure_resource_group, region: azure_region, name: azure_nsg_name, tags: azure_tags)
+    vnet = azure_client.create_virtual_network(
+      resource_group: azure_resource_group,
+      region: azure_region,
+      name: azure_vnet_name,
+      subnet_name: azure_subnet_name,
+      address_prefix: "10.60.0.0/24",
+      nsg_id: nsg.fetch("id"),
+      tags: azure_tags,
+    )
+    public_ip = azure_client.create_public_ip(resource_group: azure_resource_group, region: azure_region, name: azure_public_ip_name, tags: azure_tags)
+    subnet_id = vnet.dig("properties", "subnets", 0, "id") || azure_client.subnet_resource_id(azure_resource_group, azure_vnet_name, azure_subnet_name)
+    nic = azure_client.create_network_interface(
+      resource_group: azure_resource_group,
+      region: azure_region,
+      name: azure_nic_name,
+      subnet_id:,
+      public_ip_id: public_ip.fetch("id"),
+      private_ip: "10.60.0.4",
+      tags: azure_tags,
+    )
+    azure_client.create_windows_virtual_machine(
+      resource_group: azure_resource_group,
+      region: azure_region,
+      name: azure_vm_name,
+      computer_name: azure_computer_name,
+      vm_size: azure_vm_size,
+      image: GameVps.azure_image_reference(game_vps.image_alias),
+      username: game_vps.rdp_username,
+      password: game_vps.rdp_password,
+      nic_id: nic.fetch("id"),
+      os_disk_name: azure_os_disk_name,
+      os_disk_size_gib: game_vps.disk_gib,
+      tags: azure_tags,
+    )
+
+    game_vps.update(
+      datacenter_id: azure_resource_group,
+      server_id: azure_vm_name,
+      lan_id: azure_vnet_name,
+      nic_id: azure_nic_name,
+      volume_id: azure_public_ip_name,
+      updated_at: Time.now,
+    )
+    hop_wait_azure_server
+  rescue => ex
+    mark_failed(ex)
+  end
+
+  label def wait_azure_server
+    instance = azure_client.get_virtual_machine(azure_resource_group, azure_vm_name)
+    statuses = Array(instance.dig("properties", "instanceView", "statuses")).map { it["code"] }
+    provisioning_succeeded = statuses.include?("ProvisioningState/succeeded")
+    power_running = statuses.include?("PowerState/running")
+
+    if provisioning_succeeded && power_running
+      primary_ip = azure_client.get_public_ip(azure_resource_group, azure_public_ip_name).dig("properties", "ipAddress")
+      nap 5 if primary_ip.to_s.empty?
+
+      game_vps.update(
+        status: "running",
+        primary_ip:,
+        access_notes: "RDP is available on TCP 3389. FiveM is open on TCP/UDP 30120. txAdmin is open on TCP 40120. Minecraft is open on TCP 25565.",
+        request_status_url: nil,
+        updated_at: Time.now,
+      )
+      Clog.emit("Azure Game VPS provisioned", {azure_game_vps_provisioned: {game_vps_ubid: game_vps.ubid, resource_group: azure_resource_group, vm_name: azure_vm_name}})
+      hop_create_billing_record
+    end
+
+    Clog.emit("Azure Game VPS is not running yet", {azure_game_vps_status: {game_vps_ubid: game_vps.ubid, vm_name: azure_vm_name, statuses:}})
+    nap 10
+  rescue AzureAPIError => ex
+    Clog.emit("Azure Game VPS wait failed", {azure_game_vps_wait_failed: {game_vps_ubid: game_vps.ubid, status: ex.status, body: ex.body}})
+    nap 15
+  rescue => ex
+    mark_failed(ex)
+  end
+
   label def create_billing_record
     hop_wait unless game_vps.project.billable
     hop_wait unless game_vps.active_billing_records.empty?
@@ -116,6 +206,12 @@ class Prog::GameVpsNexus < Prog::Base
   label def destroy
     decr_destroy
     game_vps.update(status: "deleting", updated_at: Time.now) unless game_vps.status == "deleting"
+
+    if game_vps.provider == "azure"
+      azure_client.delete_resource_group(game_vps.datacenter_id || azure_resource_group)
+      game_vps.destroy
+      pop "game vps destroyed"
+    end
 
     if game_vps.datacenter_id
       result = client.delete_datacenter(game_vps.datacenter_id)
@@ -152,8 +248,72 @@ class Prog::GameVpsNexus < Prog::Base
     @client ||= IonosClient.new
   end
 
+  def azure_client
+    @azure_client ||= AzureClient.new
+  end
+
   def resource_name
     "lr-#{game_vps.ubid}"
+  end
+
+  def azure_region
+    @azure_region ||= GameVps::LOCATIONS.fetch(game_vps.location).fetch(:azure_region)
+  end
+
+  def azure_plan
+    @azure_plan ||= GameVps::PLANS.fetch(game_vps.plan)
+  end
+
+  def azure_vm_size
+    azure_plan.fetch(:azure_size)
+  end
+
+  def azure_resource_group
+    @azure_resource_group ||= azure_name("rg", 80)
+  end
+
+  def azure_vm_name
+    @azure_vm_name ||= azure_name("game", 60)
+  end
+
+  def azure_computer_name
+    @azure_computer_name ||= "lr#{game_vps.ubid[-12, 12]}".downcase.gsub(/[^a-z0-9]/, "")[0, 15]
+  end
+
+  def azure_vnet_name
+    @azure_vnet_name ||= azure_name("vnet", 60)
+  end
+
+  def azure_subnet_name
+    @azure_subnet_name ||= azure_name("subnet", 60)
+  end
+
+  def azure_nsg_name
+    @azure_nsg_name ||= azure_name("nsg", 60)
+  end
+
+  def azure_nic_name
+    @azure_nic_name ||= azure_name("nic", 60)
+  end
+
+  def azure_public_ip_name
+    @azure_public_ip_name ||= azure_name("pip", 60)
+  end
+
+  def azure_os_disk_name
+    @azure_os_disk_name ||= azure_name("osdisk", 60)
+  end
+
+  def azure_name(prefix, max_length)
+    "lr-#{prefix}-#{game_vps.ubid}".downcase.gsub(/[^a-z0-9-]/, "-")[0, max_length].delete_suffix("-")
+  end
+
+  def azure_tags
+    {
+      "LayerRail" => "true",
+      "Project" => game_vps.project.ubid,
+      "GameVps" => game_vps.ubid,
+    }
   end
 
   def secure_windows_password
@@ -168,7 +328,7 @@ class Prog::GameVpsNexus < Prog::Base
   end
 
   def mark_failed(ex)
-    Clog.emit("IONOS Game VPS provisioning failed", {ionos_game_vps_failed: {game_vps_ubid: game_vps&.ubid, error_class: ex.class.name, error_message: ex.message}})
+    Clog.emit("Game VPS provisioning failed", {game_vps_failed: {game_vps_ubid: game_vps&.ubid, provider: game_vps&.provider, error_class: ex.class.name, error_message: ex.message}})
     game_vps.update(status: "failed", failure_message: ex.message.to_s.slice(0, 1000), updated_at: Time.now) if game_vps
     pop "game vps failed"
   end

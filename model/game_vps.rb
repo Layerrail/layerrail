@@ -4,44 +4,90 @@ require_relative "../model"
 
 class GameVps < Sequel::Model(:game_vps)
   STATUSES = %w[creating running failed deleting deleted].freeze
-  LOCATIONS = {
+  AZURE_LOCATIONS = {
+    "azure-eastus" => {name: "East US", region: "United States", azure_region: "eastus"},
+    "azure-eastus2" => {name: "East US 2", region: "United States", azure_region: "eastus2"},
+    "azure-westeurope" => {name: "West Europe", region: "Europe", azure_region: "westeurope"},
+    "azure-northeurope" => {name: "North Europe", region: "Europe", azure_region: "northeurope"},
+  }.freeze
+  IONOS_LOCATIONS = {
     "de/fra" => {name: "Frankfurt, DE", region: "Europe"},
     "gb/lhr" => {name: "London, UK", region: "Europe"},
     "us/las" => {name: "Las Vegas, US", region: "United States"},
     "us/ewr" => {name: "Newark, US", region: "United States"},
   }.freeze
+  LOCATIONS = AZURE_LOCATIONS.merge(IONOS_LOCATIONS).freeze
   PLANS = {
     "starter" => {
-      name: "Starter",
-      description: "Entry Windows VPS",
+      name: "Starter Windows",
+      description: "Small Windows server for testing and private sessions",
       cores: 2,
       ram_gib: 4,
-      disk_gib: 80,
-      monthly_price: "4.99",
+      disk_gib: 128,
+      azure_size: "Standard_D2lds_v7",
+      monthly_price: "4.00",
     },
     "community" => {
       name: "Community",
-      description: "Growing FiveM server",
+      description: "Entry community server for FiveM or Minecraft",
       cores: 4,
       ram_gib: 8,
       disk_gib: 160,
-      monthly_price: "8.99",
+      azure_size: "Standard_D4lds_v7",
+      monthly_price: "6.00",
+    },
+    "squad" => {
+      name: "Squad",
+      description: "More memory for mods, plugins, and voice",
+      cores: 2,
+      ram_gib: 8,
+      disk_gib: 160,
+      azure_size: "Standard_D2ds_v7",
+      monthly_price: "10.00",
     },
     "growth" => {
       name: "Growth",
-      description: "Busy game community",
-      cores: 8,
+      description: "Growing roleplay or survival community",
+      cores: 4,
       ram_gib: 16,
-      disk_gib: 320,
-      monthly_price: "14.99",
+      disk_gib: 256,
+      azure_size: "Standard_D4ds_v7",
+      monthly_price: "20.00",
     },
     "serious" => {
       name: "Serious",
-      description: "High-capacity roleplay",
-      cores: 16,
+      description: "Busy game community with heavier workloads",
+      cores: 8,
       ram_gib: 32,
-      disk_gib: 640,
-      monthly_price: "29.99",
+      disk_gib: 512,
+      azure_size: "Standard_D8ds_v7",
+      monthly_price: "50.00",
+    },
+    "arena" => {
+      name: "Arena",
+      description: "Large community server with room to scale",
+      cores: 16,
+      ram_gib: 64,
+      disk_gib: 1024,
+      azure_size: "Standard_D16ds_v7",
+      monthly_price: "95.00",
+    },
+  }.freeze
+  WINDOWS_IMAGES = {
+    "windows-server-2022" => {
+      name: "Windows Server 2022",
+      description: "Recommended",
+      azure_image: {publisher: "MicrosoftWindowsServer", offer: "WindowsServer", sku: "2022-datacenter", version: "latest"},
+    },
+    "windows-server-2022-azure" => {
+      name: "Windows Server 2022 Azure Edition",
+      description: "Azure optimized",
+      azure_image: {publisher: "MicrosoftWindowsServer", offer: "WindowsServer", sku: "2022-datacenter-azure-edition", version: "latest"},
+    },
+    "windows-server-2019" => {
+      name: "Windows Server 2019",
+      description: "Legacy compatible",
+      azure_image: {publisher: "MicrosoftWindowsServer", offer: "WindowsServer", sku: "2019-datacenter", version: "latest"},
     },
   }.freeze
 
@@ -54,12 +100,22 @@ class GameVps < Sequel::Model(:game_vps)
 
   dataset_module Pagination
 
-  def self.locations
-    LOCATIONS
+  def self.locations(provider: Config.game_vps_provider)
+    provider == "ionos" ? IONOS_LOCATIONS : AZURE_LOCATIONS
   end
 
   def self.plans
     PLANS
+  end
+
+  def self.windows_images
+    WINDOWS_IMAGES
+  end
+
+  def self.azure_image_reference(image_alias)
+    WINDOWS_IMAGES.fetch(image_alias).fetch(:azure_image).transform_keys(&:to_s)
+  rescue KeyError
+    raise Validation::ValidationFailed.new({image_alias: "#{image_alias} is not available for Azure Game VPS"})
   end
 
   def self.price_label(plan)
@@ -68,6 +124,10 @@ class GameVps < Sequel::Model(:game_vps)
 
   def location_label
     LOCATIONS.dig(location, :name) || location
+  end
+
+  def provider_label
+    (provider || Config.game_vps_provider).to_s == "ionos" ? "IONOS" : "Azure"
   end
 
   def plan_label

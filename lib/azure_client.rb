@@ -60,6 +60,24 @@ class AzureClient
     })
   end
 
+  def create_game_network_security_group(resource_group:, region:, name:, tags: {})
+    request(:put, resource_path(resource_group, "Microsoft.Network/networkSecurityGroups", name), api_version: NETWORK_API, body: {
+      location: region,
+      tags:,
+      properties: {
+        securityRules: [
+          security_rule("lr-allow-rdp", 100, "Tcp", "3389"),
+          security_rule("lr-allow-fivem-tcp", 200, "Tcp", "30120"),
+          security_rule("lr-allow-fivem-udp", 210, "Udp", "30120"),
+          security_rule("lr-allow-txadmin", 220, "Tcp", "40120"),
+          security_rule("lr-allow-minecraft", 230, "Tcp", "25565"),
+          security_rule("lr-allow-steam-query-tcp", 240, "Tcp", "27015"),
+          security_rule("lr-allow-steam-query-udp", 250, "Udp", "27015"),
+        ],
+      },
+    })
+  end
+
   def create_virtual_network(resource_group:, region:, name:, subnet_name:, address_prefix:, nsg_id:, tags: {})
     request(:put, resource_path(resource_group, "Microsoft.Network/virtualNetworks", name), api_version: NETWORK_API, body: {
       location: region,
@@ -133,6 +151,37 @@ class AzureClient
             managedDisk: {storageAccountType: "Premium_LRS"},
           },
           dataDisks: data_disks.fetch(:volumes),
+        },
+        networkProfile: {
+          networkInterfaces: [{id: nic_id, properties: {primary: true}}],
+        },
+      },
+    }, expected_status: [200, 201, 202])
+  end
+
+  def create_windows_virtual_machine(resource_group:, region:, name:, computer_name:, vm_size:, image:, username:, password:, nic_id:, os_disk_name:, os_disk_size_gib:, tags: {})
+    request(:put, resource_path(resource_group, "Microsoft.Compute/virtualMachines", name), api_version: COMPUTE_API, body: {
+      location: region,
+      tags:,
+      properties: {
+        hardwareProfile: {vmSize: vm_size},
+        osProfile: {
+          computerName: computer_name,
+          adminUsername: username,
+          adminPassword: password,
+          windowsConfiguration: {
+            provisionVMAgent: true,
+            enableAutomaticUpdates: true,
+          },
+        },
+        storageProfile: {
+          imageReference: image,
+          osDisk: {
+            name: os_disk_name,
+            createOption: "FromImage",
+            diskSizeGB: os_disk_size_gib,
+            managedDisk: {storageAccountType: "Premium_LRS"},
+          },
         },
         networkProfile: {
           networkInterfaces: [{id: nic_id, properties: {primary: true}}],

@@ -7,7 +7,7 @@ right_items << part(
   text: "Delete",
   url: path(@game_vps),
   confirmation: @game_vps.name,
-  confirmation_message: "Deleting this Game VPS removes the IONOS virtual data center and server.",
+  confirmation_message: "Deleting this Game VPS removes the cloud server and attached network resources.",
 ) if has_permission?("Vm:delete", @game_vps) && !@game_vps.display_state.start_with?("deleting") %>
 
 <%== part(
@@ -62,10 +62,10 @@ right_items << part(
   </div>
 
   <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-    <h3 class="text-base font-semibold leading-6 text-gray-900">IONOS</h3>
+    <h3 class="text-base font-semibold leading-6 text-gray-900"><%= @game_vps.provider_label %></h3>
     <dl class="mt-4 space-y-3 text-sm">
       <div class="flex justify-between gap-4">
-        <dt class="text-gray-500">Datacenter</dt>
+        <dt class="text-gray-500"><%= @game_vps.provider.to_s == "ionos" ? "Datacenter" : "Resource group" %></dt>
         <dd class="font-medium text-gray-900"><%== part("components/copyable_content", content: @game_vps.datacenter_id || "-") %></dd>
       </div>
       <div class="flex justify-between gap-4">

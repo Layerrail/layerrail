@@ -1,4 +1,6 @@
-- { id: 4b484694-19cd-491c-8105-9f8ca0a1bc2d, resource_type: GameVpsPlan, resource_family: starter,   location: global, unit_price: 0.0001237599, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
-- { id: df62c2db-d6fe-46cd-ad7c-e56a6551904c, resource_type: GameVpsPlan, resource_family: community, location: global, unit_price: 0.0002229663, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
-- { id: 495c13d6-39de-4c9a-bfd6-a1c933ff04ae, resource_type: GameVpsPlan, resource_family: growth,    location: global, unit_price: 0.0003717758, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
-- { id: 84dfbe42-2480-4307-bfa9-503acec4d805, resource_type: GameVpsPlan, resource_family: serious,   location: global, unit_price: 0.0007437996, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
+- { id: 4b484694-19cd-491c-8105-9f8ca0a1bc2d, resource_type: GameVpsPlan, resource_family: starter,   location: global, unit_price: 0.0000992063, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
+- { id: df62c2db-d6fe-46cd-ad7c-e56a6551904c, resource_type: GameVpsPlan, resource_family: community, location: global, unit_price: 0.0001488095, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
+- { id: 7a4ebd10-1398-4a51-8447-62d0591bfedb, resource_type: GameVpsPlan, resource_family: squad,     location: global, unit_price: 0.0002480159, billed_by: duration, active_from: 2026-06-12T00:00:00Z, byoc: false }
+- { id: 495c13d6-39de-4c9a-bfd6-a1c933ff04ae, resource_type: GameVpsPlan, resource_family: growth,    location: global, unit_price: 0.0004960317, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
+- { id: 84dfbe42-2480-4307-bfa9-503acec4d805, resource_type: GameVpsPlan, resource_family: serious,   location: global, unit_price: 0.0012400794, billed_by: duration, active_from: 2026-05-27T00:00:00Z, byoc: false }
+- { id: 2d681250-eed2-457a-a317-320e14c4dfe7, resource_type: GameVpsPlan, resource_family: arena,     location: global, unit_price: 0.0023561508, billed_by: duration, active_from: 2026-06-12T00:00:00Z, byoc: false }

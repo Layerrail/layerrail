@@ -19,17 +19,27 @@ class Clover
         handle_validation_failure("game_vps/create")
         authorize("Vm:create", @project)
         raise_web_error("Billing verification is required before creating a Game VPS.") unless @project.has_valid_payment_method?
-        raise_web_error("IONOS credentials are not configured yet.") unless IonosClient.enabled?
+        case Config.game_vps_provider
+        when "azure"
+          raise_web_error("Azure credentials are not configured yet.") unless AzureClient.enabled?
+        when "ionos"
+          raise_web_error("IONOS credentials are not configured yet.") unless IonosClient.enabled?
+        else
+          raise_web_error("Game VPS provider #{Config.game_vps_provider} is not supported.")
+        end
 
         name = typecast_params.nonempty_str("name")
         plan_key = typecast_params.nonempty_str("plan")
         location_key = typecast_params.nonempty_str("location")
         image_alias = typecast_params.str("image_alias").to_s.strip
-        image_alias = Config.ionos_windows_image_alias if image_alias.empty?
+        image_alias = Config.game_vps_provider == "ionos" ? Config.ionos_windows_image_alias : "windows-server-2022" if image_alias.empty?
 
         Validation.validate_name(name)
         plan = GameVps.plans[plan_key] || raise_web_error("Invalid Game VPS plan.")
         raise_web_error("Invalid Game VPS location.") unless GameVps.locations.key?(location_key)
+        if Config.game_vps_provider == "azure"
+          raise_web_error("Invalid Windows image.") unless GameVps.windows_images.key?(image_alias)
+        end
 
         game_vps = nil
         DB.transaction do
@@ -45,7 +55,7 @@ class Clover
             ram_gib: plan[:ram_gib],
             disk_gib: plan[:disk_gib],
             monthly_price: BigDecimal(plan[:monthly_price]),
-            rdp_username: "Administrator",
+            rdp_username: Config.game_vps_provider == "azure" ? "layerrail" : "Administrator",
           )
           Prog::GameVpsNexus.assemble(game_vps)
           audit_log(game_vps, "create")

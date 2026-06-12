@@ -117,7 +117,7 @@ module Config
   override :azure_arm_base_url, "https://management.azure.com", string
   override :compute_provider, "azure", string
   override :game_vps_enabled, false, bool
-  override :game_vps_provider, "ionos", string
+  override :game_vps_provider, "azure", string
   optional :ionos_api_token, string, clear: true
   optional :ionos_username, string, clear: true
   optional :ionos_password, string, clear: true
