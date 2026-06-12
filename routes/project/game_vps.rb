@@ -23,7 +23,6 @@ class Clover
         case Config.game_vps_provider
         when "azure"
           raise_web_error("Azure credentials are not configured yet.") unless AzureClient.enabled?
-          raise_web_error("Polar Game VPS checkout is not configured. Set POLAR_GAME_VPS_PRODUCT_ID.") unless Config.polar_game_vps_product_id
         when "ionos"
           raise_web_error("IONOS credentials are not configured yet.") unless IonosClient.enabled?
           raise_web_error("Billing verification is required before creating a Game VPS.") unless @project.has_valid_payment_method?
@@ -42,6 +41,11 @@ class Clover
         raise_web_error("Invalid Game VPS location.") unless GameVps.locations.key?(location_key)
         if Config.game_vps_provider == "azure"
           raise_web_error("Invalid Windows image.") unless GameVps.windows_images.key?(image_alias)
+          begin
+            GameVps.polar_product_id_for(plan_key)
+          rescue RuntimeError => ex
+            raise_web_error(ex.message)
+          end
         end
 
         game_vps = nil
@@ -66,9 +70,10 @@ class Clover
         end
 
         if Config.game_vps_provider == "azure"
+          product_id = game_vps.polar_product_id
           checkout = PolarClient.create_checkout(
             {
-              products: [Config.polar_game_vps_product_id],
+              products: [product_id],
               external_customer_id: @project.ubid,
               customer_name: current_account.name,
               customer_email: current_account.email,
@@ -82,12 +87,13 @@ class Clover
                 game_vps_id: game_vps.ubid,
                 plan: plan_key,
                 image_alias:,
+                product_id:,
                 amount_cents: game_vps.amount_cents
               },
               require_billing_address: true,
               success_url: "#{Config.base_url}#{@project.path}/game-vps/success?checkout_id={CHECKOUT_ID}",
               return_url: "#{Config.base_url}#{@project.path}/game-vps"
-            }.merge(amount: game_vps.amount_cents, currency: "usd")
+            }
           )
 
           checkout_id = checkout["id"] || checkout["checkout_id"] || checkout["checkoutId"]

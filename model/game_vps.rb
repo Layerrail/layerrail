@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "bigdecimal"
+require "json"
 require_relative "../model"
 
 class GameVps < Sequel::Model(:game_vps)
@@ -132,6 +133,22 @@ class GameVps < Sequel::Model(:game_vps)
     (BigDecimal(plan.fetch(:monthly_price)) * 100).to_i
   end
 
+  def self.polar_product_ids
+    raw = Config.polar_game_vps_product_ids.to_s.strip
+    return {} if raw.empty?
+
+    JSON.parse(raw)
+  rescue JSON::ParserError
+    raise "POLAR_GAME_VPS_PRODUCT_IDS must be a JSON object keyed by Game VPS plan"
+  end
+
+  def self.polar_product_id_for(plan_key)
+    product_id = polar_product_ids[plan_key.to_s] || Config.polar_game_vps_product_id
+    raise "Set POLAR_GAME_VPS_PRODUCT_IDS with a product id for #{plan_key}." unless product_id
+
+    product_id
+  end
+
   def location_label
     LOCATIONS.dig(location, :name) || location
   end
@@ -158,6 +175,10 @@ class GameVps < Sequel::Model(:game_vps)
 
   def amount_cents
     subscription_amount_cents || (BigDecimal(monthly_price.to_s) * 100).to_i
+  end
+
+  def polar_product_id
+    self.class.polar_product_id_for(plan)
   end
 
   def prepaid?

@@ -1,0 +1,60 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "json"
+require_relative "../loader"
+
+abort "Set POLAR_ACCESS_TOKEN first." unless Config.polar_access_token
+
+currency = ENV.fetch("POLAR_GAME_VPS_CURRENCY", "usd")
+
+products = PolarClient.list_products.fetch("items", [])
+product_ids = {}
+
+GameVps.plans.each do |plan_key, plan|
+  amount_cents = GameVps.amount_cents(plan)
+  metadata = {
+    layerrail_role: "game_vps_plan",
+    layerrail_plan: plan_key,
+    layerrail_amount_cents: amount_cents,
+    layerrail_provider: "azure"
+  }
+
+  existing = products.find do |product|
+    product_metadata = product["metadata"] || {}
+    product_metadata["layerrail_role"] == "game_vps_plan" &&
+      product_metadata["layerrail_plan"] == plan_key &&
+      !product["is_archived"]
+  end
+
+  payload = {
+    name: "LayerRail Game VPS - #{plan.fetch(:name)}",
+    description: "#{plan.fetch(:description)}. #{plan.fetch(:cores)} vCPU, #{plan.fetch(:ram_gib)} GB RAM, #{plan.fetch(:disk_gib)} GB SSD.",
+    recurring_interval: "month",
+    prices: [{
+      amount_type: "fixed",
+      price_currency: currency,
+      price_amount: amount_cents
+    }],
+    metadata: (existing&.fetch("metadata", {}) || {}).merge(metadata),
+    visibility: "private"
+  }
+  payload[:organization_id] = Config.polar_organization_id if Config.polar_organization_id
+
+  active_price = existing&.fetch("prices", [])&.find { |price| !price["is_archived"] && price["amount_type"] == "fixed" }
+  price_matches = active_price &&
+    active_price["price_currency"] == currency &&
+    active_price["price_amount"].to_i == amount_cents
+
+  product = if existing && price_matches
+    existing
+  elsif existing
+    PolarClient.update_product(existing.fetch("id"), payload)
+  else
+    PolarClient.create_product(payload)
+  end
+
+  product_ids[plan_key] = product.fetch("id")
+end
+
+puts "POLAR_GAME_VPS_PRODUCT_IDS=#{JSON.generate(product_ids)}"

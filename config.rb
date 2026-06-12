@@ -321,6 +321,7 @@ module Config
   optional :polar_checkout_product_id, uuid
   optional :polar_invoice_product_id, uuid
   optional :polar_game_vps_product_id, uuid
+  optional :polar_game_vps_product_ids, string, clear: true
   optional :stripe_secret_key, string, clear: true
   override :annual_non_dutch_eu_sales_exceed_threshold, false, bool
   optional :invalid_vat_notification_email, string
