@@ -2,6 +2,7 @@
 <div class="auto-refresh hidden" data-interval="10"></div>
 
 <% right_items = [part("components/game_vps_state_label", state: @game_vps.display_state, extra_class: "text-md")]
+right_items << part("components/button", text: "Download RDP", link: "#{path(@game_vps)}/rdp") if @game_vps.primary_ip
 right_items << part(
   "components/delete_button",
   text: "Delete",

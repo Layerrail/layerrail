@@ -35,10 +35,14 @@ class Clover
         location_key = typecast_params.nonempty_str("location")
         image_alias = typecast_params.str("image_alias").to_s.strip
         image_alias = Config.game_vps_provider == "ionos" ? Config.ionos_windows_image_alias : "windows-server-2022" if image_alias.empty?
+        rdp_username = typecast_params.str("rdp_username").to_s.strip
+        rdp_username = Config.game_vps_provider == "ionos" ? "Administrator" : "layerrail" if rdp_username.empty?
+        rdp_password = typecast_params.nonempty_str("rdp_password")
 
         Validation.validate_name(name)
         plan = GameVps.plans[plan_key] || raise_web_error("Invalid Game VPS plan.")
         raise_web_error("Invalid Game VPS location.") unless GameVps.locations.key?(location_key)
+        GameVps.validate_windows_credentials(rdp_username, rdp_password, allow_reserved_admin: Config.game_vps_provider == "ionos")
         if Config.game_vps_provider == "azure"
           raise_web_error("Invalid Windows image.") unless GameVps.windows_images.key?(image_alias)
           begin
@@ -62,7 +66,8 @@ class Clover
             ram_gib: plan[:ram_gib],
             disk_gib: plan[:disk_gib],
             monthly_price: BigDecimal(plan[:monthly_price]),
-            rdp_username: Config.game_vps_provider == "azure" ? "layerrail" : "Administrator",
+            rdp_username:,
+            rdp_password:,
           )
           Prog::GameVpsNexus.assemble(game_vps) if Config.game_vps_provider == "ionos"
           audit_log(game_vps, "create")
@@ -134,6 +139,25 @@ class Clover
       authorized_game_vpses = dataset_authorize(@project.game_vpses_dataset, "Vm:view")
       @game_vps = name ? authorized_game_vpses.first(name:) : authorized_game_vpses.first(id:)
       check_found_object(@game_vps)
+
+      r.get "rdp" do
+        raise CloverError.new(404, "NotFound", "RDP config is not available until the server has an IP address.") unless @game_vps.primary_ip
+
+        response.attachment "#{@game_vps.name.gsub(/[^A-Za-z0-9._-]/, "-")}.rdp"
+        response.content_type = :text
+        [
+          "full address:s:#{@game_vps.primary_ip}:3389",
+          "username:s:#{@game_vps.rdp_username}",
+          "prompt for credentials:i:1",
+          "authentication level:i:2",
+          "enablecredsspsupport:i:1",
+          "screen mode id:i:2",
+          "desktopwidth:i:1920",
+          "desktopheight:i:1080",
+          "session bpp:i:32",
+          "redirectclipboard:i:1"
+        ].join("\r\n")
+      end
 
       r.get true do
         view "game_vps/show"

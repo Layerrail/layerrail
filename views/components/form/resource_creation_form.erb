@@ -59,7 +59,7 @@ let option_dirty = <%== allow_unescaped(JSON.generate(form_elements.map { it[:na
       [opt_val, opt_text, opt_classes, opt_attrs]
     end if has_option
 
-    attributes = {required:}
+    attributes = {required:}.merge(element[:attributes] || {})
 
     case type
     when "radio_small_cards"
@@ -69,7 +69,7 @@ let option_dirty = <%== allow_unescaped(JSON.generate(form_elements.map { it[:na
     when "checkbox"
       locals = {name:, label:, options:, description: element[:description]}
     when "text"
-      locals = {name:, label:, value: element[:value], attributes: attributes.merge!({placeholder:})}
+      locals = {name:, label:, type: element[:input_type] || "text", value: element[:value], attributes: attributes.merge!({placeholder:})}
     when "number"
       locals = {name:, label:, type: "number", attributes: attributes.merge!({placeholder:})}
       type = "text"

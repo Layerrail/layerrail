@@ -17,6 +17,8 @@ end
 
 form_elements = [
   {name: "name", type: "text", label: "Name", required: "required", placeholder: "fivem-rp-1"},
+  {name: "rdp_username", type: "text", label: "Windows username", required: "required", placeholder: "layerrail", opening_tag: "<div class='sm:col-span-3'>", attributes: {autocomplete: "username"}},
+  {name: "rdp_password", type: "text", input_type: "password", label: "Windows password", required: "required", placeholder: "Use a strong Windows password", opening_tag: "<div class='sm:col-span-3'>", attributes: {autocomplete: "new-password"}},
   {name: "location", type: "radio_small_cards", label: "Location", required: "required", content_generator: location_content},
   {name: "plan", type: "radio_small_cards", label: "Plan", required: "required", content_generator: plan_content},
 ]
@@ -50,6 +52,7 @@ option_tree, option_parents = options.serialize %>
   option_tree:,
   option_parents:,
   pre_selected_values: {
+    "rdp_username" => Config.game_vps_provider == "ionos" ? "Administrator" : "layerrail",
     "location" => Config.game_vps_provider == "ionos" ? "de/fra" : "azure-eastus",
     "plan" => "starter",
     "image_alias" => Config.game_vps_provider == "ionos" ? Config.ionos_windows_image_alias : "windows-11-pro",

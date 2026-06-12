@@ -6,6 +6,10 @@ require_relative "../model"
 
 class GameVps < Sequel::Model(:game_vps)
   STATUSES = %w[pending_payment creating running failed deleting deleted].freeze
+  WINDOWS_USERNAME_PATTERN = /\A[A-Za-z][A-Za-z0-9._-]{0,19}\z/
+  WINDOWS_USERNAME_RESERVED = %w[
+    admin administrator guest user user1 test test1 root support layerrailadmin
+  ].freeze
   AZURE_LOCATIONS = {
     "azure-eastus" => {name: "East US", region: "United States", azure_region: "eastus"},
     "azure-eastus2" => {name: "East US 2", region: "United States", azure_region: "eastus2"},
@@ -123,6 +127,40 @@ class GameVps < Sequel::Model(:game_vps)
     WINDOWS_IMAGES.fetch(image_alias).fetch(:azure_image).transform_keys(&:to_s)
   rescue KeyError
     raise Validation::ValidationFailed.new({image_alias: "#{image_alias} is not available for Azure Game VPS"})
+  end
+
+  def self.validate_windows_credentials(username, password, allow_reserved_admin: false)
+    errors = {}
+    username = username.to_s
+    password = password.to_s
+    reserved_usernames = allow_reserved_admin ? WINDOWS_USERNAME_RESERVED - %w[admin administrator] : WINDOWS_USERNAME_RESERVED
+
+    if username.empty?
+      errors[:rdp_username] = "Windows username is required."
+    elsif !username.match?(WINDOWS_USERNAME_PATTERN) || username.end_with?(".")
+      errors[:rdp_username] = "Username must start with a letter, be 1-20 characters, and use only letters, numbers, dot, hyphen, or underscore."
+    elsif reserved_usernames.include?(username.downcase)
+      errors[:rdp_username] = "Choose a less common Windows username."
+    end
+
+    password_checks = [
+      password.match?(/[a-z]/),
+      password.match?(/[A-Z]/),
+      password.match?(/[0-9]/),
+      password.match?(/[^A-Za-z0-9]/)
+    ].count(true)
+
+    if password.empty?
+      errors[:rdp_password] = "Windows password is required."
+    elsif password.length < 12 || password.length > 123
+      errors[:rdp_password] = "Password must be between 12 and 123 characters."
+    elsif password_checks < 3
+      errors[:rdp_password] = "Password must include at least 3 of uppercase, lowercase, number, and symbol."
+    elsif !username.empty? && password.downcase.include?(username.downcase)
+      errors[:rdp_password] = "Password must not contain the Windows username."
+    end
+
+    raise Validation::ValidationFailed.new(errors) unless errors.empty?
   end
 
   def self.price_label(plan)
