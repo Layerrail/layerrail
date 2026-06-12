@@ -23,10 +23,12 @@ is_content_array = options[0][1].is_a?(Array) %>
                 <span class="text-md font-semibold"><%= opt_text[0] %></span>
                 <span class="text-sm opacity-80"><span class="block sm:inline"><%= opt_text[1] %></span></span>
               </span>
-              <span class="mt-2 flex text-sm sm:ml-4 sm:mt-0 sm:flex-col sm:text-right">
-                <span class="font-medium"><%= opt_text[2] %></span>
-                <span class="ml-1 opacity-50 sm:ml-0"><%= opt_text[3] %></span>
-              </span>
+              <% if opt_text[2] || opt_text[3] %>
+                <span class="mt-2 flex text-sm sm:ml-4 sm:mt-0 sm:flex-col sm:text-right">
+                  <span class="font-medium"><%= opt_text[2] %></span>
+                  <span class="ml-1 opacity-50 sm:ml-0"><%= opt_text[3] %></span>
+                </span>
+              <% end %>
             </span>
           <% else %>
             <span class="radio-small-card justify-center p-3 text-sm font-semibold"><%= opt_text %></span>

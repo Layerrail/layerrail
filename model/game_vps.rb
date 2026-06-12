@@ -87,8 +87,8 @@ class GameVps < Sequel::Model(:game_vps)
       azure_image: {publisher: "MicrosoftWindowsServer", offer: "WindowsServer", sku: "2022-datacenter", version: "latest"},
     },
     "windows-server-2022-azure" => {
-      name: "Windows Server 2022 Azure Edition",
-      description: "Azure optimized",
+      name: "Windows Server 2022 LayerRail Edition",
+      description: "LayerRail optimized",
       azure_image: {publisher: "MicrosoftWindowsServer", offer: "WindowsServer", sku: "2022-datacenter-azure-edition", version: "latest"},
     },
     "windows-server-2019" => {
@@ -154,7 +154,7 @@ class GameVps < Sequel::Model(:game_vps)
   end
 
   def provider_label
-    (provider || Config.game_vps_provider).to_s == "ionos" ? "IONOS" : "Azure"
+    (provider || Config.game_vps_provider).to_s == "ionos" ? "IONOS" : "LayerRail"
   end
 
   def plan_label

@@ -1,9 +1,8 @@
 <% @page_title = "Create Game VPS"
-provider_label = Config.game_vps_provider == "ionos" ? "IONOS" : "Azure"
 
 location_content = lambda do |location_key|
   location = GameVps.locations.fetch(location_key)
-  [location[:name], location[:region], location_key, provider_label]
+  [location[:name], location[:region], nil, nil]
 end
 
 plan_content = lambda do |plan_key|
@@ -13,7 +12,7 @@ end
 
 image_content = lambda do |image_key|
   image = GameVps.windows_images.fetch(image_key)
-  [image[:name], image[:description], image_key, "Windows"]
+  [image[:name], image[:description], nil, "Windows"]
 end
 
 form_elements = [
