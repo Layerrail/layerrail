@@ -66,21 +66,18 @@ module Option
   AzurePlan = Data.define(:id, :label, :family, :size_name, :vcpus, :memory_gib, :disk_gib, :monthly_price, :hourly_price, :gpu_count, :gpu_device, :billing_family)
   AZURE_LOCATIONS = [
     ["azure-eastus", "eastus", "East US"],
-    ["azure-westus3", "westus3", "West US 3"],
+    ["azure-eastus2", "eastus2", "East US 2"],
     ["azure-westeurope", "westeurope", "West Europe"],
     ["azure-northeurope", "northeurope", "North Europe"],
   ].map(&:freeze).freeze
   AZURE_PLANS = [
-    AzurePlan.new("Standard_B1s", "Starter 1GB", "nanode", "nanode-1", 1, 1, 25, 5, 0.0075, 0, nil, "nanode"),
-    AzurePlan.new("Standard_B1ms", "Starter 2GB", "nanode", "nanode-2", 1, 2, 50, 12, 0.018, 0, nil, "nanode-2"),
-    AzurePlan.new("Standard_B2s", "Starter 4GB", "nanode", "nanode-4", 2, 4, 80, 24, 0.036, 0, nil, "nanode-4"),
-    AzurePlan.new("Standard_B4ms", "Starter 16GB", "nanode", "nanode-8", 4, 16, 160, 48, 0.072, 0, nil, "nanode-8"),
-    AzurePlan.new("Standard_B1ms", "Shared 2GB", "burstable", "burstable-1", 1, 2, 50, 12, 0.018, 0, nil, "burstable"),
-    AzurePlan.new("Standard_B2s", "Shared 4GB", "burstable", "burstable-2", 2, 4, 80, 24, 0.036, 0, nil, "burstable"),
-    AzurePlan.new("Standard_D2s_v5", "Dedicated 8GB", "standard", "standard-2", 2, 8, 80, 43, 0.0645, 0, nil, "standard"),
-    AzurePlan.new("Standard_D4s_v5", "Dedicated 16GB", "standard", "standard-4", 4, 16, 160, 86, 0.129, 0, nil, "standard"),
-    AzurePlan.new("Standard_D8s_v5", "Dedicated 32GB", "standard", "standard-8", 8, 32, 320, 173, 0.2595, 0, nil, "standard"),
-    AzurePlan.new("Standard_D16s_v5", "Dedicated 64GB", "standard", "standard-16", 16, 64, 640, 346, 0.519, 0, nil, "standard"),
+    AzurePlan.new("Standard_D2lds_v7", "Starter 4GB", "nanode", "nanode-4", 2, 4, 80, 24, 0.036, 0, nil, "nanode-4"),
+    AzurePlan.new("Standard_D4lds_v7", "Starter 8GB", "nanode", "nanode-8", 4, 8, 160, 48, 0.072, 0, nil, "nanode-8"),
+    AzurePlan.new("Standard_D2ds_v7", "Shared 8GB", "burstable", "burstable-2", 2, 8, 80, 43, 0.0645, 0, nil, "burstable"),
+    AzurePlan.new("Standard_D2ds_v7", "Dedicated 8GB", "standard", "standard-2", 2, 8, 80, 43, 0.0645, 0, nil, "standard"),
+    AzurePlan.new("Standard_D4ds_v7", "Dedicated 16GB", "standard", "standard-4", 4, 16, 160, 86, 0.129, 0, nil, "standard"),
+    AzurePlan.new("Standard_D8ds_v7", "Dedicated 32GB", "standard", "standard-8", 8, 32, 320, 173, 0.2595, 0, nil, "standard"),
+    AzurePlan.new("Standard_D16ds_v7", "Dedicated 64GB", "standard", "standard-16", 16, 64, 640, 346, 0.519, 0, nil, "standard"),
   ].freeze
   AZURE_BOOT_IMAGES = {
     "ubuntu-noble" => {publisher: "Canonical", offer: "ubuntu-24_04-lts", sku: "server", version: "latest"},
@@ -610,7 +607,7 @@ module Option
   ].to_h).freeze
 
   LINODE_POSTGRES_SIZE_NAMES = %w[hobby-1 hobby-2 standard-2 standard-4].freeze
-  AZURE_POSTGRES_SIZE_NAMES = %w[hobby-1 hobby-2 standard-2 standard-4].freeze
+  AZURE_POSTGRES_SIZE_NAMES = %w[hobby-2 standard-2 standard-4].freeze
 
   def self.azure_location?(location)
     location&.provider == "azure" || Config.compute_provider == "azure"
@@ -636,6 +633,7 @@ module Option
 
   def self.safe_azure_postgres_size_name(size_name)
     name = size_name.to_s.gsub("burstable", "hobby")
+    return "hobby-2" if name == "hobby-1"
     return name if AZURE_POSTGRES_SIZE_NAMES.include?(name)
 
     parsed = POSTGRES_SIZE_OPTIONS[name]

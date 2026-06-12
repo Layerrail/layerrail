@@ -31,7 +31,7 @@ Sequel.migration do
     run <<~SQL
       INSERT INTO location (provider, display_name, name, ui_name, visible, id) VALUES
         ('azure', 'azure-eastus', 'azure-eastus', 'East US', true, '14c07e26-4e48-41c3-a8bb-831d70f05c5d'),
-        ('azure', 'azure-westus3', 'azure-westus3', 'West US 3', true, '85e585f9-b13a-4b9e-b0fb-06bdfcc93fd9'),
+        ('azure', 'azure-eastus2', 'azure-eastus2', 'East US 2', true, '4e30ddb2-fe0e-4cad-92bf-05402ba14e10'),
         ('azure', 'azure-westeurope', 'azure-westeurope', 'West Europe', true, '4f9d5ec4-ec46-496e-a50b-8b846472f035'),
         ('azure', 'azure-northeurope', 'azure-northeurope', 'North Europe', true, 'a623ad21-f816-4866-b6a3-5d9fe4f02c5a')
       ON CONFLICT DO NOTHING;

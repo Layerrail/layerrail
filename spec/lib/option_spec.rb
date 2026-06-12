@@ -51,12 +51,19 @@ RSpec.describe Option do
 
   describe ".vm_size_options" do
     let(:linode_location) { instance_double(Location, provider: "linode") }
+    let(:azure_location) { instance_double(Location, provider: "azure") }
 
     it "only exposes VM sizes backed by a Linode plan in Linode locations" do
       names = described_class.vm_size_options(location: linode_location).map(&:display_name)
 
       expect(names).to include("nanode-1", "nanode-2", "nanode-4", "nanode-8", "standard-2", "standard-4", "standard-8", "standard-16")
       expect(names).not_to include("standard-30", "standard-60")
+    end
+
+    it "only exposes VM sizes backed by available Azure plans in Azure locations" do
+      names = described_class.vm_size_options(location: azure_location).map(&:display_name)
+
+      expect(names).to eq(["nanode-4", "nanode-8", "standard-2", "standard-4", "standard-8", "standard-16", "burstable-2"])
     end
 
     it "only exposes the supported Linode GPU VM size for GPU creation" do
@@ -66,11 +73,25 @@ RSpec.describe Option do
 
   describe ".kubernetes_worker_size_options" do
     let(:linode_location) { instance_double(Location, provider: "linode") }
+    let(:azure_location) { instance_double(Location, provider: "azure") }
 
     it "only exposes Linode dedicated CPU sizes supported for Kubernetes workers" do
       names = described_class.kubernetes_worker_size_options(location: linode_location).map(&:display_name)
 
       expect(names).to eq(["standard-2", "standard-4", "standard-8", "standard-16"])
+    end
+
+    it "only exposes Azure dedicated CPU sizes supported for Kubernetes workers" do
+      names = described_class.kubernetes_worker_size_options(location: azure_location).map(&:display_name)
+
+      expect(names).to eq(["standard-2", "standard-4", "standard-8", "standard-16"])
+    end
+  end
+
+  describe ".safe_azure_postgres_size_name" do
+    it "maps unsupported tiny hobby sizes to the smallest supported Azure Postgres size" do
+      expect(described_class.safe_azure_postgres_size_name("hobby-1")).to eq("hobby-2")
+      expect(described_class.safe_azure_postgres_size_name("burstable-1")).to eq("hobby-2")
     end
   end
 
