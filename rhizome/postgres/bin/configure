@@ -187,5 +187,12 @@ if configure_hash["physical_slots"]
 end
 
 max_connections = configure_hash["user_config"]["max_connections"] || configure_hash["configs"]["max_connections"]
-pgbouncer_setup = PgBouncerSetup.new(v, max_connections, configure_hash["pgbouncer_instances"], configure_hash["pgbouncer_user_config"], supports_peer_config: PgBouncerSetup.supports_peer_config?)
+pgbouncer_setup = PgBouncerSetup.new(
+  v,
+  max_connections,
+  configure_hash["pgbouncer_instances"],
+  configure_hash["pgbouncer_user_config"],
+  supports_peer_config: PgBouncerSetup.supports_peer_config?,
+  supports_auth_ident_file: PgBouncerSetup.supports_auth_ident_file?
+)
 pgbouncer_setup.setup

@@ -1,24 +1,39 @@
 # frozen_string_literal: true
 
 class PgBouncerSetup
-  def initialize(version, max_connections, num_instances, user_config, supports_peer_config: true)
+  def initialize(version, max_connections, num_instances, user_config, supports_peer_config: true, supports_auth_ident_file: true)
     @version = version
     @max_connections = max_connections
     @num_instances = num_instances
     @user_config = user_config
     @supports_peer_config = supports_peer_config
+    @supports_auth_ident_file = supports_auth_ident_file
+  end
+
+  def self.pgbouncer_version
+    output = `pgbouncer --version 2>&1`
+    version = output[/PgBouncer\s+(\d+(?:\.\d+)+)/i, 1]
+    version && Gem::Version.new(version)
+  rescue
+    nil
   end
 
   def self.supports_peer_config?
-    output = `pgbouncer --version 2>&1`
-    version = output[/PgBouncer\s+(\d+(?:\.\d+)+)/i, 1]
-    version && Gem::Version.new(version) >= Gem::Version.new("1.21")
-  rescue
-    false
+    version = pgbouncer_version
+    version && version >= Gem::Version.new("1.21")
+  end
+
+  def self.supports_auth_ident_file?
+    version = pgbouncer_version
+    version && version >= Gem::Version.new("1.21")
   end
 
   def supports_peer_config?
     @supports_peer_config
+  end
+
+  def supports_auth_ident_file?
+    @supports_auth_ident_file
   end
 
   def service_template_name
@@ -109,7 +124,7 @@ so_reuseport = 1
 
 auth_type = hba
 auth_hba_file = /etc/postgresql/#{@version}/main/pg_hba.conf
-auth_ident_file = /etc/postgresql/#{@version}/main/pg_ident.conf
+#{supports_auth_ident_file? ? "auth_ident_file = /etc/postgresql/#{@version}/main/pg_ident.conf" : nil}
 auth_user = pgbouncer
 auth_dbname = ubi_admin
 auth_query = SELECT p_user, p_password FROM pgbouncer.get_auth($1)

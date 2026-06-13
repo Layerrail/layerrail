@@ -29,6 +29,12 @@ RSpec.describe PgBouncerSetup do
       expect(config).to include("auth_hba_file = /etc/postgresql/17-main/main/pg_hba.conf")
     end
 
+    it "can omit auth_ident_file for older pgbouncer versions" do
+      setup_without_auth_ident_file = described_class.new(version, max_connections, num_instances, user_config, supports_auth_ident_file: false)
+
+      expect(setup_without_auth_ident_file.pgbouncer_ini_content(1)).not_to include("auth_ident_file")
+    end
+
     it "sets auth_dbname to ubi_admin" do
       expect(config).to include("auth_dbname = ubi_admin")
     end
