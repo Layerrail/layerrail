@@ -60,7 +60,11 @@
               <% row_opts ||= {} %>
               <tr id="<%= row_opts[:id] %>">
                 <% columns.each_with_index do |(value, col_opts), i| %>
-                  <% col_opts ||= {} %>
+                  <% if col_opts.is_a?(Array)
+                    value = [value, col_opts]
+                    col_opts = {}
+                  end
+                  col_opts ||= {} %>
                   <td
                     <% if i == 0 && !consistent_styling
                       cls="pl-4 pr-3 sm:pl-6 py-4 text-gray-900 font-medium text-sm"

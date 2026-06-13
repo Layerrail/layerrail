@@ -39,7 +39,20 @@
           </div>
         <% end %>
       </div>
-      <div class="flex justify-end border-t border-gray-100 px-6 py-4">
+      <div class="flex flex-wrap justify-end gap-3 border-t border-gray-100 px-6 py-4">
+        <% form(action: "#{@project.path}/domain/cart-clear", method: :post) do %>
+          <%== part(
+            "components/button",
+            text: "Empty Cart",
+            icon: "hero-trash",
+            type: "danger",
+            attributes: {
+              "type" => "submit",
+              "data-confirmation" => "empty cart",
+              "data-confirmation-message" => "This removes every unpaid domain item from your cart."
+            }
+          ) %>
+        <% end %>
         <% form(action: "#{@project.path}/domain/checkout", method: :post) do %>
           <%== part("components/button", text: "Checkout", icon: "hero-banknotes", attributes: {"type" => "submit"}) %>
         <% end %>

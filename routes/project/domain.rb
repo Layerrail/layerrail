@@ -500,6 +500,22 @@ class Clover
         raise_web_error(ex.message)
       end
 
+      r.post "cart-clear" do
+        authorize("Project:billing", @project)
+        items = DomainCheckout.cart_items(@project)
+        raise_web_error("Your domain cart is already empty.") if items.empty?
+
+        DB.transaction do
+          items.each do |item|
+            item.update(status: "cancelled", updated_at: Time.now)
+            audit_log(item, "destroy")
+          end
+        end
+
+        flash["notice"] = "Domain cart emptied."
+        r.redirect "#{@project.path}/domain"
+      end
+
       r.get "success" do
         authorize("Project:billing", @project)
         handle_validation_failure("domain/index")
