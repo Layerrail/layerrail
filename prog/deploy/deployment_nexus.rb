@@ -5,9 +5,9 @@ require "shellwords"
 class Prog::Deploy::DeploymentNexus < Prog::Base
   subject_is :deploy_deployment
 
-  def self.assemble(app, trigger: "manual")
+  def self.assemble(app, trigger: "manual", commit_sha: nil, commit_message: nil)
     DB.transaction do
-      deployment = DeployDeployment.create(app_id: app.id, status: "queued", trigger:)
+      deployment = DeployDeployment.create(app_id: app.id, status: "queued", trigger:, commit_sha:, commit_message:)
       Strand.create_with_id(deployment, prog: "Deploy::DeploymentNexus", label: "start")
       deployment
     end

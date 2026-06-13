@@ -1,5 +1,7 @@
 <% editing = @contact_profile.id %>
 <% @page_title = editing ? @contact_profile.name : "New Domain Contact Profile" %>
+<% countries = ISO3166::Country.all.sort_by { |country| country.iso_short_name.to_s }.map { |country| [country.alpha2, "#{country.iso_short_name} (+#{country.country_code})"] } %>
+<% phone_countries = ISO3166::Country.all.sort_by { |country| country.iso_short_name.to_s }.map { |country| [country.country_code, "#{country.iso_short_name} +#{country.country_code}", nil, {"data-country" => country.alpha2}] } %>
 
 <%== part(
   "components/page_header",
@@ -12,19 +14,59 @@
 <% form(action: editing ? "#{@project.path}#{@contact_profile.path}" : "#{@project.path}/domain/contact-profile", method: :post, class: "mx-auto grid max-w-4xl gap-5 rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5") do %>
   <div class="grid gap-5 md:grid-cols-2">
     <%== part("components/form/text", name: "name", label: "Profile name", value: @contact_profile.name, attributes: {placeholder: "Primary owner", required: true}) %>
-    <%== part("components/form/text", name: "email", label: "Email", type: "email", value: @contact_profile.email, attributes: {placeholder: "owner@example.com", required: true}) %>
+    <%== part("components/form/text", name: "email", label: "Email", type: "email", value: @contact_profile.email, attributes: {placeholder: "owner@example.com", required: true, inputmode: "email", autocomplete: "email"}) %>
     <%== part("components/form/text", name: "first_name", label: "First name", value: @contact_profile.first_name, attributes: {required: true}) %>
     <%== part("components/form/text", name: "last_name", label: "Last name", value: @contact_profile.last_name, attributes: {required: true}) %>
     <%== part("components/form/text", name: "organization", label: "Organization", value: @contact_profile.organization, attributes: {placeholder: "Optional"}) %>
-    <%== part("components/form/text", name: "phone", label: "Phone", value: @contact_profile.phone, attributes: {placeholder: "+1.5551234567", required: true}) %>
+    <div class="space-y-2 text-gray-900">
+      <label for="phone" class="block text-sm font-medium leading-6">Phone</label>
+      <div class="grid grid-cols-[minmax(9rem,13rem)_1fr] gap-3">
+        <select id="phone-country" class="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-layerrail-600">
+          <% phone_countries.each do |dial_code, label, _classes, attrs| %>
+            <option value="<%= dial_code %>" <%== html_attrs(attrs) %> <%= (@contact_profile.country_code.to_s.upcase == attrs["data-country"]) ? "selected" : "" %>><%= label %></option>
+          <% end %>
+        </select>
+        <%== part("components/form/text", name: "phone", label: nil, value: @contact_profile.phone, attributes: {placeholder: "+1.5551234567", required: true, inputmode: "tel", autocomplete: "tel", pattern: "\\+[0-9]{1,3}[.\\-\\s]?[0-9][0-9.\\-\\s]{5,18}"}) %>
+      </div>
+    </div>
     <%== part("components/form/text", name: "address1", label: "Address line 1", value: @contact_profile.address1, attributes: {required: true}) %>
     <%== part("components/form/text", name: "address2", label: "Address line 2", value: @contact_profile.address2, attributes: {placeholder: "Optional"}) %>
     <%== part("components/form/text", name: "city", label: "City", value: @contact_profile.city, attributes: {required: true}) %>
     <%== part("components/form/text", name: "state", label: "State / Province", value: @contact_profile.state, attributes: {required: true}) %>
     <%== part("components/form/text", name: "postal_code", label: "Postal code", value: @contact_profile.postal_code, attributes: {required: true}) %>
-    <%== part("components/form/text", name: "country_code", label: "Country code", value: @contact_profile.country_code, attributes: {placeholder: "US", maxlength: 2, required: true}) %>
+    <%== part(
+      "components/form/select",
+      name: "country_code",
+      label: "Country",
+      selected: @contact_profile.country_code || "US",
+      options: countries,
+      attributes: {required: true, autocomplete: "country"}
+    ) %>
   </div>
   <div class="flex justify-end">
     <%== part("components/form/submit_button", text: editing ? "Save Contact Profile" : "Create Contact Profile", icon: "hero-check") %>
   </div>
 <% end %>
+
+<script>
+  (() => {
+    const country = document.getElementById("country_code");
+    const dial = document.getElementById("phone-country");
+    const phone = document.getElementById("phone");
+    if (!country || !dial || !phone) return;
+
+    const syncDialToCountry = () => {
+      const match = Array.from(dial.options).find((option) => option.dataset.country === country.value);
+      if (match) dial.value = match.value;
+    };
+
+    country.addEventListener("change", syncDialToCountry);
+    dial.addEventListener("change", () => {
+      if (phone.value.trim() === "" || phone.value.trim().match(/^\+\d{1,3}$/)) {
+        phone.value = `+${dial.value}.`;
+        phone.focus();
+      }
+    });
+    syncDialToCountry();
+  })();
+</script>

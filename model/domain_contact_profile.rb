@@ -45,6 +45,8 @@ class DomainContactProfile < Sequel::Model(:domain_contact_profile)
     validates_presence %i[name first_name last_name email phone address1 city state postal_code country_code]
     validates_format(/\A[^@\s]+@[^@\s]+\.[^@\s]+\z/, :email, message: "must be a valid email")
     validates_format(/\A[A-Z]{2}\z/i, :country_code, message: "must be a 2-letter country code")
+    errors.add(:country_code, "must be a supported country") if country_code && !ISO3166::Country[country_code]
+    validates_format(/\A\+\d{1,3}[.\-\s]?\d[\d.\-\s]{5,18}\z/, :phone, message: "must include country code, like +1.5551234567")
   end
 end
 

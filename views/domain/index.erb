@@ -14,34 +14,57 @@
 <div class="grid gap-6">
   <% registration_cart = @domain_registrations.select { |domain_registration| domain_registration.status == "cart" } %>
   <% order_cart = @domain_orders.select { |domain_order| domain_order.status == "cart" } %>
-  <% visible_registrations = @domain_registrations.reject { |domain_registration| %w[cart cancelled].include?(domain_registration.status) } %>
-  <% visible_orders = @domain_orders.reject { |domain_order| %w[cart cancelled].include?(domain_order.status) } %>
+  <% pending_checkout = @domain_registrations.select { |domain_registration| domain_registration.status == "pending_payment" } + @domain_orders.select { |domain_order| domain_order.status == "pending_payment" } %>
+  <% visible_registrations = @domain_registrations.reject { |domain_registration| %w[cart pending_payment cancelled].include?(domain_registration.status) } %>
+  <% visible_orders = @domain_orders.reject { |domain_order| %w[cart pending_payment cancelled].include?(domain_order.status) } %>
   <% cart = registration_cart + order_cart %>
   <% if cart.any? %>
+    <section class="rounded-lg bg-white shadow ring-1 ring-black ring-opacity-5">
+      <div class="border-b border-gray-100 px-6 py-5">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <h2 class="text-base font-semibold text-gray-900">Cart</h2>
+          <div class="text-sm font-semibold text-gray-900">$<%= format("%0.2f", cart.sum { it.amount_cents.to_i } / 100.0) %></div>
+        </div>
+      </div>
+      <div class="divide-y divide-gray-100">
+        <% cart.each do |item| %>
+          <div id="domain-cart-<%= item.ubid %>" class="grid gap-4 px-6 py-4 text-sm md:grid-cols-[1fr_130px_90px_120px] md:items-center">
+            <div>
+              <a class="font-medium text-gray-900 hover:text-layerrail-600" href="<%= path(item) %>"><%= item.domain %></a>
+              <div class="mt-1 text-xs text-gray-500"><%= item.ubid %></div>
+            </div>
+            <div class="text-gray-500"><%= item.is_a?(DomainRegistration) ? "registration" : item.display_kind %></div>
+            <div class="text-gray-500"><%= item.years %> yr</div>
+            <div class="font-medium text-gray-900"><%= item.amount_label %></div>
+          </div>
+        <% end %>
+      </div>
+      <div class="flex justify-end border-t border-gray-100 px-6 py-4">
+        <% form(action: "#{@project.path}/domain/checkout", method: :post) do %>
+          <%== part("components/button", text: "Checkout", icon: "hero-banknotes", attributes: {"type" => "submit"}) %>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
+  <% if pending_checkout.any? %>
     <%== part(
       "components/table_card",
-      title: "Cart",
+      title: "Pending checkout",
       headers: ["Item", "Kind", "Years", "Amount", "State"],
-      rows: cart.map do |item|
+      rows: pending_checkout.map do |item|
         [
           [
-            [
-              [item.domain, {link: path(item)}],
-              [item.ubid, {copyable: true}]
-            ],
+            [[item.domain, {link: path(item)}], [item.ubid, {copyable: true}]],
             item.is_a?(DomainRegistration) ? "registration" : item.display_kind,
             item.years,
             item.amount_label,
             item.display_state
           ],
-          {id: "domain-cart-#{item.ubid}"}
+          {id: "domain-pending-#{item.ubid}"}
         ]
       end
     ) %>
-
-    <% form(action: "#{@project.path}/domain/checkout", method: :post, class: "flex justify-end") do %>
-      <%== part("components/button", text: "Checkout Domains", icon: "hero-banknotes", attributes: {"type" => "submit"}) %>
-    <% end %>
   <% end %>
 
   <%== part(

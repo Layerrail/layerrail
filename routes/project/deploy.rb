@@ -92,6 +92,8 @@ class Clover
 
       r.get true do
         @deployments = @deploy_app.deployments_dataset.limit(10).all
+        @deploy_domains = @project.domain_registrations_dataset.where(deploy_app_id: @deploy_app.id).order(:domain).all
+        @available_domains = @project.domain_registrations_dataset.where(status: "active", deploy_app_id: nil).order(:domain).all
         view "deploy/show"
       end
 
@@ -122,6 +124,29 @@ class Clover
           audit_log(@deploy_app, "update_variable")
         end
         flash["notice"] = "Environment variable saved"
+        r.redirect path(@deploy_app)
+      end
+
+      r.post "domain" do
+        authorize("Project:billing", @project)
+        action = typecast_params.str("action").to_s
+        domain_id = typecast_params.nonempty_str!("domain_registration_id")
+        domain_registration = @project.domain_registrations_dataset.first(id: UBID.to_uuid(domain_id))
+        check_found_object(domain_registration)
+        raise_web_error("This domain must be active before it can be attached to a deploy app.") unless domain_registration.active?
+
+        DB.transaction do
+          if action == "detach"
+            raise_web_error("This domain is not attached to this deploy app.") unless domain_registration.deploy_app_id == @deploy_app.id
+            domain_registration.detach_from_deploy_app!
+            audit_log(domain_registration, "detach_deploy_app")
+            flash["notice"] = "#{domain_registration.domain} detached from #{@deploy_app.name}."
+          else
+            domain_registration.attach_to_deploy_app!(@deploy_app)
+            audit_log(domain_registration, "attach_deploy_app")
+            flash["notice"] = "#{domain_registration.domain} attached to #{@deploy_app.name}."
+          end
+        end
         r.redirect path(@deploy_app)
       end
 

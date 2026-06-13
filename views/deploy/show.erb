@@ -1,19 +1,13 @@
 <% @page_title = @deploy_app.name %>
 <div class="auto-refresh hidden" data-interval="10"></div>
 
+<% latest = @deploy_app.latest_deployment %>
 <% right_items = [part("components/deploy_state_label", state: @deploy_app.display_state, extra_class: "text-md")]
 if has_permission?("Vm:create", @project) && !%w[provisioning deploying deleting].include?(@deploy_app.display_state)
   right_items << form({action: "#{path(@deploy_app)}/deploy", method: :post}, emit: false) do |f|
-    f << part("components/button", text: "Deploy", icon: "hero-rocket-launch")
+    f << part("components/button", text: "Redeploy", icon: "hero-rocket-launch")
   end
-end
-right_items << part(
-  "components/delete_button",
-  text: "Delete",
-  url: path(@deploy_app),
-  confirmation: @deploy_app.name,
-  confirmation_message: "Deleting this deploy app also deletes its managed runtime.",
-) if has_permission?("Vm:delete", @project) && !@deploy_app.display_state.start_with?("deleting") %>
+end %>
 
 <%== part(
   "components/page_header",
@@ -21,104 +15,52 @@ right_items << part(
   right_items:
 ) %>
 
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-  <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-    <h3 class="text-base font-semibold leading-6 text-gray-900">App</h3>
-    <dl class="mt-4 space-y-3 text-sm">
-      <div class="flex justify-between gap-4">
-        <dt class="text-gray-500">URL</dt>
-        <dd class="font-medium text-gray-900"><%== part("components/copyable_content", content: @deploy_app.public_hostname) %></dd>
-      </div>
-      <div class="flex justify-between gap-4">
-        <dt class="text-gray-500">Repository</dt>
-        <dd class="font-medium text-layerrail-600"><a href="<%= @deploy_app.repository_url %>"><%= @deploy_app.repository %></a></dd>
-      </div>
-      <div class="flex justify-between gap-4">
-        <dt class="text-gray-500">Branch</dt>
-        <dd class="font-medium text-gray-900"><%= @deploy_app.branch %></dd>
-      </div>
-      <div class="flex justify-between gap-4">
-        <dt class="text-gray-500">Runtime</dt>
-        <dd class="font-medium text-gray-900"><%= @deploy_app.framework_label %></dd>
-      </div>
-    </dl>
-  </div>
+<%== render("deploy/tabbar", locals: {active: "overview", app: @deploy_app}) %>
 
-  <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-    <h3 class="text-base font-semibold leading-6 text-gray-900">Runtime</h3>
-    <dl class="mt-4 space-y-3 text-sm">
-      <div class="flex justify-between gap-4">
-        <dt class="text-gray-500">Location</dt>
-        <dd class="font-medium text-gray-900"><%= @deploy_app.location.ui_name %></dd>
-      </div>
-      <% if Config.deploy_infrastructure_controls_enabled %>
-        <div class="flex justify-between gap-4">
-          <dt class="text-gray-500">Runtime size</dt>
-          <dd class="font-medium text-gray-900"><%= @deploy_app.vm_size %></dd>
-        </div>
-        <div class="flex justify-between gap-4">
-          <dt class="text-gray-500">Instance</dt>
-          <dd class="font-medium text-gray-900">
-            <% if @deploy_app.vm %>
-              <a class="text-layerrail-600" href="<%= path(@deploy_app.vm) %>"><%= @deploy_app.vm.name %></a>
-            <% else %>
-              Not assigned yet
-            <% end %>
-          </dd>
-        </div>
-        <div class="flex justify-between gap-4">
-          <dt class="text-gray-500">IP address</dt>
-          <dd class="font-medium text-gray-900"><%== part("components/copyable_content", content: @deploy_app.vm&.ip4_string || "Not assigned yet") %></dd>
-        </div>
-      <% else %>
-        <div class="flex justify-between gap-4">
-          <dt class="text-gray-500">Capacity</dt>
-          <dd class="font-medium text-gray-900">Managed</dd>
-        </div>
-      <% end %>
-    </dl>
-  </div>
+<div class="grid gap-6">
+  <section class="grid gap-4 lg:grid-cols-4" id="overview">
+    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
+      <div class="text-sm font-medium text-gray-500">Production URL</div>
+      <div class="mt-2 truncate text-sm font-semibold text-gray-900"><%== part("components/copyable_content", content: @deploy_app.public_hostname) %></div>
+      <a class="mt-3 inline-flex text-sm font-medium text-layerrail-600 hover:text-layerrail-700" href="<%= @deploy_app.public_url %>" target="_blank" rel="noopener">Open site</a>
+    </div>
+    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
+      <div class="text-sm font-medium text-gray-500">Source</div>
+      <a class="mt-2 block truncate text-sm font-semibold text-layerrail-600 hover:text-layerrail-700" href="<%= @deploy_app.repository_url %>" target="_blank" rel="noopener"><%= @deploy_app.repository %></a>
+      <div class="mt-1 text-xs text-gray-500"><%= @deploy_app.branch %></div>
+    </div>
+    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
+      <div class="text-sm font-medium text-gray-500">Runtime</div>
+      <div class="mt-2 text-sm font-semibold text-gray-900"><%= @deploy_app.framework_label %></div>
+      <div class="mt-1 text-xs text-gray-500"><%= @deploy_app.location.ui_name %></div>
+    </div>
+    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
+      <div class="text-sm font-medium text-gray-500">Latest deploy</div>
+      <div class="mt-2 text-sm font-semibold text-gray-900"><%= latest ? latest.created_at.strftime("%F %T") : "None" %></div>
+      <div class="mt-1 text-xs text-gray-500"><%= latest ? latest.trigger.tr("_", " ") : "-" %></div>
+    </div>
+  </section>
 
-  <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-    <h3 class="text-base font-semibold leading-6 text-gray-900">Build</h3>
-    <dl class="mt-4 space-y-3 text-sm">
-      <div class="flex justify-between gap-4">
-        <dt class="text-gray-500">Root</dt>
-        <dd class="font-medium text-gray-900"><%= @deploy_app.root_directory.empty? ? "/" : @deploy_app.root_directory %></dd>
-      </div>
-      <div class="flex justify-between gap-4">
-        <dt class="text-gray-500">Install</dt>
-        <dd class="font-medium text-gray-900 text-right"><%= @deploy_app.install_command %></dd>
-      </div>
-      <div class="flex justify-between gap-4">
-        <dt class="text-gray-500">Build</dt>
-        <dd class="font-medium text-gray-900 text-right"><%= @deploy_app.build_command || "-" %></dd>
-      </div>
-      <div class="flex justify-between gap-4">
-        <dt class="text-gray-500">Start</dt>
-        <dd class="font-medium text-gray-900 text-right"><%= @deploy_app.start_command || "-" %></dd>
-      </div>
-    </dl>
-  </div>
-</div>
+  <% if @deploy_app.failure_message %>
+    <div class="rounded-lg bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
+      <%= @deploy_app.failure_message %>
+    </div>
+  <% end %>
 
-<% if @deploy_app.failure_message %>
-  <div class="mt-6 rounded-lg bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
-    <%= @deploy_app.failure_message %>
-  </div>
-<% end %>
-
-<div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-  <div class="lg:col-span-2">
+  <section id="deployments">
     <%== part(
       "components/table_card",
       title: "Deployments",
-      headers: ["Created", "Trigger", "State", "Finished"],
+      headers: ["Started", "Trigger", "Commit", "State", "Finished"],
       rows: @deployments.map do |deployment|
         [
           [
             deployment.created_at.strftime("%F %T"),
-            deployment.trigger,
+            deployment.trigger.tr("_", " "),
+            [
+              [deployment.commit_sha.to_s.empty? ? "-" : deployment.commit_sha[0, 12], {}],
+              [deployment.commit_message.to_s.empty? ? nil : deployment.commit_message.lines.first.to_s.strip, {}]
+            ],
             ["deploy_state_label", {component: {state: deployment.display_state}}],
             deployment.finished_at&.strftime("%F %T") || "-"
           ],
@@ -127,36 +69,135 @@ right_items << part(
       end,
       empty_state: "No deployments yet."
     ) %>
-  </div>
+  </section>
 
-  <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-    <h3 class="text-base font-semibold leading-6 text-gray-900">Environment</h3>
-    <div class="mt-4 space-y-3">
-      <% @deploy_app.variables.each do |variable| %>
-        <div class="flex items-center justify-between gap-3 rounded-md bg-gray-50 px-3 py-2 text-sm">
-          <span class="font-medium text-gray-900"><%= variable.key %></span>
-          <% form(action: "#{path(@deploy_app)}/variable-delete/#{variable.ubid}", method: :post) do %>
-            <button class="text-sm font-semibold text-red-600">Delete</button>
-          <% end %>
+  <section class="grid gap-6 lg:grid-cols-[1fr_360px]" id="domains">
+    <%== part(
+      "components/table_card",
+      title: "Domains",
+      headers: ["Domain", "State", "DNS", "Auto-renew"],
+      rows: @deploy_domains.map do |domain|
+        [
+          [
+            [[domain.domain, {link: path(domain)}], [domain.ubid, {copyable: true}]],
+            domain.display_state,
+            domain.project_attachment_label,
+            domain.auto_renew ? "On" : "Off"
+          ],
+          {id: "deploy-domain-#{domain.ubid}"}
+        ]
+      end,
+      empty_state: "No domains attached to this app."
+    ) %>
+
+    <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+      <h2 class="text-base font-semibold text-gray-900">Attach Domain</h2>
+      <% if @available_domains.any? %>
+        <% form(action: "#{path(@deploy_app)}/domain", method: :post, class: "mt-5 space-y-4") do %>
+          <%== part(
+            "components/form/select",
+            name: "domain_registration_id",
+            label: "Domain",
+            options: @available_domains.map { [it.ubid, it.domain] },
+            attributes: {required: "required"}
+          ) %>
+          <div class="flex flex-wrap justify-end gap-3">
+            <%== part("components/form/submit_button", text: "Attach", icon: "hero-check") %>
+          </div>
+        <% end %>
+      <% else %>
+        <div class="mt-5 rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+          Active domains will appear here after registration or transfer.
         </div>
-      <% end %>
-      <% form(action: "#{path(@deploy_app)}/variable", method: :post) do %>
-        <div class="grid grid-cols-1 gap-3">
-          <%== part("components/form/text", name: "key", label: "Key", attributes: {placeholder: "DATABASE_URL"}) %>
-          <%== part("components/form/text", name: "value", label: "Value", attributes: {placeholder: "secret value"}) %>
-          <%== part("components/form/submit_button", text: "Save variable") %>
+        <div class="mt-5">
+          <%== part("components/button", text: "Register Domain", link: "#{@project.path}/domain/create", icon: "hero-globe-alt") %>
         </div>
       <% end %>
     </div>
-  </div>
+  </section>
+
+  <section class="grid gap-6 lg:grid-cols-[1fr_360px]" id="environment">
+    <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+      <h2 class="text-base font-semibold text-gray-900">Environment Variables</h2>
+      <div class="mt-5 divide-y divide-gray-100">
+        <% if @deploy_app.variables.empty? %>
+          <div class="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">No variables configured.</div>
+        <% end %>
+        <% @deploy_app.variables.each do |variable| %>
+          <div class="flex items-center justify-between gap-3 py-3 text-sm">
+            <span class="font-medium text-gray-900"><%= variable.key %></span>
+            <% form(action: "#{path(@deploy_app)}/variable-delete/#{variable.ubid}", method: :post) do %>
+              <button class="rounded-md px-2 py-1 text-sm font-semibold text-red-600 hover:bg-red-50">Delete</button>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+      <h2 class="text-base font-semibold text-gray-900">Add Variable</h2>
+      <% form(action: "#{path(@deploy_app)}/variable", method: :post, class: "mt-5 space-y-4") do %>
+        <%== part("components/form/text", name: "key", label: "Key", attributes: {placeholder: "DATABASE_URL", autocomplete: "off"}) %>
+        <%== part("components/form/text", name: "value", label: "Value", attributes: {placeholder: "secret value", autocomplete: "off"}) %>
+        <div class="flex justify-end">
+          <%== part("components/form/submit_button", text: "Save", icon: "hero-check") %>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <% if latest&.log %>
+    <section class="rounded-lg bg-gray-900 p-4 shadow ring-1 ring-black ring-opacity-5" id="logs">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="text-base font-semibold leading-6 text-white">Latest Log</h2>
+        <%== part("components/deploy_state_label", state: latest.display_state) %>
+      </div>
+      <pre class="max-h-96 overflow-auto whitespace-pre-wrap break-words text-xs leading-5 text-gray-100"><%= latest.log_excerpt %></pre>
+    </section>
+  <% end %>
+
+  <section class="grid gap-6 lg:grid-cols-3" id="settings">
+    <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5 lg:col-span-2">
+      <h2 class="text-base font-semibold text-gray-900">Build Settings</h2>
+      <dl class="mt-5 grid gap-4 text-sm sm:grid-cols-2">
+        <div>
+          <dt class="text-gray-500">Root</dt>
+          <dd class="mt-1 font-medium text-gray-900"><%= @deploy_app.root_directory.empty? ? "/" : @deploy_app.root_directory %></dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Output</dt>
+          <dd class="mt-1 font-medium text-gray-900"><%= @deploy_app.output_directory || "-" %></dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Install</dt>
+          <dd class="mt-1 break-words font-medium text-gray-900"><%= @deploy_app.install_command %></dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Build</dt>
+          <dd class="mt-1 break-words font-medium text-gray-900"><%= @deploy_app.build_command || "-" %></dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Start</dt>
+          <dd class="mt-1 break-words font-medium text-gray-900"><%= @deploy_app.start_command || "-" %></dd>
+        </div>
+        <div>
+          <dt class="text-gray-500">Port</dt>
+          <dd class="mt-1 font-medium text-gray-900"><%= @deploy_app.app_port %></dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+      <h2 class="text-base font-semibold text-gray-900">Danger Zone</h2>
+      <div class="mt-5">
+        <%== part(
+          "components/delete_button",
+          text: "Delete Project",
+          url: path(@deploy_app),
+          confirmation: @deploy_app.name,
+          confirmation_message: "Deleting this deploy app also deletes its managed runtime.",
+        ) if has_permission?("Vm:delete", @project) && !@deploy_app.display_state.start_with?("deleting") %>
+      </div>
+    </div>
+  </section>
 </div>
-
-<% if (latest = @deploy_app.latest_deployment)&.log %>
-  <div class="mt-6 rounded-lg bg-gray-900 p-4 shadow ring-1 ring-black ring-opacity-5">
-    <div class="mb-3 flex items-center justify-between">
-      <h3 class="text-base font-semibold leading-6 text-white">Latest deployment log</h3>
-      <%== part("components/deploy_state_label", state: latest.display_state) %>
-    </div>
-    <pre class="max-h-96 overflow-auto whitespace-pre-wrap break-words text-xs leading-5 text-gray-100"><%= latest.log_excerpt %></pre>
-  </div>
-<% end %>

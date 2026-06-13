@@ -4,7 +4,7 @@ require_relative "../model"
 
 class DeployDeployment < Sequel::Model(:deploy_deployment)
   STATUSES = %w[queued provisioning building live failed canceled].freeze
-  TRIGGERS = %w[manual].freeze
+  TRIGGERS = %w[manual github_push].freeze
 
   one_to_one :strand, key: :id
   many_to_one :app, class: :DeployApp, read_only: true

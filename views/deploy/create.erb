@@ -1,9 +1,11 @@
-<% @page_title = "New Deploy App" %>
+<% @page_title = "Import Project" %>
 
 <%== part(
   "components/page_header",
-  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Deploy", "#{@project.path}/deploy"], ["Create", "#"]]
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Deploy", "#{@project.path}/deploy"], ["Import", "#"]]
 ) %>
+
+<%== render("deploy/tabbar", locals: {active: "import"}) %>
 
 <% if @github_installations.empty? %>
   <div class="rounded-lg bg-white p-8 shadow ring-1 ring-black ring-opacity-5">
@@ -11,22 +13,26 @@
       <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-layerrail-50 text-layerrail-700">
         <%== part("components/icon", name: "github", classes: "h-6 w-6") %>
       </div>
-      <h3 class="mt-4 text-base font-semibold leading-6 text-gray-900">Connect GitHub first</h3>
-      <p class="mt-2 text-sm text-gray-500">LayerRail Deploy needs a GitHub App installation so it can clone your repository during deployment.</p>
+      <h3 class="mt-4 text-base font-semibold leading-6 text-gray-900">Connect GitHub</h3>
+      <p class="mt-2 text-sm text-gray-500">LayerRail needs a GitHub App installation before it can import repositories.</p>
       <div class="mt-6">
         <%== part("components/button", text: "Connect GitHub", link: "#{@project.path}/github", icon: "github") %>
       </div>
     </div>
   </div>
 <% else %>
-  <div class="rounded-lg bg-white shadow ring-1 ring-black ring-opacity-5">
-    <% form(action: "#{@project.path}/deploy", method: "POST") do %>
-      <div class="space-y-8 px-4 py-5 sm:p-6">
-        <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
-          <div class="sm:col-span-3">
-            <%== part("components/form/text", name: "name", label: "App name", value: typecast_body_params.str("name"), attributes: {required: "required", placeholder: "api-web"}) %>
+  <% form(action: "#{@project.path}/deploy", method: "POST", class: "grid gap-6 xl:grid-cols-[1fr_320px]") do %>
+    <div class="space-y-6">
+      <section class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+        <div class="mb-5 flex items-center gap-3">
+          <div class="flex h-9 w-9 items-center justify-center rounded-md bg-gray-900 text-sm font-semibold text-white">1</div>
+          <h2 class="text-base font-semibold text-gray-900">Source</h2>
+        </div>
+        <div class="grid gap-5 md:grid-cols-6">
+          <div class="md:col-span-3">
+            <%== part("components/form/text", name: "name", label: "Project name", value: typecast_body_params.str("name"), attributes: {required: "required", placeholder: "api-web", autocomplete: "off"}) %>
           </div>
-          <div class="sm:col-span-3">
+          <div class="md:col-span-3">
             <%== part(
               "components/form/select",
               name: "installation_id",
@@ -36,68 +42,110 @@
               attributes: {required: "required"}
             ) %>
           </div>
-          <div class="sm:col-span-4">
-            <%== part("components/form/text", name: "repository", label: "Repository", value: typecast_body_params.str("repository"), attributes: {required: "required", placeholder: "owner/repository"}) %>
+          <div class="md:col-span-4">
+            <%== part("components/form/text", name: "repository", label: "Repository", value: typecast_body_params.str("repository"), attributes: {required: "required", placeholder: "owner/repository", autocomplete: "off"}) %>
           </div>
-          <div class="sm:col-span-2">
-            <%== part("components/form/text", name: "branch", label: "Branch", value: typecast_body_params.str("branch") || "main", attributes: {required: "required"}) %>
+          <div class="md:col-span-2">
+            <%== part("components/form/text", name: "branch", label: "Production branch", value: typecast_body_params.str("branch") || "main", attributes: {required: "required", autocomplete: "off"}) %>
           </div>
-          <% if Config.deploy_infrastructure_controls_enabled %>
-            <div class="sm:col-span-3">
-              <%== part(
-                "components/form/select",
-                name: "location",
-                label: "Location",
-                selected: typecast_body_params.str("location") || @deploy_locations.first&.ubid,
-                options: @deploy_locations.map { [it.ubid, it.ui_name] },
-                attributes: {required: "required"}
-              ) %>
-            </div>
-            <div class="sm:col-span-3">
-              <%== part(
-                "components/form/select",
-                name: "vm_size",
-                label: "Runtime size",
-                selected: typecast_body_params.str("vm_size") || Config.deploy_default_vm_size,
-                options: @deploy_vm_sizes,
-                attributes: {required: "required"}
-              ) %>
-            </div>
-          <% end %>
-          <div class="sm:col-span-3">
+        </div>
+      </section>
+
+      <section class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+        <div class="mb-5 flex items-center gap-3">
+          <div class="flex h-9 w-9 items-center justify-center rounded-md bg-gray-900 text-sm font-semibold text-white">2</div>
+          <h2 class="text-base font-semibold text-gray-900">Build</h2>
+        </div>
+        <div class="grid gap-5 md:grid-cols-6">
+          <div class="md:col-span-3">
             <%== part(
               "components/form/select",
               name: "framework",
-              label: "Runtime",
+              label: "Preset",
               selected: typecast_body_params.str("framework") || "node",
               options: DeployApp::FRAMEWORKS.map { |value, label| [value, label] },
               attributes: {required: "required"}
             ) %>
           </div>
-          <div class="sm:col-span-3">
-            <%== part("components/form/text", name: "app_port", label: "App port", type: "number", value: typecast_body_params.str("app_port") || Config.deploy_default_port, attributes: {required: "required", min: 1, max: 65535}) %>
+          <div class="md:col-span-3">
+            <%== part("components/form/text", name: "root_directory", label: "Root directory", value: typecast_body_params.str("root_directory"), attributes: {placeholder: "apps/web", autocomplete: "off"}) %>
           </div>
-          <div class="sm:col-span-3">
-            <%== part("components/form/text", name: "root_directory", label: "Root directory", value: typecast_body_params.str("root_directory"), attributes: {placeholder: "apps/web"}) %>
+          <div class="md:col-span-3">
+            <%== part("components/form/text", name: "install_command", label: "Install command", value: typecast_body_params.str("install_command") || "npm install", attributes: {required: "required", autocomplete: "off"}) %>
           </div>
-          <div class="sm:col-span-3">
-            <%== part("components/form/text", name: "output_directory", label: "Static output directory", value: typecast_body_params.str("output_directory"), attributes: {placeholder: "dist"}) %>
+          <div class="md:col-span-3">
+            <%== part("components/form/text", name: "build_command", label: "Build command", value: typecast_body_params.str("build_command") || "npm run build", attributes: {placeholder: "npm run build", autocomplete: "off"}) %>
           </div>
-          <div class="sm:col-span-3">
-            <%== part("components/form/text", name: "install_command", label: "Install command", value: typecast_body_params.str("install_command") || "npm install", attributes: {required: "required"}) %>
+          <div class="md:col-span-3">
+            <%== part("components/form/text", name: "start_command", label: "Start command", value: typecast_body_params.str("start_command") || "npm start", attributes: {placeholder: "npm start", autocomplete: "off"}) %>
           </div>
-          <div class="sm:col-span-3">
-            <%== part("components/form/text", name: "build_command", label: "Build command", value: typecast_body_params.str("build_command") || "npm run build", attributes: {placeholder: "npm run build"}) %>
+          <div class="md:col-span-2">
+            <%== part("components/form/text", name: "output_directory", label: "Output directory", value: typecast_body_params.str("output_directory"), attributes: {placeholder: "dist", autocomplete: "off"}) %>
           </div>
-          <div class="col-span-full">
-            <%== part("components/form/text", name: "start_command", label: "Start command", value: typecast_body_params.str("start_command") || "npm start", attributes: {placeholder: "npm start"}) %>
+          <div class="md:col-span-1">
+            <%== part("components/form/text", name: "app_port", label: "Port", type: "number", value: typecast_body_params.str("app_port") || Config.deploy_default_port, attributes: {required: "required", min: 1, max: 65535}) %>
           </div>
         </div>
+      </section>
+
+      <% if Config.deploy_infrastructure_controls_enabled %>
+        <section class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+          <div class="mb-5 flex items-center gap-3">
+            <div class="flex h-9 w-9 items-center justify-center rounded-md bg-gray-900 text-sm font-semibold text-white">3</div>
+            <h2 class="text-base font-semibold text-gray-900">Runtime</h2>
+          </div>
+          <div class="grid gap-5 md:grid-cols-2">
+            <%== part(
+              "components/form/select",
+              name: "location",
+              label: "Region",
+              selected: typecast_body_params.str("location") || @deploy_locations.first&.ubid,
+              options: @deploy_locations.map { [it.ubid, it.ui_name] },
+              attributes: {required: "required"}
+            ) %>
+            <%== part(
+              "components/form/select",
+              name: "vm_size",
+              label: "Size",
+              selected: typecast_body_params.str("vm_size") || Config.deploy_default_vm_size,
+              options: @deploy_vm_sizes,
+              attributes: {required: "required"}
+            ) %>
+          </div>
+        </section>
+      <% end %>
+    </div>
+
+    <aside class="space-y-6">
+      <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+        <h2 class="text-base font-semibold text-gray-900">Production</h2>
+        <dl class="mt-4 space-y-3 text-sm">
+          <div class="flex items-center justify-between gap-4">
+            <dt class="text-gray-500">Deploy trigger</dt>
+            <dd class="font-medium text-gray-900">Manual and Git push</dd>
+          </div>
+          <div class="flex items-center justify-between gap-4">
+            <dt class="text-gray-500">Default branch</dt>
+            <dd class="font-medium text-gray-900"><%= typecast_body_params.str("branch").to_s.empty? ? "main" : typecast_body_params.str("branch") %></dd>
+          </div>
+          <div class="flex items-center justify-between gap-4">
+            <dt class="text-gray-500">Hostname</dt>
+            <dd class="max-w-[12rem] truncate font-medium text-gray-900"><%= Config.deploy_service_hostname %></dd>
+          </div>
+        </dl>
       </div>
-      <div class="flex items-center justify-end gap-x-6 border-t border-gray-900/10 px-4 py-4 sm:px-6">
-        <a href="<%= "#{@project.path}/deploy" %>" class="text-sm font-semibold leading-6 text-gray-900">Cancel</a>
-        <%== part("components/form/submit_button", text: "Create") %>
+
+      <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+        <h2 class="text-base font-semibold text-gray-900">Checkout</h2>
+        <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-4 text-sm">
+          <span class="text-gray-500">Billing</span>
+          <span class="font-medium text-gray-900"><%= @project.has_valid_payment_method? ? "Verified" : "Required" %></span>
+        </div>
+        <div class="mt-6 flex justify-end gap-3">
+          <a href="<%= "#{@project.path}/deploy" %>" class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</a>
+          <%== part("components/form/submit_button", text: "Deploy Project", icon: "hero-rocket-launch") %>
+        </div>
       </div>
-    <% end %>
-  </div>
+    </aside>
+  <% end %>
 <% end %>

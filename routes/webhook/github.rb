@@ -14,6 +14,8 @@ class Clover
         handle_installation(data)
       when "workflow_job"
         handle_workflow_job(data)
+      when "push"
+        handle_push(data)
       else
         error("Unhandled event")
       end
@@ -121,5 +123,42 @@ class Clover
     else
       error("Unhandled workflow_job action")
     end
+  end
+
+  def handle_push(data)
+    unless Config.deploy_enabled
+      return error("LayerRail Deploy is disabled")
+    end
+
+    unless (installation = GithubInstallation.with_github_installation_id(data.dig("installation", "id")))
+      return error("Unregistered installation")
+    end
+
+    repository_name = data.dig("repository", "full_name").to_s
+    branch = data["ref"].to_s.delete_prefix("refs/heads/")
+    return error("Unhandled ref") if repository_name.empty? || branch.empty? || branch == data["ref"].to_s
+
+    apps = DeployApp.where(installation_id: installation.id, repository: repository_name, branch:).all
+    return success("No matching deploy apps") if apps.empty?
+
+    deployed = 0
+    skipped = 0
+    apps.each do |app|
+      in_flight = app.latest_deployment&.status
+      if %w[queued provisioning building].include?(in_flight) || %w[provisioning deploying deleting].include?(app.display_state)
+        skipped += 1
+        next
+      end
+
+      Prog::Deploy::DeploymentNexus.assemble(
+        app,
+        trigger: "github_push",
+        commit_sha: data["after"],
+        commit_message: data.dig("head_commit", "message").to_s.slice(0, 1000)
+      )
+      deployed += 1
+    end
+
+    success("Triggered #{deployed} deploy app#{deployed == 1 ? "" : "s"}; skipped #{skipped}")
   end
 end

@@ -1,36 +1,69 @@
 <% @page_title = "Deploy" %>
 <div class="auto-refresh hidden" data-interval="10"></div>
 
+<% live_count = @deploy_apps.count { it.display_state == "live" } %>
+<% failed_count = @deploy_apps.count { it.display_state == "failed" } %>
+<% active_builds = @deploy_apps.count { %w[provisioning deploying].include?(it.display_state) } %>
+
 <%== part(
   "components/page_header",
   breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Deploy", "#"]],
-  right_items: (!@deploy_apps.empty? && has_project_permission("Vm:create")) ? [part("components/button", text: "New Deploy App", link: "#{@project.path}/deploy/create", icon: "hero-rocket-launch")] : []
+  right_items: has_project_permission("Vm:create") ? [part("components/button", text: "Import Project", link: "#{@project.path}/deploy/create", icon: "hero-rocket-launch")] : []
 ) %>
 
+<%== render("deploy/tabbar", locals: {active: "projects"}) %>
+
 <div class="grid gap-6">
+  <div class="grid gap-4 md:grid-cols-3">
+    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
+      <div class="text-sm font-medium text-gray-500">Live apps</div>
+      <div class="mt-2 text-3xl font-semibold text-gray-900"><%= live_count %></div>
+    </div>
+    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
+      <div class="text-sm font-medium text-gray-500">Building now</div>
+      <div class="mt-2 text-3xl font-semibold text-gray-900"><%= active_builds %></div>
+    </div>
+    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
+      <div class="text-sm font-medium text-gray-500">Needs attention</div>
+      <div class="mt-2 text-3xl font-semibold text-gray-900"><%= failed_count %></div>
+    </div>
+  </div>
+
   <%== part(
     "components/table_card",
-    headers: ["Name", "Repository", "Location", "State", "URL"],
+    title: "Projects",
+    headers: ["Project", "Source", "Production", "Runtime", "State"],
     rows: @deploy_apps.map do |app|
+      latest = app.latest_deployment
       [
         [
-          [app.name, {link: path(app)}],
-          [[app.repository, {link: app.repository_url}], [app.branch, {}]],
-          app.location.ui_name,
-          ["deploy_state_label", {component: {state: app.display_state}}],
-          [app.public_hostname, {copyable: true}]
+          [
+            [app.name, {link: path(app)}],
+            [app.ubid, {copyable: true}]
+          ],
+          [
+            [app.repository, {link: app.repository_url}],
+            ["#{app.branch} branch", {}]
+          ],
+          [app.public_hostname, {copyable: true}],
+          [
+            [app.framework_label, {}],
+            [app.location.ui_name, {}]
+          ],
+          [
+            ["deploy_state_label", {component: {state: app.display_state}}],
+            [latest ? "Last deploy: #{latest.created_at.strftime("%F %T")}" : "No deployment yet", {}]
+          ]
         ],
         {id: "deploy-app-#{app.ubid}"}
       ]
     end,
     empty_state: {
       icon: "hero-rocket-launch",
-      title: "No deploy apps",
-      description: "You don't have permission to create deploy apps."
-    }.merge(has_project_permission("Vm:create") ? {
-      description: "Connect a GitHub repository and deploy it onto LayerRail-managed compute.",
-      button_link: "#{@project.path}/deploy/create",
-      button_title: "New Deploy App",
-    } : {})
+      title: "No deploy projects yet",
+      description: has_project_permission("Vm:create") ? "Import a GitHub repository, configure the build, and ship it on LayerRail-managed compute." : "You don't have permission to create deploy projects.",
+      button_link: (has_project_permission("Vm:create") ? "#{@project.path}/deploy/create" : nil),
+      button_title: (has_project_permission("Vm:create") ? "Import Project" : nil)
+    }
   ) %>
 </div>

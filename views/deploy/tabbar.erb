@@ -1,0 +1,17 @@
+<%# locals: (active:, app: nil) %>
+<% base = app ? path(app) : "#{@project.path}/deploy" %>
+<% tabs = if app
+  [
+    ["Overview", base, active == "overview"],
+    ["Deployments", "#{base}#deployments", active == "deployments"],
+    ["Domains", "#{base}#domains", active == "domains"],
+    ["Environment", "#{base}#environment", active == "environment"],
+    ["Settings", "#{base}#settings", active == "settings"]
+  ]
+else
+  [
+    ["Projects", "#{@project.path}/deploy", active == "projects"],
+    ["Import", "#{@project.path}/deploy/create", active == "import"]
+  ]
+end %>
+<%== part("components/tabbar", tabs:) %>
