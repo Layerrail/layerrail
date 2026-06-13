@@ -37,7 +37,7 @@ class Prog::Vm::Azure::Nexus < Prog::Base
       name: nic_name,
       subnet_id:,
       public_ip_id: public_ip.fetch("id"),
-      private_ip: nic.private_ipv4.to_s,
+      private_ip: nic.private_ipv4_address,
       tags:,
     )
     client.create_virtual_machine(
@@ -70,6 +70,20 @@ class Prog::Vm::Azure::Nexus < Prog::Base
     )
     hop_wait_instance_created
   rescue AzureAPIError => ex
+    if retryable_azure_create_error?(ex)
+      Clog.emit("Azure VM create is waiting on Azure resource convergence", {
+        azure_vm_create_waiting: {
+          vm_ubid: vm.ubid,
+          location: azure_region,
+          vm_size: azure_vm_size,
+          image: azure_image,
+          status: ex.status,
+          body: ex.body,
+        },
+      })
+      nap 30
+    end
+
     failure = {
       vm_ubid: vm.ubid,
       location: azure_region,
@@ -375,6 +389,13 @@ class Prog::Vm::Azure::Nexus < Prog::Base
     return false unless ex.status == 400
 
     ex.body.to_s.match?(/attached|being deleted|cannotbedeleted|inuse|in use|operationnotallowed|anotheroperationinprogress/i)
+  end
+
+  def retryable_azure_create_error?(ex)
+    return true if ex.status == 429 || ex.status.to_i >= 500
+    return false unless [400, 409].include?(ex.status)
+
+    ex.body.to_s.match?(/anotheroperationinprogress|being created|being updated|is in updating state|referencedresourcenotprovisioned|retryableerror|updating state/i)
   end
 
   def final_clean_up

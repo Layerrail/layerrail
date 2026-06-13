@@ -20,8 +20,10 @@ RSpec.describe Prog::Vm::Azure::Nexus do
   let(:client) { instance_double(AzureClient) }
 
   before do
-    Nic.create_with_id(vm.id, private_subnet_id: private_subnet.id, vm_id: vm.id,
-      name: "azure-nic", private_ipv4: "10.0.0.4/32", private_ipv6: "fd10:9b0b:6b4b:8fbb::4/128", state: "active")
+    Nic.new_with_id(private_subnet_id: private_subnet.id, vm_id: vm.id,
+      name: "azure-nic", private_ipv4: "10.0.0.4/32", private_ipv6: "fd10:9b0b:6b4b:8fbb::4/128", state: "active").save_changes
+    Strand.create_with_id(private_subnet, prog: "Vnet::Azure::SubnetNexus", label: "wait")
+    Strand.create_with_id(vm.nics.first, prog: "Vnet::Azure::NicNexus", label: "wait")
     VmStorageVolume.create(vm_id: vm.id, boot: true, size_gib: 80, disk_index: 0)
     AzureInstance.create_with_id(vm,
       resource_group: "rg-test",
@@ -37,6 +39,38 @@ RSpec.describe Prog::Vm::Azure::Nexus do
       os_disk_name: "osdisk-test")
     vm.incr_destroy
     allow(AzureClient).to receive(:new).and_return(client)
+  end
+
+  describe "#start" do
+    before do
+      vm.update(display_state: "creating")
+      vm.semaphores_dataset.destroy
+      strand.update(label: "start")
+      private_subnet.strand.update(label: "wait")
+      vm.nics.first.strand.update(label: "wait")
+      vm.azure_instance&.destroy
+    end
+
+    it "passes a plain private IPv4 address to Azure NIC creation" do
+      allow(client).to receive(:create_resource_group)
+      allow(client).to receive(:create_network_security_group).and_return({"id" => "nsg-id"})
+      allow(client).to receive(:create_virtual_network).and_return({"properties" => {"subnets" => [{"id" => "subnet-id"}]}})
+      allow(client).to receive(:create_public_ip).and_return({"id" => "public-ip-id"})
+      allow(client).to receive(:create_virtual_machine)
+
+      expect(client).to receive(:create_network_interface).with(hash_including(private_ip: "10.0.0.4")).and_return({"id" => "nic-id"})
+
+      expect { nx.start }.to hop("wait_instance_created")
+    end
+
+    it "retries transient Azure subnet convergence errors without failing the VM" do
+      allow(client).to receive(:create_resource_group)
+      allow(client).to receive(:create_network_security_group).and_raise(AzureAPIError.new(429, "ReferencedResourceNotProvisioned: subnet is in Updating state"))
+
+      expect { nx.start }.to nap(30)
+      expect(vm.reload.display_state).to eq("creating")
+      expect(Page.where(Sequel.like(:tag, "AzureCreateFailed%")).count).to eq(0)
+    end
   end
 
   it "retries Azure cleanup while dependent resources are still attached" do
