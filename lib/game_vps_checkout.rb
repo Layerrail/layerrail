@@ -55,6 +55,7 @@ class GameVpsCheckout
     checkout_amount = checkout_amount_cents(checkout_session)
     checkout_status = checkout_session["status"].to_s
     external_customer_id = checkout_session["external_customer_id"].to_s
+    polar_subscription_id = checkout_subscription_id(checkout_session)
     metadata_kind = metadata["kind"].to_s
     metadata_project_id = metadata["project_id"].to_s
 
@@ -78,7 +79,13 @@ class GameVpsCheckout
         }
       else
         locked_items.each do |game_vps|
-          GameVps.where(id: game_vps.id).update(status: "creating", failure_message: nil, paid_until: Time.now + (30 * 24 * 60 * 60), updated_at: Time.now)
+          GameVps.where(id: game_vps.id).update(
+            status: "creating",
+            failure_message: nil,
+            polar_subscription_id:,
+            paid_until: Time.now + (30 * 24 * 60 * 60),
+            updated_at: Time.now
+          )
           game_vps.refresh
           begin
             Prog::GameVpsNexus.assemble(game_vps) unless game_vps.strand
@@ -96,6 +103,20 @@ class GameVpsCheckout
 
   def self.checkout_paid?(status)
     %w[succeeded paid complete completed confirmed].include?(status)
+  end
+
+  def self.checkout_subscription_id(checkout_session)
+    [
+      checkout_session["subscription_id"],
+      checkout_session.dig("subscription", "id"),
+      checkout_session.dig("order", "subscription_id"),
+      checkout_session.dig("order", "subscription", "id")
+    ].each do |candidate|
+      candidate = candidate.to_s.strip
+      return candidate unless candidate.empty?
+    end
+
+    nil
   end
 
   def self.checkout_amount_cents(checkout_session)

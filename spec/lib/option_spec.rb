@@ -53,6 +53,10 @@ RSpec.describe Option do
     let(:linode_location) { instance_double(Location, provider: "linode") }
     let(:azure_location) { instance_double(Location, provider: "azure") }
 
+    before do
+      allow(Config).to receive(:compute_provider).and_return(nil)
+    end
+
     it "only exposes VM sizes backed by a Linode plan in Linode locations" do
       names = described_class.vm_size_options(location: linode_location).map(&:display_name)
 
@@ -63,7 +67,13 @@ RSpec.describe Option do
     it "only exposes VM sizes backed by available Azure plans in Azure locations" do
       names = described_class.vm_size_options(location: azure_location).map(&:display_name)
 
-      expect(names).to eq(["nanode-4", "nanode-8", "standard-2", "standard-4", "standard-8", "standard-16", "burstable-2"])
+      expect(names).to eq(["nanode-1", "nanode-2", "nanode-4", "nanode-8", "standard-2", "standard-4", "standard-8", "standard-16", "standard-30", "burstable-2", "burstable-4", "burstable-8"])
+    end
+
+    it "maps every exposed Azure VM size to an Azure plan" do
+      described_class.vm_size_options(location: azure_location).each do |vm_size|
+        expect(described_class.azure_plan(vm_size.family, vm_size.vcpus, size_name: vm_size.display_name)).not_to be_nil
+      end
     end
 
     it "only exposes the supported Linode GPU VM size for GPU creation" do

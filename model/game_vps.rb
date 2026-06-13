@@ -221,6 +221,10 @@ class GameVps < Sequel::Model(:game_vps)
     !!values[:checkout_id]
   end
 
+  def polar_subscription_id
+    values[:polar_subscription_id]
+  end
+
   def display_state
     return "deleting" if destroy_set? || destroying_set?
 
@@ -263,6 +267,7 @@ end
 #  failure_message    | text                     |
 #  access_notes       | text                     |
 #  checkout_id        | text                     |
+#  polar_subscription_id | text                  |
 #  paid_until         | timestamp with time zone |
 #  subscription_amount_cents | integer           |
 #  cores              | integer                  | NOT NULL

@@ -101,6 +101,10 @@ right_items << part(
         <dd class="font-medium text-gray-900"><%== part("components/copyable_content", content: @game_vps.values[:checkout_id] || "-") %></dd>
       </div>
       <div class="flex justify-between gap-4">
+        <dt class="text-gray-500">Polar subscription</dt>
+        <dd class="font-medium text-gray-900"><%== part("components/copyable_content", content: @game_vps.polar_subscription_id || "-") %></dd>
+      </div>
+      <div class="flex justify-between gap-4">
         <dt class="text-gray-500">Paid until</dt>
         <dd class="font-medium text-gray-900"><%= @game_vps.values[:paid_until]&.strftime("%Y-%m-%d") || "Not paid yet" %></dd>
       </div>
