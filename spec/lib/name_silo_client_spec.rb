@@ -61,6 +61,61 @@ RSpec.describe NameSiloClient do
     )
   end
 
+  it "returns a full TLD catalog from provider pricing" do
+    stub_request(:get, "https://www.namesilo.test/api/getPrices")
+      .with(query: hash_including("key" => "namesilo_test"))
+      .to_return(status: 200, body: JSON.generate({
+        "reply" => {
+          "code" => 300,
+          "prices" => {
+            "com" => {
+              "registration" => "10.00",
+              "renew" => "12.00",
+              "transfer" => "11.00"
+            },
+            "app" => {
+              "registration" => "14.00",
+              "renew" => "14.00",
+              "transfer" => "14.00"
+            },
+            "protection" => {
+              "registration" => "1,999.99",
+              "renew" => "1,999.99",
+              "transfer" => "1,999.99"
+            }
+          }
+        }
+      }))
+
+    expect(described_class.new.tld_catalog).to include(
+      hash_including(tld: "com", registration_price_cents: 1170),
+      hash_including(tld: "app", registration_price_cents: 1638),
+      hash_including(tld: "protection", registration_price_cents: 233_999)
+    )
+  end
+
+  it "does not pretend unsupported provider TLDs are enabled" do
+    stub_request(:get, "https://www.namesilo.test/api/getPrices")
+      .with(query: hash_including("key" => "namesilo_test"))
+      .to_return(status: 200, body: JSON.generate({
+        "reply" => {
+          "code" => 300,
+          "prices" => {
+            "com" => {
+              "registration" => "10.00",
+              "renew" => "12.00",
+              "transfer" => "11.00"
+            }
+          }
+        }
+      }))
+
+    expect(described_class.new.registration_pricing("layerrail.com.ng")).to include(
+      tld: "com.ng",
+      tld_enabled: false
+    )
+  end
+
   it "raises a helpful error when NameSilo rejects a request" do
     stub_request(:get, "https://www.namesilo.test/api/checkRegisterAvailability")
       .to_return(status: 200, body: JSON.generate({

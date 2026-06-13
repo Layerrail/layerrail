@@ -53,23 +53,24 @@ class NameSiloClient
 
   def registration_pricing(domain)
     domain = DomainRegistration.normalize_domain(domain)
-    tld = domain.split(".").last
     reply = request("getPrices")
-    tld_prices = find_tld_hash(reply, tld)
-    base_registration_price_cents = price_from(tld_prices, /^(registration|register|new)$/i) || DEFAULT_TLD_PRICES_CENTS.fetch(tld, 1995)
-    renewal_price_cents = price_from(tld_prices, /renew/i) || base_registration_price_cents
-    transfer_price_cents = price_from(tld_prices, /transfer/i) || renewal_price_cents
-    registration_price_before_discount_cents = apply_markup(base_registration_price_cents)
-    registration_price_cents = apply_registration_discount(registration_price_before_discount_cents)
+    catalog = tld_catalog_from_reply(reply)
+    tld = DomainTld.matching_tld_for_domain(domain, candidate_tlds: catalog.map { it[:tld] })
+    catalog_item = catalog.find { |item| item[:tld] == tld }
 
-    DomainTld.apply_admin_pricing(domain, {
-      base_registration_price_cents:,
-      registration_price_cents:,
-      discount_cents: [registration_price_before_discount_cents - registration_price_cents, 0].max,
-      renewal_price_cents:,
-      transfer_price_cents:,
-      raw: reply
-    })
+    unless catalog_item
+      return DomainTld.apply_admin_pricing(domain, {
+        tld: tld || DomainTld.requested_tld_for_domain(domain),
+        tld_enabled: false,
+        raw: reply
+      })
+    end
+
+    DomainTld.apply_admin_pricing(domain, catalog_item.merge(tld_enabled: true, raw: reply))
+  end
+
+  def tld_catalog
+    tld_catalog_from_reply(request("getPrices"))
   end
 
   def register_domain(domain_registration)
@@ -178,7 +179,7 @@ class NameSiloClient
   private
 
   def request(operation, params = {})
-    fail NameSiloAPIError.new("NameSilo is not configured. Set NAMESILO_API_KEY.") unless self.class.configured?
+    fail NameSiloAPIError.new("Domain registrar is not configured.") unless self.class.configured?
 
     query = {
       version: 1,
@@ -251,6 +252,51 @@ class NameSiloClient
     nil
   end
 
+  def tld_catalog_from_reply(reply)
+    items = []
+    collect_tld_prices(reply) do |tld, tld_prices|
+      items << pricing_from_tld_hash(tld, tld_prices)
+    end
+    items.uniq { it[:tld] }.sort_by { it[:tld] }
+  end
+
+  def collect_tld_prices(object, &block)
+    case object
+    when Hash
+      object.each do |key, value|
+        tld = DomainTld.normalize_tld(key)
+        if value.is_a?(Hash) && DomainTld.valid_tld_name?(tld) && price_from(value, /^(registration|register|new)$/i)
+          yield tld, value
+        else
+          collect_tld_prices(value, &block)
+        end
+      end
+    when Array
+      object.each { collect_tld_prices(it, &block) }
+    end
+  end
+
+  def pricing_from_tld_hash(tld, tld_prices)
+    base_registration_price_cents = price_from(tld_prices, /^(registration|register|new)$/i) || DEFAULT_TLD_PRICES_CENTS.fetch(tld, 1995)
+    base_renewal_price_cents = price_from(tld_prices, /renew/i) || base_registration_price_cents
+    base_transfer_price_cents = price_from(tld_prices, /transfer/i) || base_renewal_price_cents
+    registration_price_before_discount_cents = apply_markup(base_registration_price_cents)
+    registration_price_cents = apply_registration_discount(registration_price_before_discount_cents)
+
+    {
+      tld:,
+      provider: "namesilo",
+      base_registration_price_cents:,
+      base_renewal_price_cents:,
+      base_transfer_price_cents:,
+      registration_price_cents:,
+      discount_cents: [registration_price_before_discount_cents - registration_price_cents, 0].max,
+      renewal_price_cents: base_renewal_price_cents,
+      transfer_price_cents: base_transfer_price_cents,
+      raw: tld_prices
+    }
+  end
+
   def price_from(object, key_pattern)
     case object
     when Hash
@@ -274,9 +320,9 @@ class NameSiloClient
   end
 
   def price_to_cents(value)
-    return nil unless value.is_a?(Numeric) || value.to_s.match?(/\A\$?\d+(?:\.\d+)?\z/)
+    return nil unless value.is_a?(Numeric) || value.to_s.match?(/\A\$?\d{1,3}(?:,\d{3})*(?:\.\d+)?\z/) || value.to_s.match?(/\A\$?\d+(?:\.\d+)?\z/)
 
-    (BigDecimal(value.to_s.delete("$")) * 100).round(0).to_i
+    (BigDecimal(value.to_s.delete("$,")) * 100).round(0).to_i
   rescue ArgumentError
     nil
   end

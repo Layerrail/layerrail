@@ -83,7 +83,7 @@ class Clover
         raise CloverError.new(400, "InvalidRequest", "Domain registrar is not configured.") unless NameSiloClient.configured?
 
         pricing = NameSiloClient.new.registration_pricing(domain)
-        raise CloverError.new(400, "InvalidRequest", ".#{domain.split(".").last} is not enabled for transfers yet.") unless pricing[:tld_enabled]
+        raise CloverError.new(400, "InvalidRequest", unsupported_domain_tld_message(domain, pricing, "transfers")) unless pricing[:tld_enabled]
         order = DomainOrder.new_with_id(
           project_id: @project.id,
           domain_contact_profile_id: contact_profile&.id,
@@ -190,7 +190,7 @@ class Clover
 
         @search_result = NameSiloClient.new.check_register_availability(@domain)
         @pricing = NameSiloClient.new.registration_pricing(@domain) if @search_result[:available]
-        raise_web_error(".#{@domain.split(".").last} is not enabled for registration yet.") if @pricing && !@pricing[:tld_enabled]
+        raise_web_error(unsupported_domain_tld_message(@domain, @pricing, "registration")) if @pricing && !@pricing[:tld_enabled]
         @contact_profiles = @project.domain_contact_profiles_dataset.order(:name).all
         view "domain/create"
       rescue NameSiloAPIError => ex
@@ -214,7 +214,7 @@ class Clover
         raise_web_error("#{domain} is not available to register.") unless availability[:available]
 
         pricing = client.registration_pricing(domain)
-        raise_web_error(".#{domain.split(".").last} is not enabled for registration yet.") unless pricing[:tld_enabled]
+        raise_web_error(unsupported_domain_tld_message(domain, pricing, "registration")) unless pricing[:tld_enabled]
         amount_cents = DomainRegistration.amount_for_years(pricing[:registration_price_cents], years)
         domain_registration = DomainRegistration.new_with_id(
           project_id: @project.id,
@@ -380,7 +380,7 @@ class Clover
         raise_web_error("Domain registrar is not configured.") unless NameSiloClient.configured?
 
         pricing = NameSiloClient.new.registration_pricing(domain)
-        raise_web_error(".#{domain.split(".").last} is not enabled for transfers yet.") unless pricing[:tld_enabled]
+        raise_web_error(unsupported_domain_tld_message(domain, pricing, "transfers")) unless pricing[:tld_enabled]
         order = DomainOrder.new_with_id(
           project_id: @project.id,
           domain_contact_profile_id: contact_profile&.id,
@@ -849,7 +849,7 @@ class Clover
     fail Validation::ValidationFailed.new({domain: "#{domain} is not available to register."}) unless availability[:available]
 
     pricing = client.registration_pricing(domain)
-    fail Validation::ValidationFailed.new({domain: ".#{domain.split(".").last} is not enabled for registration yet."}) unless pricing[:tld_enabled]
+    fail Validation::ValidationFailed.new({domain: unsupported_domain_tld_message(domain, pricing, "registration")}) unless pricing[:tld_enabled]
     amount_cents = DomainRegistration.amount_for_years(pricing[:registration_price_cents], years)
     domain_registration = DomainRegistration.new_with_id(
       project_id: @project.id,
@@ -885,5 +885,10 @@ class Clover
     raise CloverError.new(400, "InvalidRequest", message) if api?
 
     raise_web_error(message)
+  end
+
+  def unsupported_domain_tld_message(domain, pricing, action)
+    tld = pricing&.fetch(:tld, nil) || DomainTld.requested_tld_for_domain(domain)
+    ".#{tld} is not supported for #{action} by the current registrar yet."
   end
 end

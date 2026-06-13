@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../loader"
+
+abort "Domain registrar is not configured." unless NameSiloClient.configured?
+
+counts = DomainTld.sync_from_provider_catalog!(provider: "namesilo", catalog: NameSiloClient.new.tld_catalog)
+puts "TLD catalog synced: #{counts[:created]} created, #{counts[:updated]} updated, #{counts[:skipped]} skipped."

@@ -1330,6 +1330,18 @@ class CloverAdmin < Roda
         end
       end
 
+      r.post "sync" do
+        begin
+          raise "Domain registrar is not configured." unless NameSiloClient.configured?
+
+          counts = DomainTld.sync_from_provider_catalog!(provider: "namesilo", catalog: NameSiloClient.new.tld_catalog)
+          flash["notice"] = "TLD catalog synced: #{counts[:created]} created, #{counts[:updated]} updated, #{counts[:skipped]} skipped."
+        rescue => ex
+          flash["error"] = ex.message
+        end
+        r.redirect "/domain-tlds"
+      end
+
       r.post :ubid, "toggle" do |ubid|
         tld = DomainTld[ubid]
         next 404 unless tld

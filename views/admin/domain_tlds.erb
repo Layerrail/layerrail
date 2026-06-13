@@ -3,6 +3,15 @@
 <div class="container">
   <h1>Domain TLD Pricing</h1>
 
+  <form action="/domain-tlds/sync" method="post" class="stack">
+    <%== csrf_tag("/domain-tlds/sync") %>
+    <fieldset>
+      <legend>Provider catalog</legend>
+      <p>Import every TLD and price currently returned by the configured registrar. Provider-listed TLDs are enabled automatically, and manual price overrides are preserved.</p>
+      <p><button type="submit">Sync Provider TLD Catalog</button></p>
+    </fieldset>
+  </form>
+
   <form action="/domain-tlds/save" method="post" class="stack">
     <%== csrf_tag("/domain-tlds/save") %>
     <fieldset>
@@ -35,6 +44,7 @@
       <tr>
         <th>TLD</th>
         <th>Enabled</th>
+        <th>Provider</th>
         <th>Registration</th>
         <th>Renewal</th>
         <th>Transfer</th>
@@ -49,6 +59,7 @@
         <tr>
           <td>.#{tld.tld}</td>
           <td><%= tld.enabled ? "yes" : "no" %></td>
+          <td><%= tld.provider %></td>
           <td><%= tld.price_label(:registration_price_cents) %></td>
           <td><%= tld.price_label(:renewal_price_cents) %></td>
           <td><%= tld.price_label(:transfer_price_cents) %></td>
@@ -68,7 +79,7 @@
         </tr>
       <% end %>
       <% if @domain_tlds.empty? %>
-        <tr><td colspan="9">No TLDs configured. Provider pricing fallback is active.</td></tr>
+        <tr><td colspan="10">No TLDs configured. Sync the provider catalog to import supported extensions automatically.</td></tr>
       <% end %>
     </tbody>
   </table>
