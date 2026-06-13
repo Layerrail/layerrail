@@ -52,6 +52,7 @@ RSpec.describe Option do
   describe ".vm_size_options" do
     let(:linode_location) { instance_double(Location, provider: "linode") }
     let(:azure_location) { instance_double(Location, provider: "azure") }
+    let(:azure_westeurope_location) { instance_double(Location, provider: "azure", name: "azure-westeurope") }
 
     before do
       allow(Config).to receive(:compute_provider).and_return(nil)
@@ -67,13 +68,18 @@ RSpec.describe Option do
     it "only exposes VM sizes backed by available Azure plans in Azure locations" do
       names = described_class.vm_size_options(location: azure_location).map(&:display_name)
 
-      expect(names).to eq(["nanode-1", "nanode-2", "nanode-4", "nanode-8", "standard-2", "standard-4", "standard-8", "standard-16", "standard-30", "burstable-2", "burstable-4", "burstable-8"])
+      expect(names).to eq(["nanode-4", "nanode-8", "standard-2", "standard-4", "standard-8", "standard-16", "standard-30", "burstable-2", "burstable-4", "burstable-8"])
     end
 
     it "maps every exposed Azure VM size to an Azure plan" do
       described_class.vm_size_options(location: azure_location).each do |vm_size|
         expect(described_class.azure_plan(vm_size.family, vm_size.vcpus, size_name: vm_size.display_name)).not_to be_nil
       end
+    end
+
+    it "uses West Europe Azure SKUs that are available for this subscription" do
+      expect(described_class.azure_plan("nanode", 2, size_name: "nanode-4", location: azure_westeurope_location).id).to eq("Standard_D2lds_v6")
+      expect(described_class.azure_plan("standard", 8, size_name: "standard-8", location: azure_westeurope_location).id).to eq("Standard_D8ds_v6")
     end
 
     it "only exposes the supported Linode GPU VM size for GPU creation" do

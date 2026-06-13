@@ -308,7 +308,7 @@ module Config
   override :deploy_enabled, true, bool
   optional :deploy_service_project_id, uuid
   override :deploy_service_hostname, "apps.layerrail.com", string
-  override :deploy_default_vm_size, "nanode-1", string
+  override :deploy_default_vm_size, "nanode-4", string
   override :deploy_default_port, 3000, int
   override :deploy_infrastructure_controls_enabled, false, bool
 

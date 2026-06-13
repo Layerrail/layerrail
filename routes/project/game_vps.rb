@@ -8,17 +8,19 @@ class Clover
     checkout = PolarClient.create_checkout(
       {
         products: [product_id],
-        external_customer_id: @project.ubid,
+        external_customer_id: game_vps.polar_external_customer_id,
         customer_name: current_account.name || current_account.email,
         customer_email: current_account.email,
         customer_metadata: {
           project_id: @project.ubid,
-          account_id: current_account.ubid
+          account_id: current_account.ubid,
+          game_vps_id: game_vps.ubid
         },
         metadata: {
           kind: "game_vps_checkout",
           project_id: @project.ubid,
           game_vps_id: game_vps.ubid,
+          external_customer_id: game_vps.polar_external_customer_id,
           plan: game_vps.plan,
           image_alias: game_vps.image_alias,
           product_id:,

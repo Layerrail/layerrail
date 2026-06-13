@@ -67,23 +67,36 @@ module Option
   AZURE_LOCATIONS = [
     ["azure-eastus", "eastus", "East US"],
     ["azure-eastus2", "eastus2", "East US 2"],
+    ["azure-centralus", "centralus", "Central US"],
     ["azure-westeurope", "westeurope", "West Europe"],
     ["azure-northeurope", "northeurope", "North Europe"],
   ].map(&:freeze).freeze
   AZURE_PLANS = [
-    AzurePlan.new("Standard_B1s", "Starter 1GB", "nanode", "nanode-1", 1, 1, 25, 4, 0.006, 0, nil, "nanode-1"),
-    AzurePlan.new("Standard_B1ms", "Starter 2GB", "nanode", "nanode-2", 1, 2, 50, 6, 0.009, 0, nil, "nanode-2"),
-    AzurePlan.new("Standard_B2s", "Starter 4GB", "nanode", "nanode-4", 2, 4, 80, 10, 0.015, 0, nil, "nanode-4"),
+    AzurePlan.new("Standard_D2lds_v7", "Starter 4GB", "nanode", "nanode-4", 2, 4, 80, 10, 0.015, 0, nil, "nanode-4"),
     AzurePlan.new("Standard_D4lds_v7", "Starter 8GB", "nanode", "nanode-8", 4, 8, 160, 20, 0.030, 0, nil, "nanode-8"),
     AzurePlan.new("Standard_D2ds_v7", "Shared 8GB", "burstable", "burstable-2", 2, 8, 80, 10, 0.015, 0, nil, "burstable-2"),
-    AzurePlan.new("Standard_B4ms", "Shared 16GB", "burstable", "burstable-4", 4, 16, 160, 20, 0.030, 0, nil, "burstable-4"),
-    AzurePlan.new("Standard_B8ms", "Shared 32GB", "burstable", "burstable-8", 8, 32, 320, 50, 0.075, 0, nil, "burstable-8"),
+    AzurePlan.new("Standard_D4ds_v7", "Shared 16GB", "burstable", "burstable-4", 4, 16, 160, 20, 0.030, 0, nil, "burstable-4"),
+    AzurePlan.new("Standard_D8ds_v7", "Shared 32GB", "burstable", "burstable-8", 8, 32, 320, 50, 0.075, 0, nil, "burstable-8"),
     AzurePlan.new("Standard_D2ds_v7", "Dedicated 8GB", "standard", "standard-2", 2, 8, 80, 20, 0.030, 0, nil, "standard-2"),
     AzurePlan.new("Standard_D4ds_v7", "Dedicated 16GB", "standard", "standard-4", 4, 16, 160, 50, 0.075, 0, nil, "standard-4"),
     AzurePlan.new("Standard_D8ds_v7", "Dedicated 32GB", "standard", "standard-8", 8, 32, 320, 95, 0.1425, 0, nil, "standard-8"),
     AzurePlan.new("Standard_D16ds_v7", "Dedicated 64GB", "standard", "standard-16", 16, 64, 640, 180, 0.270, 0, nil, "standard-16"),
     AzurePlan.new("Standard_D32ds_v7", "Dedicated 128GB", "standard", "standard-30", 30, 128, 1280, 350, 0.525, 0, nil, "standard-30"),
   ].freeze
+  AZURE_LOCATION_PLAN_IDS = {
+    "azure-westeurope" => {
+      "nanode-4" => "Standard_D2lds_v6",
+      "nanode-8" => "Standard_D4lds_v6",
+      "burstable-2" => "Standard_D2ds_v6",
+      "burstable-4" => "Standard_D4ds_v6",
+      "burstable-8" => "Standard_D8ds_v6",
+      "standard-2" => "Standard_D2ds_v6",
+      "standard-4" => "Standard_D4ds_v6",
+      "standard-8" => "Standard_D8ds_v6",
+      "standard-16" => "Standard_D16ds_v6",
+      "standard-30" => "Standard_D32ds_v6",
+    },
+  }.freeze
   AZURE_BOOT_IMAGES = {
     "ubuntu-noble" => {publisher: "Canonical", offer: "ubuntu-24_04-lts", sku: "server", version: "latest"},
     "ubuntu-jammy" => {publisher: "Canonical", offer: "0001-com-ubuntu-server-jammy", sku: "22_04-lts-gen2", version: "latest"},
@@ -137,9 +150,9 @@ module Option
     LINODE_PLANS.find { it.id == id }
   end
 
-  def self.azure_plan(family, vcpu_count, gpu_count: 0, gpu_device: nil, size_name: nil, memory_gib: nil)
+  def self.azure_plan(family, vcpu_count, gpu_count: 0, gpu_device: nil, size_name: nil, memory_gib: nil, location: nil)
     gpu_suffix = gpu_count.to_i.positive? ? " with #{gpu_count} GPU(s)" : ""
-    AZURE_PLANS.find {
+    plan = AZURE_PLANS.find {
       it.family == family &&
         it.vcpus == vcpu_count &&
         it.gpu_count == gpu_count.to_i &&
@@ -147,6 +160,16 @@ module Option
         (size_name.nil? || it.size_name == size_name) &&
         (memory_gib.nil? || it.memory_gib == memory_gib)
     } || raise(Validation::ValidationFailed.new({size: "#{family}-#{vcpu_count}#{gpu_suffix} is not available on Azure"}))
+
+    if (override_id = AZURE_LOCATION_PLAN_IDS.dig(azure_location_name(location), plan.size_name))
+      plan = AzurePlan.new(override_id, plan.label, plan.family, plan.size_name, plan.vcpus, plan.memory_gib, plan.disk_gib, plan.monthly_price, plan.hourly_price, plan.gpu_count, plan.gpu_device, plan.billing_family)
+    end
+
+    plan
+  end
+
+  def self.azure_location_name(location)
+    location.respond_to?(:name) ? location.name : location.to_s
   end
 
   def self.azure_plan_by_id(id)

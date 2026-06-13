@@ -59,7 +59,7 @@ class GameVpsCheckout
     metadata_kind = metadata["kind"].to_s
     metadata_project_id = metadata["project_id"].to_s
     status_paid = checkout_paid?(checkout_status)
-    customer_matches = external_customer_id.empty? || external_customer_id == project.ubid
+    customer_matches = external_customer_id.empty? || expected_external_customer_ids(items, project).include?(external_customer_id)
     metadata_matches = metadata_kind == "game_vps_checkout" && metadata_project_id == project.ubid
     amount_matches = !checkout_amount.positive? || checkout_amount == expected_amount_cents
 
@@ -114,6 +114,10 @@ class GameVpsCheckout
 
   def self.checkout_paid?(status)
     %w[succeeded paid complete completed confirmed].include?(status)
+  end
+
+  def self.expected_external_customer_ids(items, project)
+    [project.ubid] + items.map(&:polar_external_customer_id)
   end
 
   def self.checkout_status(checkout_session)

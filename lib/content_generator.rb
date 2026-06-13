@@ -32,7 +32,7 @@ module ContentGenerator
     def self.size(location, family, size)
       size = Option::VmSizes.find { it.display_name == size }
       if location.linode? || location.azure?
-        plan = location.linode? ? Option.linode_plan(family, size.vcpus, size_name: size.display_name) : Option.azure_plan(family, size.vcpus, size_name: size.display_name)
+        plan = location.linode? ? Option.linode_plan(family, size.vcpus, size_name: size.display_name) : Option.azure_plan(family, size.vcpus, size_name: size.display_name, location:)
         markup = location.linode? ? Option::LINODE_MARKUP : Option::AZURE_MARKUP
         return [
           size.display_name,

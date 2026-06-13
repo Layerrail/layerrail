@@ -95,7 +95,6 @@ class Clover < Roda
   end
   [
     Firewall,
-    GameVps,
     AiAgent,
     AiKnowledgeBase,
     DomainBundle,

@@ -105,6 +105,7 @@ class Clover
           provider_size.family,
           provider_size.vcpus,
           size_name: provider_size.display_name,
+          location: @location,
         )
       end
 
@@ -266,7 +267,7 @@ class Clover
         end
       elsif location.azure?
         begin
-          Option.azure_plan(family, vm_size.vcpus, size_name: vm_size.display_name)
+          Option.azure_plan(family, vm_size.vcpus, size_name: vm_size.display_name, location:)
           true
         rescue Validation::ValidationFailed
           false
@@ -291,7 +292,7 @@ class Clover
         end
       elsif location.azure?
         begin
-          Option.azure_plan(family, vm_size.vcpus, size_name: vm_size.display_name).disk_gib == storage_size.to_i
+          Option.azure_plan(family, vm_size.vcpus, size_name: vm_size.display_name, location:).disk_gib == storage_size.to_i
         rescue Validation::ValidationFailed
           false
         end

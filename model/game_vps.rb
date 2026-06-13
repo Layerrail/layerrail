@@ -13,6 +13,7 @@ class GameVps < Sequel::Model(:game_vps)
   AZURE_LOCATIONS = {
     "azure-eastus" => {name: "East US", region: "United States", azure_region: "eastus"},
     "azure-eastus2" => {name: "East US 2", region: "United States", azure_region: "eastus2"},
+    "azure-centralus" => {name: "Central US", region: "United States", azure_region: "centralus"},
     "azure-westeurope" => {name: "West Europe", region: "Europe", azure_region: "westeurope"},
   }.freeze
   IONOS_LOCATIONS = {
@@ -80,12 +81,12 @@ class GameVps < Sequel::Model(:game_vps)
   }.freeze
   AZURE_LOCATION_SIZE_OVERRIDES = {
     "azure-westeurope" => {
-      "starter" => "Standard_D2lds_v5",
-      "community" => "Standard_D4lds_v5",
-      "squad" => "Standard_D2ds_v5",
-      "growth" => "Standard_D4ds_v5",
-      "serious" => "Standard_D8ds_v5",
-      "arena" => "Standard_D16ds_v5",
+      "starter" => "Standard_D2lds_v6",
+      "community" => "Standard_D4lds_v6",
+      "squad" => "Standard_D2ds_v6",
+      "growth" => "Standard_D4ds_v6",
+      "serious" => "Standard_D8ds_v6",
+      "arena" => "Standard_D16ds_v6",
     },
   }.freeze
   WINDOWS_IMAGES = {
@@ -226,6 +227,14 @@ class GameVps < Sequel::Model(:game_vps)
 
   def polar_product_id
     self.class.polar_product_id_for(plan)
+  end
+
+  def polar_external_customer_id
+    self.class.polar_external_customer_id(project.ubid, ubid)
+  end
+
+  def self.polar_external_customer_id(project_ubid, game_vps_ubid)
+    "#{project_ubid}:#{game_vps_ubid}"
   end
 
   def prepaid?

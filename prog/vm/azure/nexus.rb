@@ -221,7 +221,7 @@ class Prog::Vm::Azure::Nexus < Prog::Base
   end
 
   def azure_plan
-    @azure_plan ||= Option.azure_plan(vm.family, vm.vcpus, memory_gib: (vm.family == "nanode") ? vm.memory_gib : nil)
+    @azure_plan ||= Option.azure_plan(vm.family, vm.vcpus, memory_gib: (vm.family == "nanode") ? vm.memory_gib : nil, location: vm.location)
   end
 
   def azure_vm_size
