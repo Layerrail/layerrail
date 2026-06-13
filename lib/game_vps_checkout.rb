@@ -50,21 +50,32 @@ class GameVpsCheckout
 
     checkout_session ||= PolarClient.get_checkout(checkout_id)
     project ||= Project[items.first.project_id]
-    metadata = checkout_session["metadata"] || {}
+    metadata = checkout_session["metadata"].is_a?(Hash) ? checkout_session["metadata"] : {}
     expected_amount_cents = amount_cents(items)
     checkout_amount = checkout_amount_cents(checkout_session)
-    checkout_status = checkout_session["status"].to_s
-    external_customer_id = checkout_session["external_customer_id"].to_s
+    checkout_status = checkout_status(checkout_session)
+    external_customer_id = checkout_external_customer_id(checkout_session)
     polar_subscription_id = checkout_subscription_id(checkout_session)
     metadata_kind = metadata["kind"].to_s
     metadata_project_id = metadata["project_id"].to_s
+    status_paid = checkout_paid?(checkout_status)
+    customer_matches = external_customer_id.empty? || external_customer_id == project.ubid
+    metadata_matches = metadata_kind == "game_vps_checkout" && metadata_project_id == project.ubid
+    amount_matches = !checkout_amount.positive? || checkout_amount == expected_amount_cents
 
-    unless checkout_paid?(checkout_status) &&
-        external_customer_id == project.ubid &&
-        metadata_kind == "game_vps_checkout" &&
-        metadata_project_id == project.ubid &&
-        (!checkout_amount.positive? || checkout_amount == expected_amount_cents)
-      return {status: "not_paid", count: items.length}
+    unless status_paid && customer_matches && metadata_matches && amount_matches
+      return {
+        status: "not_paid",
+        count: items.length,
+        checkout_status:,
+        status_paid:,
+        customer_matches:,
+        metadata_kind:,
+        metadata_project_matches: metadata_project_id == project.ubid,
+        amount_matches:,
+        checkout_amount_cents: checkout_amount,
+        expected_amount_cents:
+      }
     end
 
     result = nil
@@ -105,12 +116,32 @@ class GameVpsCheckout
     %w[succeeded paid complete completed confirmed].include?(status)
   end
 
+  def self.checkout_status(checkout_session)
+    [
+      checkout_session["status"],
+      checkout_session["payment_status"],
+      checkout_session["order_status"],
+      checkout_session["order"].is_a?(Hash) ? checkout_session["order"]["status"] : nil,
+      checkout_session["subscription"].is_a?(Hash) ? checkout_session["subscription"]["status"] : nil
+    ].compact.map(&:to_s).find { |status| !status.empty? }.to_s
+  end
+
+  def self.checkout_external_customer_id(checkout_session)
+    [
+      checkout_session["external_customer_id"],
+      checkout_session["externalCustomerId"],
+      checkout_session["customer"].is_a?(Hash) ? checkout_session["customer"]["external_id"] : nil,
+      checkout_session["customer"].is_a?(Hash) ? checkout_session["customer"]["external_customer_id"] : nil,
+      checkout_session["customer"].is_a?(Hash) ? checkout_session["customer"]["externalCustomerId"] : nil
+    ].compact.map(&:to_s).find { |id| !id.empty? }.to_s
+  end
+
   def self.checkout_subscription_id(checkout_session)
     [
       checkout_session["subscription_id"],
-      checkout_session.dig("subscription", "id"),
-      checkout_session.dig("order", "subscription_id"),
-      checkout_session.dig("order", "subscription", "id")
+      checkout_session["subscription"].is_a?(Hash) ? checkout_session["subscription"]["id"] : nil,
+      checkout_session["order"].is_a?(Hash) ? checkout_session["order"]["subscription_id"] : nil,
+      checkout_session["order"].is_a?(Hash) && checkout_session["order"]["subscription"].is_a?(Hash) ? checkout_session["order"]["subscription"]["id"] : nil
     ].each do |candidate|
       candidate = candidate.to_s.strip
       return candidate unless candidate.empty?
