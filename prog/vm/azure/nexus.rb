@@ -304,14 +304,15 @@ class Prog::Vm::Azure::Nexus < Prog::Base
 
   def create_azure_storage_volume_records
     data_volumes.each_with_index do |volume, index|
-      next if volume.azure_storage_volume
+      next if AzureStorageVolume[volume.id]
 
-      AzureStorageVolume.create_with_id(
+      az = AzureStorageVolume.create_with_id(
         volume,
         disk_name: azure_name("disk-#{volume.disk_index}", 60),
         lun: index,
-        device_path: "/dev/disk/azure/scsi1/lun#{index}",
+        device_path: "/dev/disk/azure/data/by-lun/#{index}",
       )
+      volume.associations[:azure_storage_volume] = az
     end
   end
 
@@ -319,7 +320,7 @@ class Prog::Vm::Azure::Nexus < Prog::Base
     {
       boot_size_gib: boot_volume.size_gib,
       volumes: data_volumes.map do |volume|
-        az = volume.azure_storage_volume || fail("Azure storage volume record is missing for #{volume.ubid}")
+        az = AzureStorageVolume[volume.id] || fail("Azure storage volume record is missing for #{volume.ubid}")
         {
           lun: az.lun,
           name: az.disk_name,

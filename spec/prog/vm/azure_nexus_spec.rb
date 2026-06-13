@@ -63,6 +63,21 @@ RSpec.describe Prog::Vm::Azure::Nexus do
       expect { nx.start }.to hop("wait_instance_created")
     end
 
+    it "records Azure data disks by stable LUN device path" do
+      VmStorageVolume.create(vm_id: vm.id, boot: false, size_gib: 64, disk_index: 1)
+      allow(client).to receive(:create_resource_group)
+      allow(client).to receive(:create_network_security_group).and_return({"id" => "nsg-id"})
+      allow(client).to receive(:create_virtual_network).and_return({"properties" => {"subnets" => [{"id" => "subnet-id"}]}})
+      allow(client).to receive(:create_public_ip).and_return({"id" => "public-ip-id"})
+      allow(client).to receive(:create_network_interface).and_return({"id" => "nic-id"})
+      allow(client).to receive(:create_virtual_machine)
+
+      expect { nx.start }.to hop("wait_instance_created")
+
+      volume = vm.reload.vm_storage_volumes.find { |vol| !vol.boot }
+      expect(volume.azure_storage_volume.device_path).to eq("/dev/disk/azure/data/by-lun/0")
+    end
+
     it "retries transient Azure subnet convergence errors without failing the VM" do
       allow(client).to receive(:create_resource_group)
       allow(client).to receive(:create_network_security_group).and_raise(AzureAPIError.new(429, "ReferencedResourceNotProvisioned: subnet is in Updating state"))
