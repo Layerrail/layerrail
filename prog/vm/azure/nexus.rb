@@ -6,7 +6,7 @@ class Prog::Vm::Azure::Nexus < Prog::Base
   subject_is :vm
 
   def before_destroy
-    register_deadline(nil, 10 * 60)
+    register_deadline(nil, 30 * 60)
     vm.active_billing_records.each(&:finalize)
   end
 
@@ -340,19 +340,41 @@ class Prog::Vm::Azure::Nexus < Prog::Base
 
   def delete_azure_resources
     if (instance = vm.azure_instance)
-      client.delete_virtual_machine(instance.resource_group, instance.vm_name)
+      delete_azure_resource(:virtual_machine, instance.vm_name) { client.delete_virtual_machine(instance.resource_group, instance.vm_name) }
       data_volumes.each do |volume|
         az = volume.azure_storage_volume
-        client.delete_disk(instance.resource_group, az.disk_name) if az
+        delete_azure_resource(:disk, az.disk_name) { client.delete_disk(instance.resource_group, az.disk_name) } if az
       end
-      client.delete_disk(instance.resource_group, instance.os_disk_name)
-      client.delete_network_interface(instance.resource_group, instance.nic_name)
-      client.delete_public_ip(instance.resource_group, instance.public_ip_name)
+      delete_azure_resource(:disk, instance.os_disk_name) { client.delete_disk(instance.resource_group, instance.os_disk_name) }
+      delete_azure_resource(:network_interface, instance.nic_name) { client.delete_network_interface(instance.resource_group, instance.nic_name) }
+      delete_azure_resource(:public_ip, instance.public_ip_name) { client.delete_public_ip(instance.resource_group, instance.public_ip_name) }
       vm.azure_instance&.destroy
     end
     vm.vm_storage_volumes.each { it.azure_storage_volume&.destroy }
+  end
+
+  def delete_azure_resource(resource_type, name)
+    yield
   rescue AzureAPIError => ex
-    raise unless ex.status == 404
+    raise unless retryable_azure_delete_error?(ex)
+
+    Clog.emit("Azure VM delete is waiting on resource cleanup", {
+      azure_vm_delete_waiting: {
+        vm_ubid: vm.ubid,
+        resource_type:,
+        name:,
+        status: ex.status,
+        body: ex.body,
+      },
+    })
+    nap 30
+  end
+
+  def retryable_azure_delete_error?(ex)
+    return true if [409, 429].include?(ex.status) || ex.status.to_i >= 500
+    return false unless ex.status == 400
+
+    ex.body.to_s.match?(/attached|being deleted|cannotbedeleted|inuse|in use|operationnotallowed|anotheroperationinprogress/i)
   end
 
   def final_clean_up

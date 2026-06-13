@@ -36,19 +36,19 @@ class GameVps < Sequel::Model(:game_vps)
     "community" => {
       name: "Community",
       description: "Entry community server for FiveM or Minecraft",
-      cores: 4,
-      ram_gib: 8,
-      disk_gib: 160,
-      azure_size: "Standard_D4lds_v7",
-      monthly_price: "6.00",
-    },
-    "squad" => {
-      name: "Squad",
-      description: "More memory for mods, plugins, and voice",
       cores: 2,
       ram_gib: 8,
       disk_gib: 160,
       azure_size: "Standard_D2ds_v7",
+      monthly_price: "6.00",
+    },
+    "squad" => {
+      name: "Squad",
+      description: "More CPU for mods, plugins, and voice",
+      cores: 4,
+      ram_gib: 8,
+      disk_gib: 160,
+      azure_size: "Standard_D4lds_v7",
       monthly_price: "10.00",
     },
     "growth" => {
@@ -82,8 +82,8 @@ class GameVps < Sequel::Model(:game_vps)
   AZURE_LOCATION_SIZE_OVERRIDES = {
     "azure-westeurope" => {
       "starter" => "Standard_D2lds_v6",
-      "community" => "Standard_D4lds_v6",
-      "squad" => "Standard_D2ds_v6",
+      "community" => "Standard_D2ds_v6",
+      "squad" => "Standard_D4lds_v6",
       "growth" => "Standard_D4ds_v6",
       "serious" => "Standard_D8ds_v6",
       "arena" => "Standard_D16ds_v6",
