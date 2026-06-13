@@ -1,0 +1,12 @@
+<%# locals: (active:) %>
+<%== part(
+  "components/tabbar",
+  tabs: [
+    ["Registered domains", "#{@project.path}/domain", active == "domains"],
+    ["Search", "#{@project.path}/domain/create", active == "search"],
+    ["Transfers", "#{@project.path}/domain/transfer", active == "transfers"],
+    ["Contact profiles", "#{@project.path}/domain/contact-profile", active == "contacts"],
+    ["Bulk search", "#{@project.path}/domain/bulk", active == "bulk"],
+    ["Bundles", "#{@project.path}/domain/bundle", active == "bundles"]
+  ]
+) %>

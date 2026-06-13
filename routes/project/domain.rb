@@ -80,7 +80,7 @@ class Clover
         contact_profile = domain_api_contact_profile_from_param
         DomainRegistration.validate_domain!(domain)
         raise CloverError.new(400, "InvalidRequest", "Choose between 1 and 10 years.") unless years.between?(1, 10)
-        raise CloverError.new(400, "InvalidRequest", "NameSilo is not configured. Set NAMESILO_API_KEY.") unless NameSiloClient.configured?
+        raise CloverError.new(400, "InvalidRequest", "Domain registrar is not configured.") unless NameSiloClient.configured?
 
         pricing = NameSiloClient.new.registration_pricing(domain)
         raise CloverError.new(400, "InvalidRequest", ".#{domain.split(".").last} is not enabled for transfers yet.") unless pricing[:tld_enabled]
@@ -207,7 +207,7 @@ class Clover
         nameservers = nameservers_from(typecast_params.str("nameservers"))
         DomainRegistration.validate_domain!(domain)
         raise_web_error("Choose between 1 and 10 years.") unless years.between?(1, 10)
-        raise_web_error("NameSilo is not configured. Set NAMESILO_API_KEY.") unless NameSiloClient.configured?
+        raise_web_error("Domain registrar is not configured.") unless NameSiloClient.configured?
 
         client = NameSiloClient.new
         availability = client.check_register_availability(domain)
@@ -291,11 +291,6 @@ class Clover
         flash["notice"] = "#{created.length} domain#{created.length == 1 ? "" : "s"} added to cart."
         flash["error"] = skipped.join("; ") if skipped.any?
         r.redirect "#{@project.path}/domain"
-      end
-
-      r.get "icann" do
-        authorize("Project:view", @project)
-        view "domain/icann"
       end
 
       r.on "bundle" do
@@ -382,7 +377,7 @@ class Clover
         contact_profile = domain_contact_profile_from_param
         DomainRegistration.validate_domain!(domain)
         raise_web_error("Choose between 1 and 10 years.") unless years.between?(1, 10)
-        raise_web_error("NameSilo is not configured. Set NAMESILO_API_KEY.") unless NameSiloClient.configured?
+        raise_web_error("Domain registrar is not configured.") unless NameSiloClient.configured?
 
         pricing = NameSiloClient.new.registration_pricing(domain)
         raise_web_error(".#{domain.split(".").last} is not enabled for transfers yet.") unless pricing[:tld_enabled]
@@ -847,7 +842,7 @@ class Clover
   def create_domain_cart_item(domain, years:, contact_profile:, nameservers:)
     DomainRegistration.validate_domain!(domain)
     raise_domain_request_error("Choose between 1 and 10 years.") unless years.between?(1, 10)
-    raise_domain_request_error("NameSilo is not configured. Set NAMESILO_API_KEY.") unless NameSiloClient.configured?
+    raise_domain_request_error("Domain registrar is not configured.") unless NameSiloClient.configured?
 
     client = NameSiloClient.new
     availability = client.check_register_availability(domain)

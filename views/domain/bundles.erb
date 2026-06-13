@@ -6,6 +6,8 @@
   right_items: [part("components/button", text: "Back to Domains", link: "#{@project.path}/domain", icon: "hero-chevron-left")]
 ) %>
 
+<%== render("domain/tabbar", locals: {active: "bundles"}) %>
+
 <div class="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
   <% form(action: "#{@project.path}/domain/bundle", method: :post, class: "rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5") do %>
     <h2 class="text-xl font-semibold text-gray-900">Create marketplace bundle</h2>

@@ -6,6 +6,8 @@
   right_items: [part("components/button", text: "Back to Domains", link: "#{@project.path}/domain", icon: "hero-chevron-left")]
 ) %>
 
+<%== render("domain/tabbar", locals: {active: "domains"}) %>
+
 <% if @domain_registration.locked_for_abuse? || @domain_registration.under_abuse_review? %>
   <div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
     <div class="text-sm font-semibold text-amber-900">Domain review</div>
@@ -133,12 +135,15 @@
       <p class="mt-3 text-sm text-gray-600"><%= @domain_registration.forwarding_label %></p>
     </div>
 
-    <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-      <h3 class="text-lg font-semibold text-gray-900">Provider details</h3>
-      <div class="mt-4 overflow-hidden rounded-lg bg-gray-50 p-4 text-sm text-gray-700">
-        <pre class="whitespace-pre-wrap break-words"><%= JSON.pretty_generate(@domain_registration.provider_payload || {}) %></pre>
+    <% if @domain_registration.dns_zone %>
+      <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+        <h3 class="text-lg font-semibold text-gray-900">Hosted zone</h3>
+        <p class="mt-3 text-sm text-gray-600">LayerRail DNS is managing records for this domain in the current project.</p>
+        <div class="mt-4 rounded-lg bg-gray-50 p-4 text-sm text-gray-700">
+          <span class="font-medium text-gray-900"><%= @domain_registration.dns_zone.name %></span>
+        </div>
       </div>
-    </div>
+    <% end %>
   </div>
 
   <div class="space-y-6">
@@ -161,8 +166,8 @@
       <% end %>
 
       <% form(action: "#{path(@domain_registration)}/#{@domain_registration.project_attached_at ? "detach" : "attach"}", method: :post, class: "rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5") do %>
-        <h3 class="text-lg font-semibold text-gray-900">Project DNS zone</h3>
-        <p class="mt-3 text-sm text-gray-600">Attach this domain to the current project so LayerRail can manage records for it.</p>
+        <h3 class="text-lg font-semibold text-gray-900">Hosted zone</h3>
+        <p class="mt-3 text-sm text-gray-600">Attach this domain to the current project so LayerRail can manage DNS records for it.</p>
         <div class="mt-4 flex justify-end">
           <%== part("components/form/submit_button", text: @domain_registration.project_attached_at ? "Detach Zone" : "Attach Zone", icon: "hero-globe-alt") %>
         </div>

@@ -6,6 +6,8 @@
   right_items: [part("components/button", text: "Back to Domains", link: "#{@project.path}/domain", icon: "hero-chevron-left")]
 ) %>
 
+<%== render("domain/tabbar", locals: {active: "search"}) %>
+
 <div class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
   <div class="space-y-6">
     <% form(action: "#{@project.path}/domain/search", method: :post, class: "space-y-5 rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5") do %>
@@ -87,14 +89,13 @@
       <ul class="mt-4 space-y-3 text-sm text-gray-600">
         <li>1. Search for the domain you want.</li>
         <li>2. Add it to your cart and check out with Polar.</li>
-        <li>3. LayerRail registers it through NameSilo and creates a managed DNS zone.</li>
+        <li>3. LayerRail registers the domain and creates a managed DNS zone.</li>
       </ul>
     </div>
     <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-      <h3 class="text-lg font-semibold text-gray-900">Phase 1 scope</h3>
+      <h3 class="text-lg font-semibold text-gray-900">Managed DNS</h3>
       <p class="mt-3 text-sm leading-6 text-gray-600">
-        This phase covers search, cart, contact profiles, billing reconciliation, registration,
-        DNS zone creation, renewals, transfers, and admin TLD controls.
+        After registration, LayerRail keeps the domain and its DNS zone together so you can manage records, attach services, and renew the domain from the same place.
       </p>
     </div>
   </div>

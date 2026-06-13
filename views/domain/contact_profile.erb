@@ -7,6 +7,8 @@
   right_items: [part("components/button", text: "Back to Profiles", link: "#{@project.path}/domain/contact-profile", icon: "hero-chevron-left")]
 ) %>
 
+<%== render("domain/tabbar", locals: {active: "contacts"}) %>
+
 <% form(action: editing ? "#{@project.path}#{@contact_profile.path}" : "#{@project.path}/domain/contact-profile", method: :post, class: "mx-auto grid max-w-4xl gap-5 rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5") do %>
   <div class="grid gap-5 md:grid-cols-2">
     <%== part("components/form/text", name: "name", label: "Profile name", value: @contact_profile.name, attributes: {placeholder: "Primary owner", required: true}) %>

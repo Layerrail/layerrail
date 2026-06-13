@@ -6,6 +6,8 @@
   right_items: [part("components/button", text: "Back to Domains", link: "#{@project.path}/domain", icon: "hero-chevron-left")]
 ) %>
 
+<%== render("domain/tabbar", locals: {active: "transfers"}) %>
+
 <div class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
   <% form(action: "#{@project.path}/domain/transfer", method: :post, class: "space-y-5 rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5") do %>
     <%== part("components/form/text", name: "domain", label: "Domain", value: @domain, attributes: {placeholder: "example.com", autocomplete: "off", required: true}) %>
@@ -37,7 +39,7 @@
       <li>Unlock the domain at your current registrar.</li>
       <li>Copy the EPP/Auth code exactly.</li>
       <li>Make sure the domain is eligible for transfer.</li>
-      <li>After payment, LayerRail starts the transfer through NameSilo.</li>
+      <li>After payment, LayerRail starts the transfer and tracks it here.</li>
     </ul>
   </div>
 </div>

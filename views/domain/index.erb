@@ -4,18 +4,18 @@
   "components/page_header",
   breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Domains", "#"]],
   right_items: [
-    part("components/button", text: "Bulk Tools", link: "#{@project.path}/domain/bulk", icon: "hero-squares-plus"),
-    part("components/button", text: "Bundles", link: "#{@project.path}/domain/bundle", icon: "hero-folder-open"),
-    part("components/button", text: "ICANN Plan", link: "#{@project.path}/domain/icann", icon: "hero-document-text"),
-    part("components/button", text: "Contact Profiles", link: "#{@project.path}/domain/contact-profile", icon: "hero-user"),
     part("components/button", text: "Transfer Domain", link: "#{@project.path}/domain/transfer", icon: "hero-arrow-top-right-on-square"),
     part("components/button", text: "Register Domain", link: "#{@project.path}/domain/create", icon: "hero-globe-alt")
   ]
 ) %>
 
+<%== render("domain/tabbar", locals: {active: "domains"}) %>
+
 <div class="grid gap-6">
   <% registration_cart = @domain_registrations.select { |domain_registration| domain_registration.status == "cart" } %>
   <% order_cart = @domain_orders.select { |domain_order| domain_order.status == "cart" } %>
+  <% visible_registrations = @domain_registrations.reject { |domain_registration| %w[cart cancelled].include?(domain_registration.status) } %>
+  <% visible_orders = @domain_orders.reject { |domain_order| %w[cart cancelled].include?(domain_order.status) } %>
   <% cart = registration_cart + order_cart %>
   <% if cart.any? %>
     <%== part(
@@ -46,9 +46,9 @@
 
   <%== part(
     "components/table_card",
-    title: "Domain Registrations",
+    title: "Registered domains",
     headers: ["Domain", "Years", "Price", "State", "DNS", "Auto-renew", "Expires"],
-    rows: @domain_registrations.map do |domain_registration|
+    rows: visible_registrations.map do |domain_registration|
       [
         [
           [
@@ -67,8 +67,8 @@
     end,
     empty_state: {
       icon: "hero-globe-alt",
-      title: "No domains yet",
-      description: "Search for a domain name, add it to your cart, and register it through the LayerRail console.",
+      title: "No registered domains yet",
+      description: "Search for a domain, add it to your cart, and LayerRail will create the registration with a managed DNS zone.",
       button_link: "#{@project.path}/domain/create",
       button_title: "Register Domain"
     }
@@ -76,9 +76,9 @@
 
   <%== part(
     "components/table_card",
-    title: "Renewals and Transfers",
+    title: "Requests",
     headers: ["Domain", "Kind", "Years", "Amount", "State", "Due", "Completed"],
-    rows: @domain_orders.map do |domain_order|
+    rows: visible_orders.map do |domain_order|
       [
         [
           [

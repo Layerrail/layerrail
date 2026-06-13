@@ -6,6 +6,8 @@
   right_items: [part("components/button", text: "Back to Domains", link: "#{@project.path}/domain", icon: "hero-chevron-left")]
 ) %>
 
+<%== render("domain/tabbar", locals: {active: "domains"}) %>
+
 <div class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
   <div class="space-y-6">
     <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
@@ -50,10 +52,8 @@
     </div>
 
     <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-      <h3 class="text-lg font-semibold text-gray-900">Provider details</h3>
-      <div class="mt-4 overflow-hidden rounded-lg bg-gray-50 p-4 text-sm text-gray-700">
-        <pre class="whitespace-pre-wrap break-words"><%= JSON.pretty_generate(@domain_order.provider_payload || {}) %></pre>
-      </div>
+      <h3 class="text-lg font-semibold text-gray-900">Request status</h3>
+      <p class="mt-3 text-sm text-gray-600">LayerRail will update this request as checkout, registrar processing, and renewal or transfer work completes.</p>
     </div>
   </div>
 
