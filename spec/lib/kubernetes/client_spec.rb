@@ -229,16 +229,32 @@ RSpec.describe Kubernetes::Client do
     end
   end
 
+  describe "node_ready?" do
+    it "returns true when the node Ready condition is true" do
+      response = Net::SSH::Connection::Session::StringWithExitstatus.new(JSON.generate({"status" => {"conditions" => [{"type" => "Ready", "status" => "True"}]}}), 0)
+      expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s get node my-node -ojson").and_return(response)
+
+      expect(kubernetes_client.node_ready?("my-node")).to be true
+    end
+
+    it "returns false when the node does not exist" do
+      response = Net::SSH::Connection::Session::StringWithExitstatus.new("not found", 1)
+      expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s get node my-node -ojson").and_return(response)
+
+      expect(kubernetes_client.node_ready?("my-node")).to be false
+    end
+  end
+
   describe "get_csr" do
     it "returns the pending csr name for the node" do
       response = Net::SSH::Connection::Session::StringWithExitstatus.new("csr-abc123\n", 0)
-      expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s get csr --sort-by=.metadata.creationTimestamp | awk /Pending/' && /kubelet-serving/ && /'my-node'/ {print $1}' | tail -1").and_return(response)
+      expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s get csr --sort-by=.metadata.creationTimestamp | awk /Pending/' && /kubelet-(serving|apiserver-client-kubelet)/ && /'my-node'/ {print $1}' | tail -1").and_return(response)
       expect(kubernetes_client.get_csr("my-node", csr_status: "Pending")).to eq("csr-abc123")
     end
 
     it "returns the approved csr name for the node" do
       response = Net::SSH::Connection::Session::StringWithExitstatus.new("csr-xyz789\n", 0)
-      expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s get csr --sort-by=.metadata.creationTimestamp | awk /Approved/' && /kubelet-serving/ && /'my-node'/ {print $1}' | tail -1").and_return(response)
+      expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s get csr --sort-by=.metadata.creationTimestamp | awk /Approved/' && /kubelet-(serving|apiserver-client-kubelet)/ && /'my-node'/ {print $1}' | tail -1").and_return(response)
       expect(kubernetes_client.get_csr("my-node", csr_status: "Approved")).to eq("csr-xyz789")
     end
   end

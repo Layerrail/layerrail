@@ -597,6 +597,13 @@ CONFIG
       kubernetes_cluster.client
     end
 
+    if client.node_ready?(node.name)
+      node.update(state: "active")
+      kubernetes_cluster.incr_sync_internal_dns_config
+      kubernetes_cluster.incr_sync_worker_mesh
+      pop({node_id: node.id})
+    end
+
     approved_csr = client.get_csr(node.name, csr_status: "Approved")
     if approved_csr.empty?
       pending_csr = client.get_csr(node.name, csr_status: "Pending")

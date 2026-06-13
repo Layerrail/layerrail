@@ -45,8 +45,15 @@ class Kubernetes::Client
     kubectl("delete node :node_name", node_name:)
   end
 
+  def node_ready?(node_name)
+    node = JSON.parse(kubectl("get node :node_name -ojson", node_name:))
+    node.dig("status", "conditions").to_a.any? { |condition| condition["type"] == "Ready" && condition["status"] == "True" }
+  rescue RuntimeError
+    false
+  end
+
   def get_csr(node_name, csr_status:)
-    kubectl("get csr --sort-by=.metadata.creationTimestamp | awk /:csr_status/' && /kubelet-serving/ && /':node_name'/ {print $1}' | tail -1", node_name:, csr_status:).chomp
+    kubectl("get csr --sort-by=.metadata.creationTimestamp | awk /:csr_status/' && /kubelet-(serving|apiserver-client-kubelet)/ && /':node_name'/ {print $1}' | tail -1", node_name:, csr_status:).chomp
   end
 
   def approve_csr(csr_name)
