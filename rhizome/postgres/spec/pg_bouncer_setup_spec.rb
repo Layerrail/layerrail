@@ -45,6 +45,14 @@ RSpec.describe PgBouncerSetup do
       expect(config_2).to include("peer_id = 2")
     end
 
+    it "omits peer config when pgbouncer does not support it" do
+      setup_without_peer_config = described_class.new(version, max_connections, num_instances, user_config, supports_peer_config: false)
+      config = setup_without_peer_config.pgbouncer_ini_content(1)
+
+      expect(config).not_to include("peer_id")
+      expect(config).not_to include("[peers]")
+    end
+
     it "includes user_config settings" do
       setup_with_user_config = described_class.new(version, max_connections, num_instances, {"default_pool_size" => "20", "reserve_pool_size" => "5"})
       config = setup_with_user_config.pgbouncer_ini_content(1)

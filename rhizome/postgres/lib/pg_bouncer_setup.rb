@@ -1,11 +1,24 @@
 # frozen_string_literal: true
 
 class PgBouncerSetup
-  def initialize(version, max_connections, num_instances, user_config)
+  def initialize(version, max_connections, num_instances, user_config, supports_peer_config: true)
     @version = version
     @max_connections = max_connections
     @num_instances = num_instances
     @user_config = user_config
+    @supports_peer_config = supports_peer_config
+  end
+
+  def self.supports_peer_config?
+    output = `pgbouncer --version 2>&1`
+    version = output[/PgBouncer\s+(\d+(?:\.\d+)+)/i, 1]
+    version && Gem::Version.new(version) >= Gem::Version.new("1.21")
+  rescue
+    false
+  end
+
+  def supports_peer_config?
+    @supports_peer_config
   end
 
   def service_template_name
@@ -92,7 +105,7 @@ listen_addr = 0.0.0.0
 
 unix_socket_dir = /var/run/postgresql
 so_reuseport = 1
-peer_id = #{instance_id}
+#{supports_peer_config? ? "peer_id = #{instance_id}" : nil}
 
 auth_type = hba
 auth_hba_file = /etc/postgresql/#{@version}/main/pg_hba.conf
@@ -117,8 +130,7 @@ max_db_connections = #{@max_connections.to_i / @num_instances.to_i}
 
 #{@user_config.map { |k, v| "#{k} = #{v}" }.join("\n")}
 
-; Peer configuration, to correctly forward cancellation requests.
-#{peer_config}
+#{supports_peer_config? ? "; Peer configuration, to correctly forward cancellation requests.\n#{peer_config}" : nil}
 PGBOUNCER_CONFIG
   end
 
