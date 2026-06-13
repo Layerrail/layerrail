@@ -129,7 +129,10 @@ PGBOUNCER_CONFIG
   end
 
   def disable_default_pgbouncer
-    r "systemctl disable --now pgbouncer"
+    r "systemctl stop pgbouncer || service pgbouncer stop || true"
+    r "systemctl disable pgbouncer || true"
+    r "pkill -x pgbouncer || true"
+    r "systemctl reset-failed pgbouncer pgbouncer@*.service pgbouncer@*.socket || true"
   end
 
   def enable_and_start_service

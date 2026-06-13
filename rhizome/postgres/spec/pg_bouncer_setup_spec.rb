@@ -106,4 +106,20 @@ RSpec.describe PgBouncerSetup do
       expect(config).to include("2 = host=/tmp/.s.PGSQL.50002")
     end
   end
+
+  describe "#disable_default_pgbouncer" do
+    it "stops generated package units before templated instances bind ports" do
+      commands = []
+      pgbouncer_setup.define_singleton_method(:r) { |command| commands << command }
+
+      pgbouncer_setup.disable_default_pgbouncer
+
+      expect(commands).to eq([
+        "systemctl stop pgbouncer || service pgbouncer stop || true",
+        "systemctl disable pgbouncer || true",
+        "pkill -x pgbouncer || true",
+        "systemctl reset-failed pgbouncer pgbouncer@*.service pgbouncer@*.socket || true",
+      ])
+    end
+  end
 end
