@@ -57,7 +57,9 @@ class Clover
     raise CloverError.new(404, "NotFound", "Game VPS is not enabled") unless Config.game_vps_enabled
 
     r.get true do
-      @game_vpses = dataset_authorize(@project.game_vpses_dataset.reverse(:created_at), "Vm:view").all
+      @game_vpses = dataset_authorize(@project.game_vpses_dataset.reverse(:created_at), "Vm:view")
+        .exclude(status: ["pending_payment", "deleted"])
+        .all
       view "game_vps/index"
     end
 
@@ -157,59 +159,62 @@ class Clover
         flash["notice"] = "Game VPS payment received. Provisioning started."
         r.redirect "#{@project.path}/game-vps"
       end
-    end
 
-    r.on GAME_VPS_NAME_OR_UBID do |name, id|
-      authorized_game_vpses = dataset_authorize(@project.game_vpses_dataset, "Vm:view")
-      matched_id = id || (UBID.to_uuid(name) if name)
-      @game_vps = matched_id ? authorized_game_vpses.first(id: matched_id) : authorized_game_vpses.first(name:)
-      check_found_object(@game_vps)
+      r.on GAME_VPS_NAME_OR_UBID do |name, id|
+        authorized_game_vpses = dataset_authorize(@project.game_vpses_dataset, "Vm:view")
+        matched_id = id || (UBID.to_uuid(name) if name)
+        @game_vps = matched_id ? authorized_game_vpses.first(id: matched_id) : authorized_game_vpses.first(name:)
+        check_found_object(@game_vps)
 
-      r.get "rdp" do
-        raise CloverError.new(404, "NotFound", "RDP config is not available until the server has an IP address.") unless @game_vps.primary_ip
+        r.get "rdp" do
+          raise CloverError.new(404, "NotFound", "RDP config is not available until the server has an IP address.") unless @game_vps.primary_ip
 
-        response.attachment "#{@game_vps.name.gsub(/[^A-Za-z0-9._-]/, "-")}.rdp"
-        response.content_type = :text
-        [
-          "full address:s:#{@game_vps.primary_ip}:3389",
-          "username:s:#{@game_vps.rdp_username}",
-          "prompt for credentials:i:1",
-          "authentication level:i:2",
-          "enablecredsspsupport:i:1",
-          "screen mode id:i:2",
-          "desktopwidth:i:1920",
-          "desktopheight:i:1080",
-          "session bpp:i:32",
-          "redirectclipboard:i:1"
-        ].join("\r\n")
-      end
-
-      r.get true do
-        view "game_vps/show"
-      end
-
-      r.post "checkout" do
-        handle_validation_failure("game_vps/show")
-        authorize("Vm:create", @project)
-        raise_web_error("This Game VPS has already been paid for.") unless @game_vps.status == "pending_payment"
-
-        begin
-          r.redirect start_game_vps_checkout(@game_vps), 303
-        rescue PolarAPIError, Sequel::Error, RuntimeError => ex
-          @game_vps.update(failure_message: ex.message.to_s.slice(0, 1000), updated_at: Time.now)
-          Clog.emit("game vps checkout retry failed", Util.exception_to_hash(ex, into: {game_vps_checkout_retry_failed: {game_vps_ubid: @game_vps.ubid, project_ubid: @project.ubid}}))
-          raise_web_error("We couldn't restart checkout. #{ex.message}")
+          response.attachment "#{@game_vps.name.gsub(/[^A-Za-z0-9._-]/, "-")}.rdp"
+          response.content_type = :text
+          [
+            "full address:s:#{@game_vps.primary_ip}:3389",
+            "username:s:#{@game_vps.rdp_username}",
+            "prompt for credentials:i:1",
+            "authentication level:i:2",
+            "enablecredsspsupport:i:1",
+            "screen mode id:i:2",
+            "desktopwidth:i:1920",
+            "desktopheight:i:1080",
+            "session bpp:i:32",
+            "redirectclipboard:i:1"
+          ].join("\r\n")
         end
-      end
 
-      r.post "delete" do
-        authorize("Vm:delete", @game_vps)
-        DB.transaction do
-          Prog::GameVpsNexus.assemble_destroy(@game_vps)
-          audit_log(@game_vps, "destroy")
+        r.get true do
+          authorize("Vm:view", @game_vps)
+          r.redirect @game_vps, "/overview"
         end
-        flash["notice"] = "Game VPS deletion started"
-        r.redirect "#{@project.path}/game-vps"
+
+        r.show_object(@game_vps, actions: %w[overview], perm: "Vm:view", template: "game_vps/show")
+
+        r.post "checkout" do
+          handle_validation_failure("game_vps/show") { @page = "overview" }
+          authorize("Vm:create", @project)
+          raise_web_error("This Game VPS has already been paid for.") unless @game_vps.status == "pending_payment"
+
+          begin
+            r.redirect start_game_vps_checkout(@game_vps), 303
+          rescue PolarAPIError, Sequel::Error, RuntimeError => ex
+            @game_vps.update(failure_message: ex.message.to_s.slice(0, 1000), updated_at: Time.now)
+            Clog.emit("game vps checkout retry failed", Util.exception_to_hash(ex, into: {game_vps_checkout_retry_failed: {game_vps_ubid: @game_vps.ubid, project_ubid: @project.ubid}}))
+            raise_web_error("We couldn't restart checkout. #{ex.message}")
+          end
+        end
+
+        r.post "delete" do
+          authorize("Vm:delete", @game_vps)
+          DB.transaction do
+            Prog::GameVpsNexus.assemble_destroy(@game_vps)
+            audit_log(@game_vps, "destroy")
+          end
+          flash["notice"] = "Game VPS deletion started"
+          r.redirect "#{@project.path}/game-vps"
+        end
       end
     end
   end

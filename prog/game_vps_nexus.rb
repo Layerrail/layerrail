@@ -271,7 +271,7 @@ class Prog::GameVpsNexus < Prog::Base
   end
 
   def azure_vm_size
-    azure_plan.fetch(:azure_size)
+    GameVps.azure_size_for(game_vps.plan, game_vps.location)
   end
 
   def azure_resource_group

@@ -1,0 +1,72 @@
+<% if @game_vps.display_state != "running" %>
+  <div class="auto-refresh hidden" data-interval="10"></div>
+<% end %>
+
+<div class="py-6">
+  <div class="flex flex-wrap gap-3">
+    <% if @game_vps.status == "pending_payment" && has_permission?("Vm:create", @project) %>
+      <%== form({action: "#{path(@game_vps)}/checkout", method: :post}, emit: false) do |f|
+        f << part("components/button", text: "Continue checkout")
+      end %>
+    <% end %>
+    <%== part("components/button", text: "Download RDP", link: "#{path(@game_vps)}/rdp") if @game_vps.primary_ip %>
+    <%== part(
+      "components/delete_button",
+      text: "Delete",
+      url: path(@game_vps),
+      confirmation: @game_vps.name,
+      confirmation_message: "Deleting this Game VPS removes the cloud server and attached network resources.",
+    ) if has_permission?("Vm:delete", @game_vps) && !@game_vps.display_state.start_with?("deleting") %>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 gap-6 py-6 lg:grid-cols-2">
+  <% server_data = [
+    ["Plan", @game_vps.plan_label],
+    ["Price", @game_vps.price_label],
+    ["Location", @game_vps.location_label],
+    ["Resources", @game_vps.resources_label],
+  ] %>
+  <%== part("components/kv_data_card", data: server_data) %>
+
+  <% access_data = [
+    ["IP address", @game_vps.primary_ip || "Not assigned yet", {copyable: !!@game_vps.primary_ip}],
+    ["RDP user", @game_vps.rdp_username, {copyable: true}],
+    ["RDP password", @game_vps.rdp_password || "Not ready", {copyable: !!@game_vps.rdp_password, revealable: !!@game_vps.rdp_password}],
+    ["txAdmin password", @game_vps.txadmin_password || "Not ready", {copyable: !!@game_vps.txadmin_password, revealable: !!@game_vps.txadmin_password}],
+  ] %>
+  <%== part("components/kv_data_card", data: access_data) %>
+
+  <% provider_data = [
+    [@game_vps.provider.to_s == "ionos" ? "Datacenter" : "Resource group", @game_vps.datacenter_id || "-", {copyable: !!@game_vps.datacenter_id}],
+    ["Server", @game_vps.server_id || "-", {copyable: !!@game_vps.server_id}],
+    ["Image", @game_vps.image_alias],
+    ["Ports", "3389, 30120, 40120, 25565"],
+  ] %>
+  <%== part("components/kv_data_card", data: provider_data) %>
+
+  <% subscription_data = [
+    ["Billing", @game_vps.prepaid? ? "Prepaid monthly" : "Usage billed"],
+    ["Checkout", @game_vps.values[:checkout_id] || "-", {copyable: !!@game_vps.values[:checkout_id]}],
+    ["Polar subscription", @game_vps.polar_subscription_id || "-", {copyable: !!@game_vps.polar_subscription_id}],
+    ["Paid until", @game_vps.values[:paid_until]&.strftime("%Y-%m-%d") || "Not paid yet"],
+  ] %>
+  <%== part("components/kv_data_card", data: subscription_data) %>
+</div>
+
+<% if @game_vps.status == "pending_payment" %>
+  <div class="rounded-lg bg-yellow-50 p-4 text-sm text-yellow-900 ring-1 ring-yellow-200">
+    This Game VPS is reserved but not active yet. Continue checkout to start monthly billing and provisioning.
+    <% if @game_vps.failure_message %>
+      <div class="mt-2 font-medium"><%= @game_vps.failure_message %></div>
+    <% end %>
+  </div>
+<% elsif @game_vps.failure_message %>
+  <div class="rounded-lg bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
+    <%= @game_vps.failure_message %>
+  </div>
+<% elsif @game_vps.access_notes %>
+  <div class="rounded-lg bg-white p-4 text-sm text-gray-600 shadow ring-1 ring-black ring-opacity-5">
+    <%= @game_vps.access_notes %>
+  </div>
+<% end %>

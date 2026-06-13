@@ -13,6 +13,7 @@ class GameVps < Sequel::Model(:game_vps)
   AZURE_LOCATIONS = {
     "azure-eastus" => {name: "East US", region: "United States", azure_region: "eastus"},
     "azure-eastus2" => {name: "East US 2", region: "United States", azure_region: "eastus2"},
+    "azure-westeurope" => {name: "West Europe", region: "Europe", azure_region: "westeurope"},
   }.freeze
   IONOS_LOCATIONS = {
     "de/fra" => {name: "Frankfurt, DE", region: "Europe"},
@@ -75,6 +76,16 @@ class GameVps < Sequel::Model(:game_vps)
       disk_gib: 1024,
       azure_size: "Standard_D16ds_v7",
       monthly_price: "95.00",
+    },
+  }.freeze
+  AZURE_LOCATION_SIZE_OVERRIDES = {
+    "azure-westeurope" => {
+      "starter" => "Standard_D2lds_v5",
+      "community" => "Standard_D4lds_v5",
+      "squad" => "Standard_D2ds_v5",
+      "growth" => "Standard_D4ds_v5",
+      "serious" => "Standard_D8ds_v5",
+      "arena" => "Standard_D16ds_v5",
     },
   }.freeze
   WINDOWS_IMAGES = {
@@ -219,6 +230,10 @@ class GameVps < Sequel::Model(:game_vps)
 
   def prepaid?
     !!values[:checkout_id]
+  end
+
+  def self.azure_size_for(plan_key, location_key)
+    AZURE_LOCATION_SIZE_OVERRIDES.dig(location_key, plan_key) || PLANS.fetch(plan_key).fetch(:azure_size)
   end
 
   def polar_subscription_id
