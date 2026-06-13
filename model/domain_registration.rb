@@ -126,10 +126,26 @@ class DomainRegistration < Sequel::Model(:domain_registration)
     update(deploy_app_id: app.id, deploy_attached_at: Time.now, updated_at: Time.now)
     app.update(hostname: domain, updated_at: Time.now)
     attach_to_project_dns_zone! unless dns_zone_id
+    sync_deploy_dns_record!(app)
   end
 
   def detach_from_deploy_app!
+    clear_deploy_dns_record!
     update(deploy_app_id: nil, deploy_attached_at: nil, updated_at: Time.now)
+  end
+
+  def sync_deploy_dns_record!(app = deploy_app)
+    return unless app&.vm&.ip4_string
+
+    zone = dns_zone || attach_to_project_dns_zone!
+    return unless zone
+
+    zone.delete_record(record_name: domain, type: "A")
+    zone.insert_record(record_name: domain, type: "A", ttl: 60, data: app.vm.ip4_string)
+  end
+
+  def clear_deploy_dns_record!
+    dns_zone&.delete_record(record_name: domain, type: "A")
   end
 
   def update_team_policy!(policy)

@@ -13,91 +13,142 @@
 <% if @github_installations.empty? %>
   <div class="rounded-lg bg-white p-8 shadow ring-1 ring-black ring-opacity-5">
     <div class="mx-auto max-w-xl text-center">
-      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-layerrail-50 text-layerrail-700">
+      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-gray-900 text-white">
         <%== part("components/icon", name: "github", classes: "h-6 w-6") %>
       </div>
       <h3 class="mt-4 text-base font-semibold leading-6 text-gray-900">Connect GitHub</h3>
-      <p class="mt-2 text-sm text-gray-500">LayerRail needs a GitHub App installation before it can import repositories.</p>
+      <p class="mt-2 text-sm text-gray-500">Install the LayerRail GitHub App to choose repositories and start deployments.</p>
       <div class="mt-6">
-        <%== part("components/button", text: "Connect GitHub", link: "#{@project.path}/github", icon: "github") %>
+        <%== part("components/button", text: "Sign in with GitHub", link: "#{@project.path}/github", icon: "github") %>
       </div>
     </div>
   </div>
 <% else %>
-  <% form(action: "#{@project.path}/deploy", method: "POST", class: "grid gap-6 xl:grid-cols-[1fr_320px]") do %>
+  <% packs = [
+    ["node", "Node.js", "NPM install, build command, app server", "npm install", "npm run build", "npm start", "", "3000"],
+    ["static", "Static site", "Build once and serve the output directory", "npm install", "npm run build", "", "dist", "3000"]
+  ] %>
+
+  <% form(action: "#{@project.path}/deploy", method: "POST", class: "grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]") do %>
     <div class="space-y-6">
-      <section class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-        <div class="mb-5 flex items-center gap-3">
-          <div class="flex h-9 w-9 items-center justify-center rounded-md bg-gray-900 text-sm font-semibold text-white">1</div>
-          <h2 class="text-base font-semibold text-gray-900">Source</h2>
+      <section class="rounded-lg bg-white shadow ring-1 ring-black ring-opacity-5">
+        <div class="border-b border-gray-100 px-6 py-5">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 class="text-base font-semibold text-gray-900">Import Repository</h2>
+              <p class="mt-1 text-sm text-gray-500">Choose a repository from the connected GitHub account.</p>
+            </div>
+            <div class="w-full sm:w-64">
+              <%== part(
+                "components/form/select",
+                name: "installation_id",
+                label: "GitHub account",
+                selected: typecast_body_params.str("installation_id") || @github_installations.first.ubid,
+                options: @github_installations.map { [it.ubid, "#{it.name} (#{it.type})"] },
+                attributes: {required: "required", "data-deploy-installation-select" => "true"}
+              ) %>
+            </div>
+          </div>
+          <div class="mt-4">
+            <label for="deploy-repository-search" class="sr-only">Search repositories</label>
+            <input id="deploy-repository-search" type="search" placeholder="Search repositories" autocomplete="off" class="block w-full rounded-md border-0 px-3 py-2 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-layerrail-600">
+          </div>
         </div>
-        <div class="grid gap-5 md:grid-cols-6">
+
+        <% if @deploy_repositories.any? %>
+          <div class="max-h-[31rem] divide-y divide-gray-100 overflow-auto" data-repository-list>
+            <% @deploy_repositories.each_with_index do |repo, index| %>
+              <% repo_selected = typecast_body_params.str("repository") == repo[:full_name] || (typecast_body_params.str("repository").to_s.empty? && index == 0) %>
+              <label class="group grid cursor-pointer grid-cols-[1fr_auto] gap-4 px-6 py-4 hover:bg-gray-50" data-repository-row data-installation-id="<%= repo[:installation_ubid] %>" data-search="<%= "#{repo[:full_name]} #{repo[:installation_label]}".downcase %>">
+                <span class="min-w-0">
+                  <span class="flex items-center gap-3">
+                    <input type="radio" name="repository_picker" value="<%= repo[:full_name] %>" class="h-4 w-4 border-gray-300 text-layerrail-600 focus:ring-layerrail-600" data-repository-picker data-installation-id="<%= repo[:installation_ubid] %>" data-repository="<%= repo[:full_name] %>" data-branch="<%= repo[:default_branch] %>" <%= repo_selected ? "checked" : "" %>>
+                    <span class="truncate text-sm font-semibold text-gray-900"><%= repo[:full_name] %></span>
+                    <% if repo[:private] == true %>
+                      <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Private</span>
+                    <% elsif repo[:private] == false %>
+                      <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">Public</span>
+                    <% end %>
+                  </span>
+                  <span class="mt-1 block pl-7 text-xs text-gray-500"><%= repo[:installation_label] %> · <%= repo[:default_branch] %></span>
+                </span>
+                <span class="self-center text-gray-300 group-hover:text-gray-500">
+                  <%== part("components/icon", name: "hero-chevron-right", classes: "h-5 w-5") %>
+                </span>
+              </label>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="px-6 py-8 text-sm text-gray-600">
+            No repositories were returned by GitHub. Manage the GitHub App installation, then choose the repositories LayerRail can access.
+          </div>
+        <% end %>
+      </section>
+
+      <section class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+        <h2 class="text-base font-semibold text-gray-900">Build Pack</h2>
+        <div class="mt-5 grid gap-3 md:grid-cols-2">
+          <% packs.each_with_index do |(value, title, description, install_command, build_command, start_command, output_directory, app_port), index| %>
+            <% selected = (typecast_body_params.str("framework") || "node") == value %>
+            <label class="cursor-pointer rounded-lg border border-gray-200 p-4 hover:border-layerrail-300 hover:bg-layerrail-50/30">
+              <input type="radio" name="framework" value="<%= value %>" class="peer sr-only" data-build-pack data-install-command="<%= install_command %>" data-build-command="<%= build_command %>" data-start-command="<%= start_command %>" data-output-directory="<%= output_directory %>" data-app-port="<%= app_port %>" <%= selected ? "checked" : "" %>>
+              <span class="flex items-start gap-3">
+                <span class="mt-0.5 flex h-8 w-8 items-center justify-center rounded-md bg-gray-900 text-white peer-checked:bg-layerrail-600">
+                  <%== part("components/icon", name: value == "static" ? "hero-folder-open" : "hero-squares-plus", classes: "h-4 w-4") %>
+                </span>
+                <span>
+                  <span class="block text-sm font-semibold text-gray-900"><%= title %></span>
+                  <span class="mt-1 block text-sm leading-5 text-gray-500"><%= description %></span>
+                </span>
+              </span>
+            </label>
+          <% end %>
+        </div>
+      </section>
+
+      <section class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+        <h2 class="text-base font-semibold text-gray-900">Project Settings</h2>
+        <div class="mt-5 grid gap-5 md:grid-cols-6">
           <div class="md:col-span-3">
-            <%== part("components/form/text", name: "name", label: "Project name", value: typecast_body_params.str("name"), attributes: {required: "required", placeholder: "api-web", autocomplete: "off"}) %>
+            <%== part("components/form/text", name: "name", label: "App name", value: typecast_body_params.str("name"), attributes: {required: "required", placeholder: "web", autocomplete: "off", "data-app-name-input" => "true"}) %>
           </div>
           <div class="md:col-span-3">
-            <%== part(
-              "components/form/select",
-              name: "installation_id",
-              label: "GitHub account",
-              selected: typecast_body_params.str("installation_id") || @github_installations.first.ubid,
-              options: @github_installations.map { [it.ubid, "#{it.name} (#{it.type})"] },
-              attributes: {required: "required"}
-            ) %>
+            <%== part("components/form/text", name: "repository", label: "Repository", value: typecast_body_params.str("repository"), attributes: {required: "required", placeholder: "owner/repository", autocomplete: "off", "data-repository-input" => "true"}) %>
           </div>
-          <div class="md:col-span-4">
-            <%== part("components/form/text", name: "repository", label: "Repository", value: typecast_body_params.str("repository"), attributes: {required: "required", placeholder: "owner/repository", autocomplete: "off"}) %>
+          <div class="md:col-span-3">
+            <%== part("components/form/text", name: "branch", label: "Production branch", value: typecast_body_params.str("branch") || "main", attributes: {required: "required", autocomplete: "off", "data-branch-input" => "true"}) %>
           </div>
-          <div class="md:col-span-2">
-            <%== part("components/form/text", name: "branch", label: "Production branch", value: typecast_body_params.str("branch") || "main", attributes: {required: "required", autocomplete: "off"}) %>
+          <div class="md:col-span-3">
+            <%== part("components/form/text", name: "root_directory", label: "Root directory", value: typecast_body_params.str("root_directory"), attributes: {placeholder: "apps/web", autocomplete: "off"}) %>
           </div>
         </div>
       </section>
 
       <section class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-        <div class="mb-5 flex items-center gap-3">
-          <div class="flex h-9 w-9 items-center justify-center rounded-md bg-gray-900 text-sm font-semibold text-white">2</div>
-          <h2 class="text-base font-semibold text-gray-900">Build</h2>
-        </div>
-        <div class="grid gap-5 md:grid-cols-6">
+        <h2 class="text-base font-semibold text-gray-900">Build Settings</h2>
+        <div class="mt-5 grid gap-5 md:grid-cols-6">
           <div class="md:col-span-3">
-            <%== part(
-              "components/form/select",
-              name: "framework",
-              label: "Preset",
-              selected: typecast_body_params.str("framework") || "node",
-              options: DeployApp::FRAMEWORKS.map { |value, label| [value, label] },
-              attributes: {required: "required"}
-            ) %>
+            <%== part("components/form/text", name: "install_command", label: "Install command", value: typecast_body_params.str("install_command") || "npm install", attributes: {required: "required", autocomplete: "off", "data-install-command-input" => "true"}) %>
           </div>
           <div class="md:col-span-3">
-            <%== part("components/form/text", name: "root_directory", label: "Root directory", value: typecast_body_params.str("root_directory"), attributes: {placeholder: "apps/web", autocomplete: "off"}) %>
+            <%== part("components/form/text", name: "build_command", label: "Build command", value: typecast_body_params.str("build_command") || "npm run build", attributes: {placeholder: "npm run build", autocomplete: "off", "data-build-command-input" => "true"}) %>
           </div>
           <div class="md:col-span-3">
-            <%== part("components/form/text", name: "install_command", label: "Install command", value: typecast_body_params.str("install_command") || "npm install", attributes: {required: "required", autocomplete: "off"}) %>
-          </div>
-          <div class="md:col-span-3">
-            <%== part("components/form/text", name: "build_command", label: "Build command", value: typecast_body_params.str("build_command") || "npm run build", attributes: {placeholder: "npm run build", autocomplete: "off"}) %>
-          </div>
-          <div class="md:col-span-3">
-            <%== part("components/form/text", name: "start_command", label: "Start command", value: typecast_body_params.str("start_command") || "npm start", attributes: {placeholder: "npm start", autocomplete: "off"}) %>
+            <%== part("components/form/text", name: "start_command", label: "Start command", value: typecast_body_params.str("start_command") || "npm start", attributes: {placeholder: "npm start", autocomplete: "off", "data-start-command-input" => "true"}) %>
           </div>
           <div class="md:col-span-2">
-            <%== part("components/form/text", name: "output_directory", label: "Output directory", value: typecast_body_params.str("output_directory"), attributes: {placeholder: "dist", autocomplete: "off"}) %>
+            <%== part("components/form/text", name: "output_directory", label: "Output directory", value: typecast_body_params.str("output_directory"), attributes: {placeholder: "dist", autocomplete: "off", "data-output-directory-input" => "true"}) %>
           </div>
           <div class="md:col-span-1">
-            <%== part("components/form/text", name: "app_port", label: "Port", type: "number", value: typecast_body_params.str("app_port") || Config.deploy_default_port, attributes: {required: "required", min: 1, max: 65535}) %>
+            <%== part("components/form/text", name: "app_port", label: "Port", type: "number", value: typecast_body_params.str("app_port") || Config.deploy_default_port, attributes: {required: "required", min: 1, max: 65535, "data-app-port-input" => "true"}) %>
           </div>
         </div>
       </section>
 
       <% if Config.deploy_infrastructure_controls_enabled %>
         <section class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-          <div class="mb-5 flex items-center gap-3">
-            <div class="flex h-9 w-9 items-center justify-center rounded-md bg-gray-900 text-sm font-semibold text-white">3</div>
-            <h2 class="text-base font-semibold text-gray-900">Runtime</h2>
-          </div>
-          <div class="grid gap-5 md:grid-cols-2">
+          <h2 class="text-base font-semibold text-gray-900">Runtime</h2>
+          <div class="mt-5 grid gap-5 md:grid-cols-2">
             <%== part(
               "components/form/select",
               name: "location",
@@ -121,29 +172,25 @@
 
     <aside class="space-y-6">
       <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-        <h2 class="text-base font-semibold text-gray-900">Production</h2>
+        <h2 class="text-base font-semibold text-gray-900">Deployment</h2>
         <dl class="mt-4 space-y-3 text-sm">
           <div class="flex items-center justify-between gap-4">
-            <dt class="text-gray-500">Deploy trigger</dt>
-            <dd class="font-medium text-gray-900">Manual and Git push</dd>
+            <dt class="text-gray-500">Source</dt>
+            <dd class="max-w-[13rem] truncate font-medium text-gray-900" data-summary-repository>Choose a repo</dd>
           </div>
           <div class="flex items-center justify-between gap-4">
-            <dt class="text-gray-500">Default branch</dt>
-            <dd class="font-medium text-gray-900"><%= typecast_body_params.str("branch").to_s.empty? ? "main" : typecast_body_params.str("branch") %></dd>
+            <dt class="text-gray-500">Branch</dt>
+            <dd class="font-medium text-gray-900" data-summary-branch>main</dd>
           </div>
           <div class="flex items-center justify-between gap-4">
-            <dt class="text-gray-500">Hostname</dt>
-            <dd class="max-w-[12rem] truncate font-medium text-gray-900"><%= Config.deploy_service_hostname %></dd>
+            <dt class="text-gray-500">Build pack</dt>
+            <dd class="font-medium text-gray-900" data-summary-pack>Node.js</dd>
+          </div>
+          <div class="flex items-center justify-between gap-4">
+            <dt class="text-gray-500">Billing</dt>
+            <dd class="font-medium text-gray-900"><%= @project.has_valid_payment_method? ? "Verified" : "Required" %></dd>
           </div>
         </dl>
-      </div>
-
-      <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-        <h2 class="text-base font-semibold text-gray-900">Checkout</h2>
-        <div class="mt-4 flex items-center justify-between border-t border-gray-100 pt-4 text-sm">
-          <span class="text-gray-500">Billing</span>
-          <span class="font-medium text-gray-900"><%= @project.has_valid_payment_method? ? "Verified" : "Required" %></span>
-        </div>
         <div class="mt-6 flex justify-end gap-3">
           <a href="<%= "#{@project.path}/deploy" %>" class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</a>
           <%== part("components/form/submit_button", text: "Deploy Project", icon: "hero-cloud-arrow-up") %>
@@ -151,4 +198,68 @@
       </div>
     </aside>
   <% end %>
+
+  <script>
+    (() => {
+      const installationSelect = document.querySelector("[data-deploy-installation-select]");
+      const search = document.getElementById("deploy-repository-search");
+      const rows = Array.from(document.querySelectorAll("[data-repository-row]"));
+      const pickers = Array.from(document.querySelectorAll("[data-repository-picker]"));
+      const repositoryInput = document.querySelector("[data-repository-input]");
+      const branchInput = document.querySelector("[data-branch-input]");
+      const appNameInput = document.querySelector("[data-app-name-input]");
+      const summaryRepository = document.querySelector("[data-summary-repository]");
+      const summaryBranch = document.querySelector("[data-summary-branch]");
+      const summaryPack = document.querySelector("[data-summary-pack]");
+      const packInputs = Array.from(document.querySelectorAll("[data-build-pack]"));
+      const installCommandInput = document.querySelector("[data-install-command-input]");
+      const buildCommandInput = document.querySelector("[data-build-command-input]");
+      const startCommandInput = document.querySelector("[data-start-command-input]");
+      const outputDirectoryInput = document.querySelector("[data-output-directory-input]");
+      const appPortInput = document.querySelector("[data-app-port-input]");
+
+      const appNameFromRepo = (repo) => repo.split("/").pop().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/^-+|-+$/g, "").slice(0, 63);
+
+      const syncRepository = (picker) => {
+        if (!picker || !repositoryInput || !branchInput) return;
+        repositoryInput.value = picker.dataset.repository;
+        branchInput.value = picker.dataset.branch || "main";
+        if (installationSelect) installationSelect.value = picker.dataset.installationId;
+        if (appNameInput && appNameInput.value.trim() === "") appNameInput.value = appNameFromRepo(picker.dataset.repository);
+        if (summaryRepository) summaryRepository.textContent = picker.dataset.repository;
+        if (summaryBranch) summaryBranch.textContent = branchInput.value;
+      };
+
+      const filterRows = () => {
+        const installationId = installationSelect ? installationSelect.value : "";
+        const term = search ? search.value.trim().toLowerCase() : "";
+        rows.forEach((row) => {
+          const accountMatches = !installationId || row.dataset.installationId === installationId;
+          const searchMatches = !term || row.dataset.search.includes(term);
+          row.classList.toggle("hidden", !(accountMatches && searchMatches));
+        });
+      };
+
+      const syncPack = (pack) => {
+        if (!pack) return;
+        if (installCommandInput && installCommandInput.value.trim() === "") installCommandInput.value = pack.dataset.installCommand;
+        if (buildCommandInput) buildCommandInput.value = pack.dataset.buildCommand;
+        if (startCommandInput) startCommandInput.value = pack.dataset.startCommand;
+        if (outputDirectoryInput) outputDirectoryInput.value = pack.dataset.outputDirectory;
+        if (appPortInput && appPortInput.value.trim() === "") appPortInput.value = pack.dataset.appPort;
+        if (summaryPack) summaryPack.textContent = pack.closest("label").querySelector(".font-semibold").textContent.trim();
+      };
+
+      pickers.forEach((picker) => picker.addEventListener("change", () => syncRepository(picker)));
+      packInputs.forEach((pack) => pack.addEventListener("change", () => syncPack(pack)));
+      if (installationSelect) installationSelect.addEventListener("change", filterRows);
+      if (search) search.addEventListener("input", filterRows);
+      if (branchInput && summaryBranch) branchInput.addEventListener("input", () => summaryBranch.textContent = branchInput.value || "main");
+      if (repositoryInput && summaryRepository) repositoryInput.addEventListener("input", () => summaryRepository.textContent = repositoryInput.value || "Choose a repo");
+
+      syncRepository(pickers.find((picker) => picker.checked));
+      syncPack(packInputs.find((pack) => pack.checked));
+      filterRows();
+    })();
+  </script>
 <% end %>

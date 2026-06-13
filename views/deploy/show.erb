@@ -15,39 +15,42 @@ end %>
   right_items:
 ) %>
 
-<%== render("deploy/tabbar", locals: {active: "overview", app: @deploy_app}) %>
+<% active_tab = @deploy_tab || "overview" %>
+<%== render("deploy/tabbar", locals: {active: active_tab, app: @deploy_app}) %>
 
 <div class="grid gap-6">
-  <section class="grid gap-4 lg:grid-cols-4" id="overview">
-    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
-      <div class="text-sm font-medium text-gray-500">Production URL</div>
-      <div class="mt-2 truncate text-sm font-semibold text-gray-900"><%== part("components/copyable_content", content: @deploy_app.public_hostname) %></div>
-      <a class="mt-3 inline-flex text-sm font-medium text-layerrail-600 hover:text-layerrail-700" href="<%= @deploy_app.public_url %>" target="_blank" rel="noopener">Open site</a>
-    </div>
-    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
-      <div class="text-sm font-medium text-gray-500">Source</div>
-      <a class="mt-2 block truncate text-sm font-semibold text-layerrail-600 hover:text-layerrail-700" href="<%= @deploy_app.repository_url %>" target="_blank" rel="noopener"><%= @deploy_app.repository %></a>
-      <div class="mt-1 text-xs text-gray-500"><%= @deploy_app.branch %></div>
-    </div>
-    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
-      <div class="text-sm font-medium text-gray-500">Runtime</div>
-      <div class="mt-2 text-sm font-semibold text-gray-900"><%= @deploy_app.framework_label %></div>
-      <div class="mt-1 text-xs text-gray-500"><%= @deploy_app.location.ui_name %></div>
-    </div>
-    <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
-      <div class="text-sm font-medium text-gray-500">Latest deploy</div>
-      <div class="mt-2 text-sm font-semibold text-gray-900"><%= latest ? latest.created_at.strftime("%F %T") : "None" %></div>
-      <div class="mt-1 text-xs text-gray-500"><%= latest ? latest.trigger.tr("_", " ") : "-" %></div>
-    </div>
-  </section>
+  <% if active_tab == "overview" %>
+    <section class="grid gap-4 lg:grid-cols-4">
+      <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
+        <div class="text-sm font-medium text-gray-500">Production URL</div>
+        <div class="mt-2 truncate text-sm font-semibold text-gray-900"><%== part("components/copyable_content", content: @deploy_app.public_hostname) %></div>
+        <a class="mt-3 inline-flex text-sm font-medium text-layerrail-600 hover:text-layerrail-700" href="<%= @deploy_app.public_url %>" target="_blank" rel="noopener">Open site</a>
+      </div>
+      <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
+        <div class="text-sm font-medium text-gray-500">Source</div>
+        <a class="mt-2 block truncate text-sm font-semibold text-layerrail-600 hover:text-layerrail-700" href="<%= @deploy_app.repository_url %>" target="_blank" rel="noopener"><%= @deploy_app.repository %></a>
+        <div class="mt-1 text-xs text-gray-500"><%= @deploy_app.branch %></div>
+      </div>
+      <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
+        <div class="text-sm font-medium text-gray-500">Runtime</div>
+        <div class="mt-2 text-sm font-semibold text-gray-900"><%= @deploy_app.framework_label %></div>
+        <div class="mt-1 text-xs text-gray-500"><%= @deploy_app.location.ui_name %></div>
+      </div>
+      <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
+        <div class="text-sm font-medium text-gray-500">Latest deploy</div>
+        <div class="mt-2 text-sm font-semibold text-gray-900"><%= latest ? latest.created_at.strftime("%F %T") : "None" %></div>
+        <div class="mt-1 text-xs text-gray-500"><%= latest ? latest.trigger.tr("_", " ") : "-" %></div>
+      </div>
+    </section>
 
-  <% if @deploy_app.failure_message %>
-    <div class="rounded-lg bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
-      <%= @deploy_app.failure_message %>
-    </div>
+    <% if @deploy_app.failure_message %>
+      <div class="rounded-lg bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
+        <%= @deploy_app.failure_message %>
+      </div>
+    <% end %>
   <% end %>
 
-  <section id="deployments">
+  <% if active_tab == "deployments" %>
     <%== part(
       "components/table_card",
       title: "Deployments",
@@ -69,9 +72,10 @@ end %>
       end,
       empty_state: "No deployments yet."
     ) %>
-  </section>
+  <% end %>
 
-  <section class="grid gap-6 lg:grid-cols-[1fr_360px]" id="domains">
+  <% if active_tab == "domains" %>
+  <section class="grid gap-6 lg:grid-cols-[1fr_360px]">
     <%== part(
       "components/table_card",
       title: "Domains",
@@ -115,8 +119,10 @@ end %>
       <% end %>
     </div>
   </section>
+  <% end %>
 
-  <section class="grid gap-6 lg:grid-cols-[1fr_360px]" id="environment">
+  <% if active_tab == "environment" %>
+  <section class="grid gap-6 lg:grid-cols-[1fr_360px]">
     <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
       <h2 class="text-base font-semibold text-gray-900">Environment Variables</h2>
       <div class="mt-5 divide-y divide-gray-100">
@@ -145,8 +151,9 @@ end %>
       <% end %>
     </div>
   </section>
+  <% end %>
 
-  <% if latest&.log %>
+  <% if active_tab == "deployments" && latest&.log %>
     <section class="rounded-lg bg-gray-900 p-4 shadow ring-1 ring-black ring-opacity-5" id="logs">
       <div class="mb-3 flex items-center justify-between">
         <h2 class="text-base font-semibold leading-6 text-white">Latest Log</h2>
@@ -156,7 +163,8 @@ end %>
     </section>
   <% end %>
 
-  <section class="grid gap-6 lg:grid-cols-3" id="settings">
+  <% if active_tab == "settings" %>
+  <section class="grid gap-6 lg:grid-cols-3">
     <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5 lg:col-span-2">
       <h2 class="text-base font-semibold text-gray-900">Build Settings</h2>
       <dl class="mt-5 grid gap-4 text-sm sm:grid-cols-2">
@@ -200,4 +208,5 @@ end %>
       </div>
     </div>
   </section>
+  <% end %>
 </div>

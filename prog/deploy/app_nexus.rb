@@ -40,7 +40,9 @@ class Prog::Deploy::AppNexus < Prog::Base
   end
 
   def delete_dns_record
+    deploy_app.project.domain_registrations_dataset.where(deploy_app_id: deploy_app.id).each(&:clear_deploy_dns_record!)
     return unless Config.deploy_service_project_id && Config.deploy_service_hostname
+    return unless deploy_app.public_hostname.end_with?(".#{Config.deploy_service_hostname}")
 
     DnsZone.ensure_service_zone(project_id: Config.deploy_service_project_id, name: Config.deploy_service_hostname)
       &.delete_record(record_name: deploy_app.public_hostname)

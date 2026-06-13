@@ -3,10 +3,10 @@
 <% tabs = if app
   [
     ["Overview", base, active == "overview"],
-    ["Deployments", "#{base}#deployments", active == "deployments"],
-    ["Domains", "#{base}#domains", active == "domains"],
-    ["Environment", "#{base}#environment", active == "environment"],
-    ["Settings", "#{base}#settings", active == "settings"]
+    ["Deployments", "#{base}/deployments", active == "deployments"],
+    ["Domains", "#{base}/domains", active == "domains"],
+    ["Environment", "#{base}/environment", active == "environment"],
+    ["Settings", "#{base}/settings", active == "settings"]
   ]
 else
   [

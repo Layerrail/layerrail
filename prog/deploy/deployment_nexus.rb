@@ -123,13 +123,19 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
   end
 
   def configure_dns_record
-    return unless Config.deploy_service_project_id && Config.deploy_service_hostname && vm.ip4_string
+    return unless vm.ip4_string
 
-    zone = DnsZone.ensure_service_zone(project_id: Config.deploy_service_project_id, name: Config.deploy_service_hostname)
-    return unless zone
+    if Config.deploy_service_project_id && Config.deploy_service_hostname && app.public_hostname.end_with?(".#{Config.deploy_service_hostname}")
+      zone = DnsZone.ensure_service_zone(project_id: Config.deploy_service_project_id, name: Config.deploy_service_hostname)
+      if zone
+        zone.delete_record(record_name: app.public_hostname)
+        zone.insert_record(record_name: app.public_hostname, type: "A", ttl: 60, data: vm.ip4_string)
+      end
+    end
 
-    zone.delete_record(record_name: app.public_hostname)
-    zone.insert_record(record_name: app.public_hostname, type: "A", ttl: 60, data: vm.ip4_string)
+    app.project.domain_registrations_dataset.where(status: "active", deploy_app_id: app.id).each do |domain_registration|
+      domain_registration.sync_deploy_dns_record!(app)
+    end
   end
 
   def mark_failed(ex)

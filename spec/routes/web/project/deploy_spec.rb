@@ -17,16 +17,33 @@ RSpec.describe Clover, "deploy" do
     allow(Config).to receive(:github_app_private_key).and_return("private-key")
     allow(Config).to receive(:polar_access_token).and_return(nil)
     allow(Config).to receive(:stripe_secret_key).and_return(nil)
+    allow_any_instance_of(GithubInstallation).to receive(:client).and_return(
+      instance_double(
+        Octokit::Client,
+        get: {
+          repositories: [
+            {
+              full_name: "test-user/web",
+              name: "web",
+              private: true,
+              default_branch: "main",
+              updated_at: Time.now
+            }
+          ]
+        }
+      )
+    )
   end
 
   it "can list and open the deploy creation flow" do
     visit "#{project.path}/deploy"
 
     expect(page.title).to eq("LayerRail - Deploy")
-    expect(page).to have_content "No deploy apps"
+    expect(page).to have_content "No deploy projects"
 
-    click_link "New Deploy App"
-    expect(page.title).to eq("LayerRail - New Deploy App")
+    click_link "Import Project"
+    expect(page.title).to eq("LayerRail - Import Project")
+    expect(page).to have_content "Import Repository"
     expect(page).to have_content "GitHub account"
     expect(page).to have_no_content "Runtime size"
   end
@@ -36,14 +53,13 @@ RSpec.describe Clover, "deploy" do
     fill_in "App name", with: "web"
     select "test-user (User)", from: "GitHub account"
     fill_in "Repository", with: "test-user/web"
-    fill_in "Branch", with: "main"
-    select "Node.js", from: "Runtime"
-    fill_in "App port", with: "3000"
+    fill_in "Production branch", with: "main"
+    fill_in "Port", with: "3000"
     fill_in "Root directory", with: "apps/web"
     fill_in "Install command", with: "npm ci"
     fill_in "Build command", with: "npm run build"
     fill_in "Start command", with: "npm start"
-    click_button "Create"
+    click_button "Deploy Project"
 
     app = DeployApp.first(name: "web")
     expect(page.title).to eq("LayerRail - web")
@@ -63,11 +79,12 @@ RSpec.describe Clover, "deploy" do
     visit "#{project.path}/deploy/create"
     fill_in "App name", with: "web"
     fill_in "Repository", with: "test-user/web"
-    select location.ui_name, from: "Location"
+    fill_in "Production branch", with: "main"
+    select location.ui_name, from: "Region"
     page.driver.browser.dom.css("select[name=vm_size] option").first["value"] = "gpu-rtx6000"
-    click_button "Create"
+    click_button "Deploy Project"
 
-    expect(page.title).to eq("LayerRail - New Deploy App")
+    expect(page.title).to eq("LayerRail - Import Project")
     expect(page).to have_flash_error(/vm_size/)
     expect(DeployApp.count).to eq(0)
   end

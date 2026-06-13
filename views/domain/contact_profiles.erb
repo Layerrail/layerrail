@@ -4,7 +4,7 @@
   "components/page_header",
   breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Domains", "#{@project.path}/domain"], ["Contact Profiles", "#"]],
   right_items: [
-    part("components/button", text: "New Contact Profile", link: "#{@project.path}/domain/contact-profile/new", icon: "hero-user-plus"),
+    part("components/button", text: "New Contact Profile", link: "#{@project.path}/domain/contact-profile/new", icon: "hero-user"),
     part("components/button", text: "Back to Domains", link: "#{@project.path}/domain", icon: "hero-chevron-left")
   ]
 ) %>

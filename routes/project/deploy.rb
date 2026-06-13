@@ -91,9 +91,27 @@ class Clover
       authorize("Vm:view", @project)
 
       r.get true do
-        @deployments = @deploy_app.deployments_dataset.limit(10).all
-        @deploy_domains = @project.domain_registrations_dataset.where(deploy_app_id: @deploy_app.id).order(:domain).all
-        @available_domains = @project.domain_registrations_dataset.where(status: "active", deploy_app_id: nil).order(:domain).all
+        load_deploy_show_data("overview")
+        view "deploy/show"
+      end
+
+      r.get "deployments" do
+        load_deploy_show_data("deployments")
+        view "deploy/show"
+      end
+
+      r.get "domains" do
+        load_deploy_show_data("domains")
+        view "deploy/show"
+      end
+
+      r.get "environment" do
+        load_deploy_show_data("environment")
+        view "deploy/show"
+      end
+
+      r.get "settings" do
+        load_deploy_show_data("settings")
         view "deploy/show"
       end
 
@@ -189,11 +207,51 @@ class Clover
 
   def load_deploy_form_options
     @github_installations = @project.github_installations_dataset.order(:name).all
+    @deploy_repositories = @github_installations.flat_map { deploy_repositories_for(it) }
     locations = Location.visible_or_for_project(@project.id, @project.get_ff_visible_locations)
       .where(visible: true)
       .order(:ui_name)
       .all
     @deploy_locations = Config.compute_provider ? locations.select { it.provider == Config.compute_provider } : locations
     @deploy_vm_sizes = DeployApp.vm_size_options
+  end
+
+  def load_deploy_show_data(tab)
+    @deploy_tab = tab
+    case tab
+    when "deployments"
+      @deployments = @deploy_app.deployments_dataset.limit(20).all
+    when "domains"
+      @deploy_domains = @project.domain_registrations_dataset.where(deploy_app_id: @deploy_app.id).order(:domain).all
+      @available_domains = @project.domain_registrations_dataset.where(status: "active", deploy_app_id: nil).order(:domain).all
+    end
+  end
+
+  def deploy_repositories_for(installation)
+    repos = installation.client(auto_paginate: true, per_page: 100).get("/installation/repositories")[:repositories]
+    repos.map do |repo|
+      {
+        installation_ubid: installation.ubid,
+        installation_label: "#{installation.name} (#{installation.type})",
+        full_name: repo[:full_name],
+        name: repo[:name],
+        private: !!repo[:private],
+        default_branch: repo[:default_branch].to_s.empty? ? "main" : repo[:default_branch].to_s,
+        updated_at: repo[:updated_at]
+      }
+    end
+  rescue Octokit::Error, Faraday::Error => ex
+    Clog.emit("deploy repository list failed", Util.exception_to_hash(ex, into: {deploy_repository_list_failed: {installation_ubid: installation.ubid}}))
+    installation.repositories_dataset.order(:name).limit(100).all.map do |repo|
+      {
+        installation_ubid: installation.ubid,
+        installation_label: "#{installation.name} (#{installation.type})",
+        full_name: repo.name,
+        name: repo.repository_name,
+        private: nil,
+        default_branch: repo.default_branch.to_s.empty? ? "main" : repo.default_branch,
+        updated_at: repo.last_job_at
+      }
+    end
   end
 end
