@@ -298,16 +298,19 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
     outbound_interface = provider_backed_vm?(vm) ? "eth0" : "ens3"
     nft_rules = <<~NFT
       #!/usr/sbin/nft -f
-      flush ruleset
+      table ip layerrail_kubernetes_nat;
+      delete table ip layerrail_kubernetes_nat;
+      table ip6 layerrail_pod_access;
+      delete table ip6 layerrail_pod_access;
 
-      table ip nat {
+      table ip layerrail_kubernetes_nat {
         chain postrouting {
           type nat hook postrouting priority 100;
           ip saddr #{vm.nics.first.private_ipv4} oifname "#{outbound_interface}" masquerade
         }
       }
 
-      table ip6 pod_access {
+      table ip6 layerrail_pod_access {
         chain ingress_egress_control {
           type filter hook forward priority filter; policy drop;
           # allow access to the vm itself in order to not break the normal functionality of Clover and SSH

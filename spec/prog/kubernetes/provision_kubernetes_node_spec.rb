@@ -286,6 +286,28 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
     end
   end
 
+  describe "#configure_kubernetes_node_services" do
+    before do
+      allow(prog.vm).to receive(:sshable).and_return(Sshable.new)
+      allow(prog.vm.location).to receive(:linode?).and_return(true)
+    end
+
+    it "writes Kubernetes-owned nftables tables without flushing load balancer rules" do
+      expect(prog.vm.sshable).to receive(:_cmd).with(
+        "sudo tee /etc/nftables.conf > /dev/null",
+        stdin: satisfy { |rules|
+          rules.include?("table ip layerrail_kubernetes_nat") &&
+            rules.include?("table ip6 layerrail_pod_access") &&
+            !rules.include?("flush ruleset")
+        },
+      )
+      expect(prog.vm.sshable).to receive(:_cmd).with("sudo systemctl enable --now nftables")
+      expect(prog.vm.sshable).to receive(:_cmd).with("sudo systemctl enable kubelet")
+
+      prog.configure_kubernetes_node_services
+    end
+  end
+
   describe "#assign_role" do
     it "hops to init_cluster if this is the first node of the cluster" do
       expect(prog.kubernetes_cluster.nodes).to receive(:count).and_return(1)
