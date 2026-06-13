@@ -104,9 +104,9 @@ class GameVpsCheckout
       checkout_session["total_amount_cents"],
       checkout_session["amount"],
       checkout_session["total_amount"],
-      checkout_session.dig("amount", "amount"),
-      checkout_session.dig("total", "amount"),
-      checkout_session.dig("price", "price_amount")
+      checkout_session["amount"].is_a?(Hash) ? checkout_session["amount"]["amount"] : nil,
+      checkout_session["total"].is_a?(Hash) ? checkout_session["total"]["amount"] : nil,
+      checkout_session["price"].is_a?(Hash) ? checkout_session["price"]["price_amount"] : nil
     ].each do |candidate|
       next if candidate.nil? || candidate.is_a?(Hash) || candidate.is_a?(Array)
 
