@@ -365,21 +365,22 @@ NAT
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>LayerRail endpoint is live</title>
+          <title>#{DISPLAY_HOSTNAME} - Endpoint Preparing</title>
           <style>
             :root {
-              color-scheme: dark;
-              --bg: #08070c;
-              --surface: #111017;
-              --surface-2: #16131f;
-              --text: #fefdfe;
-              --muted: #bcb9c1;
-              --soft: #ebe9f1;
-              --line: rgba(209, 200, 231, 0.16);
-              --accent: #8b67f2;
-              --accent-soft: #d1c8e7;
-              --deep: #5a3a38;
-              --ok: #86efac;
+              color-scheme: light;
+              --bg: #f7f8f8;
+              --card: #ffffff;
+              --text: #27272a;
+              --heading: #111114;
+              --muted: #7d8087;
+              --soft: #a6a8ad;
+              --line: #eceef0;
+              --shadow: rgba(25, 29, 35, 0.08);
+              --blue: #0477ad;
+              --blue-soft: #eef6ff;
+              --yellow: #d4a013;
+              --green: #17a978;
             }
 
             * { box-sizing: border-box; }
@@ -387,424 +388,259 @@ NAT
             body {
               margin: 0;
               min-height: 100vh;
-              background:
-                radial-gradient(circle at 18% 8%, rgba(139, 103, 242, 0.22), transparent 30rem),
-                radial-gradient(circle at 80% 16%, rgba(209, 200, 231, 0.08), transparent 28rem),
-                linear-gradient(180deg, #0b0911 0%, var(--bg) 58%, #09080d 100%);
+              background: var(--bg);
               color: var(--text);
               font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-              overflow-x: hidden;
-            }
-
-            body::before {
-              content: "";
-              position: fixed;
-              inset: 0;
-              pointer-events: none;
-              background-image:
-                linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
-              background-size: 64px 64px;
-              mask-image: linear-gradient(to bottom, rgba(0,0,0,0.62), transparent 68%);
+              -webkit-font-smoothing: antialiased;
             }
 
             .shell {
-              width: min(1180px, calc(100vw - 48px));
-              margin: 0 auto;
               min-height: 100vh;
-              display: flex;
-              flex-direction: column;
-              position: relative;
-              z-index: 1;
-            }
-
-            header {
-              height: 84px;
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              border-bottom: 1px solid var(--line);
+              display: grid;
+              grid-template-rows: 86px 1fr 86px;
+              justify-items: center;
+              padding: 0 24px;
             }
 
             .brand {
               display: flex;
               align-items: center;
-              gap: 12px;
-              color: var(--text);
-              font-weight: 700;
-              letter-spacing: 0;
-            }
-
-            .brand-mark {
-              width: 34px;
-              height: 34px;
-              display: grid;
-              place-items: center;
-              border: 1px solid rgba(139, 103, 242, 0.42);
-              border-radius: 8px;
-              background: linear-gradient(145deg, rgba(139, 103, 242, 0.95), rgba(209, 200, 231, 0.5));
-              box-shadow: 0 0 32px rgba(139, 103, 242, 0.28);
-              font-size: 0.82rem;
-              font-weight: 800;
-            }
-
-            .status-pill {
-              display: inline-flex;
-              align-items: center;
-              gap: 8px;
-              padding: 8px 12px;
-              border: 1px solid rgba(134, 239, 172, 0.22);
-              border-radius: 999px;
-              background: rgba(134, 239, 172, 0.06);
-              color: var(--soft);
-              font-size: 0.86rem;
+              justify-content: center;
+              align-self: center;
+              gap: 9px;
+              color: #4b5560;
+              font-size: 0.95rem;
               font-weight: 600;
             }
 
-            .status-dot {
-              width: 8px;
-              height: 8px;
-              border-radius: 999px;
-              background: var(--ok);
-              box-shadow: 0 0 18px rgba(134, 239, 172, 0.85);
-            }
-
-            main {
-              flex: 1;
+            .brand-mark {
+              width: 21px;
+              height: 21px;
+              border-radius: 6px;
               display: grid;
-              grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
-              gap: 64px;
-              align-items: center;
-              padding: 72px 0 84px;
-            }
-
-            .eyebrow {
-              display: inline-flex;
-              align-items: center;
-              gap: 10px;
-              margin-bottom: 24px;
-              padding: 8px 12px;
-              border: 1px solid var(--line);
-              border-radius: 999px;
-              color: var(--accent-soft);
-              background: rgba(255, 255, 255, 0.035);
-              font-size: 0.84rem;
-              font-weight: 700;
-            }
-
-            h1 {
-              margin: 0;
-              max-width: 760px;
-              font-size: clamp(3rem, 8vw, 6.8rem);
-              line-height: 0.94;
-              letter-spacing: 0;
-            }
-
-            .lead {
-              margin: 26px 0 0;
-              max-width: 650px;
-              color: var(--muted);
-              font-size: clamp(1rem, 2vw, 1.18rem);
-              line-height: 1.75;
-            }
-
-            .endpoint {
-              width: min(100%, 620px);
-              margin-top: 34px;
-              padding: 16px 18px;
-              border: 1px solid var(--line);
-              border-radius: 10px;
-              background: rgba(255, 255, 255, 0.04);
-              box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
-            }
-
-            .endpoint span {
-              display: block;
-              margin-bottom: 8px;
-              color: var(--muted);
-              font-size: 0.78rem;
-              font-weight: 700;
-              letter-spacing: 0.08em;
-              text-transform: uppercase;
-            }
-
-            code {
-              color: var(--text);
-              font: 0.95rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-              word-break: break-word;
-            }
-
-            .panel {
-              position: relative;
-              min-height: 470px;
-              padding: 28px;
-              border: 1px solid var(--line);
-              border-radius: 18px;
-              background:
-                linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.025)),
-                var(--surface);
-              box-shadow: 0 28px 90px rgba(0, 0, 0, 0.34);
-              overflow: hidden;
-            }
-
-            .panel::before {
-              content: "";
-              position: absolute;
-              inset: -1px;
-              background:
-                radial-gradient(circle at 70% 0%, rgba(139, 103, 242, 0.28), transparent 16rem),
-                linear-gradient(135deg, transparent 0 42%, rgba(139, 103, 242, 0.14) 42% 43%, transparent 43% 100%);
-              pointer-events: none;
-            }
-
-            .panel-content {
-              position: relative;
-              z-index: 1;
-            }
-
-            .panel-heading {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              gap: 18px;
-              margin-bottom: 42px;
-            }
-
-            .panel-title {
-              margin: 0;
-              color: var(--soft);
-              font-size: 0.95rem;
+              place-items: center;
+              border: 1px solid #d9dde2;
+              background: #fff;
+              color: #6b7280;
+              font-size: 0.66rem;
               font-weight: 800;
             }
 
-            .panel-label {
-              color: var(--muted);
-              font-size: 0.82rem;
+            main {
+              width: min(448px, 100%);
+              align-self: center;
             }
 
-            .flow {
-              display: grid;
-              gap: 18px;
-            }
-
-            .flow-row {
-              display: grid;
-              grid-template-columns: 90px 1fr;
-              gap: 18px;
-              align-items: center;
-            }
-
-            .node {
-              min-height: 76px;
-              padding: 15px;
+            .card {
+              width: 100%;
+              padding: 32px;
               border: 1px solid var(--line);
-              border-radius: 12px;
-              background: rgba(8, 7, 12, 0.58);
+              border-radius: 10px;
+              background: var(--card);
+              box-shadow: 0 18px 42px var(--shadow);
             }
 
-            .node strong {
-              display: block;
-              color: var(--text);
-              font-size: 0.94rem;
-            }
-
-            .node span {
-              display: block;
-              margin-top: 6px;
-              color: var(--muted);
-              font-size: 0.86rem;
-              line-height: 1.45;
-            }
-
-            .rail {
-              height: 2px;
-              background: linear-gradient(90deg, rgba(139,103,242,0), rgba(139,103,242,0.88), rgba(209,200,231,0.18));
+            .icon {
+              width: 40px;
+              height: 40px;
+              display: grid;
+              place-items: center;
+              margin-bottom: 22px;
+              border-radius: 8px;
+              background: var(--blue-soft);
+              color: var(--blue);
               position: relative;
             }
 
-            .rail::after {
+            .icon::before {
+              content: "";
+              width: 14px;
+              height: 14px;
+              border: 2px solid currentColor;
+              border-radius: 999px;
+              transform: translate(-2px, -2px);
+            }
+
+            .icon::after {
               content: "";
               position: absolute;
-              right: -5px;
-              top: 50%;
               width: 10px;
-              height: 10px;
-              border-top: 2px solid rgba(209,200,231,0.8);
-              border-right: 2px solid rgba(209,200,231,0.8);
-              transform: translateY(-50%) rotate(45deg);
+              height: 2px;
+              border-radius: 999px;
+              background: currentColor;
+              transform: translate(8px, 8px) rotate(45deg);
             }
 
-            .metrics {
-              display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 10px;
-              margin-top: 42px;
+            .code {
+              margin: 0;
+              color: #b7bac0;
+              font-family: Georgia, "Times New Roman", serif;
+              font-size: 2.6rem;
+              font-weight: 400;
+              line-height: 1;
             }
 
-            .metric {
-              padding: 14px;
-              border: 1px solid var(--line);
-              border-radius: 12px;
-              background: rgba(255, 255, 255, 0.035);
+            h1 {
+              margin: 8px 0 16px;
+              color: var(--heading);
+              font-family: Georgia, "Times New Roman", serif;
+              font-size: 1.62rem;
+              font-style: italic;
+              font-weight: 500;
+              line-height: 1.15;
             }
 
-            .metric b {
-              display: block;
-              color: var(--text);
-              font-size: 0.9rem;
-            }
-
-            .metric span {
-              display: block;
-              margin-top: 6px;
+            .message {
+              margin: 0;
               color: var(--muted);
-              font-size: 0.78rem;
+              font-size: 0.94rem;
+              line-height: 1.65;
+            }
+
+            .message strong {
+              color: #4f535a;
+              font-weight: 600;
+            }
+
+            .checks {
+              display: grid;
+              gap: 18px;
+              margin-top: 28px;
+              padding-top: 26px;
+              border-top: 1px solid var(--line);
+            }
+
+            .check {
+              display: grid;
+              grid-template-columns: 18px 1fr;
+              gap: 12px;
+              align-items: start;
+              color: #73777f;
+              font-size: 0.9rem;
               line-height: 1.45;
             }
 
-            footer {
-              display: flex;
-              justify-content: space-between;
-              gap: 18px;
-              padding: 22px 0 28px;
-              border-top: 1px solid var(--line);
-              color: rgba(188, 185, 193, 0.78);
-              font-size: 0.86rem;
+            .badge {
+              width: 16px;
+              height: 16px;
+              margin-top: 2px;
+              display: grid;
+              place-items: center;
+              border: 1px solid currentColor;
+              border-radius: 999px;
+              font-size: 0.66rem;
+              font-weight: 700;
+              line-height: 1;
             }
 
-            footer a {
-              color: var(--accent-soft);
+            .badge.warn { color: var(--yellow); }
+            .badge.ok { color: var(--green); }
+
+            .owner-note {
+              width: min(448px, 100%);
+              margin: 18px auto 0;
+              color: #a5a8ad;
+              font-size: 0.78rem;
+              line-height: 1.6;
+            }
+
+            .owner-note code {
+              color: #878b91;
+              font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+              font-size: 0.78rem;
+            }
+
+            .owner-note a {
+              color: #6b9ab7;
               text-decoration: none;
             }
 
-            @media (max-width: 900px) {
-              .shell {
-                width: min(100vw - 28px, 720px);
-              }
-
-              header {
-                height: 72px;
-              }
-
-              main {
-                grid-template-columns: 1fr;
-                gap: 34px;
-                padding: 46px 0 56px;
-              }
-
-              .panel {
-                min-height: auto;
-              }
+            footer {
+              width: min(640px, 100%);
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              align-self: end;
+              padding: 0 0 22px;
+              color: #a8abb0;
+              font-size: 0.78rem;
             }
 
-            @media (max-width: 560px) {
-              .status-pill {
-                display: none;
+            .links,
+            .social {
+              display: flex;
+              align-items: center;
+              gap: 24px;
+            }
+
+            footer a {
+              color: #a8abb0;
+              text-decoration: none;
+            }
+
+            footer a:hover,
+            .owner-note a:hover {
+              color: #555b63;
+            }
+
+            .social a {
+              font-weight: 700;
+            }
+
+            @media (max-width: 620px) {
+              .shell {
+                grid-template-rows: 72px 1fr auto;
+                padding: 0 18px 20px;
               }
 
-              h1 {
-                font-size: clamp(2.65rem, 16vw, 4.2rem);
-              }
-
-              .panel,
-              .endpoint {
-                border-radius: 14px;
-              }
-
-              .flow-row {
-                grid-template-columns: 1fr;
-                gap: 10px;
-              }
-
-              .rail {
-                width: 2px;
-                height: 34px;
-                margin-left: 18px;
-                background: linear-gradient(180deg, rgba(139,103,242,0.88), rgba(209,200,231,0.18));
-              }
-
-              .rail::after {
-                right: auto;
-                left: 50%;
-                top: auto;
-                bottom: -5px;
-                transform: translateX(-50%) rotate(135deg);
-              }
-
-              .metrics {
-                grid-template-columns: 1fr;
+              .card {
+                padding: 28px 24px;
               }
 
               footer {
+                margin-top: 44px;
                 flex-direction: column;
+                gap: 18px;
               }
             }
           </style>
         </head>
         <body>
           <div class="shell">
-            <header>
-              <div class="brand">
-                <div class="brand-mark">LR</div>
-                <span>LayerRail</span>
-              </div>
-              <div class="status-pill"><span class="status-dot"></span> Load balancer online</div>
-            </header>
+            <div class="brand" aria-label="LayerRail">
+              <span class="brand-mark">L</span>
+              <span>LayerRail</span>
+            </div>
 
             <main>
-              <section>
-                <div class="eyebrow">Service endpoint</div>
-                <h1>Waiting for your app.</h1>
-                <p class="lead">Traffic is reaching this LayerRail load balancer. Attach a backend service, Kubernetes route, or deployment target to start serving requests from this hostname.</p>
-                <div class="endpoint">
-                  <span>Hostname</span>
-                  <code>#{DISPLAY_HOSTNAME}</code>
+              <section class="card" aria-label="Endpoint status">
+                <div class="icon" aria-hidden="true"></div>
+                <p class="code">404</p>
+                <h1>Page not found</h1>
+                <p class="message">We couldn't find an upstream response for <strong>#{DISPLAY_HOSTNAME}</strong>. The service may still be deploying, or this load balancer may not have a backend attached yet.</p>
+
+                <div class="checks">
+                  <div class="check"><span class="badge warn">!</span><span>The requested route may not be configured yet</span></div>
+                  <div class="check"><span class="badge warn">!</span><span>This deployment may not contain a static site <code>(index.html)</code></span></div>
+                  <div class="check"><span class="badge ok">&#10003;</span><span>The load balancer is deployed and online</span></div>
+                  <div class="check"><span class="badge ok">&#10003;</span><span>LayerRail is operational</span></div>
                 </div>
               </section>
 
-              <section class="panel" aria-label="Endpoint status">
-                <div class="panel-content">
-                  <div class="panel-heading">
-                    <p class="panel-title">Request path</p>
-                    <span class="panel-label">Ready for upstreams</span>
-                  </div>
-
-                  <div class="flow">
-                    <div class="flow-row">
-                      <div class="rail"></div>
-                      <div class="node">
-                        <strong>DNS route</strong>
-                        <span>The hostname resolves to LayerRail edge infrastructure.</span>
-                      </div>
-                    </div>
-                    <div class="flow-row">
-                      <div class="rail"></div>
-                      <div class="node">
-                        <strong>Load balancer</strong>
-                        <span>The endpoint is online and accepting incoming traffic.</span>
-                      </div>
-                    </div>
-                    <div class="flow-row">
-                      <div class="rail"></div>
-                      <div class="node">
-                        <strong>Application service</strong>
-                        <span>No upstream response is attached yet. Deploy or connect your service to take over this page.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="metrics">
-                    <div class="metric"><b>HTTP</b><span>Port 80 ready</span></div>
-                    <div class="metric"><b>HTTPS</b><span>TLS when configured</span></div>
-                    <div class="metric"><b>Region</b><span>LayerRail network</span></div>
-                  </div>
-                </div>
-              </section>
+              <p class="owner-note">Site owner? Make sure your build outputs an <code>index.html</code>, or attach a healthy backend target in the <a href="https://console.layerrail.com">LayerRail console</a>.</p>
             </main>
 
             <footer>
-              <span>LayerRail managed endpoint</span>
-              <a href="https://console.layerrail.com">console.layerrail.com</a>
+              <nav class="links" aria-label="LayerRail links">
+                <a href="https://layerrail.com">Home</a>
+                <a href="https://layerrail.com/docs">Docs</a>
+                <a href="https://layerrail.com/community">Community</a>
+                <a href="https://layerrail.com/pricing">Pricing</a>
+              </nav>
+              <div class="social" aria-label="LayerRail social links">
+                <a href="https://github.com/mayowaoladosu/layerrail" aria-label="GitHub">GitHub</a>
+                <a href="https://x.com/layerrail" aria-label="X">X</a>
+              </div>
             </footer>
           </div>
         </body>
