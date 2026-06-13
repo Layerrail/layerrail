@@ -17,6 +17,7 @@ end
 class AzureClient
   NETWORK_API = "2023-09-01"
   COMPUTE_API = "2024-03-01"
+  DISK_API = "2024-03-02"
   RESOURCE_API = "2021-04-01"
   SUCCESS_STATUSES = (200..299).to_a.freeze
 
@@ -224,7 +225,7 @@ class AzureClient
   end
 
   def delete_disk(resource_group, name)
-    request(:delete, resource_path(resource_group, "Microsoft.Compute/disks", name), api_version: COMPUTE_API, expected_status: [200, 202, 204, 404])
+    request(:delete, resource_path(resource_group, "Microsoft.Compute/disks", name), api_version: DISK_API, expected_status: [200, 202, 204, 404])
   end
 
   def resource_id(resource_group, type, name)
