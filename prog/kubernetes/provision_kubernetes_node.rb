@@ -18,6 +18,12 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
     data["clusters"].each { |cluster| cluster["cluster"]["server"] = server }
     File.write(path, YAML.dump(data))
   RUBY
+  HOSTS_REWRITE = <<~'RUBY'.tr("\n", "; ").freeze
+    path, ip, host = ARGV
+    lines = File.exist?(path) ? File.readlines(path, chomp: true).reject { |line| line.split.include?(host) } : []
+    lines << "#{ip} #{host}"
+    File.write(path, "#{lines.join("\n")}\n")
+  RUBY
   LINODE_PRIVATE_IPV4_COMMAND = <<~'SH'.tr("\n", " ").freeze
     ips=$(ip -4 -o addr show scope global | awk '{print $4}' | cut -d/ -f1);
     printf "%s\n" "$ips" | grep -E '^192\.168\.' | head -n1 ||
@@ -138,6 +144,18 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
 
   def join_endpoint
     "#{kubernetes_cluster.endpoint}:443"
+  end
+
+  def configure_azure_join_endpoint_resolution
+    return unless vm.location.azure?
+
+    vm.sshable.cmd(
+      "sudo ruby -e :script /etc/hosts :ip :endpoint",
+      script: HOSTS_REWRITE,
+      ip: control_plane_join_node.vm.private_ipv4_string,
+      endpoint: kubernetes_cluster.endpoint,
+      log: false,
+    )
   end
 
   def join_token(cp_sshable)
@@ -462,6 +480,7 @@ sudo touch #{marker}
       rescue Sshable::SshError, JoinParameterError => ex
         return retry_join_parameter_preparation(ex, deadline_target: "install_cni")
       end
+      configure_azure_join_endpoint_resolution
       update_stack(
         "join_control_plane_started_at" => Time.now.to_s,
         "join_control_plane_last_logged_at" => nil,
@@ -517,6 +536,7 @@ sudo touch #{marker}
       rescue Sshable::SshError, JoinParameterError => ex
         return retry_join_parameter_preparation(ex, deadline_target: "install_cni")
       end
+      configure_azure_join_endpoint_resolution
       update_stack(
         "join_worker_started_at" => Time.now.to_s,
         "join_worker_last_logged_at" => nil,

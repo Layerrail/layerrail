@@ -172,6 +172,13 @@ LOAD_BALANCER
         expect { nx.update_load_balancer }.to exit({"msg" => "load balancer is updated"})
       end
 
+      it "redirects private provider-backed load balancer traffic to the local destination port" do
+        allow(nx).to receive(:provider_backed_vm?).and_return(true)
+        lb.update(stack: "ipv4")
+
+        expect(nx.generate_lb_based_nat_rules).to include("ip daddr 192.168.1.0 tcp dport 80 redirect to :8080")
+      end
+
       it "creates basic load balancing with hashing with multiple ports" do
         lb.add_port(443, 8443)
         lb.reload

@@ -308,6 +308,33 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
     end
   end
 
+  describe "#configure_azure_join_endpoint_resolution" do
+    before do
+      allow(prog.vm).to receive(:sshable).and_return(Sshable.new)
+    end
+
+    it "does nothing outside Azure" do
+      allow(prog.vm.location).to receive(:azure?).and_return(false)
+      expect(prog.vm.sshable).not_to receive(:_cmd)
+
+      prog.configure_azure_join_endpoint_resolution
+    end
+
+    it "maps the API endpoint hostname to the control-plane private IPv4 on Azure" do
+      allow(prog.vm.location).to receive(:azure?).and_return(true)
+      cp_vm = instance_double(Vm, private_ipv4_string: "10.240.37.1")
+      cp_node = instance_double(KubernetesNode, vm: cp_vm)
+      allow(prog).to receive(:control_plane_join_node).and_return(cp_node)
+
+      expect(prog.vm.sshable).to receive(:_cmd).with(
+        "sudo ruby -e #{described_class::HOSTS_REWRITE.shellescape} /etc/hosts 10.240.37.1 #{kubernetes_cluster.endpoint.shellescape}",
+        log: false,
+      )
+
+      prog.configure_azure_join_endpoint_resolution
+    end
+  end
+
   describe "#assign_role" do
     it "hops to init_cluster if this is the first node of the cluster" do
       expect(prog.kubernetes_cluster.nodes).to receive(:count).and_return(1)

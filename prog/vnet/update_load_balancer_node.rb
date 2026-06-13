@@ -85,7 +85,9 @@ class Prog::Vnet::UpdateLoadBalancerNode < Prog::Base
         port = vm_port.load_balancer_port
         ipv4_map_def = generate_lb_map_defs_ipv4(port)
         modulo = ipv4_map_def.count
-        local_private_rule = unless provider_backed_vm?
+        local_private_rule = if provider_backed_vm?
+          "ip daddr #{private_ipv4} tcp dport #{port.src_port} redirect to :#{port.dst_port}"
+        else
           "ip daddr #{private_ipv4} tcp dport #{port.src_port} ct state established,related,new counter dnat to #{private_ipv4}:#{port.dst_port}"
         end
         <<-IPV4_PREROUTING
