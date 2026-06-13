@@ -193,6 +193,7 @@ pgbouncer_setup = PgBouncerSetup.new(
   configure_hash["pgbouncer_instances"],
   configure_hash["pgbouncer_user_config"],
   supports_peer_config: PgBouncerSetup.supports_peer_config?,
-  supports_auth_ident_file: PgBouncerSetup.supports_auth_ident_file?
+  supports_auth_ident_file: PgBouncerSetup.supports_auth_ident_file?,
+  supports_auth_dbname: PgBouncerSetup.supports_auth_dbname?
 )
 pgbouncer_setup.setup

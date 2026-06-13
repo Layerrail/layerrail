@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
 class PgBouncerSetup
-  def initialize(version, max_connections, num_instances, user_config, supports_peer_config: true, supports_auth_ident_file: true)
+  def initialize(version, max_connections, num_instances, user_config, supports_peer_config: true, supports_auth_ident_file: true, supports_auth_dbname: true)
     @version = version
     @max_connections = max_connections
     @num_instances = num_instances
     @user_config = user_config
     @supports_peer_config = supports_peer_config
     @supports_auth_ident_file = supports_auth_ident_file
+    @supports_auth_dbname = supports_auth_dbname
   end
 
   def self.pgbouncer_version
@@ -28,12 +29,21 @@ class PgBouncerSetup
     version && version >= Gem::Version.new("1.21")
   end
 
+  def self.supports_auth_dbname?
+    version = pgbouncer_version
+    version && version >= Gem::Version.new("1.21")
+  end
+
   def supports_peer_config?
     @supports_peer_config
   end
 
   def supports_auth_ident_file?
     @supports_auth_ident_file
+  end
+
+  def supports_auth_dbname?
+    @supports_auth_dbname
   end
 
   def service_template_name
@@ -126,7 +136,7 @@ auth_type = hba
 auth_hba_file = /etc/postgresql/#{@version}/main/pg_hba.conf
 #{supports_auth_ident_file? ? "auth_ident_file = /etc/postgresql/#{@version}/main/pg_ident.conf" : nil}
 auth_user = pgbouncer
-auth_dbname = ubi_admin
+#{supports_auth_dbname? ? "auth_dbname = ubi_admin" : nil}
 auth_query = SELECT p_user, p_password FROM pgbouncer.get_auth($1)
 
 client_tls_sslmode = require

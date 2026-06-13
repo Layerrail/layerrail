@@ -39,6 +39,12 @@ RSpec.describe PgBouncerSetup do
       expect(config).to include("auth_dbname = ubi_admin")
     end
 
+    it "can omit auth_dbname for older pgbouncer versions" do
+      setup_without_auth_dbname = described_class.new(version, max_connections, num_instances, user_config, supports_auth_dbname: false)
+
+      expect(setup_without_auth_dbname.pgbouncer_ini_content(1)).not_to include("auth_dbname")
+    end
+
     it "sets the pool_mode to transaction" do
       expect(config).to include("pool_mode = transaction")
     end
