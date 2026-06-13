@@ -100,6 +100,7 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
   def kubeadm_join_parameter_command(local_command, remote_command)
     cp_node = control_plane_join_node
     return remote_command unless provider_backed_vm?(cp_node.vm)
+    return remote_command if cp_node.vm.location.azure?
 
     server = "https://#{cp_node.vm.ip4}:6443"
     rewrite_kubeconfig = NetSsh.command(
