@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../loader"
+
+pending = GameVps.where(status: "pending_payment").exclude(checkout_id: nil).all
+if pending.empty?
+  puts "No pending Game VPS checkouts found."
+  exit
+end
+
+pending.each do |game_vps|
+  begin
+    result = GameVpsCheckout.reconcile!(game_vps.checkout_id, project: game_vps.project)
+    puts "#{game_vps.ubid} #{game_vps.name}: #{result.inspect}"
+  rescue => ex
+    warn "#{game_vps.ubid} #{game_vps.name}: #{ex.class}: #{ex.message}"
+  end
+end

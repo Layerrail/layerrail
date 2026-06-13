@@ -22,7 +22,7 @@ class Clover
 
   def handle_polar_webhook(event)
     data = event["data"] || {}
-    checkout_id = data["checkout_id"] || data["checkoutId"] || data.dig("checkout", "id") || data["id"]
+    checkout_id = polar_checkout_id(event)
     kind = (data["metadata"] || {})["kind"] || (event["metadata"] || {})["kind"]
     return {message: "Polar webhook ignored", event: event["type"]} unless checkout_id
 
@@ -39,8 +39,27 @@ class Clover
       {message: "Polar webhook ignored", event: event["type"]}
     end
   rescue PolarAPIError => ex
-    response.status = 502
-    {error: {message: ex.message}}
+    Clog.emit("polar webhook reconciliation failed", {polar_webhook_reconciliation_failed: {event_type: event["type"], checkout_id:, error_class: ex.class.name, error_message: ex.message}})
+    {message: "Polar webhook accepted; reconciliation will be retried from browser return or admin retry", event: event["type"]}
+  rescue => ex
+    Clog.emit("polar webhook failed", Util.exception_to_hash(ex, into: {polar_webhook_failed: {event_type: event["type"], checkout_id:}}))
+    {message: "Polar webhook accepted; internal error recorded", event: event["type"]}
+  end
+
+  def polar_checkout_id(event)
+    data = event["data"] || {}
+    checkout_id =
+      data["checkout_id"] ||
+      data["checkoutId"] ||
+      data.dig("checkout", "id") ||
+      data.dig("order", "checkout_id") ||
+      data.dig("order", "checkoutId") ||
+      data.dig("metadata", "checkout_id") ||
+      event.dig("metadata", "checkout_id")
+
+    checkout_id ||= data["id"] if event["type"].to_s.start_with?("checkout.")
+    checkout_id = checkout_id.to_s.strip
+    checkout_id.empty? ? nil : checkout_id
   end
 
   def check_polar_signature(headers, body)

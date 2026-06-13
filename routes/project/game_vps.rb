@@ -37,7 +37,6 @@ class Clover
     raise "Polar did not return a checkout URL." unless checkout_url
 
     GameVpsCheckout.mark_pending!(game_vps, checkout_id)
-    audit_log(game_vps, "checkout")
     checkout_url
   end
 
@@ -141,16 +140,20 @@ class Clover
       r.get "success" do
         authorize("Vm:create", @project)
         handle_validation_failure("game_vps/index")
-        checkout_id = typecast_params.nonempty_str("checkout_id") || typecast_params.nonempty_str("session_id")
-        raise_web_error("Missing Polar checkout id") unless checkout_id
+        checkout_id = typecast_params.str("checkout_id").to_s.strip
+        checkout_id = typecast_params.str("session_id").to_s.strip if checkout_id.empty?
+        raise_web_error("Missing Polar checkout id") if checkout_id.empty?
 
         begin
           result = GameVpsCheckout.reconcile!(checkout_id, project: @project)
         rescue PolarAPIError => ex
           raise_web_error("We couldn't validate your Polar checkout. #{ex.message}")
+        rescue => ex
+          Clog.emit("game vps checkout success failed", Util.exception_to_hash(ex, into: {game_vps_checkout_success_failed: {checkout_id:, project_ubid: @project.ubid}}))
+          raise_web_error("Payment was received, but provisioning did not start cleanly. Support has been notified.")
         end
 
-        raise_web_error("Game VPS checkout was not successful.") unless result[:status] == "provisioning"
+        raise_web_error("Game VPS checkout was not successful.") unless ["provisioning", "already_processed"].include?(result[:status])
         flash["notice"] = "Game VPS payment received. Provisioning started."
         r.redirect "#{@project.path}/game-vps"
       end
