@@ -334,6 +334,8 @@ class Prog::GameVpsNexus < Prog::Base
   end
 
   def mark_failed(ex)
+    raise ex if ex.is_a?(Prog::Base::FlowControl)
+
     Clog.emit("Game VPS provisioning failed", {game_vps_failed: {game_vps_ubid: game_vps&.ubid, provider: game_vps&.provider, error_class: ex.class.name, error_message: ex.message}})
     game_vps.update(status: "failed", failure_message: ex.message.to_s.slice(0, 1000), updated_at: Time.now) if game_vps
     pop "game vps failed"

@@ -13,8 +13,6 @@ class GameVps < Sequel::Model(:game_vps)
   AZURE_LOCATIONS = {
     "azure-eastus" => {name: "East US", region: "United States", azure_region: "eastus"},
     "azure-eastus2" => {name: "East US 2", region: "United States", azure_region: "eastus2"},
-    "azure-westeurope" => {name: "West Europe", region: "Europe", azure_region: "westeurope"},
-    "azure-northeurope" => {name: "North Europe", region: "Europe", azure_region: "northeurope"},
   }.freeze
   IONOS_LOCATIONS = {
     "de/fra" => {name: "Frankfurt, DE", region: "Europe"},
@@ -88,7 +86,7 @@ class GameVps < Sequel::Model(:game_vps)
     "windows-server-2022" => {
       name: "Windows Server 2022",
       description: "Recommended",
-      azure_image: {publisher: "MicrosoftWindowsServer", offer: "WindowsServer", sku: "2022-datacenter", version: "latest"},
+      azure_image: {publisher: "MicrosoftWindowsServer", offer: "WindowsServer", sku: "2022-datacenter-g2", version: "latest"},
     },
     "windows-server-2022-azure" => {
       name: "Windows Server 2022 LayerRail Edition",
@@ -98,7 +96,7 @@ class GameVps < Sequel::Model(:game_vps)
     "windows-server-2019" => {
       name: "Windows Server 2019",
       description: "Legacy compatible",
-      azure_image: {publisher: "MicrosoftWindowsServer", offer: "WindowsServer", sku: "2019-datacenter", version: "latest"},
+      azure_image: {publisher: "MicrosoftWindowsServer", offer: "WindowsServer", sku: "2019-datacenter-gensecond", version: "latest"},
     },
   }.freeze
 

@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "json"
+require "rbconfig"
 require "socket"
 require "time"
 
@@ -53,7 +54,16 @@ health_thread = Thread.new do
   end
 end
 
-child_pid = Process.spawn(*command)
+def command_for_spawn(command)
+  executable, *args = command
+  if executable&.start_with?("bin/") && File.file?(executable)
+    [RbConfig.ruby, executable, *args]
+  else
+    command
+  end
+end
+
+child_pid = Process.spawn(*command_for_spawn(command))
 
 %w[INT TERM].each do |signal|
   trap(signal) do

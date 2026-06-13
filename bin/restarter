@@ -3,6 +3,7 @@
 
 minimum_time_alive = Integer(ENV.fetch("RESTART_MINIMUM_TIME_ALIVE", "3600"), 10)
 require "json"
+require "rbconfig"
 
 command = ARGV.dup.freeze
 start_time = Time.now
@@ -17,8 +18,17 @@ puts JSON.generate(restarter: {
   },
 })
 
+def command_for_spawn(command)
+  executable, *args = command
+  if executable&.start_with?("bin/") && File.file?(executable)
+    [RbConfig.ruby, executable, *args]
+  else
+    command
+  end
+end
+
 loop do
-  pid = Process.spawn(*command)
+  pid = Process.spawn(*command_for_spawn(command))
   Signal.trap("TERM") do
     Process.kill(:TERM, pid)
     shutting_down = true

@@ -18,6 +18,7 @@ class AzureClient
   NETWORK_API = "2023-09-01"
   COMPUTE_API = "2024-03-01"
   RESOURCE_API = "2021-04-01"
+  SUCCESS_STATUSES = (200..299).to_a.freeze
 
   def self.enabled?
     Config.azure_subscription_id && Config.azure_tenant_id && Config.azure_client_id && Config.azure_client_secret
@@ -256,7 +257,7 @@ class AzureClient
     resource_id(resource_group, type, name)
   end
 
-  def request(method, path, api_version:, body: nil, expected_status: 200)
+  def request(method, path, api_version:, body: nil, expected_status: SUCCESS_STATUSES)
     sep = path.include?("?") ? "&" : "?"
     response = @connection.public_send(
       method,
