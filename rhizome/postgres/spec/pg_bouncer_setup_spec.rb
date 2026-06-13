@@ -85,8 +85,8 @@ RSpec.describe PgBouncerSetup do
   describe "#service_template_content" do
     let(:content) { pgbouncer_setup.service_template_content }
 
-    it "sets service type to notify" do
-      expect(content).to include("Type=notify")
+    it "sets service type to simple" do
+      expect(content).to include("Type=simple")
     end
 
     it "runs as postgres user" do

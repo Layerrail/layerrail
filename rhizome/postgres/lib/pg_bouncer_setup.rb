@@ -66,7 +66,7 @@ After=network.target
 Requires=pgbouncer@%i.socket
 
 [Service]
-Type=notify
+Type=simple
 User=postgres
 LimitNOFILE=65536
 ExecStart=/usr/sbin/pgbouncer /etc/pgbouncer/pgbouncer_%i.ini
