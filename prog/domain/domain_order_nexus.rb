@@ -30,7 +30,9 @@ class Prog::Domain::DomainOrderNexus < Prog::Base
   rescue Prog::Base::FlowControl
     raise
   rescue => ex
-    domain_order&.update(status: "failed", failure_message: ex.message.to_s[0, 1000], updated_at: Time.now)
+    message = ex.message.to_s[0, 1000]
+    domain_order&.update(status: "failed", failure_message: message, updated_at: Time.now)
+    notify_order_failure(domain_order, message) if domain_order
     Clog.emit("NameSilo domain order failed", Util.exception_to_hash(ex, into: {namesilo_domain_order_failed: {domain_order_ubid: domain_order&.ubid}}))
     pop "domain order failed"
   end
@@ -98,6 +100,27 @@ class Prog::Domain::DomainOrderNexus < Prog::Base
     registration.send_domain_notification!(subject, body)
   rescue => ex
     Clog.emit("domain order notification failed", Util.exception_to_hash(ex, into: {domain_order_notification_failed: {domain_order_ubid: domain_order.ubid, domain_registration_ubid: registration.ubid}}))
+  end
+
+  def notify_order_failure(order, message)
+    receivers = order.project.accounts_dataset.select_map(:email).compact.uniq
+    return if receivers.empty?
+
+    Util.send_email(
+      receivers,
+      "LayerRail domain #{order.display_kind} failed: #{order.domain}",
+      greeting: "Hi,",
+      body: [
+        "The #{order.display_kind} for #{order.domain} did not finish.",
+        "Reason: #{message}",
+        "Open the domain area in LayerRail to review the failure and retry."
+      ],
+      button_title: "Open domains",
+      button_link: "#{Config.base_url}#{order.project.path}/domain",
+      author_name: "LayerRail"
+    )
+  rescue => ex
+    Clog.emit("domain order failure email failed", Util.exception_to_hash(ex, into: {domain_order_failure_email_failed: {domain_order_ubid: order.ubid}}))
   end
 
   def client

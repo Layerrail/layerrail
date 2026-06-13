@@ -61,7 +61,16 @@ class Prog::Domain::DomainRegistrationNexus < Prog::Base
   rescue Prog::Base::FlowControl
     raise
   rescue => ex
-    domain_registration&.update(status: "failed", failure_message: ex.message.to_s[0, 1000], updated_at: Time.now)
+    message = ex.message.to_s[0, 1000]
+    domain_registration&.update(status: "failed", failure_message: message, updated_at: Time.now)
+    domain_registration&.notify_safely(
+      "LayerRail domain registration failed: #{domain_registration.domain}",
+      [
+        "#{domain_registration.domain} could not be registered automatically.",
+        "Reason: #{message}",
+        "Open the domain in LayerRail to review the failure and retry."
+      ]
+    )
     Clog.emit("NameSilo domain registration failed", Util.exception_to_hash(ex, into: {namesilo_domain_registration_failed: {domain_registration_ubid: domain_registration&.ubid}}))
     pop "domain registration failed"
   end

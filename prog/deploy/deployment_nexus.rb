@@ -138,7 +138,36 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
     log = app&.reload&.vm ? remote_deploy_log : deploy_deployment&.log.to_s
     deploy_deployment.update(status: "failed", failure_message: message, log:, finished_at: Time.now, updated_at: Time.now) if deploy_deployment
     app.update(status: "failed", failure_message: message, updated_at: Time.now) if app
+    notify_failure_safely(message)
     pop "deploy failed"
+  end
+
+  def notify_failure_safely(message)
+    notify_failure(message)
+  rescue => ex
+    Clog.emit("deploy failure email failed", Util.exception_to_hash(ex, into: {deploy_failure_email_failed: {app_ubid: app&.ubid, deployment_ubid: deploy_deployment&.ubid}}))
+  end
+
+  def notify_failure(message)
+    project = app.project
+    receivers = project.accounts_dataset.select_map(:email).compact.uniq
+    return if receivers.empty?
+
+    Util.send_email(
+      receivers,
+      "LayerRail deployment failed: #{app.name}",
+      greeting: "Hi,",
+      body: [
+        "The latest deployment for #{app.name} did not finish.",
+        "Repository: #{app.repository}",
+        "Branch: #{app.branch}",
+        "Reason: #{message}",
+        "Open the deployment to inspect the logs and redeploy when you're ready."
+      ],
+      button_title: "Open deployment",
+      button_link: "#{Config.base_url}#{project.path}#{deploy_deployment.path}",
+      author_name: "LayerRail"
+    )
   end
 
   def github_access_token

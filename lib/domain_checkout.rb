@@ -60,6 +60,67 @@ class DomainCheckout
       end
     end
 
+    notify_purchase_success_safely!(project, items)
     {status: "processing", count: items.length}
+  end
+
+  def self.notify_pending_safely!(items, project, checkout_url)
+    notify_pending!(items, project, checkout_url)
+  rescue => ex
+    Clog.emit("domain checkout pending email failed", Util.exception_to_hash(ex, into: {domain_checkout_pending_email_failed: {project_ubid: project.ubid}}))
+  end
+
+  def self.notify_purchase_success_safely!(project, items)
+    notify_purchase_success!(project, items)
+  rescue => ex
+    Clog.emit("domain checkout success email failed", Util.exception_to_hash(ex, into: {domain_checkout_success_email_failed: {project_ubid: project.ubid}}))
+  end
+
+  def self.notify_pending!(items, project, checkout_url)
+    receivers = project.accounts_dataset.select_map(:email).compact.uniq
+    return if receivers.empty?
+
+    Util.send_email(
+      receivers,
+      "Complete your LayerRail domain checkout",
+      greeting: "Hi,",
+      body: [
+        "Your domain cart is ready for payment.",
+        "Total: #{amount_label(items)}",
+        "Items: #{item_summary(items)}",
+        "Open the checkout to finish the purchase and start provisioning."
+      ],
+      button_title: "Complete checkout",
+      button_link: checkout_url,
+      author_name: "LayerRail"
+    )
+  end
+
+  def self.notify_purchase_success!(project, items)
+    receivers = project.accounts_dataset.select_map(:email).compact.uniq
+    return if receivers.empty?
+
+    Util.send_email(
+      receivers,
+      "LayerRail domain purchase received",
+      greeting: "Hi,",
+      body: [
+        "Payment was successful and LayerRail has started provisioning your domain request.",
+        "Total: #{amount_label(items)}",
+        "Items: #{item_summary(items)}",
+        "We'll keep the project updated as registration, transfer, or renewal work completes."
+      ],
+      button_title: "Open domains",
+      button_link: "#{Config.base_url}#{project.path}/domain",
+      author_name: "LayerRail"
+    )
+  end
+
+  def self.amount_label(items)
+    "$#{format("%0.2f", amount_cents(items) / 100.0)}"
+  end
+
+  def self.item_summary(items)
+    items.map { "#{it.domain} (#{it.is_a?(DomainRegistration) ? "registration" : it.display_kind})" }.join(", ")
   end
 end

@@ -29,7 +29,7 @@
                 name: "Deploy",
                 url: "#{@project.path}/deploy",
                 is_active: request.path.start_with?("#{@project.path}/deploy"),
-                icon: "hero-rocket-launch"
+                icon: "hero-cloud-arrow-up"
               ) %>
             <% end %>
             <% if Config.game_vps_enabled %>
@@ -57,7 +57,7 @@
                 name: "Domains",
                 url: "#{@project.path}/domain",
                 is_active: request.path.start_with?("#{@project.path}/domain"),
-                icon: "hero-globe-alt"
+                icon: "hero-map-pin"
               ) %>
             <% end %>
             <% if Config.postgres_enabled %>

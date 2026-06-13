@@ -469,6 +469,15 @@ class Clover
         checkout = PolarClient.create_checkout(
           {
             products: [Config.polar_domain_product_id],
+            prices: {
+              Config.polar_domain_product_id => [
+                {
+                  amount_type: "fixed",
+                  price_amount: amount_cents,
+                  price_currency: "usd"
+                }
+              ]
+            },
             external_customer_id: @project.ubid,
             customer_name: current_account.name,
             customer_email: current_account.email,
@@ -486,7 +495,7 @@ class Clover
             require_billing_address: true,
             success_url: "#{Config.base_url}#{@project.path}/domain/success?checkout_id={CHECKOUT_ID}",
             return_url: "#{Config.base_url}#{@project.path}/domain"
-          }.merge(amount: amount_cents, currency: "usd")
+          }
         )
 
         checkout_id = checkout["id"] || checkout["checkout_id"] || checkout["checkoutId"]
@@ -494,6 +503,7 @@ class Clover
 
         DomainCheckout.mark_pending!(items, checkout_id)
         items.each { audit_log(it, "checkout") }
+        DomainCheckout.notify_pending_safely!(items, @project, checkout.fetch("url"))
 
         r.redirect checkout.fetch("url"), 303
       rescue PolarAPIError => ex

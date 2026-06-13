@@ -20,7 +20,7 @@ RSpec.describe Clover, "domains" do
     expect(page).to have_link("Transfers", href: "#{project.path}/domain/transfer")
     expect(page).to have_link("Contact profiles", href: "#{project.path}/domain/contact-profile")
     expect(page).to have_link("Bulk search", href: "#{project.path}/domain/bulk")
-    expect(page).to have_link("Bundles", href: "#{project.path}/domain/bundle")
+    expect(page).to have_no_link("Bundles", href: "#{project.path}/domain/bundle")
     expect(page).to have_no_content("ICANN")
     expect(page).to have_no_content("Phase")
     expect(page).to have_no_content("Provider details")

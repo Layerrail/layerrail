@@ -2,7 +2,10 @@
 
 <%== part(
   "components/page_header",
-  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Deploy", "#{@project.path}/deploy"], ["Import", "#"]]
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Deploy", "#{@project.path}/deploy"], ["Import", "#"]],
+  right_items: [
+    part("components/button", text: @github_installations.empty? ? "Sign in with GitHub" : "Manage GitHub", link: "#{@project.path}/github", icon: "github")
+  ]
 ) %>
 
 <%== render("deploy/tabbar", locals: {active: "import"}) %>
@@ -143,7 +146,7 @@
         </div>
         <div class="mt-6 flex justify-end gap-3">
           <a href="<%= "#{@project.path}/deploy" %>" class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</a>
-          <%== part("components/form/submit_button", text: "Deploy Project", icon: "hero-rocket-launch") %>
+          <%== part("components/form/submit_button", text: "Deploy Project", icon: "hero-cloud-arrow-up") %>
         </div>
       </div>
     </aside>
