@@ -245,6 +245,15 @@ RSpec.describe Kubernetes::Client do
     end
   end
 
+  describe "set_node_addresses" do
+    it "patches the node status addresses" do
+      response = Net::SSH::Connection::Session::StringWithExitstatus.new("patched", 0)
+      expect(session).to receive(:_exec!).with(a_string_matching(/patch node my-node --subresource=status --type=merge -p .*InternalIP.*10\.0\.0\.5/)).and_return(response)
+
+      kubernetes_client.set_node_addresses("my-node", [{"type" => "InternalIP", "address" => "10.0.0.5"}])
+    end
+  end
+
   describe "get_csr" do
     it "returns the pending csr name for the node" do
       response = Net::SSH::Connection::Session::StringWithExitstatus.new("csr-abc123\n", 0)

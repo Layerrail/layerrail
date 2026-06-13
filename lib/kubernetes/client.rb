@@ -52,6 +52,10 @@ class Kubernetes::Client
     false
   end
 
+  def set_node_addresses(node_name, addresses)
+    kubectl("patch node :node_name --subresource=status --type=merge -p :patch", node_name:, patch: JSON.generate({"status" => {"addresses" => addresses}}))
+  end
+
   def get_csr(node_name, csr_status:)
     kubectl("get csr --sort-by=.metadata.creationTimestamp | awk /:csr_status/' && /kubelet-(serving|apiserver-client-kubelet)/ && /':node_name'/ {print $1}' | tail -1", node_name:, csr_status:).chomp
   end

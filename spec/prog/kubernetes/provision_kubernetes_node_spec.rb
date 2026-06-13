@@ -604,6 +604,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       prog.node.update(state: "provisioning")
       ready_node = JSON.generate({"status" => {"conditions" => [{"type" => "Ready", "status" => "True"}]}})
       expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s get node test-vm -ojson").and_return(Net::SSH::Connection::Session::StringWithExitstatus.new(ready_node, 0))
+      expect(session).to receive(:_exec!).with(a_string_matching(/patch node test-vm --subresource=status --type=merge -p .*InternalIP/)).and_return(Net::SSH::Connection::Session::StringWithExitstatus.new("patched", 0))
 
       expect { prog.approve_new_csr }.to exit({node_id: prog.node.id})
       expect(prog.node.reload.state).to eq("active")
@@ -615,6 +616,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       prog.node.update(state: "provisioning")
       expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s get node test-vm -ojson").and_return(Net::SSH::Connection::Session::StringWithExitstatus.new("not found", 1))
       expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s get csr --sort-by=.metadata.creationTimestamp | awk /Approved/' && /kubelet-(serving|apiserver-client-kubelet)/ && /'test-vm'/ {print $1}' | tail -1").and_return(Net::SSH::Connection::Session::StringWithExitstatus.new("csr-abc123\n", 0))
+      expect(session).to receive(:_exec!).with(a_string_matching(/patch node test-vm --subresource=status --type=merge -p .*InternalIP/)).and_return(Net::SSH::Connection::Session::StringWithExitstatus.new("patched", 0))
       expect { prog.approve_new_csr }.to exit({node_id: prog.node.id})
       expect(prog.node.reload.state).to eq("active")
       expect(kubernetes_cluster.reload.sync_internal_dns_config_set?).to be true
@@ -627,6 +629,7 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s get csr --sort-by=.metadata.creationTimestamp | awk /Approved/' && /kubelet-(serving|apiserver-client-kubelet)/ && /'test-vm'/ {print $1}' | tail -1").and_return(Net::SSH::Connection::Session::StringWithExitstatus.new("\n", 0))
       expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s get csr --sort-by=.metadata.creationTimestamp | awk /Pending/' && /kubelet-(serving|apiserver-client-kubelet)/ && /'test-vm'/ {print $1}' | tail -1").and_return(Net::SSH::Connection::Session::StringWithExitstatus.new("csr-abc123\n", 0))
       expect(session).to receive(:_exec!).with("sudo kubectl --kubeconfig=/etc/kubernetes/admin.conf --request-timeout=30s certificate approve csr-abc123").and_return(Net::SSH::Connection::Session::StringWithExitstatus.new("approved", 0))
+      expect(session).to receive(:_exec!).with(a_string_matching(/patch node test-vm --subresource=status --type=merge -p .*InternalIP/)).and_return(Net::SSH::Connection::Session::StringWithExitstatus.new("patched", 0))
       expect { prog.approve_new_csr }.to exit({node_id: prog.node.id})
       expect(prog.node.reload.state).to eq("active")
       expect(kubernetes_cluster.reload.sync_internal_dns_config_set?).to be true

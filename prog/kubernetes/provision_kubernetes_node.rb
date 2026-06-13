@@ -135,6 +135,21 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
     vm.sshable.cmd("sudo chown ubi:ubi :path && sudo chmod 600 :path", path: KUBECONFIG_PATH, log: false)
   end
 
+  def finish_node_provisioning(client)
+    client.set_node_addresses(
+      node.name,
+      [
+        {"type" => "InternalIP", "address" => vm.private_ipv4_string},
+        {"type" => "InternalIP", "address" => vm.ip6.to_s},
+        {"type" => "Hostname", "address" => node.name},
+      ],
+    )
+    node.update(state: "active")
+    kubernetes_cluster.incr_sync_internal_dns_config
+    kubernetes_cluster.incr_sync_worker_mesh
+    pop({node_id: node.id})
+  end
+
   def finish_join_or_init
     install_node_kubeconfig
     hop_install_cni
@@ -598,10 +613,7 @@ CONFIG
     end
 
     if client.node_ready?(node.name)
-      node.update(state: "active")
-      kubernetes_cluster.incr_sync_internal_dns_config
-      kubernetes_cluster.incr_sync_worker_mesh
-      pop({node_id: node.id})
+      finish_node_provisioning(client)
     end
 
     approved_csr = client.get_csr(node.name, csr_status: "Approved")
@@ -610,10 +622,7 @@ CONFIG
       nap 5 if pending_csr.empty?
       client.approve_csr(pending_csr)
     end
-    node.update(state: "active")
-    kubernetes_cluster.incr_sync_internal_dns_config
-    kubernetes_cluster.incr_sync_worker_mesh
-    pop({node_id: node.id})
+    finish_node_provisioning(client)
   end
 
   def provider_backed_vm?(target_vm)
