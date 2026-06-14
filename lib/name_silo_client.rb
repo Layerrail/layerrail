@@ -28,6 +28,16 @@ class NameSiloClient
     "online" => 3495,
     "xyz" => 1295
   }.freeze
+  CORE_ACQUISITION_TLD_PRICES_CENTS = {
+    "com" => 999,
+    "net" => 999,
+    "org" => 899,
+    "co" => 699,
+    "dev" => 999,
+    "app" => 999,
+    "xyz" => 99,
+    "online" => 199
+  }.freeze
 
   def self.configured?
     Config.domains_provider == "namesilo" && Config.namesilo_api_key
@@ -282,6 +292,7 @@ class NameSiloClient
     base_transfer_price_cents = price_from(tld_prices, /transfer/i) || base_renewal_price_cents
     registration_price_before_discount_cents = apply_markup(base_registration_price_cents)
     registration_price_cents = apply_registration_discount(registration_price_before_discount_cents)
+    registration_price_cents = [CORE_ACQUISITION_TLD_PRICES_CENTS.fetch(tld, registration_price_cents), 0].max
 
     {
       tld:,

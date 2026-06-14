@@ -10,96 +10,219 @@
 
 <%== render("deploy/tabbar", locals: {active: "import"}) %>
 
-<% if @github_installations.empty? %>
-  <div class="rounded-lg bg-white p-8 shadow ring-1 ring-black ring-opacity-5">
-    <div class="mx-auto max-w-xl text-center">
-      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-gray-900 text-white">
-        <%== part("components/icon", name: "github", classes: "h-6 w-6") %>
-      </div>
-      <h3 class="mt-4 text-base font-semibold leading-6 text-gray-900">Connect GitHub for Deploy</h3>
-      <p class="mt-2 text-sm text-gray-500">Install the LayerRail GitHub App for this deploy project, then choose repositories to import.</p>
-      <div class="mt-6 flex flex-wrap justify-center gap-3">
-        <%== part("components/button", text: "Connect GitHub", link: "#{@project.path}/deploy/github/create", icon: "github") %>
-        <%== part("components/button", text: "Finish Existing Install", link: "#{@project.path}/deploy/github/finish", icon: "hero-arrow-path") %>
-      </div>
-    </div>
-  </div>
-<% else %>
-  <% packs = DeployApp::BUILD_PACKS %>
+<% packs = DeployApp::BUILD_PACKS %>
+<% selected_pack_key = typecast_body_params.str("framework").to_s.empty? ? "node" : typecast_body_params.str("framework") %>
+<% selected_installation = typecast_body_params.str("installation_id") || @github_installations.first&.ubid %>
 
-  <% form(action: "#{@project.path}/deploy", method: "POST", class: "grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]") do %>
-    <div class="space-y-6">
-      <section class="rounded-lg bg-white shadow ring-1 ring-black ring-opacity-5">
-        <div class="border-b border-gray-100 px-6 py-5">
-          <div class="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h2 class="text-base font-semibold text-gray-900">Import Repository</h2>
-              <p class="mt-1 text-sm text-gray-500">Choose a repository from the connected GitHub account.</p>
+<div class="mb-5 overflow-hidden rounded-lg border border-gray-200 bg-white">
+  <div class="grid divide-y divide-gray-200 md:grid-cols-4 md:divide-x md:divide-y-0">
+    <% [["1", "Source", @github_installations.empty? ? "Connect account" : "GitHub ready"], ["2", "Repository", @deploy_repositories.any? ? "#{@deploy_repositories.length} available" : "Choose access"], ["3", "Build", "Preset or custom"], ["4", "Launch", "Provision worker"]].each do |step, label, state| %>
+      <div class="flex min-h-20 items-center gap-3 px-5 py-4">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gray-900 text-sm font-semibold text-white"><%= step %></span>
+        <span class="min-w-0">
+          <span class="block text-sm font-semibold text-gray-950"><%= label %></span>
+          <span class="block truncate text-xs text-gray-500"><%= state %></span>
+        </span>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<% if @github_installations.empty? %>
+  <section class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+    <div class="grid lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div class="p-8">
+        <div class="flex items-center gap-3">
+          <div class="flex h-11 w-11 items-center justify-center rounded-md bg-gray-950 text-white">
+            <%== part("components/icon", name: "github", classes: "h-6 w-6") %>
+          </div>
+          <div>
+            <h2 class="text-lg font-semibold text-gray-950">Connect GitHub for Deploy</h2>
+            <p class="mt-1 text-sm text-gray-500">Use a Deploy-scoped GitHub installation to import repositories and trigger LayerRail workers.</p>
+          </div>
+        </div>
+
+        <div class="mt-8 grid gap-4 md:grid-cols-3">
+          <div class="rounded-lg border border-gray-200 p-4">
+            <div class="flex h-9 w-9 items-center justify-center rounded-md bg-sky-50 text-sky-700">
+              <%== part("components/icon", name: "github", classes: "h-5 w-5") %>
             </div>
-            <div class="w-full sm:w-64">
+            <h3 class="mt-4 text-sm font-semibold text-gray-950">GitHub App</h3>
+            <p class="mt-1 text-sm leading-6 text-gray-500">Personal and organization repositories with private repo access.</p>
+          </div>
+          <div class="rounded-lg border border-gray-200 p-4">
+            <div class="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
+              <%== part("components/icon", name: "hugeicons-workflow-square-01", classes: "h-5 w-5") %>
+            </div>
+            <h3 class="mt-4 text-sm font-semibold text-gray-950">Worker pipeline</h3>
+            <p class="mt-1 text-sm leading-6 text-gray-500">Every import flows into the LayerRail deployment worker queue.</p>
+          </div>
+          <div class="rounded-lg border border-gray-200 p-4">
+            <div class="flex h-9 w-9 items-center justify-center rounded-md bg-amber-50 text-amber-700">
+              <%== part("components/icon", name: "hero-cloud-arrow-up", classes: "h-5 w-5") %>
+            </div>
+            <h3 class="mt-4 text-sm font-semibold text-gray-950">Auto deploy</h3>
+            <p class="mt-1 text-sm leading-6 text-gray-500">Connected repositories can use the GitHub webhook path already in the app.</p>
+          </div>
+        </div>
+      </div>
+
+      <aside class="border-t border-gray-200 bg-gray-50 p-6 lg:border-l lg:border-t-0">
+        <div class="rounded-lg bg-white p-5 ring-1 ring-gray-200">
+          <h3 class="text-sm font-semibold text-gray-950">Start with GitHub</h3>
+          <div class="mt-5 space-y-3">
+            <%== part("components/button", text: "Connect GitHub", link: "#{@project.path}/deploy/github/create", icon: "github", extra_class: "w-full") %>
+            <a href="<%= "#{@project.path}/deploy/github/finish" %>" class="inline-flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-50">
+              <%== part("components/icon", name: "hero-arrow-path", classes: "h-4 w-4") %>
+              Finish Existing Install
+            </a>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+<% else %>
+  <% form(action: "#{@project.path}/deploy", method: "POST", class: "grid gap-5 xl:grid-cols-[minmax(0,1fr)_390px]") do %>
+    <div class="space-y-5">
+      <section class="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <div class="grid gap-0 lg:grid-cols-[290px_minmax(0,1fr)]">
+          <aside class="border-b border-gray-200 bg-gray-50 p-5 lg:border-b-0 lg:border-r">
+            <div class="flex items-center gap-3">
+              <div class="flex h-10 w-10 items-center justify-center rounded-md bg-gray-950 text-white">
+                <%== part("components/icon", name: "github", classes: "h-5 w-5") %>
+              </div>
+              <div class="min-w-0">
+                <h2 class="truncate text-sm font-semibold text-gray-950">GitHub source</h2>
+                <p class="text-xs text-gray-500">Deploy installation</p>
+              </div>
+            </div>
+
+            <div class="mt-5">
               <%== part(
                 "components/form/select",
                 name: "installation_id",
-                label: "GitHub account",
-                selected: typecast_body_params.str("installation_id") || @github_installations.first.ubid,
+                label: "Account",
+                selected: selected_installation,
                 options: @github_installations.map { [it.ubid, "#{it.name} (#{it.type})"] },
                 attributes: {required: "required", "data-deploy-installation-select" => "true"}
               ) %>
             </div>
+
+            <div class="mt-5 grid gap-2">
+              <a href="<%= "#{@project.path}/deploy/github/create" %>" class="inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-50">
+                <%== part("components/icon", name: "github", classes: "h-4 w-4") %>
+                Connect another
+              </a>
+              <a href="<%= "#{@project.path}/deploy/github/finish" %>" class="inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-50">
+                <%== part("components/icon", name: "hero-arrow-path", classes: "h-4 w-4") %>
+                Refresh access
+              </a>
+            </div>
+
+            <div class="mt-6 rounded-lg border border-gray-200 bg-white p-4">
+              <div class="flex items-center justify-between text-sm">
+                <span class="font-medium text-gray-700">Repositories</span>
+                <span class="font-semibold text-gray-950"><%= @deploy_repositories.length %></span>
+              </div>
+              <div class="mt-3 h-2 overflow-hidden rounded-full bg-gray-100">
+                <div class="h-full rounded-full bg-emerald-500" style="width: <%= @deploy_repositories.any? ? "100" : "12" %>%"></div>
+              </div>
+            </div>
+          </aside>
+
+          <div>
+            <div class="border-b border-gray-200 p-5">
+              <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <h2 class="text-base font-semibold text-gray-950">Choose repository</h2>
+                  <p class="mt-1 text-sm text-gray-500">Select the repo and branch that should become a LayerRail app.</p>
+                </div>
+                <div class="relative w-full lg:w-80">
+                  <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                    <%== part("components/icon", name: "hero-magnifying-glass", classes: "h-4 w-4") %>
+                  </span>
+                  <input id="deploy-repository-search" type="search" placeholder="Search repositories" autocomplete="off" class="block w-full rounded-md border-0 py-2 pl-9 pr-3 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-layerrail-600">
+                </div>
+              </div>
+            </div>
+
+            <% if @deploy_repositories.any? %>
+              <div class="max-h-[34rem] divide-y divide-gray-100 overflow-auto" data-repository-list>
+                <% @deploy_repositories.each_with_index do |repo, index| %>
+                  <% repo_selected = typecast_body_params.str("repository") == repo[:full_name] || (typecast_body_params.str("repository").to_s.empty? && index == 0) %>
+                  <label class="group grid cursor-pointer grid-cols-[1fr_auto] gap-4 px-5 py-4 hover:bg-gray-50 has-[:checked]:bg-layerrail-50/40" data-repository-row data-installation-id="<%= repo[:installation_ubid] %>" data-search="<%= "#{repo[:full_name]} #{repo[:installation_label]} #{repo[:default_branch]}".downcase %>">
+                    <span class="flex min-w-0 items-start gap-3">
+                      <input type="radio" name="repository_picker" value="<%= repo[:full_name] %>" class="mt-1 h-4 w-4 border-gray-300 text-layerrail-600 focus:ring-layerrail-600" data-repository-picker data-installation-id="<%= repo[:installation_ubid] %>" data-repository="<%= repo[:full_name] %>" data-branch="<%= repo[:default_branch] %>" <%= repo_selected ? "checked" : "" %>>
+                      <span class="min-w-0">
+                        <span class="flex min-w-0 flex-wrap items-center gap-2">
+                          <span class="truncate text-sm font-semibold text-gray-950"><%= repo[:full_name] %></span>
+                          <% if repo[:private] == true %>
+                            <span class="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Private</span>
+                          <% elsif repo[:private] == false %>
+                            <span class="rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">Public</span>
+                          <% end %>
+                        </span>
+                        <span class="mt-1 block text-xs text-gray-500"><%= repo[:installation_label] %> &middot; <%= repo[:default_branch] %></span>
+                      </span>
+                    </span>
+                    <span class="self-center text-gray-300 group-hover:text-gray-500">
+                      <%== part("components/icon", name: "hero-chevron-right", classes: "h-5 w-5") %>
+                    </span>
+                  </label>
+                <% end %>
+              </div>
+            <% else %>
+              <div class="p-8">
+                <div class="rounded-lg border border-dashed border-gray-300 p-8 text-center">
+                  <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-md bg-gray-100 text-gray-700">
+                    <%== part("components/icon", name: "hero-folder-open", classes: "h-6 w-6") %>
+                  </div>
+                  <h3 class="mt-4 text-sm font-semibold text-gray-950">No repositories returned</h3>
+                  <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500">Update the Deploy GitHub installation and allow LayerRail to access at least one repository.</p>
+                  <div class="mt-5 flex flex-wrap justify-center gap-3">
+                    <%== part("components/button", text: "Update GitHub Access", link: "#{@project.path}/deploy/github/create", icon: "github") %>
+                    <a href="<%= "#{@project.path}/deploy/github/finish" %>" class="inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-50">
+                      <%== part("components/icon", name: "hero-arrow-path", classes: "h-4 w-4") %>
+                      Finish Existing Install
+                    </a>
+                  </div>
+                </div>
+              </div>
+            <% end %>
           </div>
-          <div class="mt-4">
-            <label for="deploy-repository-search" class="sr-only">Search repositories</label>
-            <input id="deploy-repository-search" type="search" placeholder="Search repositories" autocomplete="off" class="block w-full rounded-md border-0 px-3 py-2 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-layerrail-600">
+        </div>
+      </section>
+
+      <section class="rounded-lg border border-gray-200 bg-white p-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 class="text-base font-semibold text-gray-950">Build preset</h2>
+            <p class="mt-1 text-sm text-gray-500">Choose the closest runtime. Commands stay editable before launch.</p>
+          </div>
+          <div class="inline-flex rounded-md bg-gray-100 p-1 text-xs font-semibold text-gray-600">
+            <span class="rounded bg-white px-3 py-1.5 text-gray-950 shadow-sm">Frameworks</span>
+            <span class="px-3 py-1.5">Custom</span>
           </div>
         </div>
 
-        <% if @deploy_repositories.any? %>
-          <div class="max-h-[31rem] divide-y divide-gray-100 overflow-auto" data-repository-list>
-            <% @deploy_repositories.each_with_index do |repo, index| %>
-              <% repo_selected = typecast_body_params.str("repository") == repo[:full_name] || (typecast_body_params.str("repository").to_s.empty? && index == 0) %>
-              <label class="group grid cursor-pointer grid-cols-[1fr_auto] gap-4 px-6 py-4 hover:bg-gray-50" data-repository-row data-installation-id="<%= repo[:installation_ubid] %>" data-search="<%= "#{repo[:full_name]} #{repo[:installation_label]}".downcase %>">
-                <span class="min-w-0">
-                  <span class="flex items-center gap-3">
-                    <input type="radio" name="repository_picker" value="<%= repo[:full_name] %>" class="h-4 w-4 border-gray-300 text-layerrail-600 focus:ring-layerrail-600" data-repository-picker data-installation-id="<%= repo[:installation_ubid] %>" data-repository="<%= repo[:full_name] %>" data-branch="<%= repo[:default_branch] %>" <%= repo_selected ? "checked" : "" %>>
-                    <span class="truncate text-sm font-semibold text-gray-900"><%= repo[:full_name] %></span>
-                    <% if repo[:private] == true %>
-                      <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Private</span>
-                    <% elsif repo[:private] == false %>
-                      <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">Public</span>
-                    <% end %>
-                  </span>
-                  <span class="mt-1 block pl-7 text-xs text-gray-500"><%= repo[:installation_label] %> · <%= repo[:default_branch] %></span>
-                </span>
-                <span class="self-center text-gray-300 group-hover:text-gray-500">
-                  <%== part("components/icon", name: "hero-chevron-right", classes: "h-5 w-5") %>
-                </span>
-              </label>
-            <% end %>
-          </div>
-        <% else %>
-          <div class="px-6 py-8 text-sm text-gray-600">
-            <p>No repositories were returned by GitHub. Connect or update the Deploy GitHub installation, then choose the repositories LayerRail can access.</p>
-            <div class="mt-4 flex flex-wrap gap-3">
-              <%== part("components/button", text: "Update GitHub Access", link: "#{@project.path}/deploy/github/create", icon: "github") %>
-              <%== part("components/button", text: "Finish Existing Install", link: "#{@project.path}/deploy/github/finish", icon: "hero-arrow-path") %>
-            </div>
-          </div>
-        <% end %>
-      </section>
-
-      <section class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-        <h2 class="text-base font-semibold text-gray-900">Build Pack</h2>
-        <div class="mt-5 grid gap-3 md:grid-cols-2">
-          <% packs.each_with_index do |pack, index| %>
-            <% selected = (typecast_body_params.str("framework") || "node") == pack[:key] %>
-            <label class="cursor-pointer rounded-lg border border-gray-200 p-4 hover:border-layerrail-300 hover:bg-layerrail-50/30">
+        <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <% packs.each do |pack| %>
+            <% selected = selected_pack_key == pack[:key] %>
+            <% tone = case pack[:key]
+              when "node", "static" then "bg-sky-50 text-sky-700"
+              when "python", "go" then "bg-emerald-50 text-emerald-700"
+              when "ruby", "php", "laravel" then "bg-rose-50 text-rose-700"
+              when "rust" then "bg-amber-50 text-amber-700"
+              else "bg-gray-100 text-gray-700"
+            end %>
+            <label class="group cursor-pointer rounded-lg border border-gray-200 p-4 hover:border-gray-300 hover:bg-gray-50 has-[:checked]:border-layerrail-500 has-[:checked]:bg-layerrail-50/40">
               <input type="radio" name="framework" value="<%= pack[:key] %>" class="peer sr-only" data-build-pack data-install-command="<%= pack[:install_command] %>" data-build-command="<%= pack[:build_command] %>" data-start-command="<%= pack[:start_command] %>" data-output-directory="<%= pack[:output_directory] %>" data-app-port="<%= pack[:app_port] %>" <%= selected ? "checked" : "" %>>
               <span class="flex items-start gap-3">
-                <span class="mt-0.5 flex h-8 w-8 items-center justify-center rounded-md bg-gray-900 text-white peer-checked:bg-layerrail-600">
-                  <%== part("components/icon", name: pack[:key] == "static" ? "hero-folder-open" : "hero-squares-plus", classes: "h-4 w-4") %>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md <%= tone %>">
+                  <%== part("components/icon", name: pack[:key] == "static" ? "hero-folder-open" : "hero-squares-plus", classes: "h-5 w-5") %>
                 </span>
-                <span>
-                  <span class="block text-sm font-semibold text-gray-900"><%= pack[:label] %></span>
+                <span class="min-w-0">
+                  <span class="block text-sm font-semibold text-gray-950" data-pack-label><%= pack[:label] %></span>
                   <span class="mt-1 block text-sm leading-5 text-gray-500"><%= pack[:description] %></span>
                 </span>
               </span>
@@ -108,49 +231,47 @@
         </div>
       </section>
 
-      <section class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-        <h2 class="text-base font-semibold text-gray-900">Project Settings</h2>
-        <div class="mt-5 grid gap-5 md:grid-cols-6">
-          <div class="md:col-span-3">
-            <%== part("components/form/text", name: "name", label: "App name", value: typecast_body_params.str("name"), attributes: {required: "required", placeholder: "web", autocomplete: "off", "data-app-name-input" => "true"}) %>
-          </div>
-          <div class="md:col-span-3">
-            <%== part("components/form/text", name: "repository", label: "Repository", value: typecast_body_params.str("repository"), attributes: {required: "required", placeholder: "owner/repository", autocomplete: "off", "data-repository-input" => "true"}) %>
-          </div>
-          <div class="md:col-span-3">
-            <%== part("components/form/text", name: "branch", label: "Production branch", value: typecast_body_params.str("branch") || "main", attributes: {required: "required", autocomplete: "off", "data-branch-input" => "true"}) %>
-          </div>
-          <div class="md:col-span-3">
-            <%== part("components/form/text", name: "root_directory", label: "Root directory", value: typecast_body_params.str("root_directory"), attributes: {placeholder: "apps/web", autocomplete: "off"}) %>
-          </div>
+      <section class="rounded-lg border border-gray-200 bg-white p-5">
+        <div>
+          <h2 class="text-base font-semibold text-gray-950">Build commands</h2>
+          <p class="mt-1 text-sm text-gray-500">LayerRail runs these inside the selected repository root.</p>
         </div>
-      </section>
-
-      <section class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-        <h2 class="text-base font-semibold text-gray-900">Build Settings</h2>
         <div class="mt-5 grid gap-5 md:grid-cols-6">
           <div class="md:col-span-3">
-            <%== part("components/form/text", name: "install_command", label: "Install command", value: typecast_body_params.str("install_command") || "npm install", attributes: {required: "required", autocomplete: "off", "data-install-command-input" => "true"}) %>
+            <%== part("components/form/text", name: "install_command", label: "Install command", value: typecast_body_params.str("install_command") || packs.find { it[:key] == selected_pack_key }&.fetch(:install_command, "npm install"), attributes: {autocomplete: "off", "data-install-command-input" => "true"}) %>
           </div>
           <div class="md:col-span-3">
-            <%== part("components/form/text", name: "build_command", label: "Build command", value: typecast_body_params.str("build_command") || "npm run build", attributes: {placeholder: "npm run build", autocomplete: "off", "data-build-command-input" => "true"}) %>
+            <%== part("components/form/text", name: "build_command", label: "Build command", value: typecast_body_params.str("build_command") || packs.find { it[:key] == selected_pack_key }&.fetch(:build_command, "npm run build"), attributes: {placeholder: "npm run build", autocomplete: "off", "data-build-command-input" => "true"}) %>
           </div>
           <div class="md:col-span-3">
-            <%== part("components/form/text", name: "start_command", label: "Start command", value: typecast_body_params.str("start_command") || "npm start", attributes: {placeholder: "npm start", autocomplete: "off", "data-start-command-input" => "true"}) %>
+            <%== part("components/form/text", name: "start_command", label: "Start command", value: typecast_body_params.str("start_command") || packs.find { it[:key] == selected_pack_key }&.fetch(:start_command, "npm start"), attributes: {placeholder: "npm start", autocomplete: "off", "data-start-command-input" => "true"}) %>
           </div>
           <div class="md:col-span-2">
-            <%== part("components/form/text", name: "output_directory", label: "Output directory", value: typecast_body_params.str("output_directory"), attributes: {placeholder: "dist", autocomplete: "off", "data-output-directory-input" => "true"}) %>
+            <%== part("components/form/text", name: "output_directory", label: "Output directory", value: typecast_body_params.str("output_directory") || packs.find { it[:key] == selected_pack_key }&.fetch(:output_directory, ""), attributes: {placeholder: "dist", autocomplete: "off", "data-output-directory-input" => "true"}) %>
           </div>
           <div class="md:col-span-1">
-            <%== part("components/form/text", name: "app_port", label: "Port", type: "number", value: typecast_body_params.str("app_port") || Config.deploy_default_port, attributes: {required: "required", min: 1, max: 65535, "data-app-port-input" => "true"}) %>
+            <%== part("components/form/text", name: "app_port", label: "Port", type: "number", value: typecast_body_params.str("app_port") || packs.find { it[:key] == selected_pack_key }&.fetch(:app_port, Config.deploy_default_port), attributes: {required: "required", min: 1, max: 65535, "data-app-port-input" => "true"}) %>
           </div>
         </div>
       </section>
+    </div>
 
-      <% if Config.deploy_infrastructure_controls_enabled %>
-        <section class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-          <h2 class="text-base font-semibold text-gray-900">Runtime</h2>
-          <div class="mt-5 grid gap-5 md:grid-cols-2">
+    <aside class="space-y-5 xl:sticky xl:top-5 xl:self-start">
+      <section class="rounded-lg border border-gray-200 bg-white p-5">
+        <div class="flex items-center justify-between gap-4">
+          <h2 class="text-base font-semibold text-gray-950">Launch settings</h2>
+          <span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">Worker ready</span>
+        </div>
+
+        <div class="mt-5 space-y-5">
+          <%== part("components/form/text", name: "name", label: "App name", value: typecast_body_params.str("name"), attributes: {required: "required", placeholder: "web", autocomplete: "off", "data-app-name-input" => "true"}) %>
+          <%== part("components/form/text", name: "repository", id: "deploy-repository-input", label: "Repository", value: typecast_body_params.str("repository"), attributes: {required: "required", placeholder: "owner/repository", autocomplete: "off", "data-repository-input" => "true"}) %>
+          <%== part("components/form/text", name: "branch", label: "Production branch", value: typecast_body_params.str("branch") || "main", attributes: {required: "required", autocomplete: "off", "data-branch-input" => "true"}) %>
+          <%== part("components/form/text", name: "root_directory", label: "Root directory", value: typecast_body_params.str("root_directory"), attributes: {placeholder: "apps/web", autocomplete: "off"}) %>
+        </div>
+
+        <% if Config.deploy_infrastructure_controls_enabled %>
+          <div class="mt-5 grid gap-5 sm:grid-cols-2 xl:grid-cols-1">
             <%== part(
               "components/form/select",
               name: "location",
@@ -168,36 +289,34 @@
               attributes: {required: "required"}
             ) %>
           </div>
-        </section>
-      <% end %>
-    </div>
+        <% end %>
+      </section>
 
-    <aside class="space-y-6">
-      <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
-        <h2 class="text-base font-semibold text-gray-900">Deployment</h2>
-        <dl class="mt-4 space-y-3 text-sm">
+      <section class="rounded-lg border border-gray-200 bg-gray-950 p-5 text-white">
+        <h2 class="text-base font-semibold">Review</h2>
+        <dl class="mt-5 space-y-3 text-sm">
           <div class="flex items-center justify-between gap-4">
-            <dt class="text-gray-500">Source</dt>
-            <dd class="max-w-[13rem] truncate font-medium text-gray-900" data-summary-repository>Choose a repo</dd>
+            <dt class="text-gray-400">Source</dt>
+            <dd class="max-w-[13rem] truncate font-medium" data-summary-repository>Choose a repo</dd>
           </div>
           <div class="flex items-center justify-between gap-4">
-            <dt class="text-gray-500">Branch</dt>
-            <dd class="font-medium text-gray-900" data-summary-branch>main</dd>
+            <dt class="text-gray-400">Branch</dt>
+            <dd class="font-medium" data-summary-branch>main</dd>
           </div>
           <div class="flex items-center justify-between gap-4">
-            <dt class="text-gray-500">Build pack</dt>
-            <dd class="font-medium text-gray-900" data-summary-pack>Node.js</dd>
+            <dt class="text-gray-400">Preset</dt>
+            <dd class="font-medium" data-summary-pack><%= packs.find { it[:key] == selected_pack_key }&.fetch(:label, "Node.js") %></dd>
           </div>
           <div class="flex items-center justify-between gap-4">
-            <dt class="text-gray-500">Billing</dt>
-            <dd class="font-medium text-gray-900"><%= @project.has_valid_payment_method? ? "Verified" : "Required" %></dd>
+            <dt class="text-gray-400">Billing</dt>
+            <dd class="font-medium"><%= @project.has_valid_payment_method? ? "Verified" : "Required" %></dd>
           </div>
         </dl>
-        <div class="mt-6 flex justify-end gap-3">
-          <a href="<%= "#{@project.path}/deploy" %>" class="inline-flex items-center rounded-md px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Cancel</a>
-          <%== part("components/form/submit_button", text: "Deploy Project", icon: "hero-cloud-arrow-up") %>
+        <div class="mt-6 grid gap-3">
+          <%== part("components/form/submit_button", text: "Deploy Project", icon: "hero-cloud-arrow-up", extra_class: "w-full") %>
+          <a href="<%= "#{@project.path}/deploy" %>" class="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-semibold text-gray-300 hover:bg-white/10 hover:text-white">Cancel</a>
         </div>
-      </div>
+      </section>
     </aside>
   <% end %>
 
@@ -244,12 +363,13 @@
 
       const syncPack = (pack) => {
         if (!pack) return;
-        if (installCommandInput) installCommandInput.value = pack.dataset.installCommand;
-        if (buildCommandInput) buildCommandInput.value = pack.dataset.buildCommand;
-        if (startCommandInput) startCommandInput.value = pack.dataset.startCommand;
-        if (outputDirectoryInput) outputDirectoryInput.value = pack.dataset.outputDirectory;
-        if (appPortInput) appPortInput.value = pack.dataset.appPort;
-        if (summaryPack) summaryPack.textContent = pack.closest("label").querySelector(".font-semibold").textContent.trim();
+        if (installCommandInput) installCommandInput.value = pack.dataset.installCommand || "";
+        if (buildCommandInput) buildCommandInput.value = pack.dataset.buildCommand || "";
+        if (startCommandInput) startCommandInput.value = pack.dataset.startCommand || "";
+        if (outputDirectoryInput) outputDirectoryInput.value = pack.dataset.outputDirectory || "";
+        if (appPortInput) appPortInput.value = pack.dataset.appPort || "3000";
+        const label = pack.closest("label")?.querySelector("[data-pack-label]");
+        if (summaryPack && label) summaryPack.textContent = label.textContent.trim();
       };
 
       pickers.forEach((picker) => picker.addEventListener("change", () => syncRepository(picker)));
