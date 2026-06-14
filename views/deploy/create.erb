@@ -4,7 +4,7 @@
   "components/page_header",
   breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Deploy", "#{@project.path}/deploy"], ["Import", "#"]],
   right_items: [
-    part("components/button", text: @github_installations.empty? ? "Sign in with GitHub" : "Manage GitHub", link: "#{@project.path}/github", icon: "github")
+    part("components/button", text: @github_installations.empty? ? "Connect GitHub" : "Connect Another GitHub Account", link: "#{@project.path}/deploy/github/create", icon: "github")
   ]
 ) %>
 
@@ -16,10 +16,11 @@
       <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-gray-900 text-white">
         <%== part("components/icon", name: "github", classes: "h-6 w-6") %>
       </div>
-      <h3 class="mt-4 text-base font-semibold leading-6 text-gray-900">Connect GitHub</h3>
-      <p class="mt-2 text-sm text-gray-500">Install the LayerRail GitHub App to choose repositories and start deployments.</p>
-      <div class="mt-6">
-        <%== part("components/button", text: "Sign in with GitHub", link: "#{@project.path}/github", icon: "github") %>
+      <h3 class="mt-4 text-base font-semibold leading-6 text-gray-900">Connect GitHub for Deploy</h3>
+      <p class="mt-2 text-sm text-gray-500">Install the LayerRail GitHub App for this deploy project, then choose repositories to import.</p>
+      <div class="mt-6 flex flex-wrap justify-center gap-3">
+        <%== part("components/button", text: "Connect GitHub", link: "#{@project.path}/deploy/github/create", icon: "github") %>
+        <%== part("components/button", text: "Finish Existing Install", link: "#{@project.path}/deploy/github/finish", icon: "hero-arrow-path") %>
       </div>
     </div>
   </div>
@@ -77,7 +78,11 @@
           </div>
         <% else %>
           <div class="px-6 py-8 text-sm text-gray-600">
-            No repositories were returned by GitHub. Manage the GitHub App installation, then choose the repositories LayerRail can access.
+            <p>No repositories were returned by GitHub. Connect or update the Deploy GitHub installation, then choose the repositories LayerRail can access.</p>
+            <div class="mt-4 flex flex-wrap gap-3">
+              <%== part("components/button", text: "Update GitHub Access", link: "#{@project.path}/deploy/github/create", icon: "github") %>
+              <%== part("components/button", text: "Finish Existing Install", link: "#{@project.path}/deploy/github/finish", icon: "hero-arrow-path") %>
+            </div>
           </div>
         <% end %>
       </section>

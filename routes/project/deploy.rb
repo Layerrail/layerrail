@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "securerandom"
+require "uri"
+
 class Clover
   hash_branch(:project_prefix, "deploy") do |r|
     raise CloverError.new(404, "NotFound", "LayerRail Deploy is not enabled") unless Config.deploy_enabled
@@ -13,6 +16,44 @@ class Clover
       authorize("Vm:create", @project)
       load_deploy_form_options
       view "deploy/create"
+    end
+
+    r.on web?, "github" do
+      authorize("Vm:create", @project)
+
+      r.get "create" do
+        load_deploy_form_options
+        handle_validation_failure("deploy/create")
+        raise_web_error("Project doesn't have valid billing information") unless @project.has_valid_payment_method?
+        raise_web_error("GitHub App is not configured yet.") unless Config.github_app_name
+
+        session["github_installation_project_id"] = @project.id
+        session["github_installation_context"] = "deploy"
+        state = SecureRandom.urlsafe_base64(24)
+        session["github_installation_state"] = state
+
+        query = URI.encode_www_form(state:)
+        r.redirect "https://github.com/apps/#{Config.github_app_name}/installations/select_target?#{query}", 302
+      end
+
+      r.get "finish" do
+        load_deploy_form_options
+        handle_validation_failure("deploy/create")
+        raise_web_error("GitHub App OAuth client ID is not configured") unless Config.github_app_client_id
+        raise_web_error("Project doesn't have valid billing information") unless @project.has_valid_payment_method?
+
+        session["github_installation_project_id"] = @project.id
+        session["github_installation_context"] = "deploy"
+        state = SecureRandom.urlsafe_base64(24)
+        session["github_installation_state"] = state
+
+        query = URI.encode_www_form(
+          client_id: Config.github_app_client_id,
+          redirect_uri: "#{Config.base_url}/github/callback",
+          state:
+        )
+        r.redirect "https://github.com/login/oauth/authorize?#{query}", 302
+      end
     end
 
     r.post true do
