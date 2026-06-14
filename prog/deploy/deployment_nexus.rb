@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "json"
 require "shellwords"
 
 class Prog::Deploy::DeploymentNexus < Prog::Base
@@ -211,6 +212,8 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
   end
 
   def remote_deploy_script(access_token)
+    fail "LayerRail Deploy container registry is not configured" unless deploy_registry_configured?
+
     <<~BASH
       set -euo pipefail
 
@@ -220,29 +223,19 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
       REPOSITORY=#{sh(app.repository)}
       BRANCH=#{sh(app.branch)}
       ROOT_DIRECTORY=#{sh(app.root_directory.to_s)}
-      OUTPUT_DIRECTORY=#{sh(app.output_directory.to_s)}
       APP_PORT=#{app.app_port.to_i}
+      UPSTREAM_PORT=#{app.app_port.to_i}
+      CONTAINER_PORT=#{deploy_container_port}
+      IMAGE_REF=#{sh(deploy_image_ref)}
+      REGISTRY_HOST=#{sh(Config.deploy_container_registry_host)}
+      REGISTRY_USERNAME=#{sh(Config.deploy_container_registry_username)}
+      REGISTRY_PASSWORD=#{sh(Config.deploy_container_registry_password)}
       GITHUB_TOKEN=#{sh(access_token)}
-      INSTALL_COMMAND=$(cat <<'LAYERRAIL_INSTALL_COMMAND'
-      #{app.install_command}
-      LAYERRAIL_INSTALL_COMMAND
-      )
-      BUILD_COMMAND=$(cat <<'LAYERRAIL_BUILD_COMMAND'
-      #{app.build_command}
-      LAYERRAIL_BUILD_COMMAND
-      )
-      START_COMMAND=$(cat <<'LAYERRAIL_START_COMMAND'
-      #{app.start_command}
-      LAYERRAIL_START_COMMAND
-      )
 
       export DEBIAN_FRONTEND=noninteractive
       sudo apt-get update -y
-      sudo apt-get install -y ca-certificates curl git nginx build-essential \
-        python3 python3-pip python3-venv \
-        ruby-full bundler \
-        php-cli php-mbstring php-xml php-curl php-zip php-pgsql php-mysql unzip \
-        golang-go cargo rustc
+      sudo apt-get install -y ca-certificates curl git nginx docker.io
+      sudo systemctl enable --now docker
 
       write_deploy_page() {
         local title="$1"
@@ -300,25 +293,6 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
       trap deploy_failed ERR
       write_deploy_page "Deployment in progress" "LayerRail is preparing this application. The page will update automatically when the deployment is live."
 
-      NODE_MAJOR="$(node -p 'Number(process.versions.node.split(".")[0])' 2>/dev/null || echo 0)"
-      if [ "$NODE_MAJOR" -lt 20 ]; then
-        curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-        sudo apt-get install -y nodejs
-      fi
-
-      if ! command -v composer >/dev/null 2>&1; then
-        EXPECTED_SIGNATURE="$(curl -fsSL https://composer.github.io/installer.sig)"
-        php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-        ACTUAL_SIGNATURE="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
-        if [ "$EXPECTED_SIGNATURE" != "$ACTUAL_SIGNATURE" ]; then
-          rm -f composer-setup.php
-          echo "Composer installer signature mismatch" >&2
-          exit 1
-        fi
-        sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
-        rm -f composer-setup.php
-      fi
-
       APP_HOME="/opt/layerrail/apps/$APP_ID"
       RELEASE_DIR="$APP_HOME/releases/$DEPLOYMENT_ID"
       sudo install -d -m 0755 -o layerrail -g layerrail "$APP_HOME" "$APP_HOME/releases"
@@ -330,9 +304,11 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
       unset GITHUB_TOKEN BASIC_AUTH
       sed -i 's/^GITHUB_TOKEN=.*/GITHUB_TOKEN=redacted/' "$0" || true
 
+      BUILD_CONTEXT="$RELEASE_DIR/src"
       cd "$RELEASE_DIR/src"
       if [ -n "$ROOT_DIRECTORY" ]; then
         cd "$ROOT_DIRECTORY"
+        BUILD_CONTEXT="$(pwd)"
       fi
 
       cat > "$RELEASE_DIR/app.env" <<'LAYERRAIL_ENV'
@@ -340,72 +316,38 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
       #{remote_env_lines}
       LAYERRAIL_ENV
 
-      set -a
-      . "$RELEASE_DIR/app.env"
-      set +a
+      cat > "$RELEASE_DIR/Dockerfile.layerrail" <<'LAYERRAIL_DOCKERFILE'
+      #{deploy_dockerfile}
+      LAYERRAIL_DOCKERFILE
 
-      if [ -n "$INSTALL_COMMAND" ]; then
-        bash -lc "$INSTALL_COMMAND"
-      fi
-      if [ -n "$BUILD_COMMAND" ]; then
-        bash -lc "$BUILD_COMMAND"
-      fi
+      printf '%s' "$REGISTRY_PASSWORD" | sudo docker login "$REGISTRY_HOST" --username "$REGISTRY_USERNAME" --password-stdin
+      sed -i 's/^REGISTRY_PASSWORD=.*/REGISTRY_PASSWORD=redacted/' "$0" || true
+      sudo docker build --pull -t "$IMAGE_REF" -f "$RELEASE_DIR/Dockerfile.layerrail" "$BUILD_CONTEXT"
+      sudo docker push "$IMAGE_REF"
+      sudo docker pull "$IMAGE_REF"
 
-      sudo rm -f /etc/nginx/sites-enabled/default
-
-      if [ -n "$OUTPUT_DIRECTORY" ]; then
-        DIST_DIR="$(pwd)/$OUTPUT_DIRECTORY"
-        test -d "$DIST_DIR"
-        sudo tee "/etc/nginx/sites-available/layerrail-$APP_ID" > /dev/null <<NGINX
-      server {
-        listen 80 default_server;
-        listen [::]:80 default_server;
-        server_name $APP_HOST _;
-        root $DIST_DIR;
-        index index.html;
-
-        location / {
-          try_files \\$uri \\$uri/ /index.html;
-        }
-      }
-      NGINX
-      else
-        if [ -z "$START_COMMAND" ]; then
-          START_COMMAND="npm start"
-        fi
-        cat > "$APP_HOME/start-$DEPLOYMENT_ID.sh" <<START_SCRIPT
-      #!/usr/bin/env bash
-      set -euo pipefail
-      cd "$(pwd)"
-      set -a
-      . "$RELEASE_DIR/app.env"
-      set +a
-      exec bash -lc $(printf "%q" "$START_COMMAND")
-      START_SCRIPT
-        chmod 0755 "$APP_HOME/start-$DEPLOYMENT_ID.sh"
-
-        sudo tee "/etc/systemd/system/#{app_unit}" > /dev/null <<APP_SERVICE
+      sudo tee "/etc/systemd/system/#{app_unit}" > /dev/null <<APP_SERVICE
       [Unit]
       Description=LayerRail app $APP_ID
       After=network-online.target
       Wants=network-online.target
 
       [Service]
-      User=layerrail
-      Group=layerrail
-      WorkingDirectory=$(pwd)
-      EnvironmentFile=$RELEASE_DIR/app.env
       Restart=always
       RestartSec=5
-      ExecStart=/usr/bin/env bash $APP_HOME/start-$DEPLOYMENT_ID.sh
+      ExecStartPre=-/usr/bin/docker rm -f layerrail-app-$APP_ID
+      ExecStart=/usr/bin/docker run --rm --name layerrail-app-$APP_ID --env-file $RELEASE_DIR/app.env -p 127.0.0.1:$UPSTREAM_PORT:$CONTAINER_PORT $IMAGE_REF
+      ExecStop=/usr/bin/docker stop layerrail-app-$APP_ID
 
       [Install]
       WantedBy=multi-user.target
       APP_SERVICE
 
-        sudo systemctl daemon-reload
-        sudo systemctl enable --now #{app_unit}
-        sudo tee "/etc/nginx/sites-available/layerrail-$APP_ID" > /dev/null <<NGINX
+      sudo systemctl daemon-reload
+      sudo systemctl enable #{app_unit}
+      sudo systemctl restart #{app_unit}
+      sudo rm -f /etc/nginx/sites-enabled/default
+      sudo tee "/etc/nginx/sites-available/layerrail-$APP_ID" > /dev/null <<NGINX
       server {
         listen 80 default_server;
         listen [::]:80 default_server;
@@ -416,20 +358,127 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
           proxy_set_header X-Real-IP \\$remote_addr;
           proxy_set_header X-Forwarded-For \\$proxy_add_x_forwarded_for;
           proxy_set_header X-Forwarded-Proto \\$scheme;
-          proxy_pass http://127.0.0.1:$APP_PORT;
+          proxy_pass http://127.0.0.1:$UPSTREAM_PORT;
         }
       }
       NGINX
-      fi
 
       sudo ln -sf "/etc/nginx/sites-available/layerrail-$APP_ID" "/etc/nginx/sites-enabled/layerrail-$APP_ID"
       sudo nginx -t
       sudo systemctl reload nginx || sudo systemctl restart nginx
+      sleep 3
+      sudo systemctl is-active --quiet #{app_unit}
+      echo "LayerRail image deployed: $IMAGE_REF"
     BASH
   end
 
   def remote_env_lines
-    app.variables.map { "#{it.key}=#{sh(it.value)}" }.join("\n")
+    app.variables.map { "#{it.key}=#{it.value.to_s.gsub(/\r?\n/, "\\n")}" }.join("\n")
+  end
+
+  def deploy_registry_configured?
+    Config.deploy_container_registry_host && Config.deploy_container_registry_repository &&
+      Config.deploy_container_registry_username && Config.deploy_container_registry_password
+  end
+
+  def deploy_image_ref
+    repository = Config.deploy_container_registry_repository.to_s.delete_prefix("/").delete_suffix("/")
+    tag = "#{app.ubid.to_s.delete_prefix("da")}-#{deploy_deployment.ubid.to_s.delete_prefix("dd")}"
+    "#{Config.deploy_container_registry_host}/#{repository}:#{tag}"
+  end
+
+  def deploy_container_port
+    app.output_directory.to_s.empty? ? app.app_port.to_i : 80
+  end
+
+  def deploy_dockerfile
+    case app.framework
+    when "static"
+      static_dockerfile
+    when "node"
+      dynamic_dockerfile("node:22-bookworm-slim", packages: "bash ca-certificates", default_start: "npm start")
+    when "python"
+      dynamic_dockerfile("python:3.12-slim", packages: "bash ca-certificates build-essential", default_start: "gunicorn app:app --bind 0.0.0.0:$PORT")
+    when "ruby"
+      dynamic_dockerfile("ruby:3.3-slim", packages: "bash ca-certificates build-essential", default_start: "bundle exec puma -b tcp://0.0.0.0:$PORT")
+    when "php", "laravel"
+      php_dockerfile
+    when "rust"
+      dynamic_dockerfile("rust:1-bookworm", packages: "bash ca-certificates", default_start: "./target/release/app")
+    when "go"
+      dynamic_dockerfile("golang:1.23-bookworm", packages: "bash ca-certificates", default_start: "./layerrail-app")
+    else
+      dynamic_dockerfile("ubuntu:24.04", packages: "ca-certificates curl bash", default_start: "bash")
+    end
+  end
+
+  def static_dockerfile
+    install = app.install_command.to_s.strip
+    build = app.build_command.to_s.strip
+    output = app.output_directory.to_s.strip.empty? ? "dist" : app.output_directory.to_s.strip
+    <<~DOCKERFILE
+      FROM node:22-bookworm-slim AS build
+      WORKDIR /app
+      COPY . .
+      #{docker_run(install)}
+      #{docker_run(build)}
+
+      FROM nginx:1.27-alpine
+      COPY --from=build /app/#{output} /usr/share/nginx/html
+      EXPOSE 80
+    DOCKERFILE
+  end
+
+  def php_dockerfile
+    install = app.install_command.to_s.strip
+    build = app.build_command.to_s.strip
+    start = app.start_command.to_s.strip
+    start = "php -S 0.0.0.0:$PORT -t public" if start.empty?
+    <<~DOCKERFILE
+      FROM composer:2 AS composer
+      FROM php:8.3-cli-bookworm
+      WORKDIR /app
+      ENV PORT=#{app.app_port.to_i}
+      RUN apt-get update && apt-get install -y --no-install-recommends bash ca-certificates git unzip libzip-dev libpq-dev default-mysql-client && docker-php-ext-install zip pdo_mysql pdo_pgsql && rm -rf /var/lib/apt/lists/*
+      COPY --from=composer /usr/bin/composer /usr/bin/composer
+      COPY . .
+      #{docker_run(install)}
+      #{docker_run(build)}
+      EXPOSE #{app.app_port.to_i}
+      CMD #{["bash", "-lc", start].to_json}
+    DOCKERFILE
+  end
+
+  def dynamic_dockerfile(base_image, packages:, default_start:)
+    install = app.install_command.to_s.strip
+    build = app.build_command.to_s.strip
+    start = app.start_command.to_s.strip
+    start = default_start if start.empty?
+    <<~DOCKERFILE
+      FROM #{base_image}
+      WORKDIR /app
+      ENV PORT=#{app.app_port.to_i}
+      #{docker_apt_install(packages)}
+      COPY . .
+      #{docker_run(install)}
+      #{docker_run(build)}
+      EXPOSE #{app.app_port.to_i}
+      CMD #{["bash", "-lc", start].to_json}
+    DOCKERFILE
+  end
+
+  def docker_apt_install(packages)
+    packages = packages.to_s.strip
+    return "" if packages.empty?
+
+    "RUN if command -v apt-get >/dev/null 2>&1; then apt-get update && apt-get install -y --no-install-recommends #{packages} && rm -rf /var/lib/apt/lists/*; fi"
+  end
+
+  def docker_run(command)
+    command = command.to_s.strip
+    return "" if command.empty?
+
+    "RUN bash -lc #{Shellwords.escape(command)}"
   end
 
   def sh(value)

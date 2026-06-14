@@ -311,6 +311,10 @@ module Config
   override :deploy_default_vm_size, "nanode-4", string
   override :deploy_default_port, 3000, int
   override :deploy_infrastructure_controls_enabled, false, bool
+  override :deploy_container_registry_host, "layerrailregistry.azurecr.io", string
+  override :deploy_container_registry_repository, "layerrail-deploy", string
+  optional :deploy_container_registry_username, string, clear: true
+  optional :deploy_container_registry_password, string, clear: true
 
   # Billing
   optional :polar_access_token, string, clear: true
