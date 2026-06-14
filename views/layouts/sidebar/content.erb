@@ -189,7 +189,17 @@
         </li>
 
       <% end %>
-      <li class="mt-auto">
+      <li class="mt-auto space-y-3">
+        <% if intercom_messenger_enabled? %>
+          <button
+            type="button"
+            data-intercom-open
+            class="group flex w-full items-center gap-x-3 rounded-md bg-layerrail-700/60 px-2 py-2 text-left text-sm font-semibold leading-6 text-layerrail-100 hover:bg-layerrail-700 hover:text-white"
+          >
+            <%== part("components/icon", name: "hero-chat-bubble-bottom-center-text", classes: "h-6 w-6 shrink-0 text-white") %>
+            Contact support
+          </button>
+        <% end %>
         <div class="rounded-md bg-layerrail-700/40 px-2 py-2">
           <iframe
             src="https://status.layerrail.com/badge?theme=dark"

@@ -1,0 +1,56 @@
+<% if intercom_messenger_enabled?
+  nonce = SecureRandom.hex(32)
+  content_security_policy.add_script_src [:nonce, nonce]
+  settings = intercom_messenger_settings
+%>
+  <script nonce="<%= nonce %>">
+    window.intercomSettings = <%== allow_unescaped(JSON.generate(settings)) %>;
+    window.LayerRailSupport = window.LayerRailSupport || {};
+    window.LayerRailSupport.open = function() {
+      if (typeof window.Intercom === "function") {
+        window.Intercom("show");
+      }
+    };
+
+    (function() {
+      var w = window;
+      var ic = w.Intercom;
+      if (typeof ic === "function") {
+        ic("reattach_activator");
+        ic("update", w.intercomSettings);
+      } else {
+        var d = document;
+        var i = function() {
+          i.c(arguments);
+        };
+        i.q = [];
+        i.c = function(args) {
+          i.q.push(args);
+        };
+        w.Intercom = i;
+        var load = function() {
+          var script = d.createElement("script");
+          script.type = "text/javascript";
+          script.async = true;
+          script.src = "https://widget.intercom.io/widget/<%= h Config.intercom_app_id %>";
+          var firstScript = d.getElementsByTagName("script")[0];
+          firstScript.parentNode.insertBefore(script, firstScript);
+        };
+        if (document.readyState === "complete") {
+          load();
+        } else if (w.attachEvent) {
+          w.attachEvent("onload", load);
+        } else {
+          w.addEventListener("load", load, false);
+        }
+      }
+
+      document.addEventListener("click", function(event) {
+        var trigger = event.target.closest("[data-intercom-open]");
+        if (!trigger) return;
+        event.preventDefault();
+        window.LayerRailSupport.open();
+      });
+    })();
+  </script>
+<% end %>

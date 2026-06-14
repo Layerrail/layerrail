@@ -217,12 +217,26 @@ class Clover < Roda
 
   plugin :content_security_policy do |csp|
     csp.default_src :none
-    csp.style_src :self, "https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css"
-    csp.img_src :self, "data: image/svg+xml", "https://github.com", "https://avatars.githubusercontent.com"
+    style_sources = [:self, "https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css"]
+    img_sources = [:self, "data: image/svg+xml", "https://github.com", "https://avatars.githubusercontent.com"]
+    script_sources = [:self, "https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js", "https://cdn.jsdelivr.net/npm/dompurify@3.4.0/dist/purify.min.js", "https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js", "https://challenges.cloudflare.com/turnstile/v0/api.js", "https://cdn.jsdelivr.net/npm/marked@15.0.5/marked.min.js", "https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"]
+    frame_sources = [:self, "https://challenges.cloudflare.com", "https://status.layerrail.com"]
+    connect_sources = [:self, "https://cdn.jsdelivr.net"]
+
+    if Config.intercom_messenger_enabled
+      style_sources << :unsafe_inline
+      img_sources.concat(["https://static.intercomassets.com", "https://js.intercomcdn.com", "https://downloads.intercomcdn.com", "https://uploads.intercomusercontent.com", "https://gifs.intercomcdn.com"])
+      script_sources.concat(["https://widget.intercom.io", "https://js.intercomcdn.com"])
+      frame_sources.concat(["https://intercom-sheets.com", "https://www.intercom-reporting.com"])
+      connect_sources.concat([Config.intercom_api_base, "https://api-ping.intercom.io", "https://nexus-websocket-a.intercom.io", "wss://nexus-websocket-a.intercom.io", "https://uploads.intercomcdn.com", "https://uploads.intercomusercontent.com"])
+    end
+
+    csp.style_src(*style_sources)
+    csp.img_src(*img_sources)
     csp.form_action :self, Config.base_url, "https://checkout.stripe.com", "https://checkout.polar.sh", "https://polar.sh", "https://github.com/login/oauth/authorize", "https://accounts.google.com/o/oauth2/auth"
-    csp.script_src :self, "https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js", "https://cdn.jsdelivr.net/npm/dompurify@3.4.0/dist/purify.min.js", "https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js", "https://challenges.cloudflare.com/turnstile/v0/api.js", "https://cdn.jsdelivr.net/npm/marked@15.0.5/marked.min.js", "https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"
-    csp.frame_src :self, "https://challenges.cloudflare.com", "https://status.layerrail.com"
-    csp.connect_src :self, "https://cdn.jsdelivr.net"
+    csp.script_src(*script_sources)
+    csp.frame_src(*frame_sources)
+    csp.connect_src(*connect_sources)
     csp.base_uri :none
     csp.frame_ancestors :none
   end

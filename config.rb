@@ -336,4 +336,10 @@ module Config
 
   # Monitoring
   optional :monitoring_service_project_id, uuid
+
+  # Intercom
+  override :intercom_messenger_enabled, true, bool
+  override :intercom_app_id, "fhtipjhd", string
+  override :intercom_api_base, "https://api-iam.intercom.io", string
+  optional :intercom_identity_verification_secret, string, clear: true
 end

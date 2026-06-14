@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "openssl"
+require "securerandom"
+
 class Clover < Roda
   PG_STATE_LABEL_COLOR = Hash.new("bg-slate-100 text-slate-800").merge!(
     "running" => "bg-green-100 text-green-800",
@@ -244,6 +247,35 @@ class Clover < Roda
 
   def hidden_inputs(hash)
     hash.map { |name, value| "<input #{html_attrs(type: "hidden", name:, value:)} />" }.join("\n")
+  end
+
+  def intercom_messenger_enabled?
+    Config.intercom_messenger_enabled && !Config.intercom_app_id.to_s.empty? && rodauth.authenticated?
+  end
+
+  def intercom_messenger_settings
+    account = current_account
+    settings = {
+      app_id: Config.intercom_app_id,
+      api_base: Config.intercom_api_base,
+      hide_default_launcher: true,
+      user_id: account.ubid,
+      email: account.email,
+      name: account.name,
+      created_at: account.created_at.to_i,
+      layerrail_user_id: account.ubid,
+      last_project_id: @project&.ubid
+    }.compact
+
+    if Config.intercom_identity_verification_secret
+      settings[:user_hash] = OpenSSL::HMAC.hexdigest(
+        "sha256",
+        Config.intercom_identity_verification_secret,
+        account.ubid
+      )
+    end
+
+    settings
   end
 
   def audit_log_paginate(rows)
