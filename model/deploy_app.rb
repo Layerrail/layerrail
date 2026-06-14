@@ -207,6 +207,46 @@ class DeployApp < Sequel::Model(:deploy_app)
     environment == "preview"
   end
 
+  def environment
+    self[:environment] || "production"
+  end
+
+  def environment=(value)
+    self[:environment] = value
+  end
+
+  def production_app_id
+    self[:production_app_id]
+  end
+
+  def production_app_id=(value)
+    self[:production_app_id] = value
+  end
+
+  def preview_key
+    self[:preview_key]
+  end
+
+  def preview_key=(value)
+    self[:preview_key] = value
+  end
+
+  def auto_deploy
+    self[:auto_deploy].nil? ? true : self[:auto_deploy]
+  end
+
+  def auto_deploy=(value)
+    self[:auto_deploy] = value
+  end
+
+  def build_cache_enabled
+    self[:build_cache_enabled].nil? ? true : self[:build_cache_enabled]
+  end
+
+  def build_cache_enabled=(value)
+    self[:build_cache_enabled] = value
+  end
+
   def validate
     super
     validates_includes(STATUSES, :status)

@@ -24,6 +24,22 @@ class DeployDeployment < Sequel::Model(:deploy_deployment)
     status
   end
 
+  def image_ref
+    self[:image_ref]
+  end
+
+  def image_ref=(value)
+    self[:image_ref] = value
+  end
+
+  def source_ref
+    self[:source_ref]
+  end
+
+  def source_ref=(value)
+    self[:source_ref] = value
+  end
+
   def validate
     super
     validates_includes(STATUSES, :status)
