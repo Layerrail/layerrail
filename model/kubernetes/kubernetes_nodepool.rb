@@ -15,6 +15,10 @@ class KubernetesNodepool < Sequel::Model
   def path
     "#{cluster.path}/nodepool/#{ubid}"
   end
+
+  def allocated_nodes
+    nodes.reject { |node| node.retire_set? || node.destroy_set? }
+  end
 end
 
 # Table: kubernetes_nodepool

@@ -91,9 +91,17 @@ RSpec.describe Prog::Kubernetes::KubernetesNodepoolNexus do
   describe "#bootstrap_worker_nodes" do
     it "buds enough number of times ProvisionKubernetesNode progs when we need to provision more nodes" do
       kn.update(node_count: 4)
-      (kn.node_count - kn.functional_nodes.count).times do
+      (kn.node_count - kn.allocated_nodes.count).times do
         expect(nx).to receive(:bud).with(Prog::Kubernetes::ProvisionKubernetesNode, {"nodepool_id" => kn.id, "subject_id" => kn.cluster.id})
       end
+      expect { nx.bootstrap_worker_nodes }.to hop("wait_worker_node")
+    end
+
+    it "counts provisioning nodes as allocated capacity while scaling up" do
+      kn.update(node_count: 3)
+      KubernetesNode.create(vm_id: create_vm.id, kubernetes_cluster_id: kc.id, kubernetes_nodepool_id: kn.id, state: "provisioning")
+
+      expect(nx).not_to receive(:bud)
       expect { nx.bootstrap_worker_nodes }.to hop("wait_worker_node")
     end
 

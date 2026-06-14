@@ -33,7 +33,7 @@ class Prog::Kubernetes::KubernetesNodepoolNexus < Prog::Base
   end
 
   label def bootstrap_worker_nodes
-    current_node_count = kubernetes_nodepool.functional_nodes.count
+    current_node_count = kubernetes_nodepool.allocated_nodes.count
     desired_node_count = kubernetes_nodepool.node_count
 
     if current_node_count < desired_node_count
@@ -41,7 +41,7 @@ class Prog::Kubernetes::KubernetesNodepoolNexus < Prog::Base
         bud Prog::Kubernetes::ProvisionKubernetesNode, {"nodepool_id" => kubernetes_nodepool.id, "subject_id" => kubernetes_nodepool.kubernetes_cluster_id}
       end
     elsif current_node_count > desired_node_count
-      excess_nodes = kubernetes_nodepool.functional_nodes.first(current_node_count - desired_node_count)
+      excess_nodes = kubernetes_nodepool.functional_nodes.reject(&:retire_set?).first(current_node_count - desired_node_count)
       excess_nodes.each(&:incr_retire)
     end
     hop_wait_worker_node
