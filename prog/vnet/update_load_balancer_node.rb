@@ -407,23 +407,12 @@ NAT
               align-items: center;
               justify-content: center;
               align-self: center;
-              gap: 9px;
-              color: #4b5560;
-              font-size: 0.95rem;
-              font-weight: 600;
             }
 
-            .brand-mark {
-              width: 21px;
-              height: 21px;
-              border-radius: 6px;
-              display: grid;
-              place-items: center;
-              border: 1px solid #d9dde2;
-              background: #fff;
-              color: #6b7280;
-              font-size: 0.66rem;
-              font-weight: 800;
+            .brand img {
+              display: block;
+              height: 38px;
+              width: auto;
             }
 
             main {
@@ -570,7 +559,8 @@ NAT
             .social {
               display: flex;
               align-items: center;
-              gap: 24px;
+              flex-wrap: wrap;
+              gap: 20px;
             }
 
             footer a {
@@ -608,8 +598,7 @@ NAT
         <body>
           <div class="shell">
             <div class="brand" aria-label="LayerRail">
-              <span class="brand-mark">L</span>
-              <span>LayerRail</span>
+              <img src="https://console.layerrail.com/brand/layerrail/layerrail-console-logo.png" alt="LayerRail">
             </div>
 
             <main>
@@ -633,13 +622,16 @@ NAT
             <footer>
               <nav class="links" aria-label="LayerRail links">
                 <a href="https://layerrail.com">Home</a>
-                <a href="https://layerrail.com/docs">Docs</a>
-                <a href="https://layerrail.com/community">Community</a>
-                <a href="https://layerrail.com/pricing">Pricing</a>
+                <a href="https://console.layerrail.com">Console</a>
+                <a href="https://docs.layerrail.com">Docs</a>
+                <a href="https://docs.layerrail.com/about/pricing">Pricing</a>
+                <a href="https://docs.layerrail.com/about/support">Support</a>
               </nav>
               <div class="social" aria-label="LayerRail social links">
                 <a href="https://github.com/mayowaoladosu/layerrail" aria-label="GitHub">GitHub</a>
-                <a href="https://x.com/layerrail" aria-label="X">X</a>
+                <a href="https://www.linkedin.com/company/layerrail/" aria-label="LinkedIn">LinkedIn</a>
+                <a href="https://twitter.com/LayerRail" aria-label="X">X</a>
+                <a href="mailto:support@layerrail.com?subject=Enquiry" aria-label="Email support">Email</a>
               </div>
             </footer>
           </div>
