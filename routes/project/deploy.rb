@@ -180,6 +180,32 @@ class Clover
         r.redirect path(@deploy_app)
       end
 
+      r.post "settings" do
+        load_deploy_show_data("settings")
+        handle_validation_failure("deploy/show")
+        authorize("Vm:create", @project)
+        framework = typecast_params.str("framework").to_s.strip
+        framework = @deploy_app.framework if framework.empty?
+        app_port = typecast_params.pos_int("app_port") || @deploy_app.app_port
+        updates = {
+          branch: blank_to_nil(typecast_params.str("branch")) || @deploy_app.branch,
+          root_directory: typecast_params.str("root_directory").to_s.strip,
+          install_command: typecast_params.str("install_command").to_s.strip,
+          build_command: blank_to_nil(typecast_params.str("build_command")),
+          start_command: blank_to_nil(typecast_params.str("start_command")),
+          output_directory: blank_to_nil(typecast_params.str("output_directory")),
+          app_port:,
+          framework:
+        }
+
+        DB.transaction do
+          @deploy_app.update(updates.merge(updated_at: Time.now))
+          audit_log(@deploy_app, "update_settings")
+        end
+        flash["notice"] = "Deploy settings saved"
+        r.redirect "#{path(@deploy_app)}/settings"
+      end
+
       r.post "delete" do
         authorize("Vm:delete", @project)
         DB.transaction do
@@ -228,19 +254,28 @@ class Clover
   end
 
   def deploy_repositories_for(installation)
-    repos = installation.client(auto_paginate: true, per_page: 100).get("/installation/repositories")[:repositories]
-    repos.map do |repo|
+    response = installation.client(auto_paginate: true, per_page: 100).get("/installation/repositories")
+    repos = response[:repositories] || response["repositories"] || (response.repositories if response.respond_to?(:repositories)) || []
+    repos.filter_map do |repo|
+      repo_hash = repo.respond_to?(:to_h) ? repo.to_h : repo
+      full_name = repo_hash[:full_name] || repo_hash["full_name"] || (repo.full_name if repo.respond_to?(:full_name))
+      name = repo_hash[:name] || repo_hash["name"] || (repo.name if repo.respond_to?(:name))
+      default_branch = repo_hash[:default_branch] || repo_hash["default_branch"] || (repo.default_branch if repo.respond_to?(:default_branch))
+      private_repo = repo_hash.respond_to?(:key?) && repo_hash.key?(:private) ? repo_hash[:private] : repo_hash["private"]
+      updated_at = repo_hash[:updated_at] || repo_hash["updated_at"] || (repo.updated_at if repo.respond_to?(:updated_at))
+      next if full_name.to_s.empty?
+
       {
         installation_ubid: installation.ubid,
         installation_label: "#{installation.name} (#{installation.type})",
-        full_name: repo[:full_name],
-        name: repo[:name],
-        private: !!repo[:private],
-        default_branch: repo[:default_branch].to_s.empty? ? "main" : repo[:default_branch].to_s,
-        updated_at: repo[:updated_at]
+        full_name: full_name.to_s,
+        name: name.to_s.empty? ? full_name.to_s.split("/").last : name.to_s,
+        private: private_repo.nil? ? nil : !!private_repo,
+        default_branch: default_branch.to_s.empty? ? "main" : default_branch.to_s,
+        updated_at:
       }
     end
-  rescue Octokit::Error, Faraday::Error => ex
+  rescue => ex
     Clog.emit("deploy repository list failed", Util.exception_to_hash(ex, into: {deploy_repository_list_failed: {installation_ubid: installation.ubid}}))
     installation.repositories_dataset.order(:name).limit(100).all.map do |repo|
       {

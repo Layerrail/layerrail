@@ -4,10 +4,99 @@ require_relative "../model"
 
 class DeployApp < Sequel::Model(:deploy_app)
   STATUSES = %w[idle provisioning deploying live failed deleting].freeze
-  FRAMEWORKS = {
-    "node" => "Node.js",
-    "static" => "Static site",
-  }.freeze
+  BUILD_PACKS = [
+    {
+      key: "node",
+      label: "Node.js",
+      description: "Express, Next.js custom servers, Nest, Fastify, and other Node apps.",
+      install_command: "npm install",
+      build_command: "npm run build",
+      start_command: "npm start",
+      output_directory: "",
+      app_port: 3000
+    },
+    {
+      key: "static",
+      label: "Static site",
+      description: "Vite, Astro static output, docs, and SPA builds served by Nginx.",
+      install_command: "npm install",
+      build_command: "npm run build",
+      start_command: "",
+      output_directory: "dist",
+      app_port: 3000
+    },
+    {
+      key: "python",
+      label: "Python",
+      description: "Flask, FastAPI, Django, and Python web services.",
+      install_command: "python3 -m venv .venv && . .venv/bin/activate && pip install -U pip wheel && pip install -r requirements.txt && pip install gunicorn",
+      build_command: "",
+      start_command: ". .venv/bin/activate && gunicorn app:app --bind 0.0.0.0:$PORT",
+      output_directory: "",
+      app_port: 8000
+    },
+    {
+      key: "ruby",
+      label: "Ruby",
+      description: "Rails, Sinatra, Hanami, and Rack services.",
+      install_command: "bundle install",
+      build_command: "bundle exec rake assets:precompile",
+      start_command: "bundle exec puma -b tcp://0.0.0.0:$PORT",
+      output_directory: "",
+      app_port: 3000
+    },
+    {
+      key: "php",
+      label: "PHP",
+      description: "Plain PHP apps and Composer projects.",
+      install_command: "composer install --no-dev --optimize-autoloader",
+      build_command: "",
+      start_command: "php -S 0.0.0.0:$PORT -t public",
+      output_directory: "",
+      app_port: 8000
+    },
+    {
+      key: "laravel",
+      label: "Laravel",
+      description: "Laravel apps with Composer, cache warmup, and public web root.",
+      install_command: "composer install --no-dev --optimize-autoloader",
+      build_command: "php artisan config:cache && php artisan route:cache && php artisan view:cache",
+      start_command: "php artisan serve --host=0.0.0.0 --port=$PORT",
+      output_directory: "",
+      app_port: 8000
+    },
+    {
+      key: "rust",
+      label: "Rust",
+      description: "Axum, Actix, Rocket, and other Cargo services.",
+      install_command: "cargo fetch",
+      build_command: "cargo build --release",
+      start_command: "./target/release/app",
+      output_directory: "",
+      app_port: 8080
+    },
+    {
+      key: "go",
+      label: "Go",
+      description: "Go modules and compiled HTTP services.",
+      install_command: "go mod download",
+      build_command: "go build -o layerrail-app .",
+      start_command: "./layerrail-app",
+      output_directory: "",
+      app_port: 8080
+    },
+    {
+      key: "custom",
+      label: "Custom",
+      description: "Bring any runtime by editing install, build, and start commands.",
+      install_command: "",
+      build_command: "",
+      start_command: "",
+      output_directory: "",
+      app_port: 3000
+    }
+  ].freeze
+  FRAMEWORKS = BUILD_PACKS.to_h { [it[:key], it[:label]] }.freeze
 
   one_to_one :strand, key: :id
   many_to_one :project, read_only: true

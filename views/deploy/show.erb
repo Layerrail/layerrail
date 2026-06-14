@@ -166,31 +166,63 @@ end %>
   <% if active_tab == "settings" %>
   <section class="grid gap-6 lg:grid-cols-3">
     <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5 lg:col-span-2">
-      <h2 class="text-base font-semibold text-gray-900">Build Settings</h2>
-      <dl class="mt-5 grid gap-4 text-sm sm:grid-cols-2">
+      <h2 class="text-base font-semibold text-gray-900">Build and Runtime</h2>
+      <% form(action: "#{path(@deploy_app)}/settings", method: :post, class: "mt-5 grid gap-5 md:grid-cols-6") do %>
+        <div class="md:col-span-3">
+          <%== part(
+            "components/form/select",
+            name: "framework",
+            label: "Build pack",
+            selected: @deploy_app.framework,
+            options: DeployApp::BUILD_PACKS.map { [it[:key], it[:label]] },
+            attributes: {required: "required"}
+          ) %>
+        </div>
+        <div class="md:col-span-3">
+          <%== part("components/form/text", name: "branch", label: "Production branch", value: @deploy_app.branch, attributes: {required: "required", autocomplete: "off"}) %>
+        </div>
+        <div class="md:col-span-3">
+          <%== part("components/form/text", name: "root_directory", label: "Root directory", value: @deploy_app.root_directory, attributes: {placeholder: "apps/web", autocomplete: "off"}) %>
+        </div>
+        <div class="md:col-span-3">
+          <%== part("components/form/text", name: "output_directory", label: "Output directory", value: @deploy_app.output_directory, attributes: {placeholder: "dist", autocomplete: "off"}) %>
+        </div>
+        <div class="md:col-span-3">
+          <%== part("components/form/text", name: "install_command", label: "Install command", value: @deploy_app.install_command, attributes: {autocomplete: "off"}) %>
+        </div>
+        <div class="md:col-span-3">
+          <%== part("components/form/text", name: "build_command", label: "Build command", value: @deploy_app.build_command, attributes: {autocomplete: "off"}) %>
+        </div>
+        <div class="md:col-span-5">
+          <%== part("components/form/text", name: "start_command", label: "Start command", value: @deploy_app.start_command, attributes: {autocomplete: "off"}) %>
+        </div>
+        <div class="md:col-span-1">
+          <%== part("components/form/text", name: "app_port", label: "Port", type: "number", value: @deploy_app.app_port, attributes: {required: "required", min: 1, max: 65535}) %>
+        </div>
+        <div class="md:col-span-6 flex justify-end">
+          <%== part("components/form/submit_button", text: "Save Settings", icon: "hero-check") %>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
+      <h2 class="text-base font-semibold text-gray-900">Source</h2>
+      <dl class="mt-5 space-y-4 text-sm">
         <div>
-          <dt class="text-gray-500">Root</dt>
-          <dd class="mt-1 font-medium text-gray-900"><%= @deploy_app.root_directory.empty? ? "/" : @deploy_app.root_directory %></dd>
+          <dt class="text-gray-500">Repository</dt>
+          <dd class="mt-1 truncate font-medium text-layerrail-600"><a href="<%= @deploy_app.repository_url %>" target="_blank" rel="noopener"><%= @deploy_app.repository %></a></dd>
         </div>
         <div>
-          <dt class="text-gray-500">Output</dt>
-          <dd class="mt-1 font-medium text-gray-900"><%= @deploy_app.output_directory || "-" %></dd>
+          <dt class="text-gray-500">GitHub account</dt>
+          <dd class="mt-1 font-medium text-gray-900"><%= @deploy_app.installation.name %></dd>
         </div>
         <div>
-          <dt class="text-gray-500">Install</dt>
-          <dd class="mt-1 break-words font-medium text-gray-900"><%= @deploy_app.install_command %></dd>
+          <dt class="text-gray-500">Production host</dt>
+          <dd class="mt-1 truncate font-medium text-gray-900"><%== part("components/copyable_content", content: @deploy_app.public_hostname) %></dd>
         </div>
         <div>
-          <dt class="text-gray-500">Build</dt>
-          <dd class="mt-1 break-words font-medium text-gray-900"><%= @deploy_app.build_command || "-" %></dd>
-        </div>
-        <div>
-          <dt class="text-gray-500">Start</dt>
-          <dd class="mt-1 break-words font-medium text-gray-900"><%= @deploy_app.start_command || "-" %></dd>
-        </div>
-        <div>
-          <dt class="text-gray-500">Port</dt>
-          <dd class="mt-1 font-medium text-gray-900"><%= @deploy_app.app_port %></dd>
+          <dt class="text-gray-500">Runtime size</dt>
+          <dd class="mt-1 font-medium text-gray-900"><%= @deploy_app.vm_size %></dd>
         </div>
       </dl>
     </div>

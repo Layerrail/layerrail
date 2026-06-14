@@ -238,7 +238,11 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
 
       export DEBIAN_FRONTEND=noninteractive
       sudo apt-get update -y
-      sudo apt-get install -y ca-certificates curl git nginx build-essential
+      sudo apt-get install -y ca-certificates curl git nginx build-essential \
+        python3 python3-pip python3-venv \
+        ruby-full bundler \
+        php-cli php-mbstring php-xml php-curl php-zip php-pgsql php-mysql unzip \
+        golang-go cargo rustc
 
       write_deploy_page() {
         local title="$1"
@@ -300,6 +304,19 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
       if [ "$NODE_MAJOR" -lt 20 ]; then
         curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
         sudo apt-get install -y nodejs
+      fi
+
+      if ! command -v composer >/dev/null 2>&1; then
+        EXPECTED_SIGNATURE="$(curl -fsSL https://composer.github.io/installer.sig)"
+        php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+        ACTUAL_SIGNATURE="$(php -r "echo hash_file('sha384', 'composer-setup.php');")"
+        if [ "$EXPECTED_SIGNATURE" != "$ACTUAL_SIGNATURE" ]; then
+          rm -f composer-setup.php
+          echo "Composer installer signature mismatch" >&2
+          exit 1
+        fi
+        sudo php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+        rm -f composer-setup.php
       fi
 
       APP_HOME="/opt/layerrail/apps/$APP_ID"

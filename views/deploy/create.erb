@@ -24,10 +24,7 @@
     </div>
   </div>
 <% else %>
-  <% packs = [
-    ["node", "Node.js", "NPM install, build command, app server", "npm install", "npm run build", "npm start", "", "3000"],
-    ["static", "Static site", "Build once and serve the output directory", "npm install", "npm run build", "", "dist", "3000"]
-  ] %>
+  <% packs = DeployApp::BUILD_PACKS %>
 
   <% form(action: "#{@project.path}/deploy", method: "POST", class: "grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]") do %>
     <div class="space-y-6">
@@ -88,17 +85,17 @@
       <section class="rounded-lg bg-white p-6 shadow ring-1 ring-black ring-opacity-5">
         <h2 class="text-base font-semibold text-gray-900">Build Pack</h2>
         <div class="mt-5 grid gap-3 md:grid-cols-2">
-          <% packs.each_with_index do |(value, title, description, install_command, build_command, start_command, output_directory, app_port), index| %>
-            <% selected = (typecast_body_params.str("framework") || "node") == value %>
+          <% packs.each_with_index do |pack, index| %>
+            <% selected = (typecast_body_params.str("framework") || "node") == pack[:key] %>
             <label class="cursor-pointer rounded-lg border border-gray-200 p-4 hover:border-layerrail-300 hover:bg-layerrail-50/30">
-              <input type="radio" name="framework" value="<%= value %>" class="peer sr-only" data-build-pack data-install-command="<%= install_command %>" data-build-command="<%= build_command %>" data-start-command="<%= start_command %>" data-output-directory="<%= output_directory %>" data-app-port="<%= app_port %>" <%= selected ? "checked" : "" %>>
+              <input type="radio" name="framework" value="<%= pack[:key] %>" class="peer sr-only" data-build-pack data-install-command="<%= pack[:install_command] %>" data-build-command="<%= pack[:build_command] %>" data-start-command="<%= pack[:start_command] %>" data-output-directory="<%= pack[:output_directory] %>" data-app-port="<%= pack[:app_port] %>" <%= selected ? "checked" : "" %>>
               <span class="flex items-start gap-3">
                 <span class="mt-0.5 flex h-8 w-8 items-center justify-center rounded-md bg-gray-900 text-white peer-checked:bg-layerrail-600">
-                  <%== part("components/icon", name: value == "static" ? "hero-folder-open" : "hero-squares-plus", classes: "h-4 w-4") %>
+                  <%== part("components/icon", name: pack[:key] == "static" ? "hero-folder-open" : "hero-squares-plus", classes: "h-4 w-4") %>
                 </span>
                 <span>
-                  <span class="block text-sm font-semibold text-gray-900"><%= title %></span>
-                  <span class="mt-1 block text-sm leading-5 text-gray-500"><%= description %></span>
+                  <span class="block text-sm font-semibold text-gray-900"><%= pack[:label] %></span>
+                  <span class="mt-1 block text-sm leading-5 text-gray-500"><%= pack[:description] %></span>
                 </span>
               </span>
             </label>
@@ -242,11 +239,11 @@
 
       const syncPack = (pack) => {
         if (!pack) return;
-        if (installCommandInput && installCommandInput.value.trim() === "") installCommandInput.value = pack.dataset.installCommand;
+        if (installCommandInput) installCommandInput.value = pack.dataset.installCommand;
         if (buildCommandInput) buildCommandInput.value = pack.dataset.buildCommand;
         if (startCommandInput) startCommandInput.value = pack.dataset.startCommand;
         if (outputDirectoryInput) outputDirectoryInput.value = pack.dataset.outputDirectory;
-        if (appPortInput && appPortInput.value.trim() === "") appPortInput.value = pack.dataset.appPort;
+        if (appPortInput) appPortInput.value = pack.dataset.appPort;
         if (summaryPack) summaryPack.textContent = pack.closest("label").querySelector(".font-semibold").textContent.trim();
       };
 
