@@ -36,6 +36,7 @@ class Clover
         authorize("Vm:delete", vm)
 
         DB.transaction do
+          BillingRecord.finalize_active_for_resource(vm)
           vm.incr_destroy
           audit_log(vm, "destroy")
         end

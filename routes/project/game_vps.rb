@@ -60,7 +60,7 @@ class Clover
 
     r.get true do
       @game_vpses = dataset_authorize(@project.game_vpses_dataset.reverse(:created_at), "Vm:view")
-        .exclude(status: ["pending_payment", "deleted"])
+        .exclude(status: ["pending_payment", "deleting", "deleted"])
         .all
       view "game_vps/index"
     end
@@ -211,6 +211,7 @@ class Clover
         r.post "delete" do
           authorize("Vm:delete", @game_vps)
           DB.transaction do
+            BillingRecord.finalize_active_for_resource(@game_vps) unless @game_vps.prepaid?
             Prog::GameVpsNexus.assemble_destroy(@game_vps)
             audit_log(@game_vps, "destroy")
           end

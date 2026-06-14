@@ -36,6 +36,7 @@ class Clover
       r.delete true do
         authorize("Postgres:delete", pg)
         DB.transaction do
+          BillingRecord.finalize_active_for_resource(pg)
           pg.incr_destroy
           audit_log(pg, "destroy")
         end

@@ -54,6 +54,10 @@ class BillingRecord < Sequel::Model
     this.update(span: CURRENT_SPAN)
   end
 
+  def self.finalize_active_for_resource(resource)
+    where(resource_id: resource.id).active.each(&:finalize)
+  end
+
   def billing_rate
     @billing_rate ||= BillingRate.from_id(billing_rate_id)
   end

@@ -16,6 +16,7 @@ class Clover
       @vms = dataset
         .reverse(:created_at)
         .all
+        .reject { it.display_state == "deleting" }
       view "vm/index"
     end
   end
