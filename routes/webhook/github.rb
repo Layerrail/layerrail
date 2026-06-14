@@ -16,6 +16,8 @@ class Clover
         handle_workflow_job(data)
       when "push"
         handle_push(data)
+      when "pull_request"
+        handle_pull_request(data)
       else
         error("Unhandled event")
       end
@@ -138,7 +140,7 @@ class Clover
     branch = data["ref"].to_s.delete_prefix("refs/heads/")
     return error("Unhandled ref") if repository_name.empty? || branch.empty? || branch == data["ref"].to_s
 
-    apps = DeployApp.where(installation_id: installation.id, repository: repository_name, branch:).all
+    apps = DeployApp.where(installation_id: installation.id, repository: repository_name, branch:, environment: "production", auto_deploy: true).all
     return success("No matching deploy apps") if apps.empty?
 
     deployed = 0
@@ -160,5 +162,96 @@ class Clover
     end
 
     success("Triggered #{deployed} deploy app#{deployed == 1 ? "" : "s"}; skipped #{skipped}")
+  end
+
+  def handle_pull_request(data)
+    return error("LayerRail Deploy is disabled") unless Config.deploy_enabled
+
+    action = data["action"].to_s
+    return error("Unhandled pull_request action") unless %w[opened reopened synchronize closed].include?(action)
+
+    unless (installation = GithubInstallation.with_github_installation_id(data.dig("installation", "id")))
+      return error("Unregistered installation")
+    end
+
+    pr = data["pull_request"] || {}
+    repository_name = data.dig("repository", "full_name").to_s
+    number = pr["number"] || data["number"]
+    base_branch = pr.dig("base", "ref").to_s
+    head_branch = pr.dig("head", "ref").to_s
+    head_sha = pr.dig("head", "sha").to_s
+    head_repository = pr.dig("head", "repo", "full_name").to_s
+    return error("Invalid pull_request payload") if repository_name.empty? || number.to_s.empty? || base_branch.empty? || head_branch.empty?
+    return success("Skipped fork pull request preview") unless head_repository.empty? || head_repository == repository_name
+
+    production_apps = DeployApp.where(installation_id: installation.id, repository: repository_name, branch: base_branch, environment: "production", auto_deploy: true).all
+    return success("No matching deploy apps") if production_apps.empty?
+
+    handled = 0
+    skipped = 0
+    production_apps.each do |production_app|
+      preview_key = "#{repository_name}:pr-#{number}"
+      preview = DeployApp.where(project_id: production_app.project_id, production_app_id: production_app.id, preview_key:).first
+
+      if action == "closed"
+        if preview && !preview.display_state.start_with?("deleting")
+          Prog::Deploy::AppNexus.assemble_destroy(preview)
+          handled += 1
+        end
+        next
+      end
+
+      preview ||= create_preview_deploy_app(production_app, preview_key, number, head_branch)
+      preview.update(branch: head_branch, updated_at: Time.now) if preview.branch != head_branch
+
+      in_flight = preview.latest_deployment&.status
+      if %w[queued provisioning building].include?(in_flight) || %w[provisioning deploying deleting].include?(preview.display_state)
+        skipped += 1
+        next
+      end
+
+      Prog::Deploy::DeploymentNexus.assemble(
+        preview,
+        trigger: "github_preview",
+        commit_sha: head_sha.empty? ? nil : head_sha,
+        commit_message: pr["title"].to_s.slice(0, 1000),
+        source_ref: "#{repository_name}@#{head_branch}"
+      )
+      handled += 1
+    end
+
+    success("Handled #{handled} preview app#{handled == 1 ? "" : "s"}; skipped #{skipped}")
+  end
+
+  def create_preview_deploy_app(production_app, preview_key, number, head_branch)
+    app = DeployApp.new_with_id(
+      project_id: production_app.project_id,
+      installation_id: production_app.installation_id,
+      location_id: production_app.location_id,
+      production_app_id: production_app.id,
+      preview_key:,
+      environment: "preview",
+      name: preview_app_name(production_app, number),
+      repository: production_app.repository,
+      branch: head_branch,
+      root_directory: production_app.root_directory,
+      install_command: production_app.install_command,
+      build_command: production_app.build_command,
+      start_command: production_app.start_command,
+      output_directory: production_app.output_directory,
+      app_port: production_app.app_port,
+      framework: production_app.framework,
+      vm_size: production_app.vm_size,
+      status: "idle"
+    )
+    app.hostname = "#{app.name}-#{app.ubid.to_s[2, 6]}.#{Config.deploy_service_hostname}"
+    app.save_changes
+    app
+  end
+
+  def preview_app_name(production_app, number)
+    base = "#{production_app.name}-pr-#{number}".downcase.gsub(/[^a-z0-9-]/, "-").gsub(/-+/, "-").gsub(/\A-|-+\z/, "")
+    base = "preview-pr-#{number}" if base.empty?
+    base[0, 54].gsub(/-+\z/, "")
   end
 end

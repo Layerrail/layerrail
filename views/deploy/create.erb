@@ -10,8 +10,8 @@
 
 <%== render("deploy/tabbar", locals: {active: "import"}) %>
 
-<% packs = DeployApp::BUILD_PACKS %>
-<% selected_pack_key = typecast_body_params.str("framework").to_s.empty? ? "node" : typecast_body_params.str("framework") %>
+<% packs = DeployApp::IMPORT_BUILD_PACKS %>
+<% selected_pack_key = typecast_body_params.str("framework").to_s.empty? ? "auto" : typecast_body_params.str("framework") %>
 <% selected_installation = typecast_body_params.str("installation_id") || @github_installations.first&.ubid %>
 
 <div class="mb-5 overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -209,6 +209,7 @@
           <% packs.each do |pack| %>
             <% selected = selected_pack_key == pack[:key] %>
             <% tone = case pack[:key]
+              when "auto" then "bg-gray-950 text-white"
               when "node", "static" then "bg-sky-50 text-sky-700"
               when "python", "go" then "bg-emerald-50 text-emerald-700"
               when "ruby", "php", "laravel" then "bg-rose-50 text-rose-700"
@@ -219,7 +220,7 @@
               <input type="radio" name="framework" value="<%= pack[:key] %>" class="peer sr-only" data-build-pack data-install-command="<%= pack[:install_command] %>" data-build-command="<%= pack[:build_command] %>" data-start-command="<%= pack[:start_command] %>" data-output-directory="<%= pack[:output_directory] %>" data-app-port="<%= pack[:app_port] %>" <%= selected ? "checked" : "" %>>
               <span class="flex items-start gap-3">
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md <%= tone %>">
-                  <%== part("components/icon", name: pack[:key] == "static" ? "hero-folder-open" : "hero-squares-plus", classes: "h-5 w-5") %>
+                  <%== part("components/icon", name: pack[:key] == "auto" ? "hero-sparkles" : (pack[:key] == "static" ? "hero-folder-open" : "hero-squares-plus"), classes: "h-5 w-5") %>
                 </span>
                 <span class="min-w-0">
                   <span class="block text-sm font-semibold text-gray-950" data-pack-label><%= pack[:label] %></span>

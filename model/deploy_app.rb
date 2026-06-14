@@ -1,9 +1,21 @@
 # frozen_string_literal: true
 
 require_relative "../model"
+require "set"
 
 class DeployApp < Sequel::Model(:deploy_app)
   STATUSES = %w[idle provisioning deploying live failed deleting].freeze
+  ENVIRONMENTS = %w[production preview development].freeze
+  AUTO_BUILD_PACK = {
+    key: "auto",
+    label: "Auto detect",
+    description: "Read the repository and choose the closest LayerRail build preset.",
+    install_command: "",
+    build_command: "",
+    start_command: "",
+    output_directory: "",
+    app_port: 3000
+  }.freeze
   BUILD_PACKS = [
     {
       key: "node",
@@ -96,6 +108,7 @@ class DeployApp < Sequel::Model(:deploy_app)
       app_port: 3000
     }
   ].freeze
+  IMPORT_BUILD_PACKS = [AUTO_BUILD_PACK, *BUILD_PACKS].freeze
   FRAMEWORKS = BUILD_PACKS.to_h { [it[:key], it[:label]] }.freeze
 
   one_to_one :strand, key: :id
@@ -103,6 +116,8 @@ class DeployApp < Sequel::Model(:deploy_app)
   many_to_one :installation, class: :GithubInstallation, read_only: true
   many_to_one :vm, read_only: true
   many_to_one :location, read_only: true
+  many_to_one :production_app, class: :DeployApp, key: :production_app_id, read_only: true
+  one_to_many :preview_apps, key: :production_app_id, class: :DeployApp, order: Sequel.desc(:created_at), remover: nil, clearer: nil
   one_to_many :deployments, key: :app_id, class: :DeployDeployment, order: Sequel.desc(:created_at), remover: nil, clearer: nil
   one_to_many :variables, key: :app_id, class: :DeployVariable, order: :key, remover: nil, clearer: nil
 
@@ -120,6 +135,38 @@ class DeployApp < Sequel::Model(:deploy_app)
 
   def self.vm_size_available?(name)
     vm_size_options.any? { it.first == name }
+  end
+
+  def self.build_pack(key)
+    BUILD_PACKS.find { it[:key] == key.to_s }
+  end
+
+  def self.detect_framework(files)
+    names = files.map { it.to_s.downcase }.to_set
+    return "laravel" if names.include?("artisan") && names.include?("composer.json")
+    return "php" if names.include?("composer.json") || names.any? { it.end_with?(".php") }
+    return "ruby" if names.include?("gemfile") || names.include?("config.ru")
+    return "python" if names.include?("requirements.txt") || names.include?("pyproject.toml") || names.include?("manage.py")
+    return "rust" if names.include?("cargo.toml")
+    return "go" if names.include?("go.mod")
+    return "static" if names.include?("index.html") && !names.include?("package.json")
+    return "node" if names.include?("package.json") || names.include?("next.config.js") || names.include?("vite.config.js") || names.include?("svelte.config.js")
+
+    "custom"
+  end
+
+  def self.apply_build_pack_defaults(params, framework)
+    pack = build_pack(framework)
+    return params unless pack
+
+    params.merge(
+      install_command: params[:install_command].to_s.strip.empty? ? pack[:install_command] : params[:install_command],
+      build_command: params[:build_command].to_s.strip.empty? ? pack[:build_command] : params[:build_command],
+      start_command: params[:start_command].to_s.strip.empty? ? pack[:start_command] : params[:start_command],
+      output_directory: params[:output_directory].to_s.strip.empty? ? pack[:output_directory] : params[:output_directory],
+      app_port: params[:app_port].to_i.positive? ? params[:app_port] : pack[:app_port],
+      framework:
+    )
   end
 
   def display_state
@@ -152,9 +199,18 @@ class DeployApp < Sequel::Model(:deploy_app)
     deployments.first
   end
 
+  def latest_live_deployment
+    deployments_dataset.where(status: "live").order(Sequel.desc(:created_at)).first
+  end
+
+  def preview?
+    environment == "preview"
+  end
+
   def validate
     super
     validates_includes(STATUSES, :status)
+    validates_includes(ENVIRONMENTS, :environment)
     validates_includes(FRAMEWORKS.keys, :framework)
     validates_format(Validation::ALLOWED_NAME_PATTERN, :name, message: "must only contain lowercase letters, numbers and hyphens, and must start and end with a lowercase letter or number")
     validates_format(%r{\A[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\z}, :repository, message: "must be in owner/repository format")
@@ -189,6 +245,11 @@ end
 #  vm_size          | text                     | NOT NULL DEFAULT 'nanode-1'::text
 #  framework        | text                     | NOT NULL DEFAULT 'node'::text
 #  failure_message  | text                     |
+#  environment      | text                     | NOT NULL DEFAULT 'production'::text
+#  production_app_id | uuid                    |
+#  preview_key      | text                     |
+#  auto_deploy      | boolean                  | NOT NULL DEFAULT true
+#  build_cache_enabled | boolean               | NOT NULL DEFAULT true
 #  created_at       | timestamp with time zone | NOT NULL DEFAULT now()
 #  updated_at       | timestamp with time zone | NOT NULL DEFAULT now()
 # Indexes:

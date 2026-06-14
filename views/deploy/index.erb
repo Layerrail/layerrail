@@ -32,14 +32,14 @@
   <%== part(
     "components/table_card",
     title: "Projects",
-    headers: ["Project", "Source", "Production", "Runtime", "State"],
+    headers: ["Project", "Source", "URL", "Runtime", "State"],
     rows: @deploy_apps.map do |app|
       latest = app.latest_deployment
       [
         [
           [
             [app.name, {link: path(app)}],
-            [app.ubid, {copyable: true}]
+            [app.preview? ? "Preview / #{app.preview_key.to_s.split(":").last}" : "Production", {}]
           ],
           [
             [app.repository, {link: app.repository_url}],
@@ -48,7 +48,7 @@
           [app.public_hostname, {copyable: true}],
           [
             [app.framework_label, {}],
-            [app.location.ui_name, {}]
+            ["#{app.environment.capitalize} / #{app.location.ui_name}", {}]
           ],
           [
             ["deploy_state_label", {component: {state: app.display_state}}],

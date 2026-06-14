@@ -6,9 +6,9 @@ require "shellwords"
 class Prog::Deploy::DeploymentNexus < Prog::Base
   subject_is :deploy_deployment
 
-  def self.assemble(app, trigger: "manual", commit_sha: nil, commit_message: nil)
+  def self.assemble(app, trigger: "manual", commit_sha: nil, commit_message: nil, image_ref: nil, source_ref: nil)
     DB.transaction do
-      deployment = DeployDeployment.create(app_id: app.id, status: "queued", trigger:, commit_sha:, commit_message:)
+      deployment = DeployDeployment.create(app_id: app.id, status: "queued", trigger:, commit_sha:, commit_message:, image_ref:, source_ref:)
       Strand.create_with_id(deployment, prog: "Deploy::DeploymentNexus", label: "start")
       deployment
     end
@@ -54,7 +54,7 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
   end
 
   label def start_remote_build
-    deploy_deployment.update(status: "building", updated_at: Time.now)
+    deploy_deployment.update(status: "building", image_ref: release_image_ref, source_ref: deploy_source_ref, updated_at: Time.now)
     app.update(status: "deploying", updated_at: Time.now)
 
     configure_dns_record
@@ -223,10 +223,13 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
       REPOSITORY=#{sh(app.repository)}
       BRANCH=#{sh(app.branch)}
       ROOT_DIRECTORY=#{sh(app.root_directory.to_s)}
+      BUILD_IMAGE=#{build_image? ? 1 : 0}
+      BUILD_CACHE=#{app.build_cache_enabled ? 1 : 0}
       APP_PORT=#{app.app_port.to_i}
       UPSTREAM_PORT=#{app.app_port.to_i}
       CONTAINER_PORT=#{deploy_container_port}
-      IMAGE_REF=#{sh(deploy_image_ref)}
+      IMAGE_REF=#{sh(release_image_ref)}
+      LATEST_IMAGE_REF=#{sh(deploy_latest_image_ref)}
       REGISTRY_HOST=#{sh(Config.deploy_container_registry_host)}
       REGISTRY_USERNAME=#{sh(Config.deploy_container_registry_username)}
       REGISTRY_PASSWORD=#{sh(Config.deploy_container_registry_password)}
@@ -299,16 +302,20 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
       rm -rf "$RELEASE_DIR"
       mkdir -p "$RELEASE_DIR"
 
-      BASIC_AUTH="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
-      git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $BASIC_AUTH" clone --depth 1 --branch "$BRANCH" "https://github.com/$REPOSITORY.git" "$RELEASE_DIR/src"
+      if [ "$BUILD_IMAGE" = "1" ]; then
+        BASIC_AUTH="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+        git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $BASIC_AUTH" clone --depth 1 --branch "$BRANCH" "https://github.com/$REPOSITORY.git" "$RELEASE_DIR/src"
+      fi
       unset GITHUB_TOKEN BASIC_AUTH
       sed -i 's/^GITHUB_TOKEN=.*/GITHUB_TOKEN=redacted/' "$0" || true
 
       BUILD_CONTEXT="$RELEASE_DIR/src"
-      cd "$RELEASE_DIR/src"
-      if [ -n "$ROOT_DIRECTORY" ]; then
-        cd "$ROOT_DIRECTORY"
-        BUILD_CONTEXT="$(pwd)"
+      if [ "$BUILD_IMAGE" = "1" ]; then
+        cd "$RELEASE_DIR/src"
+        if [ -n "$ROOT_DIRECTORY" ]; then
+          cd "$ROOT_DIRECTORY"
+          BUILD_CONTEXT="$(pwd)"
+        fi
       fi
 
       cat > "$RELEASE_DIR/app.env" <<'LAYERRAIL_ENV'
@@ -316,14 +323,24 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
       #{remote_env_lines}
       LAYERRAIL_ENV
 
-      cat > "$RELEASE_DIR/Dockerfile.layerrail" <<'LAYERRAIL_DOCKERFILE'
-      #{deploy_dockerfile}
-      LAYERRAIL_DOCKERFILE
-
       printf '%s' "$REGISTRY_PASSWORD" | sudo docker login "$REGISTRY_HOST" --username "$REGISTRY_USERNAME" --password-stdin
       sed -i 's/^REGISTRY_PASSWORD=.*/REGISTRY_PASSWORD=redacted/' "$0" || true
-      sudo docker build --pull -t "$IMAGE_REF" -f "$RELEASE_DIR/Dockerfile.layerrail" "$BUILD_CONTEXT"
-      sudo docker push "$IMAGE_REF"
+
+      if [ "$BUILD_IMAGE" = "1" ]; then
+        cat > "$RELEASE_DIR/Dockerfile.layerrail" <<'LAYERRAIL_DOCKERFILE'
+      #{deploy_dockerfile}
+      LAYERRAIL_DOCKERFILE
+        if [ "$BUILD_CACHE" = "1" ]; then
+          sudo docker pull "$LATEST_IMAGE_REF" || true
+          CACHE_ARGS=(--cache-from "$LATEST_IMAGE_REF")
+        else
+          CACHE_ARGS=()
+        fi
+        sudo env DOCKER_BUILDKIT=1 docker build --pull "${CACHE_ARGS[@]}" -t "$IMAGE_REF" -t "$LATEST_IMAGE_REF" -f "$RELEASE_DIR/Dockerfile.layerrail" "$BUILD_CONTEXT"
+        sudo docker push "$IMAGE_REF"
+        sudo docker push "$LATEST_IMAGE_REF"
+      fi
+
       sudo docker pull "$IMAGE_REF"
 
       sudo tee "/etc/systemd/system/#{app_unit}" > /dev/null <<APP_SERVICE
@@ -385,6 +402,24 @@ class Prog::Deploy::DeploymentNexus < Prog::Base
     repository = Config.deploy_container_registry_repository.to_s.delete_prefix("/").delete_suffix("/")
     tag = "#{app.ubid.to_s.delete_prefix("da")}-#{deploy_deployment.ubid.to_s.delete_prefix("dd")}"
     "#{Config.deploy_container_registry_host}/#{repository}:#{tag}"
+  end
+
+  def deploy_latest_image_ref
+    repository = Config.deploy_container_registry_repository.to_s.delete_prefix("/").delete_suffix("/")
+    tag = "#{app.ubid.to_s.delete_prefix("da")}-latest"
+    "#{Config.deploy_container_registry_host}/#{repository}:#{tag}"
+  end
+
+  def release_image_ref
+    deploy_deployment.image_ref.to_s.empty? ? deploy_image_ref : deploy_deployment.image_ref
+  end
+
+  def build_image?
+    deploy_deployment.trigger != "rollback"
+  end
+
+  def deploy_source_ref
+    deploy_deployment.source_ref.to_s.empty? ? "#{app.repository}@#{app.branch}" : deploy_deployment.source_ref
   end
 
   def deploy_container_port

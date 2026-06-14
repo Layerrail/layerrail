@@ -34,7 +34,7 @@ end %>
       <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
         <div class="text-sm font-medium text-gray-500">Runtime</div>
         <div class="mt-2 text-sm font-semibold text-gray-900"><%= @deploy_app.framework_label %></div>
-        <div class="mt-1 text-xs text-gray-500"><%= @deploy_app.location.ui_name %></div>
+        <div class="mt-1 text-xs text-gray-500"><%= @deploy_app.environment.capitalize %> / <%= @deploy_app.location.ui_name %></div>
       </div>
       <div class="rounded-lg bg-white p-5 shadow ring-1 ring-black ring-opacity-5">
         <div class="text-sm font-medium text-gray-500">Latest deploy</div>
@@ -54,18 +54,25 @@ end %>
     <%== part(
       "components/table_card",
       title: "Deployments",
-      headers: ["Started", "Trigger", "Commit", "State", "Finished"],
+      headers: ["Started", "Trigger", "Commit", "Image", "State", "Finished", ""],
       rows: @deployments.map do |deployment|
+        rollback = if deployment.status == "live" && !deployment.image_ref.to_s.empty? && has_permission?("Vm:create", @project)
+          form({action: "#{path(@deploy_app)}/rollback/#{deployment.ubid}", method: :post}, emit: false) do |f|
+            f << part("components/button", text: "Rollback", icon: "hero-arrow-path", extra_class: "py-1.5")
+          end
+        end
         [
           [
             deployment.created_at.strftime("%F %T"),
             deployment.trigger.tr("_", " "),
             [
               [deployment.commit_sha.to_s.empty? ? "-" : deployment.commit_sha[0, 12], {}],
-              [deployment.commit_message.to_s.empty? ? nil : deployment.commit_message.lines.first.to_s.strip, {}]
+              [deployment.commit_message.to_s.empty? ? deployment.source_ref : deployment.commit_message.lines.first.to_s.strip, {}]
             ],
+            [deployment.image_ref.to_s.empty? ? "-" : deployment.image_ref.split(":").last, {copyable: true}],
             ["deploy_state_label", {component: {state: deployment.display_state}}],
-            deployment.finished_at&.strftime("%F %T") || "-"
+            deployment.finished_at&.strftime("%F %T") || "-",
+            [rollback, {escape: false}]
           ],
           {id: "deployment-#{deployment.ubid}"}
         ]
@@ -198,6 +205,22 @@ end %>
         </div>
         <div class="md:col-span-1">
           <%== part("components/form/text", name: "app_port", label: "Port", type: "number", value: @deploy_app.app_port, attributes: {required: "required", min: 1, max: 65535}) %>
+        </div>
+        <div class="md:col-span-3">
+          <%== part(
+            "components/form/checkbox",
+            name: "auto_deploy",
+            label: "Automation",
+            options: [["true", "Deploy production automatically from GitHub pushes and open pull request previews.", "", @deploy_app.auto_deploy ? {checked: "checked"} : {}]]
+          ) %>
+        </div>
+        <div class="md:col-span-3">
+          <%== part(
+            "components/form/checkbox",
+            name: "build_cache_enabled",
+            label: "Build cache",
+            options: [["true", "Reuse the latest image layers to make repeat deployments faster.", "", @deploy_app.build_cache_enabled ? {checked: "checked"} : {}]]
+          ) %>
         </div>
         <div class="md:col-span-6 flex justify-end">
           <%== part("components/form/submit_button", text: "Save Settings", icon: "hero-check") %>

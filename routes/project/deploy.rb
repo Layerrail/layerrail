@@ -85,11 +85,21 @@ class Clover
       branch = typecast_params.str("branch").to_s.strip
       branch = "main" if branch.empty?
       framework = typecast_params.str("framework").to_s.strip
-      framework = "node" if framework.empty?
+      framework = "auto" if framework.empty?
       vm_size = Config.deploy_infrastructure_controls_enabled ? typecast_params.str("vm_size").to_s.strip : ""
       vm_size = Config.deploy_default_vm_size if vm_size.empty?
 
       Validation.validate_name(name)
+      build_params = {
+        install_command: typecast_params.str("install_command").to_s.strip,
+        build_command: blank_to_nil(typecast_params.str("build_command")),
+        start_command: blank_to_nil(typecast_params.str("start_command")),
+        output_directory: blank_to_nil(typecast_params.str("output_directory")),
+        app_port: typecast_params.pos_int("app_port")
+      }
+      framework = detect_deploy_framework(installation, repository, branch, typecast_params.str("root_directory").to_s.strip) if framework == "auto"
+      build_params = DeployApp.apply_build_pack_defaults(build_params, framework)
+
       unless DeployApp.vm_size_available?(vm_size)
         fail Validation::ValidationFailed.new({vm_size: "is not available for LayerRail Deploy"})
       end
@@ -106,12 +116,12 @@ class Clover
           repository:,
           branch:,
           root_directory: typecast_params.str("root_directory").to_s.strip,
-          install_command: typecast_params.str("install_command").to_s.strip,
-          build_command: blank_to_nil(typecast_params.str("build_command")),
-          start_command: blank_to_nil(typecast_params.str("start_command")),
-          output_directory: blank_to_nil(typecast_params.str("output_directory")),
-          app_port: typecast_params.pos_int("app_port") || Config.deploy_default_port,
-          framework:,
+          install_command: build_params[:install_command].to_s,
+          build_command: blank_to_nil(build_params[:build_command]),
+          start_command: blank_to_nil(build_params[:start_command]),
+          output_directory: blank_to_nil(build_params[:output_directory]),
+          app_port: build_params[:app_port] || Config.deploy_default_port,
+          framework: build_params[:framework],
           vm_size:,
           status: "provisioning",
         )
@@ -186,6 +196,28 @@ class Clover
         r.redirect path(@deploy_app)
       end
 
+      r.post "rollback", :ubid_uuid do |deployment_id|
+        authorize("Vm:create", @project)
+        deployment = @deploy_app.deployments_dataset.first(id: deployment_id)
+        check_found_object(deployment)
+        raise_web_error("This deployment does not have an image to roll back to.") if deployment.image_ref.to_s.empty?
+        in_flight = @deploy_app.latest_deployment&.status
+        raise_web_error("A deployment is already running.") if %w[queued provisioning building].include?(in_flight)
+
+        DB.transaction do
+          Prog::Deploy::DeploymentNexus.assemble(
+            @deploy_app,
+            trigger: "rollback",
+            commit_sha: deployment.commit_sha,
+            commit_message: "Rollback to #{deployment.ubid}",
+            image_ref: deployment.image_ref
+          )
+          audit_log(@deploy_app, "rollback")
+        end
+        flash["notice"] = "Rollback started"
+        r.redirect "#{path(@deploy_app)}/deployments"
+      end
+
       r.post "domain" do
         authorize("Project:billing", @project)
         action = typecast_params.str("action").to_s
@@ -236,7 +268,9 @@ class Clover
           start_command: blank_to_nil(typecast_params.str("start_command")),
           output_directory: blank_to_nil(typecast_params.str("output_directory")),
           app_port:,
-          framework:
+          framework:,
+          auto_deploy: typecast_params.bool("auto_deploy"),
+          build_cache_enabled: typecast_params.bool("build_cache_enabled")
         }
 
         DB.transaction do
@@ -329,5 +363,22 @@ class Clover
         updated_at: repo.last_job_at
       }
     end
+  end
+
+  def detect_deploy_framework(installation, repository, branch, root_directory)
+    path = "/repos/#{repository}/contents"
+    path = "#{path}/#{root_directory}" unless root_directory.to_s.empty?
+    response = installation.client(auto_paginate: true, per_page: 100).get(path, ref: branch)
+    items = Array(response)
+    files = items.filter_map do |item|
+      item_hash = item.respond_to?(:to_h) ? item.to_h : item
+      type = item_hash[:type] || item_hash["type"] || (item.type if item.respond_to?(:type))
+      name = item_hash[:name] || item_hash["name"] || (item.name if item.respond_to?(:name))
+      name.to_s if type.to_s == "file" && !name.to_s.empty?
+    end
+    DeployApp.detect_framework(files)
+  rescue => ex
+    Clog.emit("deploy framework detection failed", Util.exception_to_hash(ex, into: {deploy_framework_detection_failed: {repository:, branch:}}))
+    "node"
   end
 end
