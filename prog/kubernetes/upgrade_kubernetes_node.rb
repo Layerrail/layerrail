@@ -16,6 +16,8 @@ class Prog::Kubernetes::UpgradeKubernetesNode < Prog::Base
   end
 
   def before_run
+    super
+
     if kubernetes_cluster.strand.label == "destroy" && strand.label != "destroy"
       reap { pop "upgrade cancelled" }
     end

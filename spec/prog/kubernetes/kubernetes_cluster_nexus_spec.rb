@@ -887,14 +887,22 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
   end
 
   describe "#destroy" do
-    it "donates if there are sub-programs running (Provision...)" do
+    it "cancels sub-programs before waiting for cleanup" do
       st.update(label: "destroy")
+      child = Strand.create(parent_id: st.id, prog: "Kubernetes::ProvisionKubernetesNode", label: "start", stack: [{}], lease: Time.now + 10)
+
+      expect { nx.destroy }.to hop("wait_children_destroyed")
+      expect(child.semaphores_dataset.select_map(:name)).to eq ["destroy"]
+    end
+
+    it "waits if sub-programs are still running" do
+      st.update(label: "wait_children_destroyed")
       Strand.create(parent_id: st.id, prog: "Kubernetes::ProvisionKubernetesNode", label: "start", stack: [{}], lease: Time.now + 10)
-      expect { nx.destroy }.to nap(120)
+      expect { nx.wait_children_destroyed }.to nap(5)
     end
 
     it "naps until all nodepools are gone" do
-      st.update(label: "destroy")
+      st.update(label: "wait_children_destroyed")
       kubernetes_nodepool = kubernetes_cluster.nodepools.first
       Prog::Kubernetes::KubernetesNodeNexus.assemble(
         Config.kubernetes_service_project_id,
@@ -911,49 +919,49 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
       ).subject
       expect(kubernetes_cluster).not_to receive(:destroy)
 
-      expect { nx.destroy }.to nap(5)
+      expect { nx.wait_children_destroyed }.to nap(5)
       expect(kubernetes_cluster.nodes.map(&:destroy_set?)).to all(be true)
       expect(kubernetes_cluster.nodepools.map(&:destroy_set?)).to all(be true)
       expect(kubernetes_cluster.private_subnet.semaphores_dataset.select_map(:name)).to eq []
     end
 
     it "naps until all control plane nodes are gone" do
-      st.update(label: "destroy")
+      st.update(label: "wait_children_destroyed")
       kubernetes_cluster.nodepools_dataset.destroy
       expect(kubernetes_cluster.nodepools).to be_empty
 
-      expect { nx.destroy }.to nap(5)
+      expect { nx.wait_children_destroyed }.to nap(5)
       expect(kubernetes_cluster.nodes.map(&:destroy_set?)).to all(be true)
       expect(kubernetes_cluster.private_subnet.semaphores_dataset.select_map(:name)).to eq []
     end
 
     it "does not incr_destroy private_subnet with other resources" do
-      st.update(label: "destroy")
+      st.update(label: "wait_children_destroyed")
       kubernetes_cluster.nodepools_dataset.destroy
       expect(kubernetes_cluster.nodepools).to be_empty
 
       Firewall.create(name: "t", project_id: customer_project.id, location_id: kubernetes_location_id)
         .associate_with_private_subnet(kubernetes_cluster.private_subnet, apply_firewalls: false)
 
-      expect { nx.destroy }.to nap(5)
+      expect { nx.wait_children_destroyed }.to nap(5)
       expect(kubernetes_cluster.nodes.map(&:destroy_set?)).to all(be true)
       expect(kubernetes_cluster.private_subnet.semaphores_dataset.select_map(:name)).to eq []
     end
 
     it "naps until etcd backup is gone" do
       Prog::Kubernetes::EtcdBackupNexus.assemble(kubernetes_cluster.id)
-      st.update(label: "destroy")
+      st.update(label: "wait_children_destroyed")
       kubernetes_cluster.nodepools_dataset.destroy
       kubernetes_cluster.nodes_dataset.destroy
       kubernetes_cluster.reload
 
-      expect { nx.destroy }.to nap(5)
+      expect { nx.wait_children_destroyed }.to nap(5)
 
       expect(kubernetes_cluster.kubernetes_etcd_backup.destroy_set?).to be true
     end
 
     it "triggers deletion of associated resources and completes destroy when nodepools are gone" do
-      st.update(label: "destroy")
+      st.update(label: "wait_children_destroyed")
       api_server_lb = kubernetes_cluster.api_server_lb
       services_lb = kubernetes_cluster.services_lb
       cp_vms = kubernetes_cluster.cp_vms
@@ -969,7 +977,7 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
       expect(kubernetes_cluster.internal_worker_vm_firewall.exists?).to be true
 
       expect(kubernetes_cluster.private_subnet.semaphores_dataset.select_map(:name)).to eq []
-      expect { nx.destroy }.to exit({"msg" => "kubernetes cluster is deleted"})
+      expect { nx.wait_children_destroyed }.to exit({"msg" => "kubernetes cluster is deleted"})
       expect(api_server_lb.destroy_set?).to be true
       expect(services_lb.destroy_set?).to be true
       expect(cp_vms.map(&:destroy_set?)).to all(be true)
@@ -988,7 +996,7 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
       dns_zone.insert_record(record_name: "*.#{kubernetes_cluster.services_lb.hostname}.", type: "CNAME", ttl: 123, data: "whatever.")
       expect(DnsRecord[name: "*.#{kubernetes_cluster.services_lb.hostname}.", tombstoned: false]).not_to be_nil
 
-      expect { nx.destroy }.to exit({"msg" => "kubernetes cluster is deleted"})
+      expect { nx.wait_children_destroyed }.to exit({"msg" => "kubernetes cluster is deleted"})
       expect(DnsRecord[name: "*.#{kubernetes_cluster.services_lb.hostname}.", tombstoned: true]).not_to be_nil
     end
 
@@ -996,7 +1004,7 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
       kubernetes_cluster.nodepools_dataset.destroy
       kubernetes_cluster.nodes_dataset.destroy
       kubernetes_cluster.services_lb.update(custom_hostname_dns_zone_id: nil)
-      expect { nx.destroy }.to exit({"msg" => "kubernetes cluster is deleted"})
+      expect { nx.wait_children_destroyed }.to exit({"msg" => "kubernetes cluster is deleted"})
     end
 
     it "completes the destroy process even if the load balancers do not exist" do
@@ -1008,7 +1016,7 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
       kubernetes_cluster.nodepools_dataset.destroy
       kubernetes_cluster.nodes_dataset.destroy
 
-      expect { nx.destroy }.to exit({"msg" => "kubernetes cluster is deleted"})
+      expect { nx.wait_children_destroyed }.to exit({"msg" => "kubernetes cluster is deleted"})
     end
   end
 end

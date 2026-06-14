@@ -170,6 +170,11 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
   end
 
   describe "#before_run" do
+    it "honors a direct destroy semaphore" do
+      prog.incr_destroy
+      expect { prog.before_run }.to exit({"msg" => "exiting early due to destroy semaphore"})
+    end
+
     it "destroys itself if the kubernetes cluster is getting deleted" do
       kubernetes_cluster.strand.update(label: "something")
       expect(kubernetes_cluster.strand.label).to eq("something")

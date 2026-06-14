@@ -44,6 +44,11 @@ RSpec.describe Prog::Kubernetes::UpgradeKubernetesNode do
       Strand.create(id: kubernetes_cluster.id, label: "wait", prog: "KubernetesClusterNexus")
     end
 
+    it "honors a direct destroy semaphore" do
+      prog.incr_destroy
+      expect { prog.before_run }.to exit({"msg" => "exiting early due to destroy semaphore"})
+    end
+
     it "exits when kubernetes cluster is deleted and has no children itself" do
       st.update(label: "somestep")
       prog.before_run # Nothing happens

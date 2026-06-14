@@ -245,18 +245,26 @@ RSpec.describe Prog::Kubernetes::KubernetesNodepoolNexus do
   end
 
   describe "#destroy" do
-    it "donates if there are sub-programs running (Provision...)" do
+    it "cancels sub-programs before waiting for cleanup" do
       kn.strand.update(label: "wait_upgrade")
+      child = Strand.create(parent_id: kn.strand.id, prog: "Kubernetes::UpgradeKubernetesNode", label: "start", lease: Time.now + 10)
+
+      expect { nx.destroy }.to hop("wait_children_destroyed")
+      expect(child.semaphores_dataset.select_map(:name)).to eq ["destroy"]
+    end
+
+    it "waits if sub-programs are still running" do
+      kn.strand.update(label: "wait_children_destroyed")
       Strand.create(parent_id: kn.strand.id, prog: "Kubernetes::UpgradeKubernetesNode", label: "start", lease: Time.now + 10)
-      expect { nx.destroy }.to nap(120)
+      expect { nx.wait_children_destroyed }.to nap(5)
     end
 
     it "completes destroy when nodes are gone" do
       KubernetesNode.create(vm_id: create_vm.id, kubernetes_cluster_id: kn.cluster.id, kubernetes_nodepool_id: kn.id)
-      kn.strand.update(label: "destroy")
+      kn.strand.update(label: "wait_children_destroyed")
       expect(kn.nodes).to all(receive(:incr_destroy))
 
-      expect { nx.destroy }.to nap(5)
+      expect { nx.wait_children_destroyed }.to nap(5)
     end
 
     it "destroys the nodepool and its nodes" do
@@ -264,7 +272,7 @@ RSpec.describe Prog::Kubernetes::KubernetesNodepoolNexus do
 
       expect(kn.nodes).to all(receive(:incr_destroy))
       expect(kn).to receive(:destroy)
-      expect { nx.destroy }.to exit({"msg" => "kubernetes nodepool is deleted"})
+      expect { nx.wait_children_destroyed }.to exit({"msg" => "kubernetes nodepool is deleted"})
     end
   end
 end

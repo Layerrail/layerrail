@@ -223,6 +223,8 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
   end
 
   def before_run
+    super
+
     if kubernetes_cluster.strand.label == "destroy" && strand.label != "destroy"
       pop "provisioning canceled"
     end

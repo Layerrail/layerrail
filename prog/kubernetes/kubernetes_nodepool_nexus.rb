@@ -100,9 +100,13 @@ class Prog::Kubernetes::KubernetesNodepoolNexus < Prog::Base
   end
 
   label def destroy
-    reap do
-      decr_destroy
+    decr_destroy
+    Semaphore.incr(strand.children_dataset.select(:id), "destroy")
+    hop_wait_children_destroyed
+  end
 
+  label def wait_children_destroyed
+    reap(nap: 5) do
       kubernetes_nodepool.nodes.each(&:incr_destroy)
       nap 5 unless kubernetes_nodepool.nodes.empty?
       kubernetes_nodepool.destroy

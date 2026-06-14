@@ -415,9 +415,13 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
   end
 
   label def destroy
-    reap do
-      decr_destroy
+    decr_destroy
+    Semaphore.incr(strand.children_dataset.select(:id), "destroy")
+    hop_wait_children_destroyed
+  end
 
+  label def wait_children_destroyed
+    reap(nap: 5) do
       kubernetes_cluster.kubernetes_etcd_backup&.incr_destroy
 
       kubernetes_cluster.nodes.each(&:incr_destroy)
