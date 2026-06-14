@@ -22,7 +22,7 @@ module Github
 
   def self.app_client
     current = Time.now.to_i
-    private_key = OpenSSL::PKey::RSA.new(Config.github_app_private_key)
+    private_key = OpenSSL::PKey::RSA.new(Config.github_app_private_key.to_s.gsub("\\n", "\n"))
     key = {
       iat: current,
       exp: current + (8 * 60),
