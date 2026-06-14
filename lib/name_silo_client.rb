@@ -16,6 +16,7 @@ end
 
 class NameSiloClient
   SUCCESS_CODES = %w[250 251 252 253 254 260 261 262 263 264 265 280 281 300 301 302].freeze
+  REQUEST_TIMEOUT_SECONDS = 12
   DEFAULT_TLD_PRICES_CENTS = {
     "com" => 1395,
     "net" => 1495,
@@ -197,7 +198,13 @@ class NameSiloClient
       key: Config.namesilo_api_key
     }.merge(params)
 
-    response = Excon.get("#{Config.namesilo_api_base_url}/#{operation}?#{URI.encode_www_form(query)}", expects: [200])
+    response = Excon.get(
+      "#{Config.namesilo_api_base_url}/#{operation}?#{URI.encode_www_form(query)}",
+      expects: [200],
+      connect_timeout: REQUEST_TIMEOUT_SECONDS,
+      read_timeout: REQUEST_TIMEOUT_SECONDS,
+      write_timeout: REQUEST_TIMEOUT_SECONDS
+    )
     body = JSON.parse(response.body)
     reply = body["reply"] || body
     code = reply["code"].to_s
@@ -208,7 +215,8 @@ class NameSiloClient
 
     reply
   rescue Excon::Error => ex
-    fail NameSiloAPIError.new(ex.response&.body || ex.message)
+    response_body = ex.respond_to?(:response) ? ex.response&.body : nil
+    fail NameSiloAPIError.new(response_body || "Domain registrar did not respond in time. Please try again.")
   rescue JSON::ParserError => ex
     fail NameSiloAPIError.new(ex.message)
   end
