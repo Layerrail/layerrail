@@ -39,6 +39,16 @@ class CloudflareWorkersAiClient
     [response.status, parse_response_body(response)]
   end
 
+  def run_model_request(model_name, payload)
+    response = @connection.post(
+      path: "/client/v4/accounts/#{@account_id}/ai/run",
+      body: {"model" => model_name, "input" => payload}.to_json,
+      expects: [200, 400, 401, 403, 404, 429, 500, 502, 503],
+    )
+
+    [response.status, parse_response_body(response)]
+  end
+
   private
 
   def parse_response_body(response)

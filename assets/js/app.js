@@ -710,6 +710,10 @@ function setupPlayground() {
 
   function renderInferenceResult(parsed, capability) {
     const result = parsed?.result ?? parsed;
+    if (capability === "Text Generation") {
+      const text = extractTextGenerationResponse(parsed);
+      return { text, html: DOMPurify.sanitize(marked.parse(text || JSON.stringify(result, null, 2))) };
+    }
     if (capability === "Text-to-Image" && typeof result === "string") {
       const image = result.replace(/[^A-Za-z0-9+/=]/g, "");
       return {
@@ -758,6 +762,7 @@ function setupPlayground() {
       || result?.choices?.[0]?.message?.content
       || parsed?.choices?.[0]?.text
       || result?.choices?.[0]?.text
+      || result?.candidates?.[0]?.content?.parts?.map((part) => part?.text).filter(Boolean).join("\n")
       || parsed?.output_text
       || result?.output_text
       || outputParts.flatMap((item) => item?.content || []).map((part) => part?.text).filter(Boolean).join("\n")
@@ -784,8 +789,12 @@ function setupPlayground() {
         if (Number.isInteger(height) && height > 0) payload.height = height;
         break;
       case "Text-to-Speech":
-        payload.prompt = prompt;
-        payload.lang = source_language || "en";
+        if (endpoint_name.startsWith("@cf/deepgram/")) {
+          payload.text = prompt;
+        } else {
+          payload.prompt = prompt;
+          payload.lang = source_language || "en";
+        }
         break;
       case "Automatic Speech Recognition":
         if (!filePayload) throw new Error("Please upload an audio file.");
@@ -916,6 +925,37 @@ function setupPlayground() {
           model: endpoint_name,
           input: prompt,
         };
+      } else if (endpoint_api === "run") {
+        request_path = "/v1/run";
+        const run_messages = [];
+        if (system.length > 0) {
+          run_messages.push({ role: "system", content: system });
+        }
+        run_messages.push(...previous_messages.map((message) => ({
+          role: message.role,
+          content: message.content?.[0]?.text || "",
+        })).filter((message) => message.content));
+        run_messages.push({ role: "user", content: prompt });
+
+        if (endpoint_name.startsWith("google/")) {
+          request_payload = {
+            model: endpoint_name,
+            messages: run_messages,
+            temperature: temperature,
+            top_p: top_p,
+          };
+        } else {
+          request_payload = {
+            model: endpoint_name,
+            messages: run_messages,
+            stream: false,
+            temperature: temperature,
+            top_p: top_p,
+          };
+        }
+        if (Number.isInteger(max_tokens) && max_tokens > 0) {
+          request_payload.max_tokens = max_tokens;
+        }
       } else if (endpoint_api === "responses") {
         request_path = "/v1/responses";
         request_payload = {

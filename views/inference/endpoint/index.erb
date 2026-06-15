@@ -121,6 +121,14 @@ MSG
     "max_tokens": 1024
 MSG
           ]
+        elsif api == "run"
+          [
+            "/v1/run",
+            "hero-chat-bubble-bottom-center-text",
+          <<-MSG
+"messages": [{"role": "user", "content": "say something"}]
+MSG
+          ]
         else
           [
             "/v1/chat/completions",

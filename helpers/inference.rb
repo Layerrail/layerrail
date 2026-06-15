@@ -146,12 +146,15 @@ class Clover
 
     model = cloudflare_inference_models.find { it.model_name == model_name }
     fail CloverError.new(400, "InvalidRequest", "model is not enabled") unless model
-    unless CLOUDFLARE_NATIVE_CAPABILITIES.include?(model.tags["capability"])
+    unless CLOUDFLARE_NATIVE_CAPABILITIES.include?(model.tags["capability"]) || cloudflare_text_model_path(model) == "run"
       fail CloverError.new(400, "InvalidRequest", "model is not enabled for the native run route")
     end
 
     payload.delete("stream")
-    status, body = CloudflareWorkersAiClient.new.run_request(model.model_name, payload)
+    if model.tags["capability"] == "Text-to-Speech" && model.model_name.start_with?("@cf/deepgram/") && payload["text"].to_s.empty?
+      payload["text"] = payload.delete("prompt")
+    end
+    status, body = cloudflare_run_request(CloudflareWorkersAiClient.new, model, payload)
     response.status = status
     record_cloudflare_inference_usage(api_key, model, body, payload) if status == 200
     body
@@ -186,7 +189,12 @@ class Clover
     request_path = cloudflare_text_model_path(model)
 
     started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    status, body = CloudflareWorkersAiClient.new.openai_request(request_path, request_payload)
+    client = CloudflareWorkersAiClient.new
+    status, body = if request_path == "run"
+      cloudflare_run_request(client, model, request_payload)
+    else
+      client.openai_request(request_path, request_payload)
+    end
     latency_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000).round
     response.status = status
 
@@ -296,6 +304,18 @@ class Clover
       return request_payload.compact
     end
 
+    if route == "run"
+      request_payload = {
+        "messages" => request_messages.reject { it["role"] == "system" },
+        "system" => system_prompt.empty? ? nil : system_prompt,
+        "stream" => false,
+        "temperature" => payload["temperature"],
+        "top_p" => payload["top_p"],
+        "max_tokens" => payload["max_tokens"],
+      }.compact
+      return cloudflare_run_text_payload(model, request_payload)
+    end
+
     request_messages.unshift({"role" => "system", "content" => system_prompt}) unless system_prompt.empty?
 
     {
@@ -325,6 +345,7 @@ class Clover
       body.dig("choices", 0, "text"),
       result.dig("choices", 0, "message", "content"),
       result.dig("choices", 0, "text"),
+      result.dig("candidates", 0, "content", "parts", 0, "text"),
       body["output_text"],
       *Array(body["output"]).flat_map { |item| Array(item["content"]).map { |part| part["text"] if part.is_a?(Hash) } if item.is_a?(Hash) },
       *Array(body["content"]).map { |part| part["text"] if part.is_a?(Hash) },
@@ -426,9 +447,43 @@ class Clover
       "messages"
     when "responses"
       "responses"
+    when "run"
+      "run"
     else
       "chat/completions"
     end
+  end
+
+  def cloudflare_run_request(client, model, payload)
+    payload = cloudflare_run_text_payload(model, payload) if model.tags["capability"] == "Text Generation"
+    return client.run_request(model.model_name, payload) if model.model_name.start_with?("@cf/", "@hf/")
+
+    client.run_model_request(model.model_name, payload)
+  end
+
+  def cloudflare_run_text_payload(model, payload)
+    if model.model_name.start_with?("google/")
+      messages = payload["messages"] || []
+      contents = messages.filter_map do |message|
+        content = estimate_inference_text(message["content"]).strip
+        next if content.empty?
+
+        {"role" => message["role"] == "assistant" ? "model" : "user", "parts" => [{"text" => content}]}
+      end
+      system = estimate_inference_text(payload["system"]).strip
+      contents.unshift({"role" => "user", "parts" => [{"text" => system}]}) unless system.empty?
+
+      return {
+        "contents" => contents,
+        "generationConfig" => {
+          "temperature" => payload["temperature"],
+          "topP" => payload["top_p"],
+          "maxOutputTokens" => payload["max_tokens"],
+        }.compact,
+      }.compact
+    end
+
+    payload
   end
 
   def record_cloudflare_inference_usage(api_key, model, body, payload)
@@ -529,6 +584,7 @@ class Clover
       body.dig("choices", 0, "text"),
       result.dig("choices", 0, "message", "content"),
       result.dig("choices", 0, "text"),
+      result.dig("candidates", 0, "content", "parts", 0, "text"),
       body["output_text"],
       *Array(body["output"]).flat_map { |item| Array(item["content"]).map { |part| part["text"] if part.is_a?(Hash) } if item.is_a?(Hash) },
       *Array(body["content"]).map { |part| part["text"] if part.is_a?(Hash) },
