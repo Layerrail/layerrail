@@ -433,7 +433,7 @@ class Clover
       end
 
       fail CloverError.new(400, "InvalidRequest", "input or messages is required") unless payload.key?("input")
-      payload["max_output_tokens"] ||= payload.delete("max_tokens") || payload.delete("max_completion_tokens")
+      payload["max_output_tokens"] ||= payload.delete("max_tokens") || payload.delete("max_completion_tokens") || 1024
       payload.delete("response_format")
       payload["stream"] = false
     when "embeddings"
