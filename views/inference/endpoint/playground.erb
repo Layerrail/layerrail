@@ -37,7 +37,7 @@
                 "data-tags": ie.tags.to_json
               }]
             },
-            selected: @inference_models.first&.model_name,
+            selected: @default_inference_model&.model_name,
           }
         ) %>
         <%== render(

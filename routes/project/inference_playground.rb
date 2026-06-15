@@ -13,9 +13,14 @@ class Clover
 
       DB.ignore_duplicate_queries do
         @inference_models = all_inference_models.select do
-          it.tags["capability"] == "Text Generation" ||
-            it.tags["capability"] == "Embeddings" ||
-            (cloudflare_inference_provider? && CLOUDFLARE_NATIVE_CAPABILITIES.include?(it.tags["capability"]))
+          capability = it.tags["capability"]
+          if cloudflare_inference_provider?
+            it.tags["source"] == "Cloudflare Unified AI" ||
+              capability == "Embeddings" ||
+              CLOUDFLARE_NATIVE_CAPABILITIES.include?(capability)
+          else
+            capability == "Text Generation" || capability == "Embeddings"
+          end
         end
       end
 
@@ -23,6 +28,7 @@ class Clover
       @remaining_free_quota = FreeQuota.remaining_free_quota("inference-tokens", @project.id)
       @free_quota_unit = "inference tokens"
       @has_valid_payment_method = @project.has_valid_payment_method?
+      @default_inference_model = @inference_models.find { it.tags["capability"] == "Text Generation" } || @inference_models.first
       view "inference/endpoint/playground"
     end
   end
