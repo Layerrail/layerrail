@@ -417,10 +417,12 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
   label def destroy
     decr_destroy
     Semaphore.incr(strand.children_dataset.select(:id), "destroy")
+    schedule_dependent_resources_for_destroy
     hop_wait_children_destroyed
   end
 
   label def wait_children_destroyed
+    schedule_dependent_resources_for_destroy
     reap(nap: 5) do
       kubernetes_cluster.kubernetes_etcd_backup&.incr_destroy
 
@@ -450,5 +452,17 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
       kubernetes_cluster.destroy
       pop "kubernetes cluster is deleted"
     end
+  end
+
+  def schedule_dependent_resources_for_destroy
+    kubernetes_cluster.kubernetes_etcd_backup&.incr_destroy
+    kubernetes_cluster.nodes.each(&:incr_destroy)
+    kubernetes_cluster.nodepools.each(&:incr_destroy)
+
+    if (services_lb = kubernetes_cluster.services_lb)
+      services_lb.dns_zone&.delete_record(record_name: "*.#{services_lb.hostname}.")
+      services_lb.incr_destroy
+    end
+    kubernetes_cluster.api_server_lb&.incr_destroy
   end
 end

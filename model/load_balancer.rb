@@ -28,6 +28,12 @@ class LoadBalancer < Sequel::Model
     private_subnet.display_location
   end
 
+  def display_state
+    return "deleting" if destroying_set? || destroy_set?
+
+    strand&.label == "wait" ? "available" : "updating"
+  end
+
   def first_port
     ports.first
   end

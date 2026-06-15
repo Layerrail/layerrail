@@ -8,6 +8,7 @@ class Serializers::LoadBalancer < Serializers::Base
       location: lb.display_location,
       hostname: lb.hostname,
       algorithm: lb.algorithm,
+      state: lb.display_state,
       stack: lb.stack,
       health_check_endpoint: lb.health_check_endpoint,
       health_check_protocol: lb.health_check_protocol,

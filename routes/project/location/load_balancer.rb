@@ -73,6 +73,7 @@ class Clover
       r.delete true do
         authorize("LoadBalancer:delete", lb)
         DB.transaction do
+          BillingRecord.finalize_active_for_resource(lb)
           lb.incr_destroy
           audit_log(lb, "destroy")
         end

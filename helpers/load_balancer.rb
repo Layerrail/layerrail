@@ -7,7 +7,7 @@ class Clover
     if api?
       paginated_result(dataset.eager(:ports), Serializers::LoadBalancer)
     else
-      @lbs = dataset.all
+      @lbs = dataset.all.reject { it.display_state == "deleting" }
       view "networking/load_balancer/index"
     end
   end
