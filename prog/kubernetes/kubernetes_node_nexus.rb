@@ -100,7 +100,7 @@ class Prog::Kubernetes::KubernetesNodeNexus < Prog::Base
       nap 10
     else
       register_deadline("destroy", 0)
-      nap 3 * 60 * 60
+      nap 10
     end
   end
 

@@ -170,7 +170,7 @@ RSpec.describe Prog::Kubernetes::KubernetesNodeNexus do
     it "naps when daemonizer something unexpected and waits for the page" do
       expect(cluster_sshable).to receive(:_cmd).with("common/bin/daemonizer2 check drain_node_vm").and_return("UnexpectedState")
       expect(nx).to receive(:register_deadline).with("destroy", 0)
-      expect { nx.drain }.to nap(3 * 60 * 60)
+      expect { nx.drain }.to nap(10)
     end
 
     it "drains the old node and hops to wait_for_detach" do
