@@ -101,16 +101,36 @@
 
 <div id="inference_model_catalog" class="grid xl:grid-cols-2 2xl:grid-cols-3 gap-4">
   <% @inference_models.each_with_index do | ie, index |
+    api = ie.tags.fetch("api", "chat")
     path, model_icon, curl_message = case ie.tags["capability"]
       when "Text Generation"
-        [
-          "/v1/chat/completions",
-          "hero-chat-bubble-bottom-center-text",
-        <<-MSG
+        if api == "responses"
+          [
+            "/v1/responses",
+            "hero-chat-bubble-bottom-center-text",
+          <<-MSG
+"input": "say something"
+MSG
+          ]
+        elsif api == "messages"
+          [
+            "/v1/messages",
+            "hero-chat-bubble-bottom-center-text",
+          <<-MSG
+"messages": [{"role": "user", "content": "say something"}],
+    "max_tokens": 1024
+MSG
+          ]
+        else
+          [
+            "/v1/chat/completions",
+            "hero-chat-bubble-bottom-center-text",
+          <<-MSG
 "messages": [{"role": "user", "content": "say something"}],
     "stream": #{ie.respond_to?(:provider) && ie.provider == "cloudflare" ? "false" : "true"}
 MSG
-        ]
+          ]
+        end
       when "Embeddings"
         ["/v1/embeddings", "hero-document-arrow-down", "\"input\": \"embed me!\"\n"]
       when "Text-to-Image"

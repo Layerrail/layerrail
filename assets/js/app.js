@@ -349,6 +349,10 @@ function setupPlayground() {
     return selectedEndpointOption().attr('data-capability') || "Text Generation";
   }
 
+  function selectedEndpointApi() {
+    return selectedEndpointOption().attr('data-api') || "chat";
+  }
+
   function selectedTags() {
     try {
       return JSON.parse(selectedEndpointOption().attr('data-tags') || '{}');
@@ -746,6 +750,23 @@ function setupPlayground() {
     return { text: JSON.stringify(parsed), html: renderJson(parsed) };
   }
 
+  function extractTextGenerationResponse(parsed) {
+    const result = parsed?.result ?? parsed;
+    const contentParts = result?.content || parsed?.content || [];
+    const outputParts = result?.output || parsed?.output || [];
+    return parsed?.choices?.[0]?.message?.content
+      || result?.choices?.[0]?.message?.content
+      || parsed?.choices?.[0]?.text
+      || result?.choices?.[0]?.text
+      || parsed?.output_text
+      || result?.output_text
+      || outputParts.flatMap((item) => item?.content || []).map((part) => part?.text).filter(Boolean).join("\n")
+      || contentParts.map((part) => part?.text).filter(Boolean).join("\n")
+      || result?.response
+      || result?.text
+      || "";
+  }
+
   async function buildNativeRunPayload(capability, endpoint_name, prompt, max_tokens) {
     const source_language = ($('#inference_source_language').val() || "").trim();
     const target_language = ($('#inference_target_language').val() || "").trim();
@@ -852,7 +873,8 @@ function setupPlayground() {
     }
     const native_run = selectedEndpointUsesNativeRun();
     const embeddings_request = capability === "Embeddings";
-    const streams_response = !native_run && !embeddings_request && $selected_endpoint.attr('data-provider') !== "cloudflare";
+    const endpoint_api = selectedEndpointApi();
+    const streams_response = !native_run && !embeddings_request && endpoint_api === "chat" && $selected_endpoint.attr('data-provider') !== "cloudflare";
     const request_input_price = selectedEndpointNumber('data-input-price');
     const request_output_price = selectedEndpointNumber('data-output-price');
 
@@ -894,6 +916,32 @@ function setupPlayground() {
           model: endpoint_name,
           input: prompt,
         };
+      } else if (endpoint_api === "responses") {
+        request_path = "/v1/responses";
+        request_payload = {
+          model: endpoint_name,
+          input: messages.filter((message) => message.role !== "system"),
+          instructions: system || undefined,
+          stream: false,
+          temperature: temperature,
+          top_p: top_p,
+        };
+        if (Number.isInteger(max_tokens) && max_tokens > 0) {
+          request_payload.max_output_tokens = max_tokens;
+        }
+      } else if (endpoint_api === "messages") {
+        request_path = "/v1/messages";
+        request_payload = {
+          model: endpoint_name,
+          messages: messages.filter((message) => message.role !== "system"),
+          system: system || undefined,
+          stream: false,
+          temperature: temperature,
+          top_p: top_p,
+        };
+        if (Number.isInteger(max_tokens) && max_tokens > 0) {
+          request_payload.max_tokens = max_tokens;
+        }
       } else {
         request_path = "/v1/chat/completions";
         request_payload = {
@@ -986,9 +1034,10 @@ function setupPlayground() {
 
       if (!streams_response) {
         const parsed = await response.json();
-        content = parsed?.choices?.[0]?.message?.content || "";
-        const prompt_tokens = parsed?.usage?.prompt_tokens ?? estimateTokenCount(messages);
-        const completion_tokens = parsed?.usage?.completion_tokens ?? estimateTokenCount(content);
+        const usage = parsed?.usage || parsed?.result?.usage || {};
+        content = extractTextGenerationResponse(parsed);
+        const prompt_tokens = usage.prompt_tokens ?? usage.input_tokens ?? estimateTokenCount(request_payload);
+        const completion_tokens = usage.completion_tokens ?? usage.output_tokens ?? estimateTokenCount(content);
         recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price);
 
         assistant_message.content[0].text = content;

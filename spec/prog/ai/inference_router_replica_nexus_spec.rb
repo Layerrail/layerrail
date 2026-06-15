@@ -317,7 +317,7 @@ RSpec.describe Prog::Ai::InferenceRouterReplicaNexus do
         }])
         expect(json_sent["locations"].map { |h| h.transform_keys(&:to_sym) }).to eq([
           {name: "up", path: "^/up$", app: "up"},
-          {name: "inference", path: "^/v1/(chat/completions|completions|embeddings|run)$", app: "inference"},
+          {name: "inference", path: "^/v1/(chat/completions|completions|embeddings|messages|responses|run)$", app: "inference"},
           {name: "usage", path: "^/usage$", app: "usage"},
           {name: "stats", path: "^/stats$", app: "stats"},
         ])

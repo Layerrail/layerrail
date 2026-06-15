@@ -6,7 +6,8 @@ class CloudflareInferenceModel
   def initialize(config)
     @id = config.fetch("id")
     @model_name = config.fetch("model_name")
-    @tags = config.fetch("tags", {}).merge("provider" => "Cloudflare Workers AI")
+    provider_label = model_name.start_with?("@cf/") ? "Cloudflare Workers AI" : "Cloudflare AI"
+    @tags = config.fetch("tags", {}).merge("provider" => provider_label)
     @prompt_billing_resource = config.fetch("prompt_billing_resource", "preview-input")
     @completion_billing_resource = config.fetch("completion_billing_resource", "preview-output")
   end

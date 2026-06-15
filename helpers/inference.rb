@@ -115,6 +115,9 @@ class Clover
     payload = parse_inference_payload
     model = cloudflare_inference_models.find { it.model_name == payload["model"] && it.tags["capability"] == capability }
     fail CloverError.new(400, "InvalidRequest", "model is not enabled for #{capability.downcase}") unless model
+    if capability == "Text Generation" && cloudflare_text_model_path(model) != path
+      fail CloverError.new(400, "InvalidRequest", "model uses /v1/#{cloudflare_text_model_path(model)}")
+    end
 
     normalize_cloudflare_payload!(payload, path)
     payload.delete("stream_options")
@@ -180,9 +183,10 @@ class Clover
     user_query = ai_agent_user_query(messages)
     context_chunks = agent.retrieval_context(user_query)
     request_payload = ai_agent_cloudflare_payload(agent, model, messages, context_chunks, payload)
+    request_path = cloudflare_text_model_path(model)
 
     started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    status, body = CloudflareWorkersAiClient.new.openai_request("chat/completions", request_payload)
+    status, body = CloudflareWorkersAiClient.new.openai_request(request_path, request_payload)
     latency_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000).round
     response.status = status
 
@@ -263,9 +267,36 @@ class Clover
       ai_agent_context_prompt(context_chunks),
     ].reject(&:empty?).join("\n\n")
 
-    request_messages = []
-    request_messages << {"role" => "system", "content" => system_prompt} unless system_prompt.empty?
-    request_messages.concat(messages)
+    request_messages = messages.map { |message| {"role" => message["role"], "content" => message["content"]} }
+    route = cloudflare_text_model_path(model)
+
+    if route == "messages"
+      request_payload = {
+        "model" => model.model_name,
+        "messages" => request_messages.reject { it["role"] == "system" },
+        "system" => system_prompt.empty? ? nil : system_prompt,
+        "stream" => false,
+        "temperature" => payload["temperature"],
+        "top_p" => payload["top_p"],
+        "max_tokens" => payload["max_tokens"],
+      }
+      return request_payload.compact
+    end
+
+    if route == "responses"
+      request_payload = {
+        "model" => model.model_name,
+        "input" => request_messages.reject { it["role"] == "system" },
+        "instructions" => system_prompt.empty? ? nil : system_prompt,
+        "stream" => false,
+        "temperature" => payload["temperature"],
+        "top_p" => payload["top_p"],
+        "max_output_tokens" => payload["max_tokens"],
+      }
+      return request_payload.compact
+    end
+
+    request_messages.unshift({"role" => "system", "content" => system_prompt}) unless system_prompt.empty?
 
     {
       "model" => model.model_name,
@@ -288,11 +319,20 @@ class Clover
   end
 
   def ai_agent_response_text(body)
+    result = body["result"].is_a?(Hash) ? body["result"] : {}
     [
       body.dig("choices", 0, "message", "content"),
       body.dig("choices", 0, "text"),
-      body.dig("result", "response"),
-      body.dig("result", "text"),
+      result.dig("choices", 0, "message", "content"),
+      result.dig("choices", 0, "text"),
+      body["output_text"],
+      *Array(body["output"]).flat_map { |item| Array(item["content"]).map { |part| part["text"] if part.is_a?(Hash) } if item.is_a?(Hash) },
+      *Array(body["content"]).map { |part| part["text"] if part.is_a?(Hash) },
+      result["response"],
+      result["text"],
+      result["output_text"],
+      *Array(result["output"]).flat_map { |item| Array(item["content"]).map { |part| part["text"] if part.is_a?(Hash) } if item.is_a?(Hash) },
+      *Array(result["content"]).map { |part| part["text"] if part.is_a?(Hash) },
     ].compact.first.to_s
   end
 
@@ -327,16 +367,75 @@ class Clover
         end.join("\n")
       end
       payload["stream"] = false
+    when "messages"
+      messages = payload["messages"]
+      fail CloverError.new(400, "InvalidRequest", "messages must be an array") unless messages.is_a?(Array)
+
+      system_messages = []
+      payload["messages"] = messages.filter_map do |message|
+        next unless message.is_a?(Hash)
+
+        content = estimate_inference_text(message["content"]).strip
+        next if content.empty?
+
+        if message["role"].to_s == "system"
+          system_messages << content
+          next
+        end
+
+        {"role" => message["role"].to_s, "content" => content}
+      end
+
+      payload["system"] = [payload["system"], system_messages].flatten.compact.map(&:to_s).reject(&:empty?).join("\n\n")
+      payload.delete("system") if payload["system"].empty?
+      payload["max_tokens"] ||= payload.delete("max_completion_tokens")
+      payload["stream"] = false
+    when "responses"
+      if payload["messages"].is_a?(Array)
+        messages = payload.delete("messages")
+        instructions = []
+        payload["input"] = messages.filter_map do |message|
+          next unless message.is_a?(Hash)
+
+          content = estimate_inference_text(message["content"]).strip
+          next if content.empty?
+
+          if message["role"].to_s == "system"
+            instructions << content
+            next
+          end
+
+          {"role" => message["role"].to_s, "content" => content}
+        end
+        payload["instructions"] = [payload["instructions"], instructions].flatten.compact.map(&:to_s).reject(&:empty?).join("\n\n")
+        payload.delete("instructions") if payload["instructions"].empty?
+      end
+
+      fail CloverError.new(400, "InvalidRequest", "input or messages is required") unless payload.key?("input")
+      payload["max_output_tokens"] ||= payload.delete("max_tokens") || payload.delete("max_completion_tokens")
+      payload.delete("response_format")
+      payload["stream"] = false
     when "embeddings"
       payload.delete("stream")
+    end
+  end
+
+  def cloudflare_text_model_path(model)
+    case model.tags["api"]
+    when "messages"
+      "messages"
+    when "responses"
+      "responses"
+    else
+      "chat/completions"
     end
   end
 
   def record_cloudflare_inference_usage(api_key, model, body, payload)
     result = body["result"].is_a?(Hash) ? body["result"] : {}
     usage = body["usage"] || result["usage"] || {}
-    prompt_tokens = usage["prompt_tokens"].to_i
-    completion_tokens = usage["completion_tokens"].to_i
+    prompt_tokens = (usage["prompt_tokens"] || usage["input_tokens"]).to_i
+    completion_tokens = (usage["completion_tokens"] || usage["output_tokens"]).to_i
     total_tokens = usage["total_tokens"].to_i
 
     prompt_tokens = estimate_inference_tokens(cloudflare_request_text(body, payload)) if prompt_tokens.zero?
@@ -416,6 +515,8 @@ class Clover
       payload["prompt"],
       payload["text"],
       payload["input_text"],
+      payload["instructions"],
+      payload["system"],
       payload["query"],
       payload["contexts"],
     ].compact
@@ -426,8 +527,16 @@ class Clover
     [
       body.dig("choices", 0, "message", "content"),
       body.dig("choices", 0, "text"),
+      result.dig("choices", 0, "message", "content"),
+      result.dig("choices", 0, "text"),
+      body["output_text"],
+      *Array(body["output"]).flat_map { |item| Array(item["content"]).map { |part| part["text"] if part.is_a?(Hash) } if item.is_a?(Hash) },
+      *Array(body["content"]).map { |part| part["text"] if part.is_a?(Hash) },
       result["response"],
       result["text"],
+      result["output_text"],
+      *Array(result["output"]).flat_map { |item| Array(item["content"]).map { |part| part["text"] if part.is_a?(Hash) } if item.is_a?(Hash) },
+      *Array(result["content"]).map { |part| part["text"] if part.is_a?(Hash) },
       result["translated_text"],
       result["summary"],
       result["description"],

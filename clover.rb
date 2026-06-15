@@ -1171,6 +1171,14 @@ class Clover < Roda
           handle_cloudflare_ai_request("chat/completions", "Text Generation")
         end
 
+        r.post "v1", "messages" do
+          handle_cloudflare_ai_request("messages", "Text Generation")
+        end
+
+        r.post "v1", "responses" do
+          handle_cloudflare_ai_request("responses", "Text Generation")
+        end
+
         r.post "v1", "embeddings" do
           handle_cloudflare_ai_request("embeddings", "Embeddings")
         end

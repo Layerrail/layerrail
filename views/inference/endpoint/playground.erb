@@ -30,6 +30,7 @@
                 "data-provider-label": ie.tags["provider"] || (ie.respond_to?(:provider) ? ie.provider : "LayerRail"),
                 "data-display-name": ie.tags["display_name"] || ie.model_name,
                 "data-capability": ie.tags["capability"],
+                "data-api": ie.tags.fetch("api", "chat"),
                 "data-context-length": ie.tags.fetch("context_length", "Full"),
                 "data-input-price": prompt_price,
                 "data-output-price": completion_price,
