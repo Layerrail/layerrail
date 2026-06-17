@@ -179,8 +179,26 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
   end
 
   label def wait_control_plane_node
+    if (failed_node = failed_control_plane_node)
+      Clog.emit("Kubernetes control plane node failed", {
+        kubernetes_control_plane_node_failed: {
+          kubernetes_cluster_id: kubernetes_cluster.id,
+          kubernetes_cluster_ubid: kubernetes_cluster.ubid,
+          vm_id: failed_node.vm.id,
+          vm_ubid: failed_node.vm.ubid,
+          vm_name: failed_node.vm.name,
+        },
+      })
+      kubernetes_cluster.incr_destroy
+      hop_destroy
+    end
+
     extend_wait_deadline
     reap(:bootstrap_control_plane_nodes)
+  end
+
+  def failed_control_plane_node
+    kubernetes_cluster.nodes.find { |node| node.vm&.display_state == "failed" }
   end
 
   label def wait_nodes

@@ -5,6 +5,8 @@ require "base64"
 require "json"
 
 class CloudflareWorkersAiClient
+  EXPECTED_STATUSES = [200, 400, 401, 402, 403, 404, 429, 500, 502, 503].freeze
+
   def initialize(account_id: Config.cloudflare_account_id, api_token: Config.cloudflare_api_token)
     fail CloverError.new(500, "MissingConfiguration", "CLOUDFLARE_ACCOUNT_ID is required for Cloudflare Workers AI.") unless account_id
     fail CloverError.new(500, "MissingConfiguration", "CLOUDFLARE_API_TOKEN is required for Cloudflare Workers AI.") unless api_token
@@ -23,7 +25,7 @@ class CloudflareWorkersAiClient
     response = @connection.post(
       path: "/client/v4/accounts/#{@account_id}/ai/v1/#{path}",
       body: payload.to_json,
-      expects: [200, 400, 401, 403, 404, 429, 500, 502, 503],
+      expects: EXPECTED_STATUSES,
     )
 
     [response.status, parse_response_body(response)]
@@ -33,7 +35,7 @@ class CloudflareWorkersAiClient
     response = @connection.post(
       path: "/client/v4/accounts/#{@account_id}/ai/run/#{model_name}",
       body: payload.to_json,
-      expects: [200, 400, 401, 403, 404, 429, 500, 502, 503],
+      expects: EXPECTED_STATUSES,
     )
 
     [response.status, parse_response_body(response)]
@@ -43,7 +45,7 @@ class CloudflareWorkersAiClient
     response = @connection.post(
       path: "/client/v4/accounts/#{@account_id}/ai/run",
       body: {"model" => model_name, "input" => payload}.to_json,
-      expects: [200, 400, 401, 403, 404, 429, 500, 502, 503],
+      expects: EXPECTED_STATUSES,
     )
 
     [response.status, parse_response_body(response)]

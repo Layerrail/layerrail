@@ -618,7 +618,7 @@
     context_length: Text
 - id: 8b0b55b3-fb99-415f-8441-3abef2c2a200
   model_name: test-model
-  enabled: true
+  enabled: false
   provider: layerrail
   locations:
   - hetzner-ai

@@ -362,6 +362,14 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
       expect(nx).to receive(:register_deadline).with("wait", 20 * 60, allow_extension: 24 * 60 * 60)
       expect { nx.wait_control_plane_node }.to nap(120)
     end
+
+    it "destroys the cluster if a control plane VM failed" do
+      st.update(label: "wait_control_plane_node")
+      kubernetes_cluster.nodes.first.vm.update(display_state: "failed")
+
+      expect { nx.wait_control_plane_node }.to hop("destroy")
+      expect(kubernetes_cluster.reload.destroy_set?).to be true
+    end
   end
 
   describe "#wait_nodes" do
