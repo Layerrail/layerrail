@@ -229,7 +229,7 @@ class Clover
       {
         location_id: it.location_id,
         value: it.ubid,
-        display_name: it.name,
+        display_name: it.display_name,
       }
     }
     locations.each do |location|

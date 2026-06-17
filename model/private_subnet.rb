@@ -67,6 +67,14 @@ class PrivateSubnet < Sequel::Model
     location.ui_name
   end
 
+  def display_name
+    if name.match?(/\Adefault-(?:azure|aws|gcp|linode)-/)
+      "Default private subnet"
+    else
+      name
+    end
+  end
+
   def path
     "/location/#{location.display_name}/private-subnet/#{name}"
   end

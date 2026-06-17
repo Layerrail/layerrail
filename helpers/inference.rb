@@ -120,6 +120,7 @@ class Clover
     end
 
     normalize_cloudflare_payload!(payload, path)
+    compact_cloudflare_payload!(payload)
     payload.delete("stream_options")
 
     status, body = CloudflareWorkersAiClient.new.openai_request(path, payload)
@@ -154,6 +155,7 @@ class Clover
     if model.tags["capability"] == "Text-to-Speech" && model.model_name.start_with?("@cf/deepgram/") && payload["text"].to_s.empty?
       payload["text"] = payload.delete("prompt")
     end
+    compact_cloudflare_payload!(payload)
     status, body = cloudflare_run_request(CloudflareWorkersAiClient.new, model, payload)
     response.status = status
     record_cloudflare_inference_usage(api_key, model, body, payload) if status == 200
@@ -186,6 +188,7 @@ class Clover
     user_query = ai_agent_user_query(messages)
     context_chunks = agent.retrieval_context(user_query)
     request_payload = ai_agent_cloudflare_payload(agent, model, messages, context_chunks, payload)
+    compact_cloudflare_payload!(request_payload)
     request_path = cloudflare_text_model_path(model)
 
     started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -438,6 +441,25 @@ class Clover
       payload["stream"] = false
     when "embeddings"
       payload.delete("stream")
+    end
+  end
+
+  def compact_cloudflare_payload!(value)
+    case value
+    when Hash
+      value.keys.each do |key|
+        compacted = compact_cloudflare_payload!(value[key])
+        if compacted.nil? || (compacted.respond_to?(:empty?) && compacted.empty?)
+          value.delete(key)
+        else
+          value[key] = compacted
+        end
+      end
+      value
+    when Array
+      value.filter_map { compact_cloudflare_payload!(it) }
+    else
+      value
     end
   end
 

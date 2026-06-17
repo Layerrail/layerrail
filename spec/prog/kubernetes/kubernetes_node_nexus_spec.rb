@@ -314,13 +314,29 @@ RSpec.describe Prog::Kubernetes::KubernetesNodeNexus do
       Strand.create_with_id(kc, prog: "Kubernetes::KubernetesClusterNexus", label: "wait")
     end
 
-    it "destroys the vm and itself" do
+    it "destroys the vm and waits for it to leave before deleting the node" do
       vm_id = kd.vm.id
-      expect { nx.destroy }.to exit({"msg" => "kubernetes node is deleted"})
+      expect { nx.destroy }.to hop("wait_vm_destroyed")
       expect(Semaphore.where(strand_id: vm_id, name: "destroy").count).to eq(1)
+      expect(kd.exists?).to be true
+    end
+
+    it "deletes itself after vm deletion finishes" do
+      allow(Vm).to receive(:[]).with(kd.vm_id).and_return(nil)
+
+      expect { nx.wait_vm_destroyed }.to exit({"msg" => "kubernetes node is deleted"})
       expect(kd.exists?).to be false
       expect(Semaphore.where(strand_id: kc.id, name: "sync_internal_dns_config").count).to eq(1)
       expect(Semaphore.where(strand_id: kc.id, name: "sync_worker_mesh").count).to eq(1)
+    end
+
+    it "does not schedule cluster sync work while the cluster is deleting" do
+      kc.incr_destroy
+      allow(Vm).to receive(:[]).with(kd.vm_id).and_return(nil)
+
+      expect { nx.wait_vm_destroyed }.to exit({"msg" => "kubernetes node is deleted"})
+      expect(Semaphore.where(strand_id: kc.id, name: "sync_internal_dns_config").count).to eq(0)
+      expect(Semaphore.where(strand_id: kc.id, name: "sync_worker_mesh").count).to eq(0)
     end
   end
 end

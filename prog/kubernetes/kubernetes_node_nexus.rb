@@ -143,10 +143,21 @@ class Prog::Kubernetes::KubernetesNodeNexus < Prog::Base
   end
 
   label def destroy
-    kubernetes_node.vm.incr_destroy
+    kubernetes_node.vm&.incr_destroy
+    hop_wait_vm_destroyed
+  end
+
+  label def wait_vm_destroyed
+    if (vm = Vm[kubernetes_node.vm_id])
+      vm.incr_destroy
+      nap 5
+    end
+
     kubernetes_node.destroy
-    cluster.incr_sync_internal_dns_config
-    cluster.incr_sync_worker_mesh
+    if (cluster = KubernetesCluster[kubernetes_node.kubernetes_cluster_id]) && !cluster.destroy_set? && !cluster.destroying_set?
+      cluster.incr_sync_internal_dns_config
+      cluster.incr_sync_worker_mesh
+    end
     pop "kubernetes node is deleted"
   end
 

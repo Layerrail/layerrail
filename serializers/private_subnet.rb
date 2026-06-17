@@ -4,7 +4,7 @@ class Serializers::PrivateSubnet < Serializers::Base
   def self.serialize_internal(ps, options = {})
     {
       id: ps.ubid,
-      name: ps.name,
+      name: ps.display_name,
       state: ps.display_state,
       location: ps.display_location,
       net4: ps.net4.to_s,

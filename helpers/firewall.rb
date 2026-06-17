@@ -106,7 +106,7 @@ class Clover
       {
         location_id: it.location_id,
         value: it.ubid,
-        display_name: it.name,
+        display_name: it.display_name,
       }
     }
     options.add_option(name: "private_subnet_id", values: subnets, parent: "location") do |location, private_subnet|

@@ -26,7 +26,7 @@ class CloudflareWorkersAiClient
       expects: [200, 400, 401, 403, 404, 429, 500, 502, 503],
     )
 
-    [response.status, JSON.parse(response.body)]
+    [response.status, parse_response_body(response)]
   end
 
   def run_request(model_name, payload)

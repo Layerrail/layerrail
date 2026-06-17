@@ -6,9 +6,13 @@
   <script nonce="<%= nonce %>">
     window.intercomSettings = <%== allow_unescaped(JSON.generate(settings)) %>;
     window.LayerRailSupport = window.LayerRailSupport || {};
-    window.LayerRailSupport.open = function() {
+    window.LayerRailSupport.open = function(space) {
       if (typeof window.Intercom === "function") {
-        window.Intercom("show");
+        if (space) {
+          window.Intercom("showSpace", space);
+        } else {
+          window.Intercom("show");
+        }
       }
     };
 
@@ -49,7 +53,7 @@
         var trigger = event.target.closest("[data-intercom-open]");
         if (!trigger) return;
         event.preventDefault();
-        window.LayerRailSupport.open();
+        window.LayerRailSupport.open(trigger.getAttribute("data-intercom-space") || "help");
       });
     })();
   </script>

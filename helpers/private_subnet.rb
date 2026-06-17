@@ -14,7 +14,7 @@ class Clover
     end
 
     if (subnet = authorized_private_subnet(perm: "PrivateSubnet:#{type}", location_id: @location.id, id:))
-      name = subnet.name
+      name = subnet.display_name
     else
       raise CloverError.new(400, "InvalidRequest", "Subnet to be #{type}ed not found")
     end
