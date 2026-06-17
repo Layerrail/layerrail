@@ -4,7 +4,7 @@ require_relative "../../model"
 
 class AiAgent < Sequel::Model(:ai_agent)
   STATUSES = %w[active disabled].freeze
-  DEFAULT_MODEL = "@cf/meta/llama-3.1-8b-instruct"
+  DEFAULT_MODEL = "@cf/meta/llama-3.2-3b-instruct"
 
   many_to_one :project, read_only: true
   many_to_one :knowledge_base, class: :AiKnowledgeBase, read_only: true

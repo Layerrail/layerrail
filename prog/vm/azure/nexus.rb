@@ -371,6 +371,7 @@ class Prog::Vm::Azure::Nexus < Prog::Base
   def delete_azure_resource(resource_type, name)
     yield
   rescue AzureAPIError => ex
+    return if azure_not_found_error?(ex)
     raise unless retryable_azure_delete_error?(ex)
 
     Clog.emit("Azure VM delete is waiting on resource cleanup", {
@@ -383,6 +384,10 @@ class Prog::Vm::Azure::Nexus < Prog::Base
       },
     })
     nap 30
+  end
+
+  def azure_not_found_error?(ex)
+    ex.status == 404 || ex.body.to_s.match?(/ResourceGroupNotFound|ResourceNotFound|not found/i)
   end
 
   def retryable_azure_delete_error?(ex)
