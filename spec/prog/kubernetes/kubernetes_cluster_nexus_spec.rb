@@ -899,6 +899,7 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
       st.update(label: "destroy")
       child = Strand.create(parent_id: st.id, prog: "Kubernetes::ProvisionKubernetesNode", label: "start", stack: [{}], lease: Time.now + 10)
 
+      expect(nx).to receive(:register_deadline).with("destroy", 24 * 60 * 60)
       expect { nx.destroy }.to hop("wait_children_destroyed")
       expect(child.semaphores_dataset.select_map(:name)).to eq ["destroy"]
     end

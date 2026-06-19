@@ -433,6 +433,7 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
   end
 
   label def destroy
+    register_deadline("destroy", 24 * 60 * 60)
     decr_destroy
     Semaphore.incr(strand.children_dataset.select(:id), "destroy")
     schedule_dependent_resources_for_destroy

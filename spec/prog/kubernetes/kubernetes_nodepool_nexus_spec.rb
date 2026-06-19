@@ -249,6 +249,7 @@ RSpec.describe Prog::Kubernetes::KubernetesNodepoolNexus do
       kn.strand.update(label: "wait_upgrade")
       child = Strand.create(parent_id: kn.strand.id, prog: "Kubernetes::UpgradeKubernetesNode", label: "start", lease: Time.now + 10)
 
+      expect(nx).to receive(:register_deadline).with("destroy", 24 * 60 * 60)
       expect { nx.destroy }.to hop("wait_children_destroyed")
       expect(child.semaphores_dataset.select_map(:name)).to eq ["destroy"]
     end
