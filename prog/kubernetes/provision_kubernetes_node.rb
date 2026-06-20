@@ -145,6 +145,14 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
       ],
     )
     node.update(state: "active")
+
+    # Mark VM ports on any associated load balancer as "up" so that they can be used immediately
+    # without waiting for the health check cycle.
+    vm.load_balancer_vm_ports.each do |vm_port|
+      vm_port.update(state: "up")
+      vm_port.load_balancer.incr_update_load_balancer
+    end
+
     kubernetes_cluster.incr_sync_internal_dns_config
     kubernetes_cluster.incr_sync_worker_mesh
     pop({node_id: node.id})

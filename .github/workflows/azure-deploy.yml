@@ -94,8 +94,10 @@ jobs:
             MIGRATION_CONTAINER="layerrail-migrate-${{ github.run_id }}"
             ACR_PASSWORD="$(az acr credential show --name "$ACR_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --query 'passwords[0].value' -o tsv)"
           
-            # Get database URL from web app configuration
+            # Get database URL and other mandatory secrets from web app configuration
             DB_URL="$(az webapp config appsettings list --resource-group "$AZURE_RESOURCE_GROUP" --name "$WEB_APP_NAME" --query '[?name==`CLOVER_DATABASE_URL`].value' -o tsv)"
+            ENC_KEY="$(az webapp config appsettings list --resource-group "$AZURE_RESOURCE_GROUP" --name "$WEB_APP_NAME" --query '[?name==`CLOVER_COLUMN_ENCRYPTION_KEY`].value' -o tsv)"
+            SESSION_SECRET="$(az webapp config appsettings list --resource-group "$AZURE_RESOURCE_GROUP" --name "$WEB_APP_NAME" --query '[?name==`CLOVER_SESSION_SECRET`].value' -o tsv)"
           
             if [ -z "$DB_URL" ]; then
               echo "Error: CLOVER_DATABASE_URL not found in app configuration"
@@ -114,7 +116,7 @@ jobs:
               --memory 2 \
               --os-type Linux \
               --restart-policy Never \
-              --environment-variables CLOVER_DATABASE_URL="$DB_URL" RACK_ENV=production \
+              --environment-variables CLOVER_DATABASE_URL="$DB_URL" CLOVER_COLUMN_ENCRYPTION_KEY="$ENC_KEY" CLOVER_SESSION_SECRET="$SESSION_SECRET" RACK_ENV=production \
               --command-line "bundle exec rake prod_up"
           
             echo "Waiting for migration container to complete..."
