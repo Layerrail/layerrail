@@ -114,7 +114,7 @@ jobs:
               --memory 2 \
               --restart-policy Never \
               --environment-variables CLOVER_DATABASE_URL="$DB_URL" RACK_ENV=production \
-              --command-line "bundle" "exec" "rake" "prod_up"
+              --command-line "bundle exec rake prod_up"
           
             echo "Waiting for migration container to complete..."
             for i in {1..120}; do
