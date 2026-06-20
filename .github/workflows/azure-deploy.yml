@@ -112,6 +112,7 @@ jobs:
               --registry-password "$ACR_PASSWORD" \
               --cpu 2 \
               --memory 2 \
+              --os-type Linux \
               --restart-policy Never \
               --environment-variables CLOVER_DATABASE_URL="$DB_URL" RACK_ENV=production \
               --command-line "bundle exec rake prod_up"
