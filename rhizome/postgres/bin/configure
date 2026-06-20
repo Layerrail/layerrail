@@ -33,6 +33,15 @@ ff02::3 ip6-allhosts
 HOSTS
 safe_write_to_file("/etc/hosts", hosts)
 
+# Ensure include_dir = 'conf.d' is active in postgresql.conf
+pg_conf_path = "/etc/postgresql/#{v}/main/postgresql.conf"
+if File.exist?(pg_conf_path)
+  content = File.read(pg_conf_path)
+  unless content.match?(/^\s*include_dir\s*=\s*'conf\.d'/)
+    File.write(pg_conf_path, content + "\ninclude_dir = 'conf.d'\n")
+  end
+end
+
 # Update postgresql.conf
 configs = configure_hash["configs"].map { |k, v| "#{k} = #{v}" }.join("\n")
 safe_write_to_file("/etc/postgresql/#{v}/main/conf.d/001-service.conf", configs)

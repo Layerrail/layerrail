@@ -36,7 +36,7 @@ class PostgresSetup
     r "sudo mkdir -p /etc/postgresql-common"
     r "echo 'create_main_cluster = false' | sudo tee /etc/postgresql-common/createcluster.conf"
     apt_update
-    apt_install "postgresql-#{@version} postgresql-client-#{@version} postgresql-contrib-#{@version}"
+    apt_install "postgresql-#{@version} postgresql-client-#{@version} postgresql-contrib-#{@version} postgresql-#{@version}-cron"
     r "sudo groupadd -f --system cert_readers"
     r "id -u prometheus >/dev/null 2>&1 || sudo useradd --system --home-dir /home/prometheus --shell /usr/sbin/nologin prometheus"
     r "sudo usermod -aG cert_readers postgres"

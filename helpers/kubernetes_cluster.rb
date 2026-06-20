@@ -54,7 +54,7 @@ class Clover
     if api?
       paginated_result(dataset, Serializers::KubernetesCluster)
     else
-      @kcs = dataset.all.reject { it.display_state == "deleting" }
+      @kcs = dataset.all
       view "kubernetes-cluster/index"
     end
   end
