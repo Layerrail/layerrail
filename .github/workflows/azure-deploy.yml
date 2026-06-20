@@ -90,40 +90,50 @@ jobs:
           set -euo pipefail
           echo "Waiting 30 seconds for apps to start..."
           sleep 30
+            LOGIN_SERVER="$(az acr show --name "$ACR_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --query loginServer -o tsv)"
+            MIGRATION_CONTAINER="layerrail-migrate-${{ github.run_id }}"
+            ACR_PASSWORD="$(az acr credential show --name "$ACR_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --query 'passwords[0].value' -o tsv)"
           
-          LOGIN_SERVER="$(az acr show --name "$ACR_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --query loginServer -o tsv)"
-          MIGRATION_CONTAINER="layerrail-migrate-${{ github.run_id }}"
+            # Get database URL from web app configuration
+            DB_URL="$(az webapp config appsettings list --resource-group "$AZURE_RESOURCE_GROUP" --name "$WEB_APP_NAME" --query '[?name==`CLOVER_DATABASE_URL`].value' -o tsv)"
           
-          echo "Running database migrations in container..."
-          az container create \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --name "$MIGRATION_CONTAINER" \
-            --image "$LOGIN_SERVER/$IMAGE_NAME:prod" \
-            --registry-login-server "$LOGIN_SERVER" \
-            --registry-username "$ACR_NAME" \
-            --registry-password "$(az acr credential show --name "$ACR_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --query 'passwords[0].value' -o tsv)" \
-            --cpu 2 \
-            --memory 2 \
-            --restart-policy Never \
-            --environment-variables CLOVER_DATABASE_URL="${{ secrets.CLOVER_DATABASE_URL }}" RACK_ENV=production \
-            --command-line "bundle" "exec" "rake" "prod_up"
-          
-          echo "Waiting for migration container to complete..."
-          while true; do
-            STATUS=$(az container show --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" --query 'containers[0].instanceView.currentState.state' -o tsv)
-            echo "Migration status: $STATUS"
-            if [ "$STATUS" = "Terminated" ]; then
-              EXIT_CODE=$(az container show --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" --query 'containers[0].instanceView.currentState.exitCode' -o tsv)
-              if [ "$EXIT_CODE" = "0" ]; then
-                echo "Migrations completed successfully!"
-              else
-                echo "Migrations failed with exit code: $EXIT_CODE"
-                az container logs --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER"
-                exit 1
-              fi
-              break
+            if [ -z "$DB_URL" ]; then
+              echo "Error: CLOVER_DATABASE_URL not found in app configuration"
+              exit 1
             fi
-            sleep 5
-          done
           
-          az container delete --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" --yes
+            echo "Running database migrations in container..."
+            az container create \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --name "$MIGRATION_CONTAINER" \
+              --image "$LOGIN_SERVER/$IMAGE_NAME:prod" \
+              --registry-login-server "$LOGIN_SERVER" \
+              --registry-username "$ACR_NAME" \
+              --registry-password "$ACR_PASSWORD" \
+              --cpu 2 \
+              --memory 2 \
+              --restart-policy Never \
+              --environment-variables CLOVER_DATABASE_URL="$DB_URL" RACK_ENV=production \
+              --command-line "bundle" "exec" "rake" "prod_up"
+          
+            echo "Waiting for migration container to complete..."
+            for i in {1..120}; do
+              STATUS=$(az container show --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" --query 'containers[0].instanceView.currentState.state' -o tsv 2>/dev/null || echo "Creating")
+              echo "Migration status ($i/120): $STATUS"
+              if [ "$STATUS" = "Terminated" ]; then
+                EXIT_CODE=$(az container show --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" --query 'containers[0].instanceView.currentState.exitCode' -o tsv)
+                echo "Exit code: $EXIT_CODE"
+                if [ "$EXIT_CODE" = "0" ]; then
+                  echo "✓ Migrations completed successfully!"
+                else
+                  echo "✗ Migrations failed. Logs:"
+                  az container logs --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" || true
+                  exit 1
+                fi
+                break
+              fi
+              sleep 5
+            done
+          
+            echo "Cleaning up migration container..."
+            az container delete --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" --yes 2>/dev/null || true
