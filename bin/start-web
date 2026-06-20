@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+echo "Starting LayerRail web service..."
+echo "Running database migrations..."
+
+# Run migrations
+bundle exec rake prod_up
+
+echo "Migrations complete. Starting Puma web server..."
+
+# Start puma
+exec bundle exec puma -C puma_config.rb
