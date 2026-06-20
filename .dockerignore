@@ -3,6 +3,8 @@
 .env.rb
 coverage
 demo/.env
+neon.dump
+webapp_logs.zip
 
 # Frontend
 node_modules

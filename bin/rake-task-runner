@@ -30,6 +30,27 @@ require_args = lambda do |n|
 end
 
 case command
+when "db_extensions"
+  require_args.call(0..0)
+
+  load_db.call
+  DB.loggers << Logger.new($stdout)
+
+  DB.run("CREATE EXTENSION IF NOT EXISTS citext")
+  DB.run("CREATE EXTENSION IF NOT EXISTS btree_gist")
+  ph_user = "#{DB.get(Sequel.lit('current_user'))}_password"
+  ph_password = DB.opts[:password]
+  ph_user_sql = DB.literal(ph_user.to_sym)
+  ph_password_sql = DB.literal(ph_password)
+
+  begin
+    DB.run("CREATE ROLE #{ph_user_sql} LOGIN PASSWORD #{ph_password_sql}")
+  rescue Sequel::DatabaseError => error
+    raise unless error.message.include?("already exists")
+  end
+
+  DB.run("ALTER ROLE #{ph_user_sql} LOGIN PASSWORD #{ph_password_sql}")
+
 when "migrate"
   version, ncpu = require_args.call(2..2)
   version = nil if version&.empty?

@@ -325,6 +325,17 @@ class CloverAdmin < Roda
     ObjectAction.define(...)
   end
 
+  def self.object_actions_for(obj)
+    actions = (OBJECT_ACTIONS[obj.class.name] || {}).dup
+    if obj.respond_to?(:incr_destroy) && !actions.key?("destroy") && !actions.key?("force_destroy")
+      actions["force_destroy"] = object_action("Force Destroy", flash: "Force destroy scheduled") do |resource|
+        resource.incr_destroy
+      end
+    end
+
+    actions
+  end
+
   github_page_action = object_action("GitHub Page", type: :direct) do |obj|
     "http://github.com/#{obj.name}"
   end
@@ -476,7 +487,7 @@ class CloverAdmin < Roda
       "subject" => object_action("Subject", type: :direct) do |obj|
         "/model/#{obj.subject.class}/#{obj.subject.ubid}"
       end,
-      "schedule" => object_action("Schedule Strand to Run Immediately", flash: "Scheduled strand to run immediately", type: :form) do |obj|
+      "schedule" => object_action("Nudge Strand", flash: "Strand nudged", type: :form) do |obj|
         obj.this.update(schedule: Sequel::CURRENT_TIMESTAMP)
       end,
       "extend" => object_action("Extend Schedule", flash: "Extended schedule", params: {minutes: {typecast: :pos_int!, type: "number", attr: {min: 1, max: 1440}}}) do |obj, minutes|
@@ -1062,7 +1073,7 @@ class CloverAdmin < Roda
           view("object")
         end
 
-        if (actions = OBJECT_ACTIONS[@obj.class.name])
+        if (actions = object_actions_for(@obj)).any?
           r.is actions.keys do |key|
             action = actions[key]
             action_type = action.type

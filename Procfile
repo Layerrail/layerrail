@@ -1,3 +1,3 @@
-web: bundle exec rake prod_up && bundle exec puma -C puma_config.rb
+web: bundle exec puma -b tcp://0.0.0.0:3000
 respirate: bin/restarter bin/respirate
 monitor: bin/monitor

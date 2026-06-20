@@ -66,6 +66,7 @@ end
 
 desc "Migrate production database to latest version"
 task :prod_up do
+  task_runner.call("production", "db_extensions")
   task_runner.call("production", "migrate", "", "0")
 end
 
