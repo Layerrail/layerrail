@@ -55,9 +55,11 @@
               <%== part(
                 "layouts/sidebar/item",
                 name: "Domains",
-                url: "#{@project.path}/domain",
-                is_active: request.path.start_with?("#{@project.path}/domain"),
-                icon: "hero-map-pin"
+                url: "https://cloud.layerrail.online",
+                is_active: false,
+                icon: "hero-map-pin",
+                target: "_blank",
+                rel: "noopener noreferrer"
               ) %>
             <% end %>
             <% if Config.postgres_enabled %>

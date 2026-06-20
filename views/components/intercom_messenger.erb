@@ -8,8 +8,18 @@
     window.LayerRailSupport = window.LayerRailSupport || {};
     window.LayerRailSupport.open = function(space) {
       if (typeof window.Intercom === "function") {
+        try {
+          window.Intercom("update", window.intercomSettings);
+        } catch (e) {
+          window.Intercom("boot", window.intercomSettings);
+        }
+
         if (space) {
-          window.Intercom("showSpace", space);
+          try {
+            window.Intercom("showSpace", space);
+          } catch (e) {
+            window.Intercom("show");
+          }
         } else {
           window.Intercom("show");
         }
