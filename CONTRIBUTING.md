@@ -35,7 +35,7 @@ need especially clear tests and review notes.
 Clone the repository:
 
 ```sh
-git clone git@github.com:mayowaoladosu/layerrail.git
+git clone git@github.com:layerrail/layerrail.git
 cd layerrail
 ```
 
