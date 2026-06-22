@@ -25,7 +25,7 @@ class LoadBalancer < Sequel::Model
   dataset_module Pagination
 
   def display_location
-    private_subnet.display_location
+    private_subnet&.display_location || "Unknown"
   end
 
   def display_state
@@ -51,7 +51,7 @@ class LoadBalancer < Sequel::Model
   end
 
   def path
-    "/location/#{private_subnet.location.display_name}/load-balancer/#{name}"
+    "/location/#{private_subnet&.location&.display_name || "unknown"}/load-balancer/#{name}"
   end
 
   def vm_ports_by_vm(vm)
