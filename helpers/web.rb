@@ -8,6 +8,7 @@ class Clover < Roda
     "running" => "bg-green-100 text-green-800",
     "creating" => "bg-yellow-100 text-yellow-800",
     "deleting" => "bg-red-100 text-red-800",
+    "failed" => "bg-red-100 text-red-800",
   ).freeze
 
   PS_STATE_LABEL_COLOR = Hash.new("bg-yellow-100 text-yellow-80").merge!(

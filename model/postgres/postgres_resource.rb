@@ -54,6 +54,8 @@ class PostgresResource < Sequel::Model
   def display_state
     return "deleting" if destroying_set? || destroy_set? || strand.nil?
 
+    return "failed" if representative_server&.vm&.display_state == "failed"
+
     server_strand_label = representative_server.strand.label
     return "unavailable" if server_strand_label == "unavailable"
     return "restoring_backup" if server_strand_label == "initialize_database_from_backup"
