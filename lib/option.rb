@@ -68,8 +68,6 @@ module Option
     ["azure-eastus", "eastus", "East US"],
     ["azure-eastus2", "eastus2", "East US 2"],
     ["azure-centralus", "centralus", "Central US"],
-    ["azure-westeurope", "westeurope", "West Europe"],
-    ["azure-northeurope", "northeurope", "North Europe"],
   ].map(&:freeze).freeze
   AZURE_PLANS = [
     AzurePlan.new("Standard_D2lds_v7", "Starter 4GB", "nanode", "nanode-4", 2, 4, 80, 10, 0.015, 0, nil, "nanode-4"),
@@ -83,20 +81,7 @@ module Option
     AzurePlan.new("Standard_D16ds_v7", "Dedicated 64GB", "standard", "standard-16", 16, 64, 640, 180, 0.270, 0, nil, "standard-16"),
     AzurePlan.new("Standard_D32ds_v7", "Dedicated 128GB", "standard", "standard-30", 30, 128, 1280, 350, 0.525, 0, nil, "standard-30"),
   ].freeze
-  AZURE_LOCATION_PLAN_IDS = {
-    "azure-westeurope" => {
-      "nanode-4" => "Standard_D2lds_v6",
-      "nanode-8" => "Standard_D4lds_v6",
-      "burstable-2" => "Standard_D2ds_v6",
-      "burstable-4" => "Standard_D4ds_v6",
-      "burstable-8" => "Standard_D8ds_v6",
-      "standard-2" => "Standard_D2ds_v6",
-      "standard-4" => "Standard_D4ds_v6",
-      "standard-8" => "Standard_D8ds_v6",
-      "standard-16" => "Standard_D16ds_v6",
-      "standard-30" => "Standard_D32ds_v6",
-    },
-  }.freeze
+  AZURE_LOCATION_PLAN_IDS = {}.freeze
   AZURE_BOOT_IMAGES = {
     "ubuntu-noble" => {publisher: "Canonical", offer: "ubuntu-24_04-lts", sku: "server", version: "latest"},
     "ubuntu-jammy" => {publisher: "Canonical", offer: "0001-com-ubuntu-server-jammy", sku: "22_04-lts-gen2", version: "latest"},
