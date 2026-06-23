@@ -628,7 +628,7 @@ NAT
                 <a href="https://docs.layerrail.com/about/support">Support</a>
               </nav>
               <div class="social" aria-label="LayerRail social links">
-                <a href="https://github.com/mayowaoladosu/layerrail" aria-label="GitHub">GitHub</a>
+                <a href="https://github.com/layerrail/layerrail" aria-label="GitHub">GitHub</a>
                 <a href="https://www.linkedin.com/company/layerrail/" aria-label="LinkedIn">LinkedIn</a>
                 <a href="https://twitter.com/LayerRail" aria-label="X">X</a>
                 <a href="mailto:support@layerrail.com?subject=Enquiry" aria-label="Email support">Email</a>

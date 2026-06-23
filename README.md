@@ -57,7 +57,7 @@ and worker processes perform long-running provisioning and reconciliation work.
 Clone the repository and start the local demo stack:
 
 ```sh
-git clone git@github.com:mayowaoladosu/layerrail.git
+git clone git@github.com:layerrail/layerrail.git
 cd layerrail
 
 ./demo/generate_env
@@ -297,7 +297,7 @@ clean path to reuse selected Ubicloud changes.
 Recommended remotes:
 
 ```text
-origin   https://github.com/mayowaoladosu/layerrail.git
+origin   https://github.com/layerrail/layerrail.git
 upstream https://github.com/ubicloud/ubicloud.git
 ```
 

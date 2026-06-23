@@ -68,8 +68,8 @@ module Option
     ["azure-eastus", "eastus", "East US"],
     ["azure-eastus2", "eastus2", "East US 2"],
     ["azure-centralus", "centralus", "Central US"],
-    ["azure-westeurope", "westeurope", "West Europe"],
-    ["azure-northeurope", "northeurope", "North Europe"],
+    ["azure-southafricanorth", "southafricanorth", "South Africa North"],
+    ["azure-uksouth", "uksouth", "UK South"],
   ].map(&:freeze).freeze
   AZURE_PLANS = [
     AzurePlan.new("Standard_D2lds_v7", "Starter 4GB", "nanode", "nanode-4", 2, 4, 80, 10, 0.015, 0, nil, "nanode-4"),
@@ -84,7 +84,19 @@ module Option
     AzurePlan.new("Standard_D32ds_v7", "Dedicated 128GB", "standard", "standard-30", 30, 128, 1280, 350, 0.525, 0, nil, "standard-30"),
   ].freeze
   AZURE_LOCATION_PLAN_IDS = {
-    "azure-westeurope" => {
+    "azure-southafricanorth" => {
+      "nanode-4" => "Standard_D2lds_v6",
+      "nanode-8" => "Standard_D4lds_v6",
+      "burstable-2" => "Standard_D2ds_v6",
+      "burstable-4" => "Standard_D4ds_v6",
+      "burstable-8" => "Standard_D8ds_v6",
+      "standard-2" => "Standard_D2ds_v6",
+      "standard-4" => "Standard_D4ds_v6",
+      "standard-8" => "Standard_D8ds_v6",
+      "standard-16" => "Standard_D16ds_v6",
+      "standard-30" => "Standard_D32ds_v6",
+    },
+    "azure-uksouth" => {
       "nanode-4" => "Standard_D2lds_v6",
       "nanode-8" => "Standard_D4lds_v6",
       "burstable-2" => "Standard_D2ds_v6",
