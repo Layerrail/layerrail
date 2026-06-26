@@ -27,7 +27,7 @@ class Prog::Vnet::Azure::SubnetNexus < Prog::Base
   def delete_resource_group
     AzureClient.new.delete_resource_group(azure_subnet_name("rg", 80))
   rescue AzureAPIError => ex
-    raise unless ex.status == 404
+    raise unless ex.not_found?
   end
 
   def azure_subnet_name(prefix, max_length)

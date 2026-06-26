@@ -145,6 +145,30 @@ class Prog::GameVpsNexus < Prog::Base
       updated_at: Time.now,
     )
     hop_wait_azure_server
+  rescue AzureAPIError => ex
+    if ex.retryable_create?
+      Clog.emit("Azure Game VPS create is waiting on Azure resource convergence", {
+        azure_game_vps_create_waiting: {
+          game_vps_ubid: game_vps.ubid,
+          location: azure_region,
+          vm_size: azure_vm_size,
+          status: ex.status,
+          body: ex.body,
+        },
+      })
+      nap 30
+    end
+
+    Clog.emit("Azure Game VPS create failed", {
+      azure_game_vps_create_failed: {
+        game_vps_ubid: game_vps.ubid,
+        location: azure_region,
+        vm_size: azure_vm_size,
+        status: ex.status,
+        body: ex.body,
+      },
+    })
+    mark_failed(ex)
   rescue => ex
     mark_failed(ex)
   end

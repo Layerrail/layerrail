@@ -12,6 +12,24 @@ class AzureAPIError < StandardError
     @body = body
     super("Azure API request failed with HTTP #{status}: #{body}")
   end
+
+  def retryable_create?
+    return true if status == 429 || status.to_i >= 500
+    return false unless [400, 409].include?(status)
+
+    body.to_s.match?(/anotheroperationinprogress|being created|being updated|is in updating state|referencedresourcenotprovisioned|retryableerror|updating state/i)
+  end
+
+  def not_found?
+    status == 404 || body.to_s.match?(/ResourceGroupNotFound|ResourceNotFound|not found/i)
+  end
+
+  def retryable_delete?
+    return true if [409, 429].include?(status) || status.to_i >= 500
+    return false unless status == 400
+
+    body.to_s.match?(/attached|being deleted|cannotbedeleted|inuse|in use|operationnotallowed|anotheroperationinprogress/i)
+  end
 end
 
 class AzureClient
