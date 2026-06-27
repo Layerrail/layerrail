@@ -1,0 +1,864 @@
+﻿---
+- id: cf-meta-llama-3-2-3b-instruct
+  model_name: "@cf/meta/llama-3.2-3b-instruct"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Llama 3.2 3B Instruct
+    capability: Text Generation
+    context_length: 128K
+    api: run
+- id: cf-openai-gpt-oss-20b
+  model_name: "@cf/openai/gpt-oss-20b"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: GPT OSS 20B
+    capability: Text Generation
+    context_length: 128K
+    api: run
+- id: cf-openai-gpt-oss-120b
+  model_name: "@cf/openai/gpt-oss-120b"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: GPT OSS 120B
+    capability: Text Generation
+    context_length: 128K
+    api: run
+- id: cf-pipecat-smart-turn-v2
+  model_name: "@cf/pipecat/smart-turn-v2"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Smart Turn v2
+    capability: Voice Activity Detection
+    context_length: Audio
+- id: cf-deepgram-flux
+  model_name: "@cf/deepgram/flux"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Flux
+    capability: Automatic Speech Recognition
+    context_length: Full
+- id: cf-deepgram-nova-3
+  model_name: "@cf/deepgram/nova-3"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: nova-3
+    capability: Automatic Speech Recognition
+    context_length: Full
+- id: cf-openai-whisper
+  model_name: "@cf/openai/whisper"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Whisper
+    capability: Automatic Speech Recognition
+    context_length: Audio
+- id: cf-openai-whisper-large-v3-turbo
+  model_name: "@cf/openai/whisper-large-v3-turbo"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Whisper Large v3 Turbo
+    capability: Automatic Speech Recognition
+    context_length: Audio
+- id: cf-openai-whisper-tiny-en
+  model_name: "@cf/openai/whisper-tiny-en"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: whisper-tiny-en
+    capability: Automatic Speech Recognition
+    context_length: Full
+- id: cf-microsoft-resnet-50
+  model_name: "@cf/microsoft/resnet-50"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: ResNet-50
+    capability: Image Classification
+    context_length: Image
+- id: cf-llava-hf-llava-1-5-7b-hf
+  model_name: "@cf/llava-hf/llava-1.5-7b-hf"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: LLaVA 1.5 7B
+    capability: Image-to-Text
+    context_length: Image
+- id: cf-baai-bge-reranker-base
+  model_name: "@cf/baai/bge-reranker-base"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: BGE Reranker Base
+    capability: Text Classification
+    context_length: 512 tokens
+- id: cf-huggingface-distilbert-sst-2-int8
+  model_name: "@cf/huggingface/distilbert-sst-2-int8"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: DistilBERT SST-2
+    capability: Text Classification
+    context_length: Text
+- id: cf-baai-bge-base-en-v1-5
+  model_name: "@cf/baai/bge-base-en-v1.5"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: BGE Base English v1.5
+    capability: Embeddings
+    context_length: 512 tokens
+- id: cf-baai-bge-large-en-v1-5
+  model_name: "@cf/baai/bge-large-en-v1.5"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: BGE Large English v1.5
+    capability: Embeddings
+    context_length: 512 tokens
+- id: cf-baai-bge-m3
+  model_name: "@cf/baai/bge-m3"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: BGE M3
+    capability: Embeddings
+    context_length: 8K
+- id: cf-baai-bge-small-en-v1-5
+  model_name: "@cf/baai/bge-small-en-v1.5"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: BGE Small English v1.5
+    capability: Embeddings
+    context_length: 512 tokens
+- id: cf-google-embeddinggemma-300m
+  model_name: "@cf/google/embeddinggemma-300m"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: EmbeddingGemma 300M
+    capability: Embeddings
+    context_length: 2K
+- id: cf-pfnet-plamo-embedding-1b
+  model_name: "@cf/pfnet/plamo-embedding-1b"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: PLaMo Embedding 1B
+    capability: Embeddings
+    context_length: 8K
+- id: cf-qwen-qwen3-embedding-0-6b
+  model_name: "@cf/qwen/qwen3-embedding-0.6b"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Qwen3 Embedding 0.6B
+    capability: Embeddings
+    context_length: 8K
+- id: cf-aisingapore-gemma-sea-lion-v4-27b-it
+  model_name: "@cf/aisingapore/gemma-sea-lion-v4-27b-it"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Gemma SEA-LION v4 27B IT
+    capability: Text Generation
+    context_length: 128K
+    api: run
+    multimodal: true
+- id: cf-moonshotai-kimi-k2-5
+  model_name: "@cf/moonshotai/kimi-k2.5"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Kimi K2.5
+    capability: Text Generation
+    context_length: 256K
+    api: run
+    multimodal: true
+    deprecated: true
+- id: cf-deepseek-ai-deepseek-r1-distill-qwen-32b
+  model_name: "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: DeepSeek R1 Distill Qwen 32B
+    capability: Text Generation
+    context_length: 80K
+    api: run
+- id: cf-google-gemma-2b-it-lora
+  model_name: "@cf/google/gemma-2b-it-lora"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Gemma 2B IT LoRA
+    capability: Text Generation
+    context_length: 8K
+    api: run
+- id: cf-google-gemma-4-26b-a4b-it
+  model_name: "@cf/google/gemma-4-26b-a4b-it"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Gemma 4 26B A4B IT
+    capability: Text Generation
+    context_length: 128K
+    api: run
+    multimodal: true
+- id: cf-google-gemma-3-12b-it
+  model_name: "@cf/google/gemma-3-12b-it"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Gemma 3 12B IT
+    capability: Text Generation
+    context_length: 128K
+    api: run
+    multimodal: true
+    deprecated: true
+- id: cf-google-gemma-7b-it-lora
+  model_name: "@cf/google/gemma-7b-it-lora"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Gemma 7B IT LoRA
+    capability: Text Generation
+    context_length: 8K
+    api: run
+- id: cf-ibm-granite-granite-4-0-h-micro
+  model_name: "@cf/ibm-granite/granite-4.0-h-micro"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Granite 4.0 H Micro
+    capability: Text Generation
+    context_length: 128K
+    api: run
+- id: cf-meta-llama-llama-2-7b-chat-hf-lora
+  model_name: "@cf/meta-llama/llama-2-7b-chat-hf-lora"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: llama-2-7b-chat-hf-lora
+    capability: Text Generation
+    context_length: Full
+    api: run
+- id: cf-meta-llama-2-7b-chat-fp16
+  model_name: "@cf/meta/llama-2-7b-chat-fp16"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Llama 2 7B Chat FP16
+    capability: Text Generation
+    context_length: Full
+    api: run
+    deprecated: true
+- id: cf-meta-llama-2-7b-chat-int8
+  model_name: "@cf/meta/llama-2-7b-chat-int8"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Llama 2 7B Chat INT8
+    capability: Text Generation
+    context_length: Full
+    api: run
+    deprecated: true
+- id: cf-meta-llama-3-8b-instruct
+  model_name: "@cf/meta/llama-3-8b-instruct"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Llama 3 8B Instruct
+    capability: Text Generation
+    context_length: 8K
+    api: run
+- id: cf-google-gemma-7b-it
+  model_name: "@cf/google/gemma-7b-it"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Gemma 7B IT
+    capability: Text Generation
+    context_length: 8K
+    api: run
+    deprecated: true
+    deprecated: true
+- id: cf-meta-llama-3-8b-instruct-awq
+  model_name: "@cf/meta/llama-3-8b-instruct-awq"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Llama 3 8B Instruct AWQ
+    capability: Text Generation
+    context_length: 8K
+    api: run
+    deprecated: true
+- id: cf-meta-llama-3-1-8b-instruct
+  model_name: "@cf/meta/llama-3.1-8b-instruct"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Llama 3.1 8B Instruct
+    capability: Text Generation
+    context_length: 128K
+    api: run
+    deprecated: true
+- id: cf-meta-llama-3-1-8b-instruct-awq
+  model_name: "@cf/meta/llama-3.1-8b-instruct-awq"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Llama 3.1 8B Instruct AWQ
+    capability: Text Generation
+    context_length: 128K
+    api: run
+    deprecated: true
+- id: cf-meta-llama-3-1-8b-instruct-fp8
+  model_name: "@cf/meta/llama-3.1-8b-instruct-fp8"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Llama 3.1 8B Instruct FP8
+    capability: Text Generation
+    context_length: 8K
+    api: run
+- id: cf-meta-llama-3-1-8b-instruct-fast
+  model_name: "@cf/meta/llama-3.1-8b-instruct-fast"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Llama 3.1 8B Instruct Fast
+    capability: Text Generation
+    context_length: 128K
+    api: run
+- id: cf-meta-llama-3-1-70b-instruct
+  model_name: "@cf/meta/llama-3.1-70b-instruct"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Llama 3.1 70B Instruct
+    capability: Text Generation
+    context_length: 128K
+    api: run
+    deprecated: true
+- id: cf-meta-llama-3-2-11b-vision-instruct
+  model_name: "@cf/meta/llama-3.2-11b-vision-instruct"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Llama 3.2 11B Vision
+    capability: Text Generation
+    context_length: 128K
+    api: run
+    multimodal: true
+- id: cf-meta-llama-3-2-1b-instruct
+  model_name: "@cf/meta/llama-3.2-1b-instruct"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Llama 3.2 1B Instruct
+    capability: Text Generation
+    context_length: 128K
+    api: run
+- id: cf-meta-llama-3-3-70b-instruct-fp8-fast
+  model_name: "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Llama 3.3 70B FP8 Fast
+    capability: Text Generation
+    context_length: 24K
+    api: run
+- id: cf-meta-llama-4-scout-17b-16e-instruct
+  model_name: "@cf/meta/llama-4-scout-17b-16e-instruct"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Llama 4 Scout 17B
+    capability: Text Generation
+    context_length: 128K
+    api: run
+- id: cf-meta-llama-guard-3-8b
+  model_name: "@cf/meta/llama-guard-3-8b"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: llama-guard-3-8b
+    capability: Text Generation
+    context_length: Full
+    api: run
+- id: cf-microsoft-phi-2
+  model_name: "@cf/microsoft/phi-2"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Phi-2
+    capability: Text Generation
+    context_length: Full
+    api: run
+    deprecated: true
+- id: cf-defog-sqlcoder-7b-2
+  model_name: "@cf/defog/sqlcoder-7b-2"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: SQLCoder 7B 2
+    capability: Text Generation
+    context_length: Full
+    api: run
+    deprecated: true
+- id: cf-mistral-mistral-7b-instruct-v0-2-lora
+  model_name: "@cf/mistral/mistral-7b-instruct-v0.2-lora"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Mistral 7B Instruct v0.2 LoRA
+    capability: Text Generation
+    context_length: 32K
+    api: run
+- id: cf-mistral-mistral-7b-instruct-v0-1
+  model_name: "@cf/mistral/mistral-7b-instruct-v0.1"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Mistral 7B Instruct v0.1
+    capability: Text Generation
+    context_length: 8K
+    api: run
+    deprecated: true
+- id: cf-nousresearch-hermes-2-pro-mistral-7b
+  model_name: "@cf/nousresearch/hermes-2-pro-mistral-7b"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Hermes 2 Pro Mistral 7B
+    capability: Text Generation
+    context_length: Full
+    api: run
+    deprecated: true
+- id: cf-mistralai-mistral-small-3-1-24b-instruct
+  model_name: "@cf/mistralai/mistral-small-3.1-24b-instruct"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Mistral Small 3.1 24B
+    capability: Text Generation
+    context_length: 128K
+    api: run
+- id: cf-moonshotai-kimi-k2-6
+  model_name: "@cf/moonshotai/kimi-k2.6"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Kimi K2.6
+    capability: Text Generation
+    context_length: 128K
+    api: run
+- id: cf-moonshotai-kimi-k2-7-code
+  model_name: "@cf/moonshotai/kimi-k2.7-code"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: kimi-k2.7-code
+    capability: Text Generation
+    context_length: Full
+    api: run
+- id: cf-nvidia-nemotron-3-120b-a12b
+  model_name: "@cf/nvidia/nemotron-3-120b-a12b"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: NVIDIA Nemotron 3 120B A12B
+    capability: Text Generation
+    context_length: 128K
+    api: run
+- id: cf-qwen-qwen2-5-coder-32b-instruct
+  model_name: "@cf/qwen/qwen2.5-coder-32b-instruct"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Qwen2.5 Coder 32B
+    capability: Text Generation
+    context_length: 32K
+    api: run
+- id: cf-qwen-qwen3-30b-a3b-fp8
+  model_name: "@cf/qwen/qwen3-30b-a3b-fp8"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Qwen3 30B A3B FP8
+    capability: Text Generation
+    context_length: 32K
+    api: run
+- id: cf-qwen-qwq-32b
+  model_name: "@cf/qwen/qwq-32b"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: QwQ 32B Reasoning
+    capability: Text Generation
+    context_length: 32K
+    api: run
+- id: cf-zai-org-glm-4-7-flash
+  model_name: "@cf/zai-org/glm-4.7-flash"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: GLM 4.7 Flash
+    capability: Text Generation
+    context_length: 128K
+    api: run
+- id: cf-zai-org-glm-5-2
+  model_name: "@cf/zai-org/glm-5.2"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Glm 5.2
+    capability: Text Generation
+    context_length: Full
+    api: run
+- id: cf-meta-bart-large-cnn
+  model_name: "@cf/meta/bart-large-cnn"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: BART Large CNN
+    capability: Summarization
+    context_length: Text
+    deprecated: true
+- id: cf-meta-detr-resnet-50
+  model_name: "@cf/meta/detr-resnet-50"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: DETR ResNet-50
+    capability: Object Detection
+    context_length: Image
+- id: cf-unum-uform-gen2-qwen-500m
+  model_name: "@cf/unum/uform-gen2-qwen-500m"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: UForm Gen2 Qwen 500M
+    capability: Image-to-Text
+    context_length: Image
+    deprecated: true
+- id: cf-black-forest-labs-flux-1-schnell
+  model_name: "@cf/black-forest-labs/flux-1-schnell"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Flux 1 Schnell
+    capability: Text-to-Image
+    context_length: Full
+- id: cf-black-forest-labs-flux-2-dev
+  model_name: "@cf/black-forest-labs/flux-2-dev"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Flux 2 Dev
+    capability: Text-to-Image
+    context_length: Full
+- id: cf-black-forest-labs-flux-2-klein-4b
+  model_name: "@cf/black-forest-labs/flux-2-klein-4b"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Flux 2 Klein 4b
+    capability: Text-to-Image
+    context_length: Full
+- id: cf-black-forest-labs-flux-2-klein-9b
+  model_name: "@cf/black-forest-labs/flux-2-klein-9b"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Flux 2 Klein 9b
+    capability: Text-to-Image
+    context_length: Full
+- id: cf-bytedance-stable-diffusion-xl-lightning
+  model_name: "@cf/bytedance/stable-diffusion-xl-lightning"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: SDXL Lightning
+    capability: Text-to-Image
+    context_length: Prompt
+- id: cf-leonardo-lucid-origin
+  model_name: "@cf/leonardo/lucid-origin"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Lucid Origin
+    capability: Text-to-Image
+    context_length: Full
+- id: cf-leonardo-phoenix-1-0
+  model_name: "@cf/leonardo/phoenix-1.0"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Phoenix 1.0
+    capability: Text-to-Image
+    context_length: Full
+- id: cf-lykon-dreamshaper-8-lcm
+  model_name: "@cf/lykon/dreamshaper-8-lcm"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: DreamShaper 8 LCM
+    capability: Text-to-Image
+    context_length: Prompt
+- id: cf-runwayml-stable-diffusion-v1-5-img2img
+  model_name: "@cf/runwayml/stable-diffusion-v1-5-img2img"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Stable Diffusion V1 5 Img2img
+    capability: Text-to-Image
+    context_length: Full
+- id: cf-runwayml-stable-diffusion-v1-5-inpainting
+  model_name: "@cf/runwayml/stable-diffusion-v1-5-inpainting"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Stable Diffusion V1 5 Inpainting
+    capability: Text-to-Image
+    context_length: Full
+- id: cf-stabilityai-stable-diffusion-xl-base-1-0
+  model_name: "@cf/stabilityai/stable-diffusion-xl-base-1.0"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Stable Diffusion XL
+    capability: Text-to-Image
+    context_length: Prompt
+- id: cf-deepgram-aura-1
+  model_name: "@cf/deepgram/aura-1"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: aura-1
+    capability: Text-to-Speech
+    context_length: Full
+- id: cf-deepgram-aura-2-en
+  model_name: "@cf/deepgram/aura-2-en"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Aura 2 En
+    capability: Text-to-Speech
+    context_length: Full
+- id: cf-deepgram-aura-2-es
+  model_name: "@cf/deepgram/aura-2-es"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: Aura 2 Es
+    capability: Text-to-Speech
+    context_length: Full
+- id: cf-myshell-ai-melotts
+  model_name: "@cf/myshell-ai/melotts"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: MeloTTS
+    capability: Text-to-Speech
+    context_length: Text
+- id: cf-ai4bharat-indictrans2-en-indic-1b
+  model_name: "@cf/ai4bharat/indictrans2-en-indic-1B"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: indictrans2-en-indic-1B
+    capability: Translation
+    context_length: Full
+- id: cf-meta-m2m100-1-2b
+  model_name: "@cf/meta/m2m100-1.2b"
+  enabled: true
+  provider: cloudflare
+  prompt_billing_resource: preview-input
+  completion_billing_resource: preview-output
+  tags:
+    display_name: M2M100 1.2B
+    capability: Translation
+    context_length: Text
+- id: 8b0b55b3-fb99-415f-8441-3abef2c2a200
+  model_name: test-model
+  enabled: false
+  provider: layerrail
+  locations:
+  - hetzner-ai
+  vm_size: standard-4
+  gpu_count: 1
+  max_requests: 500
+  max_project_rps: 100
+  max_project_tps: 10000
+  storage_volumes:
+  - encrypted: true
+    size_gib: 80
+  - read_only: true
+    image: ai-model-test-model
+  boot_image: ai-ubuntu-2404-nvidia
+  tags:
+    capability: Text Generation
+  engine: vllm
+  engine_params: ''
