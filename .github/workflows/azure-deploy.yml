@@ -1,4 +1,4 @@
-name: Deploy LayerRail to Azure
+﻿name: Deploy LayerRail to Azure
 
 on:
   push:
@@ -18,6 +18,7 @@ env:
   ACR_NAME: layerrailregistry
   IMAGE_NAME: layerrail
   WEB_APP_NAME: layerrail-web
+  WEB_APP_SLOT_NAME: staging
   RESPIRATE_APP_NAME: layerrail-respirate
   MONITOR_APP_NAME: layerrail-monitor
 
@@ -58,11 +59,103 @@ jobs:
 
           echo "IMAGE_SHA=$IMAGE_SHA" >> "$GITHUB_ENV"
 
-      - name: Deploy web app
+      - name: Run database migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          MIGRATION_CONTAINER="layerrail-migrate-${{ github.run_id }}"
+          LOGIN_SERVER="$(az acr show --name "$ACR_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --query loginServer -o tsv)"
+          ACR_PASSWORD="$(az acr credential show --name "$ACR_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --query 'passwords[0].value' -o tsv)"
+          
+          # Get database URL and other mandatory secrets from web app configuration
+          DB_URL="$(az webapp config appsettings list --resource-group "$AZURE_RESOURCE_GROUP" --name "$WEB_APP_NAME" --query '[?name==`CLOVER_DATABASE_URL`].value' -o tsv)"
+          ENC_KEY="$(az webapp config appsettings list --resource-group "$AZURE_RESOURCE_GROUP" --name "$WEB_APP_NAME" --query '[?name==`CLOVER_COLUMN_ENCRYPTION_KEY`].value' -o tsv)"
+          SESSION_SECRET="$(az webapp config appsettings list --resource-group "$AZURE_RESOURCE_GROUP" --name "$WEB_APP_NAME" --query '[?name==`CLOVER_SESSION_SECRET`].value' -o tsv)"
+          
+          if [ -z "$DB_URL" ]; then
+            echo "Error: CLOVER_DATABASE_URL not found in app configuration"
+            exit 1
+          fi
+          
+          echo "Running database migrations in container..."
+          az container create \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$MIGRATION_CONTAINER" \
+            --image "$IMAGE_SHA" \
+            --registry-login-server "$LOGIN_SERVER" \
+            --registry-username "$ACR_NAME" \
+            --registry-password "$ACR_PASSWORD" \
+            --cpu 2 \
+            --memory 2 \
+            --os-type Linux \
+            --restart-policy Never \
+            --environment-variables CLOVER_DATABASE_URL="$DB_URL" CLOVER_COLUMN_ENCRYPTION_KEY="$ENC_KEY" CLOVER_SESSION_SECRET="$SESSION_SECRET" RACK_ENV=production \
+            --command-line "bundle exec rake prod_up"
+          
+          echo "Waiting for migration container to complete..."
+          for i in {1..120}; do
+            STATUS=$(az container show --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" --query 'containers[0].instanceView.currentState.state' -o tsv 2>/dev/null || echo "Creating")
+            echo "Migration status ($i/120): $STATUS"
+            if [ "$STATUS" = "Terminated" ]; then
+              EXIT_CODE=$(az container show --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" --query 'containers[0].instanceView.currentState.exitCode' -o tsv)
+              echo "Exit code: $EXIT_CODE"
+              if [ "$EXIT_CODE" = "0" ]; then
+                echo "Migrations completed successfully"
+              else
+                echo "Migrations failed. Logs:"
+                az container logs --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" || true
+                exit 1
+              fi
+              break
+            fi
+            sleep 5
+          done
+          
+          echo "Cleaning up migration container..."
+          az container delete --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" --yes 2>/dev/null || true
+
+      - name: Deploy web app to staging slot
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.WEB_APP_NAME }}
+          slot-name: ${{ env.WEB_APP_SLOT_NAME }}
           images: ${{ env.IMAGE_SHA }}
+
+      - name: Warm staging slot
+        shell: bash
+        run: |
+          set -euo pipefail
+          STAGING_HOST="$(az webapp deployment slot list --resource-group "$AZURE_RESOURCE_GROUP" --name "$WEB_APP_NAME" --query "[?name=='$WEB_APP_SLOT_NAME'].defaultHostName | [0]" -o tsv)"
+          if [ -z "$STAGING_HOST" ]; then
+            echo "Could not resolve staging slot host"
+            exit 1
+          fi
+
+          HEALTH_URL="https://$STAGING_HOST/up"
+          echo "Warming staging slot at $HEALTH_URL"
+          for i in {1..60}; do
+            STATUS_CODE="$(curl --silent --show-error --location --max-time 15 --output /tmp/layerrail-health.txt --write-out "%{http_code}" "$HEALTH_URL" || true)"
+            if [ "$STATUS_CODE" = "200" ]; then
+              echo "Staging slot is healthy"
+              exit 0
+            fi
+            echo "Staging health check $i/60 returned $STATUS_CODE"
+            cat /tmp/layerrail-health.txt || true
+            sleep 5
+          done
+
+          echo "Staging slot did not become healthy"
+          exit 1
+
+      - name: Swap staging into production
+        shell: bash
+        run: |
+          set -euo pipefail
+          az webapp deployment slot swap \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$WEB_APP_NAME" \
+            --slot "$WEB_APP_SLOT_NAME" \
+            --target-slot production
 
       - name: Deploy respirate worker
         uses: azure/webapps-deploy@v3
@@ -75,68 +168,3 @@ jobs:
         with:
           app-name: ${{ env.MONITOR_APP_NAME }}
           images: ${{ env.IMAGE_SHA }}
-
-      - name: Restart apps
-        shell: bash
-        run: |
-          set -euo pipefail
-          az webapp restart --resource-group "$AZURE_RESOURCE_GROUP" --name "$WEB_APP_NAME"
-          az webapp restart --resource-group "$AZURE_RESOURCE_GROUP" --name "$RESPIRATE_APP_NAME"
-          az webapp restart --resource-group "$AZURE_RESOURCE_GROUP" --name "$MONITOR_APP_NAME"
-
-      - name: Run database migrations
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Waiting 30 seconds for apps to start..."
-          sleep 30
-            LOGIN_SERVER="$(az acr show --name "$ACR_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --query loginServer -o tsv)"
-            MIGRATION_CONTAINER="layerrail-migrate-${{ github.run_id }}"
-            ACR_PASSWORD="$(az acr credential show --name "$ACR_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --query 'passwords[0].value' -o tsv)"
-          
-            # Get database URL and other mandatory secrets from web app configuration
-            DB_URL="$(az webapp config appsettings list --resource-group "$AZURE_RESOURCE_GROUP" --name "$WEB_APP_NAME" --query '[?name==`CLOVER_DATABASE_URL`].value' -o tsv)"
-            ENC_KEY="$(az webapp config appsettings list --resource-group "$AZURE_RESOURCE_GROUP" --name "$WEB_APP_NAME" --query '[?name==`CLOVER_COLUMN_ENCRYPTION_KEY`].value' -o tsv)"
-            SESSION_SECRET="$(az webapp config appsettings list --resource-group "$AZURE_RESOURCE_GROUP" --name "$WEB_APP_NAME" --query '[?name==`CLOVER_SESSION_SECRET`].value' -o tsv)"
-          
-            if [ -z "$DB_URL" ]; then
-              echo "Error: CLOVER_DATABASE_URL not found in app configuration"
-              exit 1
-            fi
-          
-            echo "Running database migrations in container..."
-            az container create \
-              --resource-group "$AZURE_RESOURCE_GROUP" \
-              --name "$MIGRATION_CONTAINER" \
-              --image "$LOGIN_SERVER/$IMAGE_NAME:prod" \
-              --registry-login-server "$LOGIN_SERVER" \
-              --registry-username "$ACR_NAME" \
-              --registry-password "$ACR_PASSWORD" \
-              --cpu 2 \
-              --memory 2 \
-              --os-type Linux \
-              --restart-policy Never \
-              --environment-variables CLOVER_DATABASE_URL="$DB_URL" CLOVER_COLUMN_ENCRYPTION_KEY="$ENC_KEY" CLOVER_SESSION_SECRET="$SESSION_SECRET" RACK_ENV=production \
-              --command-line "bundle exec rake prod_up"
-          
-            echo "Waiting for migration container to complete..."
-            for i in {1..120}; do
-              STATUS=$(az container show --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" --query 'containers[0].instanceView.currentState.state' -o tsv 2>/dev/null || echo "Creating")
-              echo "Migration status ($i/120): $STATUS"
-              if [ "$STATUS" = "Terminated" ]; then
-                EXIT_CODE=$(az container show --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" --query 'containers[0].instanceView.currentState.exitCode' -o tsv)
-                echo "Exit code: $EXIT_CODE"
-                if [ "$EXIT_CODE" = "0" ]; then
-                  echo "✓ Migrations completed successfully!"
-                else
-                  echo "✗ Migrations failed. Logs:"
-                  az container logs --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" || true
-                  exit 1
-                fi
-                break
-              fi
-              sleep 5
-            done
-          
-            echo "Cleaning up migration container..."
-            az container delete --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" --yes 2>/dev/null || true
