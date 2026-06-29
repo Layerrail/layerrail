@@ -1119,6 +1119,29 @@ class Clover < Roda
       response.json = true
       response.skip_content_security_policy!
 
+      r.post "v1", "chat", "completions" do
+        handle_cloudflare_ai_request("chat/completions", "Text Generation")
+      end
+
+      r.post "v1", "messages" do
+        handle_cloudflare_ai_request("messages", "Text Generation")
+      end
+
+      r.post "v1", "responses" do
+        handle_cloudflare_ai_request("responses", "Text Generation")
+      end
+
+      r.post "v1", "embeddings" do
+        handle_cloudflare_ai_request("embeddings", "Embeddings")
+      end
+
+      r.post "v1", "run" do
+        handle_cloudflare_ai_run_request
+      end
+
+      r.post "v1", "agents", String, "messages" do |agent_ref|
+        handle_ai_agent_message_request(agent_ref)
+      end
       r.get "ips-v4" do
         response.content_type = :text
         response.cache_control public: true, max_age: 86400
