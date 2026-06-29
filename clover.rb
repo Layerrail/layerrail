@@ -1103,7 +1103,7 @@ class Clover < Roda
         health_check_response("api", database: true)
       end
 
-      unless /\ABearer:?\s+pat-/i.match?(env["HTTP_AUTHORIZATION"].to_s)
+      unless /\ABearer:?\s+pat-/i.match?(env["HTTP_AUTHORIZATION"].to_s) || r.path_info.start_with?("/v1/")
         if r.path_info == "/cli"
           response.content_type = :text
           response.status = 400
