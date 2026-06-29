@@ -186,7 +186,7 @@ class Clover < Roda
       configured_api_host = Config.api_url && URI(Config.api_url).host&.downcase
       request_host = host.downcase
 
-      if request_host == configured_api_host || request_host.start_with?("api.")
+      if request.path_info.start_with?("/v1/", "/api/") || request_host == configured_api_host || request_host.start_with?("api.")
         :api
       elsif request_host == configured_admin_host || request_host.start_with?("admin.")
         :admin
