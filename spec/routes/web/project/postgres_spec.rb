@@ -895,6 +895,22 @@ RSpec.describe Clover, "postgres" do
     describe "logs" do
       let(:parseable_client) { instance_double(Parseable::Client) }
 
+      before do
+        pg.update(parseable_password: "existing-parseable-password")
+      end
+
+      it "auto-enables log aggregation for stale databases" do
+        pg.update(parseable_password: nil)
+        allow(ParseableResource).to receive(:client_for_project).and_return(parseable_client)
+        expect(parseable_client).to receive_messages(create_stream: "test-stream", create_role: "test-role", create_user: "test-parseable-pass")
+        expect(parseable_client).to receive(:query).and_return([])
+
+        visit "#{project.path}#{pg.path}/logs"
+
+        expect(pg.reload.parseable_password).to eq("test-parseable-pass")
+        expect(page).to have_content("No logs found in the selected time range.")
+      end
+
       it "shows database logs with filters and context" do
         allow(ParseableResource).to receive(:client_for_project).and_return(parseable_client)
         rows = [{

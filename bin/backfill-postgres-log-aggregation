@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../loader"
+
+unless ParseableResource.client_for_project(Config.postgres_service_project_id)
+  abort "Postgres log aggregation backend is not configured. Provision Parseable for the Postgres service project first."
+end
+
+scope = PostgresResource.where(parseable_password: nil)
+total = scope.count
+
+if total.zero?
+  puts "All Postgres instances already have log aggregation configured."
+  exit
+end
+
+puts "Configuring log aggregation for #{total} Postgres instance#{total == 1 ? "" : "s"}..."
+
+configured = 0
+failed = 0
+
+scope.each do |pg|
+  begin
+    if pg.setup_log_aggregation
+      configured += 1
+      puts "#{pg.ubid} #{pg.name}: enabled"
+    else
+      failed += 1
+      warn "#{pg.ubid} #{pg.name}: skipped, log aggregation backend unavailable"
+    end
+  rescue => ex
+    failed += 1
+    warn "#{pg.ubid} #{pg.name}: #{ex.class}: #{ex.message}"
+  end
+end
+
+puts "Done. enabled=#{configured} failed=#{failed}"

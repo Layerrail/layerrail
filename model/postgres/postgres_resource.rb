@@ -580,15 +580,20 @@ class PostgresResource < Sequel::Model
     options.serialize
   end
 
-  def setup_log_aggregation
+  def setup_log_aggregation(client: nil)
+    return parseable_password if parseable_password
+
     # Setup only needs to happen if there's a Parseable resource present in the
     # PG service project.
-    return unless (client = ParseableResource.client_for_project(Config.postgres_service_project_id))
+    client ||= ParseableResource.client_for_project(Config.postgres_service_project_id)
+    return unless client
 
     client.create_stream(stream_name: ubid)
     client.create_role(role_name: ubid, privileges: [{privilege: "ingestor", resource: {stream: ubid}}])
     password = client.create_user(user_id: ubid, roles: [ubid])
     update(parseable_password: password)
+    server_incr("configure_logs")
+    password
   end
 
   def self.postgres_flavors(project)

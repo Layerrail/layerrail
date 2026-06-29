@@ -1367,5 +1367,11 @@ RSpec.describe PostgresResource do
       postgres_resource.setup_log_aggregation
       expect(postgres_resource.parseable_password).to eq("test-parseable-pass")
     end
+
+    it "does not recreate log aggregation if it already has credentials" do
+      postgres_resource.update(parseable_password: "existing-parseable-password")
+      expect(ParseableResource).not_to receive(:client_for_project)
+      expect(postgres_resource.setup_log_aggregation).to eq("existing-parseable-password")
+    end
   end
 end

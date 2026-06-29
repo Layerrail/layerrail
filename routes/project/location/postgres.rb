@@ -791,6 +791,7 @@ class Clover
           unless (parseable_client = ParseableResource.client_for_project(Config.postgres_service_project_id))
             raise CloverError.new(400, "NotFound", "Log aggregation is not enabled for this instance")
           end
+          pg.setup_log_aggregation(client: parseable_client) unless pg.parseable_password
 
           ds = DB.from(Sequel.identifier(pg.ubid))
             .no_auto_parameterize
