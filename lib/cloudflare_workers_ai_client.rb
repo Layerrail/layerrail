@@ -31,6 +31,15 @@ class CloudflareWorkersAiClient
     [response.status, parse_response_body(response)]
   end
 
+  def openai_stream_request(path, payload, &)
+    @connection.post(
+      path: "/client/v4/accounts/#{@account_id}/ai/v1/#{path}",
+      body: payload.to_json,
+      expects: EXPECTED_STATUSES,
+      response_block: proc { |chunk, _remaining, _total| yield chunk },
+    )
+  end
+
   def run_request(model_name, payload)
     response = @connection.post(
       path: "/client/v4/accounts/#{@account_id}/ai/run/#{model_name}",

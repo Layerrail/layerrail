@@ -122,6 +122,11 @@ class Clover
 
     normalize_cloudflare_payload!(payload, path)
     compact_cloudflare_payload!(payload)
+
+    if path == "chat/completions" && payload["stream"]
+      stream_cloudflare_ai_request(api_key, model, payload)
+    end
+
     payload.delete("stream_options")
 
     status, body = CloudflareWorkersAiClient.new.openai_request(path, payload)
@@ -391,7 +396,7 @@ class Clover
           part["text"] if part.is_a?(Hash) && part["type"] == "text"
         end.join("\n")
       end
-      payload["stream"] = false
+      payload["stream"] = !!payload["stream"]
     when "messages"
       messages = payload["messages"]
       fail CloverError.new(400, "InvalidRequest", "messages must be an array") unless messages.is_a?(Array)
@@ -482,6 +487,48 @@ class Clover
     return client.run_request(model.model_name, payload) if model.model_name.start_with?("@cf/", "@hf/")
 
     client.run_model_request(model.model_name, payload)
+  end
+
+  def stream_cloudflare_ai_request(api_key, model, payload)
+    response.json = false
+    response.status = 200
+    response["Content-Type"] = "text/event-stream"
+    response["Cache-Control"] = "no-cache, no-transform"
+    response["X-Accel-Buffering"] = "no"
+
+    prompt_tokens = estimate_inference_tokens(cloudflare_request_text({}, payload))
+    completion_text = +""
+    usage = {}
+    body = Enumerator.new do |stream|
+      CloudflareWorkersAiClient.new.openai_stream_request("chat/completions", payload) do |chunk|
+        stream << chunk
+        cloudflare_stream_events(chunk).each do |event|
+          usage = event["usage"] if event["usage"].is_a?(Hash)
+          completion_text << event.dig("choices", 0, "delta", "content").to_s
+        end
+      end
+    ensure
+      completion_tokens = (usage["completion_tokens"] || usage["output_tokens"]).to_i
+      completion_tokens = estimate_inference_tokens(completion_text) if completion_tokens.zero?
+      prompt_tokens = (usage["prompt_tokens"] || usage["input_tokens"]).to_i if (usage["prompt_tokens"] || usage["input_tokens"]).to_i.positive?
+      record_inference_tokens(api_key, model.prompt_billing_resource, prompt_tokens)
+      record_inference_tokens(api_key, model.completion_billing_resource, completion_tokens)
+    end
+
+    request.halt [200, response.headers, body]
+  end
+
+  def cloudflare_stream_events(chunk)
+    chunk.to_s.each_line.filter_map do |line|
+      next unless line.start_with?("data:")
+
+      data = line.delete_prefix("data:").strip
+      next if data.empty? || data == "[DONE]"
+
+      JSON.parse(data)
+    rescue JSON::ParserError
+      nil
+    end
   end
 
   def cloudflare_run_text_payload(model, payload)

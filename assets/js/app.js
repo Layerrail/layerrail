@@ -892,7 +892,7 @@ function setupPlayground() {
     const native_run = selectedEndpointUsesNativeRun();
     const embeddings_request = capability === "Embeddings";
     const endpoint_api = selectedEndpointApi();
-    const streams_response = !native_run && !embeddings_request && endpoint_api === "chat" && $selected_endpoint.attr('data-provider') !== "cloudflare";
+    const streams_response = !native_run && !embeddings_request && endpoint_api === "chat";
     const request_input_price = selectedEndpointNumber('data-input-price');
     const request_output_price = selectedEndpointNumber('data-output-price');
 
