@@ -171,8 +171,8 @@ MSG
 
     display_name = ie.tags["display_name"] || ie.model_name
     provider = ie.tags["provider"] || (ie.respond_to?(:provider) ? ie.provider : "LayerRail")
-    prompt_price = BillingRate.million_token_price(ie.prompt_billing_resource)
-    completion_price = BillingRate.million_token_price(ie.completion_billing_resource)
+    prompt_price = inference_model_million_token_price(ie, ie.prompt_billing_resource).to_f
+    completion_price = inference_model_million_token_price(ie, ie.completion_billing_resource).to_f
     context_length = ie.tags.fetch("context_length", "Full")
     capability = ie.tags["capability"]
     modalities = case capability
