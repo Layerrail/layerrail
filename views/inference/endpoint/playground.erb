@@ -21,8 +21,8 @@
             label: "Inference Endpoint",
             placeholder: "Pick an endpoint",
             options: @inference_models.map { |ie|
-              prompt_price = BillingRate.million_token_price(ie.prompt_billing_resource)
-              completion_price = BillingRate.million_token_price(ie.completion_billing_resource)
+              prompt_price = inference_model_million_token_price(ie, ie.prompt_billing_resource)
+              completion_price = inference_model_million_token_price(ie, ie.completion_billing_resource)
               [ie.model_name, ie.model_name, nil, {
                 "data-id": ie.ubid,
                 "data-url": ie.load_balancer.health_check_url,

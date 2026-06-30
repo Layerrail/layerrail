@@ -57,6 +57,12 @@ class Clover
       .map { CloudflareInferenceModel.new(it) }
   end
 
+  def catalog_inference_models
+    Option::AI_MODELS
+      .select { |it| %w[cloudflare azure_foundry openrouter].include?(it["provider"]) && it.fetch("enabled", true) }
+      .map { CloudflareInferenceModel.new(it) }
+  end
+
   def visible_capable_models(dataset)
     dataset
       .where(Sequel.|([:visible],
@@ -81,7 +87,7 @@ class Clover
   end
 
   def all_inference_models
-    return cloudflare_inference_models if cloudflare_inference_provider?
+    return catalog_inference_models if cloudflare_inference_provider?
 
     inference_endpoint_ds.eager(:location, load_balancer: :private_subnet).all +
       inference_router_model_ds.eager(inference_router: {load_balancer: :private_subnet}).all
@@ -114,8 +120,10 @@ class Clover
     fail CloverError.new(403, "ProjectInactive", "the project for this inference API key is not active") unless api_key.project&.active?
 
     payload = parse_inference_payload
-    model = cloudflare_inference_models.find { it.model_name == payload["model"] && it.tags["capability"] == capability }
+    model = catalog_inference_models.find { it.model_name == payload["model"] && it.tags["capability"] == capability }
     fail CloverError.new(400, "InvalidRequest", "model is not enabled for #{capability.downcase}") unless model
+    return handle_azure_foundry_ai_request(path, capability, api_key, model, payload) if model.provider == "azure_foundry"
+
     if capability == "Text Generation" && cloudflare_text_model_path(model) != path
       fail CloverError.new(400, "InvalidRequest", "model uses /v1/#{cloudflare_text_model_path(model)}")
     end
@@ -130,6 +138,25 @@ class Clover
     payload.delete("stream_options")
 
     status, body = CloudflareWorkersAiClient.new.openai_request(path, payload)
+    response.status = status
+    record_cloudflare_inference_usage(api_key, model, body, payload) if status == 200
+    body
+  end
+
+  def handle_azure_foundry_ai_request(path, capability, api_key, model, payload)
+    fail CloverError.new(400, "InvalidRequest", "Azure AI Foundry currently supports this model through /v1/chat/completions") unless path == "chat/completions" && capability == "Text Generation"
+
+    normalize_cloudflare_payload!(payload, path)
+    compact_cloudflare_payload!(payload)
+    deployment = model.tags["deployment"] || model.model_name
+    payload["model"] = deployment
+
+    if payload["stream"]
+      stream_azure_foundry_ai_request(api_key, model, deployment, payload)
+    end
+
+    payload.delete("stream_options")
+    status, body = AzureFoundryClient.new.chat_completion(deployment, payload)
     response.status = status
     record_cloudflare_inference_usage(api_key, model, body, payload) if status == 200
     body
@@ -518,6 +545,35 @@ class Clover
     request.halt [200, response.headers, body]
   end
 
+  def stream_azure_foundry_ai_request(api_key, model, deployment, payload)
+    response.json = false
+    response.status = 200
+    response["Content-Type"] = "text/event-stream"
+    response["Cache-Control"] = "no-cache, no-transform"
+    response["X-Accel-Buffering"] = "no"
+
+    prompt_tokens = estimate_inference_tokens(cloudflare_request_text({}, payload))
+    completion_text = +""
+    usage = {}
+    body = Enumerator.new do |stream|
+      AzureFoundryClient.new.chat_completion_stream(deployment, payload) do |chunk|
+        stream << chunk
+        cloudflare_stream_events(chunk).each do |event|
+          usage = event["usage"] if event["usage"].is_a?(Hash)
+          completion_text << event.dig("choices", 0, "delta", "content").to_s
+        end
+      end
+    ensure
+      completion_tokens = (usage["completion_tokens"] || usage["output_tokens"]).to_i
+      completion_tokens = estimate_inference_tokens(completion_text) if completion_tokens.zero?
+      prompt_tokens = (usage["prompt_tokens"] || usage["input_tokens"]).to_i if (usage["prompt_tokens"] || usage["input_tokens"]).to_i.positive?
+      record_inference_tokens(api_key, model.prompt_billing_resource, prompt_tokens)
+      record_inference_tokens(api_key, model.completion_billing_resource, completion_tokens)
+    end
+
+    request.halt [200, response.headers, body]
+  end
+
   def cloudflare_stream_events(chunk)
     chunk.to_s.each_line.filter_map do |line|
       next unless line.start_with?("data:")
@@ -595,11 +651,15 @@ class Clover
         billing_rate_id: rate["id"],
         span: Sequel.pg_range(begin_time...end_time),
         amount: tokens,
-        resource_tags: {provider: "cloudflare"},
+        resource_tags: {provider: resource_family.to_s.start_with?("azure-") ? "azure_foundry" : "cloudflare"},
       )
     end
   rescue Sequel::Error => ex
     Clog.emit("Failed to update Cloudflare inference billing record", Util.exception_to_hash(ex, into: {project_id: api_key.project_id, resource_family:, tokens:}))
+  end
+
+  def inference_model_million_token_price(model, resource)
+    BillingRate.million_token_price(resource) || model.tags["pricing"]&.dig(resource.end_with?("-input") ? "input" : "output")
   end
 
   def estimate_inference_tokens(value)

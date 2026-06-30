@@ -16,12 +16,13 @@ class Serializers::InferenceEndpoint < Serializers::Base
         "display_name",
         "hf_model",
         "multimodal",
+        "pricing",
         "provider",
         "source",
       ),
       price: {
-        per_million_prompt_tokens: BillingRate.million_token_price(ie.prompt_billing_resource),
-        per_million_completion_tokens: BillingRate.million_token_price(ie.completion_billing_resource),
+        per_million_prompt_tokens: BillingRate.million_token_price(ie.prompt_billing_resource) || ie.tags["pricing"]&.dig("input"),
+        per_million_completion_tokens: BillingRate.million_token_price(ie.completion_billing_resource) || ie.tags["pricing"]&.dig("output"),
       },
     }
   end
