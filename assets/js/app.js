@@ -892,7 +892,8 @@ function setupPlayground() {
     const native_run = selectedEndpointUsesNativeRun();
     const embeddings_request = capability === "Embeddings";
     const endpoint_api = selectedEndpointApi();
-    const streams_response = !native_run && !embeddings_request && endpoint_api === "chat";
+    const endpoint_provider = $selected_endpoint.attr('data-provider') || "layerrail";
+    const streams_response = !native_run && !embeddings_request && endpoint_api === "chat" && endpoint_provider !== "azure_foundry";
     const request_input_price = selectedEndpointNumber('data-input-price');
     const request_output_price = selectedEndpointNumber('data-output-price');
 
