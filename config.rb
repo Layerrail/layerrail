@@ -279,7 +279,7 @@ module Config
   optional :cloudflare_api_token, string, clear: true
   optional :azure_foundry_endpoint, string
   optional :azure_foundry_api_key, string, clear: true
-  override :azure_foundry_api_version, "2024-10-21", string
+    override :azure_foundry_api_version, "2025-01-01-preview", string
   optional :inference_endpoint_service_project_id, uuid
   optional :runpod_api_key, string, clear: true
   optional :huggingface_token, string, clear: true

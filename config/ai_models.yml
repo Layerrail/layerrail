@@ -38,9 +38,102 @@
     api: chat
     deployment: gpt-5-nano
     pricing: {input: 0.08, output: 0.6}
+- id: azure-openai-gpt-5-5
+  model_name: gpt-5.5
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-gpt-5-5-input
+  completion_billing_resource: azure-gpt-5-5-output
+  tags:
+    display_name: GPT-5.5
+    capability: Text Generation
+    context_length: 400K
+    api: chat
+    deployment: gpt-5.5
+    pricing: {input: 2.5, output: 20.0}
+- id: azure-openai-gpt-5-4
+  model_name: gpt-5.4
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-gpt-5-4-input
+  completion_billing_resource: azure-gpt-5-4-output
+  tags:
+    display_name: GPT-5.4
+    capability: Text Generation
+    context_length: 400K
+    api: chat
+    deployment: gpt-5.4
+    pricing: {input: 2.0, output: 16.0}
+- id: azure-openai-gpt-5-4-mini
+  model_name: gpt-5.4-mini
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-gpt-5-4-mini-input
+  completion_billing_resource: azure-gpt-5-4-mini-output
+  tags:
+    display_name: GPT-5.4 Mini
+    capability: Text Generation
+    context_length: 400K
+    api: chat
+    deployment: gpt-5.4-mini
+    pricing: {input: 0.45, output: 3.6}
+- id: azure-openai-gpt-5-4-nano
+  model_name: gpt-5.4-nano
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-gpt-5-4-nano-input
+  completion_billing_resource: azure-gpt-5-4-nano-output
+  tags:
+    display_name: GPT-5.4 Nano
+    capability: Text Generation
+    context_length: 400K
+    api: chat
+    deployment: gpt-5.4-nano
+    pricing: {input: 0.12, output: 0.9}
+- id: azure-openai-gpt-5-2
+  model_name: gpt-5.2
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-gpt-5-2-input
+  completion_billing_resource: azure-gpt-5-2-output
+  tags:
+    display_name: GPT-5.2
+    capability: Text Generation
+    context_length: 400K
+    api: chat
+    deployment: gpt-5.2
+    pricing: {input: 1.8, output: 14.4}
+- id: azure-openai-o3
+  model_name: o3
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-o3-input
+  completion_billing_resource: azure-o3-output
+  tags:
+    display_name: o3
+    capability: Text Generation
+    context_length: 200K
+    api: chat
+    deployment: o3
+    reasoning: true
+    pricing: {input: 2.8, output: 11.2}
+- id: azure-openai-o4-mini
+  model_name: o4-mini
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-o4-mini-input
+  completion_billing_resource: azure-o4-mini-output
+  tags:
+    display_name: o4 Mini
+    capability: Text Generation
+    context_length: 200K
+    api: chat
+    deployment: o4-mini
+    reasoning: true
+    pricing: {input: 0.55, output: 2.2}
 - id: azure-openai-gpt-4-1
   model_name: gpt-4.1
-  enabled: true
+  enabled: false
   provider: azure_foundry
   prompt_billing_resource: azure-gpt-4-1-input
   completion_billing_resource: azure-gpt-4-1-output
@@ -53,7 +146,7 @@
     pricing: {input: 2.8, output: 11.2}
 - id: azure-openai-gpt-4-1-mini
   model_name: gpt-4.1-mini
-  enabled: true
+  enabled: false
   provider: azure_foundry
   prompt_billing_resource: azure-gpt-4-1-mini-input
   completion_billing_resource: azure-gpt-4-1-mini-output
@@ -66,7 +159,7 @@
     pricing: {input: 0.55, output: 2.2}
 - id: azure-openai-gpt-4o
   model_name: gpt-4o
-  enabled: true
+  enabled: false
   provider: azure_foundry
   prompt_billing_resource: azure-gpt-4o-input
   completion_billing_resource: azure-gpt-4o-output
@@ -80,7 +173,7 @@
     pricing: {input: 3.5, output: 14.0}
 - id: azure-openai-gpt-4o-mini
   model_name: gpt-4o-mini
-  enabled: true
+  enabled: false
   provider: azure_foundry
   prompt_billing_resource: azure-gpt-4o-mini-input
   completion_billing_resource: azure-gpt-4o-mini-output
@@ -94,7 +187,7 @@
     pricing: {input: 0.21, output: 0.84}
 - id: azure-anthropic-claude-opus-4-8
   model_name: claude-opus-4-8
-  enabled: true
+  enabled: false
   provider: azure_foundry
   prompt_billing_resource: azure-claude-opus-4-8-input
   completion_billing_resource: azure-claude-opus-4-8-output
@@ -108,7 +201,7 @@
     pricing: {input: 7.0, output: 35.0}
 - id: azure-anthropic-claude-sonnet-4-6
   model_name: claude-sonnet-4-6
-  enabled: true
+  enabled: false
   provider: azure_foundry
   prompt_billing_resource: azure-claude-sonnet-4-6-input
   completion_billing_resource: azure-claude-sonnet-4-6-output
@@ -121,31 +214,83 @@
     multimodal: true
     pricing: {input: 4.2, output: 21.0}
 - id: azure-deepseek-r1
-  model_name: deepseek-r1
+  model_name: DeepSeek-V4-Flash
   enabled: true
   provider: azure_foundry
-  prompt_billing_resource: azure-deepseek-r1-input
-  completion_billing_resource: azure-deepseek-r1-output
+  prompt_billing_resource: azure-deepseek-v4-flash-input
+  completion_billing_resource: azure-deepseek-v4-flash-output
   tags:
-    display_name: DeepSeek R1
+    display_name: DeepSeek V4 Flash
     capability: Text Generation
     context_length: 128K
     api: chat
-    deployment: deepseek-r1
+    deployment: DeepSeek-V4-Flash
+    pricing: {input: 0.4, output: 1.6}
+- id: azure-deepseek-v4-pro
+  model_name: DeepSeek-V4-Pro
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-deepseek-v4-pro-input
+  completion_billing_resource: azure-deepseek-v4-pro-output
+  tags:
+    display_name: DeepSeek V4 Pro
+    capability: Text Generation
+    context_length: 128K
+    api: chat
+    deployment: DeepSeek-V4-Pro
     pricing: {input: 0.8, output: 3.2}
 - id: azure-mistral-large
-  model_name: mistral-large
+  model_name: Mistral-Large-3
   enabled: true
   provider: azure_foundry
-  prompt_billing_resource: azure-mistral-large-input
-  completion_billing_resource: azure-mistral-large-output
+  prompt_billing_resource: azure-mistral-large-3-input
+  completion_billing_resource: azure-mistral-large-3-output
   tags:
-    display_name: Mistral Large
+    display_name: Mistral Large 3
     capability: Text Generation
     context_length: 128K
     api: chat
-    deployment: mistral-large
+    deployment: Mistral-Large-3
     pricing: {input: 2.8, output: 8.4}
+- id: azure-xai-grok-4
+  model_name: grok-4
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-grok-4-input
+  completion_billing_resource: azure-grok-4-output
+  tags:
+    display_name: Grok 4
+    capability: Text Generation
+    context_length: 256K
+    api: chat
+    deployment: grok-4
+    pricing: {input: 3.0, output: 15.0}
+- id: azure-meta-llama-4-scout
+  model_name: Llama-4-Scout-17B-16E-Instruct
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-llama-4-scout-input
+  completion_billing_resource: azure-llama-4-scout-output
+  tags:
+    display_name: Llama 4 Scout 17B
+    capability: Text Generation
+    context_length: 128K
+    api: chat
+    deployment: Llama-4-Scout-17B-16E-Instruct
+    pricing: {input: 0.3, output: 0.9}
+- id: azure-microsoft-phi-4-mini
+  model_name: Phi-4-mini-instruct
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-phi-4-mini-input
+  completion_billing_resource: azure-phi-4-mini-output
+  tags:
+    display_name: Phi-4 Mini
+    capability: Text Generation
+    context_length: 128K
+    api: chat
+    deployment: Phi-4-mini-instruct
+    pricing: {input: 0.1, output: 0.4}
 - id: cf-meta-llama-3-2-3b-instruct
   model_name: "@cf/meta/llama-3.2-3b-instruct"
   enabled: true

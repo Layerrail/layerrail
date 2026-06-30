@@ -147,6 +147,7 @@ class Clover
     fail CloverError.new(400, "InvalidRequest", "Azure AI Foundry currently supports this model through /v1/chat/completions") unless path == "chat/completions" && capability == "Text Generation"
 
     normalize_cloudflare_payload!(payload, path)
+    normalize_azure_foundry_payload!(payload, model)
     compact_cloudflare_payload!(payload)
     deployment = model.tags["deployment"] || model.model_name
     payload["model"] = deployment
@@ -160,6 +161,15 @@ class Clover
     response.status = status
     record_cloudflare_inference_usage(api_key, model, body, payload) if status == 200
     body
+  end
+
+  def normalize_azure_foundry_payload!(payload, model)
+    deployment = (model.tags["deployment"] || model.model_name).to_s
+    if deployment.start_with?("gpt-5") || deployment.start_with?("o")
+      payload["max_completion_tokens"] ||= payload.delete("max_tokens")
+      payload.delete("max_tokens")
+    end
+    payload.delete("model")
   end
 
   def handle_cloudflare_ai_run_request
