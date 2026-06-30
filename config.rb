@@ -290,6 +290,7 @@ module Config
   override :premium_ai_polar_event_name, "layerrail_ai_usage", string
   override :premium_ai_charge_threshold_cents, 500, int
   override :premium_ai_monthly_spend_cap_cents, 1000, int
+  override :premium_ai_rate_limit_fallback_enabled, true, bool
 
   # DNS
   optional :dns_service_project_id, uuid

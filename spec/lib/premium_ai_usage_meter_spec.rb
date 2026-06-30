@@ -37,6 +37,7 @@ RSpec.describe PremiumAIUsageMeter do
         external_customer_id: project.ubid,
         metadata: hash_including(
           project_id: project.ubid,
+          billing_info_id: project.billing_info.ubid,
           api_key_id: api_key.ubid,
           model: "premium-test",
           provider: "azure_foundry",
@@ -45,6 +46,17 @@ RSpec.describe PremiumAIUsageMeter do
           tokens: 1000
         )
       )
+    ])
+
+    described_class.record(api_key:, model:, token_kind: "input", resource_family: "azure-gpt-5-input", tokens: 1000, billing_rate: nil)
+  end
+
+  it "uses the Polar external customer id stored on billing info" do
+    project.update(billing_info_id: BillingInfo.create(stripe_id: "polar:customer_external_id").id)
+
+    expect(PolarClient).to receive(:enabled?).and_return(true)
+    expect(PolarClient).to receive(:ingest_events).with([
+      hash_including(external_customer_id: "customer_external_id")
     ])
 
     described_class.record(api_key:, model:, token_kind: "input", resource_family: "azure-gpt-5-input", tokens: 1000, billing_rate: nil)

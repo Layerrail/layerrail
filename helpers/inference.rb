@@ -158,10 +158,85 @@ class Clover
     end
 
     payload.delete("stream_options")
-    status, body = AzureFoundryClient.new.chat_completion(deployment, payload)
+    status, body, served_model = azure_foundry_chat_completion_with_fallback(model, deployment, payload)
     response.status = status
-    record_cloudflare_inference_usage(api_key, model, body, payload) if status == 200
+    response["X-LayerRail-AI-Model"] = served_model.model_name
+    response["X-LayerRail-AI-Fallback-Model"] = served_model.model_name if served_model.model_name != model.model_name
+    record_cloudflare_inference_usage(api_key, served_model, body, payload) if status == 200
     body
+  end
+
+  def azure_foundry_chat_completion_with_fallback(model, deployment, payload)
+    client = AzureFoundryClient.new
+    status, body = client.chat_completion(deployment, payload)
+    return [status, body, model] unless azure_foundry_rate_limited?(status, body)
+
+    Clog.emit("Azure AI Foundry model is rate limited", {
+      azure_foundry_model_rate_limited: {
+        model: model.model_name,
+        deployment:,
+        provider: model.provider,
+        error: azure_foundry_error_message(body)
+      }
+    })
+
+    fallback_models = azure_foundry_rate_limit_fallback_models(model)
+    fallback_models.each do |fallback_model|
+      fallback_deployment = fallback_model.tags["deployment"] || fallback_model.model_name
+      fallback_payload = JSON.parse(JSON.generate(payload))
+      normalize_azure_foundry_payload!(fallback_payload, fallback_model)
+      fallback_payload["model"] = fallback_deployment
+      status, body = client.chat_completion(fallback_deployment, fallback_payload)
+      return [status, body, fallback_model] unless azure_foundry_rate_limited?(status, body)
+
+      Clog.emit("Azure AI Foundry fallback model is rate limited", {
+        azure_foundry_fallback_model_rate_limited: {
+          model: fallback_model.model_name,
+          deployment: fallback_deployment,
+          error: azure_foundry_error_message(body)
+        }
+      })
+    end
+
+    [429, {
+      "error" => {
+        "code" => "PremiumAIRateLimited",
+        "message" => "Premium AI capacity is temporarily rate limited. Please retry shortly or choose another premium model.",
+        "model" => model.model_name,
+        "provider" => "azure_foundry"
+      }
+    }, model]
+  end
+
+  def azure_foundry_rate_limit_fallback_models(model)
+    return [] unless Config.premium_ai_rate_limit_fallback_enabled
+
+    catalog_inference_models
+      .select { it.provider == "azure_foundry" && it.tags["capability"] == model.tags["capability"] && it.model_name != model.model_name }
+      .sort_by { |candidate|
+        [
+          candidate.tags["reasoning"] ? 1 : 0,
+          candidate.tags["pricing"]&.[]("output").to_f,
+          candidate.tags["pricing"]&.[]("input").to_f,
+          candidate.model_name
+        ]
+      }
+  end
+
+  def azure_foundry_rate_limited?(status, body)
+    return true if status.to_i == 429
+
+    error_message = azure_foundry_error_message(body).downcase
+    error_message.include?("rate limit") || error_message.include?("too many requests")
+  end
+
+  def azure_foundry_error_message(body)
+    [
+      body.dig("error", "message"),
+      body.dig("error", "code"),
+      body["message"],
+      body.to_json
+    ].compact.first.to_s
   end
 
   def normalize_azure_foundry_payload!(payload, model)
@@ -644,7 +719,7 @@ class Clover
     return unless Config.premium_ai_metering_enabled
     return unless PremiumAIUsageMeter.premium_model?(model)
 
-    fail CloverError.new(402, "BillingRequired", "Premium AI models require billing to be connected before use.") unless api_key.project.billing_info
+    fail CloverError.new(402, "BillingRequired", "Premium AI models require billing to be connected before use.") unless api_key.project.billing_info&.polar_external_customer_id || api_key.project.billing_info
 
     cap = Config.premium_ai_monthly_spend_cap_cents.to_i
     return unless cap.positive?

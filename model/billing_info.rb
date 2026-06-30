@@ -63,6 +63,13 @@ class BillingInfo < Sequel::Model
 
   alias_method :stripe_data, :billing_data
 
+  def polar_external_customer_id
+    return unless Config.polar_access_token
+    return stripe_id.delete_prefix("polar:") if stripe_id.to_s.start_with?("polar:")
+
+    project&.ubid
+  end
+
   def has_address?
     !billing_data&.[]("address").to_s.empty?
   end

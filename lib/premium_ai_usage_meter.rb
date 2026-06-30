@@ -71,7 +71,7 @@ class PremiumAIUsageMeter
   end
 
   def require_billing!
-    return if @project.billing_info
+    return if polar_external_customer_id
 
     fail CloverError.new(
       402,
@@ -83,13 +83,16 @@ class PremiumAIUsageMeter
   def ingest_polar_event
     return unless PolarClient.enabled?
     return unless usage_cents.positive?
+    external_customer_id = polar_external_customer_id
+    return unless external_customer_id
 
     PolarClient.ingest_events([
       {
         name: Config.premium_ai_polar_event_name,
-        external_customer_id: @project.ubid,
+        external_customer_id:,
         metadata: {
           project_id: @project.ubid,
+          billing_info_id: @project.billing_info.ubid,
           api_key_id: @api_key.ubid,
           model: @model.model_name,
           provider: @model.provider,
@@ -110,6 +113,10 @@ class PremiumAIUsageMeter
         body: ex.body
       }
     })
+  end
+
+  def polar_external_customer_id
+    @polar_external_customer_id ||= @project.billing_info&.polar_external_customer_id
   end
 
   def enforce_spend_cap!
