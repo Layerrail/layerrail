@@ -12,16 +12,7 @@ class Clover
       content_security_policy.add_connect_src "https://*.#{Config.inference_dns_zone}" unless cloudflare_inference_provider?
 
       DB.ignore_duplicate_queries do
-        @inference_models = all_inference_models.select do
-          capability = it.tags["capability"]
-          if cloudflare_inference_provider?
-            it.tags["source"] == "Cloudflare Unified AI" ||
-              capability == "Embeddings" ||
-              CLOUDFLARE_NATIVE_CAPABILITIES.include?(capability)
-          else
-            capability == "Text Generation" || capability == "Embeddings"
-          end
-        end
+        @inference_models = all_inference_models
       end
 
       @inference_api_keys = inference_api_key_ds.all

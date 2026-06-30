@@ -69,6 +69,15 @@ RSpec.describe Clover, "inference-playground" do
       expect(page).to have_select("inference_endpoint", with_options: ["e5-mistral-7b-it", "meta-llama/Llama-3.2-1B-Instruct", "mistral-small-3", "test-model", "Embedding Model"])
     end
 
+    it "shows the full Cloudflare model catalog in the playground" do
+      allow(Config).to receive(:ai_inference_provider).and_return("cloudflare")
+
+      visit "#{project.path}/inference-playground"
+
+      cloudflare_models = Option::AI_MODELS.select { it["provider"] == "cloudflare" }.map { it["model_name"] }
+      expect(page).to have_select("inference_endpoint", with_options: cloudflare_models)
+    end
+
     it "gives choice of inference api keys" do
       visit "#{project.path}/inference-api-key"
       expect(ApiKey.all).to be_empty
