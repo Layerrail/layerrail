@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe PremiumAIUsageMeter do
+RSpec.describe PremiumAiUsageMeter do
   let(:project) { Project.create(name: "premium-ai") }
   let(:api_key) { ApiKey.create_inference_api_key(project) }
   let(:model) do

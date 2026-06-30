@@ -717,14 +717,14 @@ class Clover
 
   def validate_premium_ai_access!(api_key, model)
     return unless Config.premium_ai_metering_enabled
-    return unless PremiumAIUsageMeter.premium_model?(model)
+    return unless PremiumAiUsageMeter.premium_model?(model)
 
     fail CloverError.new(402, "BillingRequired", "Premium AI models require billing to be connected before use.") unless api_key.project.billing_info&.polar_external_customer_id || api_key.project.billing_info
 
     cap = Config.premium_ai_monthly_spend_cap_cents.to_i
     return unless cap.positive?
 
-    if PremiumAIUsageMeter.current_month_premium_usage_cents(api_key.project) >= cap
+    if PremiumAiUsageMeter.current_month_premium_usage_cents(api_key.project) >= cap
       fail CloverError.new(402, "PremiumAISpendCapExceeded", "Premium AI usage is paused because this project reached its premium AI spend cap.")
     end
   end
@@ -733,7 +733,7 @@ class Clover
     return unless tokens.positive?
 
     rate = BillingRate.from_resource_properties("InferenceTokens", resource_family, "global")
-    PremiumAIUsageMeter.record(api_key:, model:, token_kind:, resource_family:, tokens:, billing_rate: rate)
+    PremiumAiUsageMeter.record(api_key:, model:, token_kind:, resource_family:, tokens:, billing_rate: rate)
     return unless rate
 
     begin_time = Time.now.to_date.to_time

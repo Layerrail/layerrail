@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class PremiumAIUsageMeter
+class PremiumAiUsageMeter
   def self.record(api_key:, model:, token_kind:, resource_family:, tokens:, billing_rate:)
     new(api_key:, model:, token_kind:, resource_family:, tokens:, billing_rate:).record
   end
