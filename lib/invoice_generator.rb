@@ -111,6 +111,7 @@ class InvoiceGenerator
             line_item_content[:cost] = li[:cost].to_f
             line_item_content[:begin_time] = li[:begin_time].utc
             line_item_content[:unit_price] = li[:unit_price].to_f
+            line_item_content[:resource_tags] = li[:resource_tags] if li[:resource_tags]&.[]("premium_ai")
 
             line_item_discount = 0
             if (rd = resource_discounts.find { |d| d.matches?(li) })
@@ -162,7 +163,7 @@ class InvoiceGenerator
         free_inference_tokens_credit = 0.0
         project_content[:resources]
           .flat_map { it[:line_items] }
-          .select { it[:resource_type] == "InferenceTokens" }
+          .select { it[:resource_type] == "InferenceTokens" && !it[:resource_tags]&.[]("premium_ai") }
           .sort_by { |li| [li[:begin_time].to_date, -li[:unit_price]] }
           .each do |li|
             used_amount = [li[:amount], free_inference_tokens_remaining].min
@@ -258,6 +259,7 @@ class InvoiceGenerator
           duration:,
           begin_time: br.span.begin,
           unit_price: br.billing_rate["unit_price"],
+          resource_tags: br.resource_tags,
         }
       end
     end

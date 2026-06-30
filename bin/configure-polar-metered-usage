@@ -31,6 +31,13 @@ def find_polar_organization
   organizations.first
 end
 
+def premium_ai_product_names
+  ENV.fetch(
+    "POLAR_PREMIUM_AI_PRODUCT_NAMES",
+    "Cloud Builder,Cloud Developer,Cloud Team,Starter,Starter Anuual,Growth,Growth Annual,Scale,Scale Annual"
+  ).split(",").map(&:strip).reject(&:empty?)
+end
+
 organization = find_polar_organization
 portal_settings = organization["customer_portal_settings"] || {}
 usage_settings = portal_settings["usage"] || {}
@@ -47,10 +54,65 @@ meters = PolarClient.list_meters(
   is_archived: false
 ).fetch("items", [])
 
+ai_meter = meters.find { it["name"] == Config.premium_ai_polar_event_name }
+unless ai_meter
+  ai_meter_payload = {
+    name: Config.premium_ai_polar_event_name,
+    filter: {
+      conjunction: "and",
+      clauses: [
+        {
+          property: "name",
+          operator: "eq",
+          value: Config.premium_ai_polar_event_name
+        }
+      ]
+    },
+    aggregation: {
+      func: "sum",
+      property: "amount_cents"
+    }
+  }
+
+  begin
+    ai_meter = PolarClient.create_meter(ai_meter_payload.merge(organization_id: organization.fetch("id")))
+  rescue PolarAPIError => ex
+    raise unless ex.status == 422 && ex.body.to_s.include?("organization_token")
+
+    ai_meter = PolarClient.create_meter(ai_meter_payload)
+  end
+  meters << ai_meter
+end
+
+premium_ai_products = PolarClient.list_products.fetch("items", [])
+  .select { |product| premium_ai_product_names.include?(product["name"]) && !product["is_archived"] }
+
+attached_products = premium_ai_products.filter_map do |product|
+  prices = product.fetch("prices", []).reject { it["is_archived"] }
+  next product["name"] if prices.any? { it["amount_type"] == "metered_unit" && it["meter_id"] == ai_meter.fetch("id") }
+  next if prices.any? { it["amount_type"] == "free" }
+
+  updated_product = PolarClient.update_product(
+    product.fetch("id"),
+    prices: prices.map { {id: it.fetch("id")} } + [
+      {
+        amount_type: "metered_unit",
+        price_currency: "usd",
+        meter_id: ai_meter.fetch("id"),
+        unit_amount: "1",
+        cap_amount: nil
+      }
+    ]
+  )
+  updated_product.fetch("name")
+end
+
 puts "POLAR_ORGANIZATION_ID=#{updated_organization.fetch("id")}"
 puts "POLAR_ORGANIZATION_SLUG=#{updated_organization.fetch("slug")}"
 puts "CUSTOMER_PORTAL_USAGE_SHOW=#{updated_organization.fetch("customer_portal_settings").fetch("usage").fetch("show")}"
 puts "POLAR_METERS_COUNT=#{meters.length}"
+puts "POLAR_AI_USAGE_METER_ID=#{ai_meter.fetch("id")}"
+puts "POLAR_AI_USAGE_PRODUCTS=#{attached_products.join(",")}"
 
 if meters.empty?
   warn "Warning: customer portal usage is enabled, but this organization has no active Polar meters yet."

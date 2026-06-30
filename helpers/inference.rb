@@ -122,6 +122,7 @@ class Clover
     payload = parse_inference_payload
     model = catalog_inference_models.find { it.model_name == payload["model"] && it.tags["capability"] == capability }
     fail CloverError.new(400, "InvalidRequest", "model is not enabled for #{capability.downcase}") unless model
+    validate_premium_ai_access!(api_key, model)
     return handle_azure_foundry_ai_request(path, capability, api_key, model, payload) if model.provider == "azure_foundry"
 
     if capability == "Text Generation" && cloudflare_text_model_path(model) != path
@@ -190,6 +191,7 @@ class Clover
 
     model = cloudflare_inference_models.find { it.model_name == model_name }
     fail CloverError.new(400, "InvalidRequest", "model is not enabled") unless model
+    validate_premium_ai_access!(api_key, model)
     unless CLOUDFLARE_NATIVE_CAPABILITIES.include?(model.tags["capability"]) || cloudflare_text_model_path(model) == "run"
       fail CloverError.new(400, "InvalidRequest", "model is not enabled for the native run route")
     end
@@ -227,6 +229,7 @@ class Clover
 
     model = cloudflare_inference_models.find { it.model_name == agent.model_name && it.tags["capability"] == "Text Generation" }
     fail CloverError.new(400, "InvalidRequest", "agent model is not enabled for text generation") unless model
+    validate_premium_ai_access!(api_key, model)
 
     user_query = ai_agent_user_query(messages)
     context_chunks = agent.retrieval_context(user_query)
@@ -548,8 +551,8 @@ class Clover
       completion_tokens = (usage["completion_tokens"] || usage["output_tokens"]).to_i
       completion_tokens = estimate_inference_tokens(completion_text) if completion_tokens.zero?
       prompt_tokens = (usage["prompt_tokens"] || usage["input_tokens"]).to_i if (usage["prompt_tokens"] || usage["input_tokens"]).to_i.positive?
-      record_inference_tokens(api_key, model.prompt_billing_resource, prompt_tokens)
-      record_inference_tokens(api_key, model.completion_billing_resource, completion_tokens)
+      record_inference_tokens(api_key, model, "input", model.prompt_billing_resource, prompt_tokens)
+      record_inference_tokens(api_key, model, "output", model.completion_billing_resource, completion_tokens)
     end
 
     request.halt [200, response.headers, body]
@@ -577,8 +580,8 @@ class Clover
       completion_tokens = (usage["completion_tokens"] || usage["output_tokens"]).to_i
       completion_tokens = estimate_inference_tokens(completion_text) if completion_tokens.zero?
       prompt_tokens = (usage["prompt_tokens"] || usage["input_tokens"]).to_i if (usage["prompt_tokens"] || usage["input_tokens"]).to_i.positive?
-      record_inference_tokens(api_key, model.prompt_billing_resource, prompt_tokens)
-      record_inference_tokens(api_key, model.completion_billing_resource, completion_tokens)
+      record_inference_tokens(api_key, model, "input", model.prompt_billing_resource, prompt_tokens)
+      record_inference_tokens(api_key, model, "output", model.completion_billing_resource, completion_tokens)
     end
 
     request.halt [200, response.headers, body]
@@ -633,14 +636,29 @@ class Clover
     completion_tokens = [total_tokens - prompt_tokens, 0].max if completion_tokens.zero? && total_tokens.positive?
     completion_tokens = estimate_inference_tokens(cloudflare_response_text(body)) if completion_tokens.zero? && !["Embeddings", "Text-to-Image", "Text-to-Speech"].include?(model.tags["capability"])
 
-    record_inference_tokens(api_key, model.prompt_billing_resource, prompt_tokens)
-    record_inference_tokens(api_key, model.completion_billing_resource, completion_tokens)
+    record_inference_tokens(api_key, model, "input", model.prompt_billing_resource, prompt_tokens)
+    record_inference_tokens(api_key, model, "output", model.completion_billing_resource, completion_tokens)
   end
 
-  def record_inference_tokens(api_key, resource_family, tokens)
+  def validate_premium_ai_access!(api_key, model)
+    return unless Config.premium_ai_metering_enabled
+    return unless PremiumAIUsageMeter.premium_model?(model)
+
+    fail CloverError.new(402, "BillingRequired", "Premium AI models require billing to be connected before use.") unless api_key.project.billing_info
+
+    cap = Config.premium_ai_monthly_spend_cap_cents.to_i
+    return unless cap.positive?
+
+    if PremiumAIUsageMeter.current_month_premium_usage_cents(api_key.project) >= cap
+      fail CloverError.new(402, "PremiumAISpendCapExceeded", "Premium AI usage is paused because this project reached its premium AI spend cap.")
+    end
+  end
+
+  def record_inference_tokens(api_key, model, token_kind, resource_family, tokens)
     return unless tokens.positive?
 
     rate = BillingRate.from_resource_properties("InferenceTokens", resource_family, "global")
+    PremiumAIUsageMeter.record(api_key:, model:, token_kind:, resource_family:, tokens:, billing_rate: rate)
     return unless rate
 
     begin_time = Time.now.to_date.to_time
@@ -661,7 +679,12 @@ class Clover
         billing_rate_id: rate["id"],
         span: Sequel.pg_range(begin_time...end_time),
         amount: tokens,
-        resource_tags: {provider: resource_family.to_s.start_with?("azure-") ? "azure_foundry" : "cloudflare"},
+        resource_tags: {
+          provider: model.provider,
+          model: model.model_name,
+          token_kind:,
+          premium_ai: rate["unit_price"].to_f.positive? || model.tags["tier"].to_s == "premium" || model.tags["premium"] == true
+        },
       )
     end
   rescue Sequel::Error => ex

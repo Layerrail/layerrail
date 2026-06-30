@@ -398,6 +398,26 @@ RSpec.describe InvoiceGenerator do
     expect(invoice["cost"]).to eq((600000 - free_inference_tokens) * billing_rate)
   end
 
+  it "does not apply free inference quota to premium AI usage" do
+    generate_billing_record(p1, ie1, Sequel::Postgres::PGRange.new(begin_time.to_date.to_time, begin_time.to_date.to_time + day), 100000)
+    premium_rate = BillingRate.from_resource_properties("InferenceTokens", "azure-gpt-5-output", "global")
+    BillingRecord.create(
+      project_id: p1.id,
+      resource_id: ie1.id,
+      resource_name: "premium-ai",
+      span: Sequel::Postgres::PGRange.new(begin_time.to_date.to_time, begin_time.to_date.to_time + day),
+      billing_rate_id: premium_rate["id"],
+      amount: 100000,
+      resource_tags: {premium_ai: true}
+    )
+
+    invoice = described_class.new(begin_time, end_time, save_result: true, eur_rate: 1.1).run.first.content
+    free_rate = BillingRate.from_resource_properties("InferenceTokens", ie1.model_name, "global")["unit_price"]
+
+    expect(invoice["free_inference_tokens_credit"]).to eq(100000 * free_rate)
+    expect(invoice["cost"]).to eq((100000 * premium_rate["unit_price"]).round(3))
+  end
+
   it "handles inference quota and project credit together" do
     generate_billing_record(p1, ie1, Sequel::Postgres::PGRange.new(begin_time.to_date.to_time + day, begin_time.to_date.to_time + 2 * day), 60000000)
     before = described_class.new(begin_time, end_time).run.first.content
