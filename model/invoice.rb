@@ -44,10 +44,10 @@ class Invoice < Sequel::Model
     elsif content.dig("vat_info", "reversed")
       "eu_vat_reversed"
     else
-      country = ISO3166::Country.new(content.dig("billing_info", "country"))
-      if country.alpha2 == "NL"
+      country = invoice_billing_country
+      if country&.alpha2 == "NL"
         "nl"
-      elsif country.in_eu_vat?
+      elsif country&.in_eu_vat?
         "eu"
       else
         "non_eu"
@@ -152,13 +152,14 @@ class Invoice < Sequel::Model
   def send_payment_due_email
     data = Serializers::Invoice.serialize(self)
     pdf = generate_pdf(data)
-    unless data.billing_email
+    receivers = invoice_email_receivers(data)
+    unless receivers.any?
       Clog.emit("Couldn't send the invoice because it has no billing information", {invoice_no_billing_info: {ubid:}})
       return
     end
 
-    Util.send_email(data.billing_email, "LayerRail #{data.name} Invoice ##{data.invoice_number}",
-      greeting: "Dear #{data.billing_name},",
+    Util.send_email(receivers, "LayerRail #{data.name} Invoice ##{data.invoice_number}",
+      greeting: invoice_email_greeting(data),
       body: ["Please find your current invoice ##{data.invoice_number} below.",
         "The invoice amount of #{data.total} is ready for payment through Polar.",
         "You can pay it from your project's billing page.",
@@ -171,7 +172,8 @@ class Invoice < Sequel::Model
   def send_success_email
     data = Serializers::Invoice.serialize(self)
     pdf = generate_pdf(data)
-    unless data.billing_email
+    receivers = invoice_email_receivers(data)
+    unless receivers.any?
       Clog.emit("Couldn't send the invoice because it has no billing information", {invoice_no_billing_info: {ubid:}})
       return
     end
@@ -192,8 +194,8 @@ class Invoice < Sequel::Model
       messages << "You saved $#{saved_amount.to_i} this month using managed LayerRail runners instead of GitHub hosted runners!"
     end
 
-    Util.send_email(data.billing_email, "LayerRail #{data.name} Invoice ##{data.invoice_number}",
-      greeting: "Dear #{data.billing_name},",
+    Util.send_email(receivers, "LayerRail #{data.name} Invoice ##{data.invoice_number}",
+      greeting: invoice_email_greeting(data),
       body: ["Please find your current invoice ##{data.invoice_number} below.",
         *messages,
         "If you have any questions, please send us a support request via support@layerrail.com, and include your invoice number."],
@@ -204,10 +206,9 @@ class Invoice < Sequel::Model
 
   def send_failure_email(errors)
     data = Serializers::Invoice.serialize(self)
-    receivers = [data.billing_email]
-    receivers.concat(Authorization.allowed_accounts_dataset(project.id, "Project:billing", project).select_map(:email))
+    receivers = invoice_email_receivers(data)
     Util.send_email(receivers.uniq, "Urgent: Action Required to Prevent Service Disruption",
-      greeting: "Dear #{data.billing_name},",
+      greeting: invoice_email_greeting(data),
       body: ["We hope this message finds you well.",
         "We couldn't complete your Polar invoice payment with the following errors:",
         *errors.map { "- #{it}" },
@@ -216,6 +217,21 @@ class Invoice < Sequel::Model
         "If you have any questions, please send us a support request via support@layerrail.com."],
       button_title: "Open Billing",
       button_link: "#{Config.base_url}#{project.path}/billing")
+  end
+
+  def invoice_billing_country
+    country_code = content.dig("billing_info", "country")
+    ISO3166::Country.new(country_code) if country_code
+  end
+
+  def invoice_email_receivers(data)
+    receivers = [data.billing_email].compact
+    receivers.concat(Authorization.allowed_accounts_dataset(project.id, "Project:billing", project).select_map(:email)) if receivers.empty?
+    receivers.uniq
+  end
+
+  def invoice_email_greeting(data)
+    data.billing_name ? "Dear #{data.billing_name}," : "Hello,"
   end
 
   def generate_pdf(data = Serializers::Invoice.serialize(self))
