@@ -21,7 +21,8 @@
       link: "text-red-900 underline decoration-red-400 underline-offset-4 hover:text-red-950"
     }
   }
-  style = styles.fetch(notice.style_key)
+  notice = @console_notice
+  style = styles.fetch(notice.style_key, styles["info"])
 %>
 
 <div

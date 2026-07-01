@@ -57,8 +57,8 @@
         <%== render("layouts/sidebar/desktop") %>
         <%== render("layouts/sidebar/mobile") %>
         <div class="lg:pl-72 overflow-x-clip">
-          <% if (notice = ConsoleNotice.active) %>
-            <%== render("components/console_notice_banner", locals: {notice:}) %>
+          <% if (@console_notice = ConsoleNotice.active) %>
+            <%== render("components/console_notice_banner") %>
           <% end %>
           <%== render("layouts/topbar") %>
           <main class="py-10">
