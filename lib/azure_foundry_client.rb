@@ -92,7 +92,6 @@ class AzureFoundryClient
       "system" => system_messages.join("\n\n"),
       "max_tokens" => payload["max_tokens"] || payload["max_completion_tokens"] || 1024,
       "temperature" => payload["temperature"],
-      "top_p" => payload["top_p"],
       "stop_sequences" => payload["stop"],
     }.compact
   end
