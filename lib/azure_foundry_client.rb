@@ -19,7 +19,7 @@ class AzureFoundryClient
       },
     )
     @anthropic_connection = Excon.new(
-      anthropic_base_url(endpoint),
+      azure_foundry_base_url(endpoint),
       headers: {
         "x-api-key" => api_key,
         "Content-Type" => "application/json",
@@ -51,7 +51,7 @@ class AzureFoundryClient
 
   def anthropic_messages(deployment, payload)
     response = @anthropic_connection.post(
-      path: "v1/messages",
+      path: "/anthropic/v1/messages",
       body: anthropic_payload(deployment, payload).to_json,
       expects: EXPECTED_STATUSES,
     )
@@ -61,14 +61,12 @@ class AzureFoundryClient
 
   private
 
-  def anthropic_base_url(endpoint)
+  def azure_foundry_base_url(endpoint)
     base = endpoint.chomp("/")
     base = base.sub(%r{/api/projects/.*\z}, "")
     base = base.sub(%r{/openai(?:/v1)?\z}, "")
     base = base.sub(".openai.azure.com", ".services.ai.azure.com")
-    return base if base.end_with?("/anthropic")
-
-    "#{base}/anthropic"
+    base.sub(%r{/anthropic\z}, "")
   end
 
   def anthropic_payload(deployment, payload)
