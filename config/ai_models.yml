@@ -187,7 +187,7 @@
     pricing: {input: 0.21, output: 0.84}
 - id: azure-anthropic-claude-opus-4-8
   model_name: claude-opus-4-8
-  enabled: false
+  enabled: true
   provider: azure_foundry
   prompt_billing_resource: azure-claude-opus-4-8-input
   completion_billing_resource: azure-claude-opus-4-8-output
@@ -195,13 +195,45 @@
     display_name: Claude Opus 4.8
     capability: Text Generation
     context_length: 1M
-    api: chat
+    api: anthropic
     deployment: claude-opus-4-8
     multimodal: true
     pricing: {input: 7.0, output: 35.0}
+- id: azure-anthropic-claude-fable-5
+  model_name: claude-fable-5
+  enabled: false
+  provider: azure_foundry
+  prompt_billing_resource: azure-claude-fable-5-input
+  completion_billing_resource: azure-claude-fable-5-output
+  tags:
+    display_name: Claude Fable 5
+    capability: Text Generation
+    context_length: 1M
+    api: anthropic
+    deployment: claude-fable-5
+    multimodal: true
+    reasoning: true
+    preview: true
+    unavailable_reason: Azure Foundry lists this model, but deployment currently returns ResourceNotFound for this resource.
+    pricing: {input: 21.0, output: 105.0}
+- id: azure-anthropic-claude-sonnet-5
+  model_name: claude-sonnet-5
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-claude-sonnet-5-input
+  completion_billing_resource: azure-claude-sonnet-5-output
+  tags:
+    display_name: Claude Sonnet 5
+    capability: Text Generation
+    context_length: 1M
+    api: anthropic
+    deployment: claude-sonnet-5
+    multimodal: true
+    reasoning: true
+    pricing: {input: 4.2, output: 21.0}
 - id: azure-anthropic-claude-sonnet-4-6
   model_name: claude-sonnet-4-6
-  enabled: false
+  enabled: true
   provider: azure_foundry
   prompt_billing_resource: azure-claude-sonnet-4-6-input
   completion_billing_resource: azure-claude-sonnet-4-6-output
@@ -209,10 +241,74 @@
     display_name: Claude Sonnet 4.6
     capability: Text Generation
     context_length: 1M
-    api: chat
+    api: anthropic
     deployment: claude-sonnet-4-6
     multimodal: true
     pricing: {input: 4.2, output: 21.0}
+- id: azure-anthropic-claude-sonnet-4-5
+  model_name: claude-sonnet-4-5
+  enabled: false
+  provider: azure_foundry
+  prompt_billing_resource: azure-claude-sonnet-4-5-input
+  completion_billing_resource: azure-claude-sonnet-4-5-output
+  tags:
+    display_name: Claude Sonnet 4.5
+    capability: Text Generation
+    context_length: 200K
+    api: anthropic
+    deployment: claude-sonnet-4-5
+    multimodal: true
+    reasoning: true
+    unavailable_reason: Azure Foundry lists this model, but this resource currently rejects deployment as unsupported.
+    pricing: {input: 4.2, output: 21.0}
+- id: azure-anthropic-claude-haiku-4-5
+  model_name: claude-haiku-4-5
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-claude-haiku-4-5-input
+  completion_billing_resource: azure-claude-haiku-4-5-output
+  tags:
+    display_name: Claude Haiku 4.5
+    capability: Text Generation
+    context_length: 200K
+    api: anthropic
+    deployment: claude-haiku-4-5
+    multimodal: true
+    reasoning: true
+    pricing: {input: 1.4, output: 7.0}
+- id: azure-anthropic-claude-opus-4-1
+  model_name: claude-opus-4-1
+  enabled: false
+  provider: azure_foundry
+  prompt_billing_resource: azure-claude-opus-4-1-input
+  completion_billing_resource: azure-claude-opus-4-1-output
+  tags:
+    display_name: Claude Opus 4.1
+    capability: Text Generation
+    context_length: 200K
+    api: anthropic
+    deployment: claude-opus-4-1
+    multimodal: true
+    reasoning: true
+    unavailable_reason: Azure Foundry lists this model, but this resource currently rejects deployment as unsupported.
+    pricing: {input: 21.0, output: 105.0}
+- id: azure-anthropic-claude-mythos-5
+  model_name: claude-mythos-5
+  enabled: false
+  provider: azure_foundry
+  prompt_billing_resource: azure-claude-mythos-5-input
+  completion_billing_resource: azure-claude-mythos-5-output
+  tags:
+    display_name: Claude Mythos 5
+    capability: Text Generation
+    context_length: 1M
+    api: anthropic
+    deployment: claude-mythos-5
+    multimodal: true
+    reasoning: true
+    gated: true
+    preview: true
+    pricing: {input: 21.0, output: 105.0}
 - id: azure-deepseek-r1
   model_name: DeepSeek-V4-Flash
   enabled: true

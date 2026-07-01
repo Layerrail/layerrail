@@ -87,6 +87,23 @@ RSpec.describe Project do
       project.update(billing_info_id: bi.id, credit: 100)
       expect(project.has_valid_payment_method?).to be true
     end
+
+    it "returns false when the project has an unpaid invoice" do
+      expect(Config).to receive(:stripe_secret_key).and_return("secret_key")
+      bi = BillingInfo.create(stripe_id: "cus123")
+      PaymentMethod.create(billing_info_id: bi.id, stripe_id: "pm123")
+      project.update(billing_info_id: bi.id)
+      Invoice.create(
+        project_id: project.id,
+        begin_time: Time.utc(2026, 5),
+        end_time: Time.utc(2026, 6),
+        invoice_number: "2605-test-0001",
+        content: {"cost" => 10, "subtotal" => 10, "credit" => 0, "discount" => 0, "resources" => []},
+        status: "unpaid"
+      )
+
+      expect(project.has_valid_payment_method?).to be false
+    end
   end
 
   describe ".soft_delete" do

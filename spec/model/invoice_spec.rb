@@ -134,6 +134,17 @@ RSpec.describe Invoice do
       expect(Mail::TestMailer.deliveries.first.html_part.body).to include("ready for payment through Polar")
     end
 
+    it "keeps Polar invoices payable even when the local billing info was removed" do
+      allow(Config).to receive(:polar_access_token).and_return("polar_test")
+      update_content(billing_info: {"id" => billing_info.id, "email" => "customer@example.com", "country" => "NL", "name" => "Customer"}, cost: 10)
+      billing_info.destroy
+
+      expect(invoice.charge).to be true
+      expect(invoice.status).to eq("unpaid")
+      expect(Mail::TestMailer.deliveries.length).to eq 1
+      expect(Mail::TestMailer.deliveries.first.html_part.body).to include("ready for payment through Polar")
+    end
+
     it "not charge if doesn't have billing info" do
       expect(Clog).to receive(:emit).with("Invoice doesn't have billing info.", instance_of(Hash)).and_call_original
       expect(invoice.charge).to be false

@@ -84,8 +84,17 @@ class Project < Sequel::Model
   def has_valid_payment_method?
     return true unless Config.polar_access_token || Config.stripe_secret_key
     return true if discount == 100
+    return false if has_outstanding_invoice?
 
     !!billing_info&.payment_methods&.any? || (!!billing_info && credit > 0)
+  end
+
+  def outstanding_invoices_dataset
+    invoices_dataset.where(status: "unpaid").where(Sequel.lit("(content->>'cost')::float > 0"))
+  end
+
+  def has_outstanding_invoice?
+    !outstanding_invoices_dataset.empty?
   end
 
   def default_location

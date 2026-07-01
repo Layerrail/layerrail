@@ -154,6 +154,8 @@ class Clover
     payload["model"] = deployment
 
     if payload["stream"]
+      fail CloverError.new(400, "InvalidRequest", "Streaming is not supported for Claude models on Azure AI Foundry.") if azure_foundry_anthropic_model?(model)
+
       stream_azure_foundry_ai_request(api_key, model, deployment, payload)
     end
 
@@ -168,7 +170,7 @@ class Clover
 
   def azure_foundry_chat_completion_with_fallback(model, deployment, payload)
     client = AzureFoundryClient.new
-    status, body = client.chat_completion(deployment, payload)
+    status, body = azure_foundry_chat_completion_request(client, model, deployment, payload)
     return [status, body, model] unless azure_foundry_rate_limited?(status, body)
 
     Clog.emit("Azure AI Foundry model is rate limited", {
@@ -186,7 +188,7 @@ class Clover
       fallback_payload = JSON.parse(JSON.generate(payload))
       normalize_azure_foundry_payload!(fallback_payload, fallback_model)
       fallback_payload["model"] = fallback_deployment
-      status, body = client.chat_completion(fallback_deployment, fallback_payload)
+      status, body = azure_foundry_chat_completion_request(client, fallback_model, fallback_deployment, fallback_payload)
       return [status, body, fallback_model] unless azure_foundry_rate_limited?(status, body)
 
       Clog.emit("Azure AI Foundry fallback model is rate limited", {
@@ -206,6 +208,16 @@ class Clover
         "provider" => "azure_foundry"
       }
     }, model]
+  end
+
+  def azure_foundry_chat_completion_request(client, model, deployment, payload)
+    return client.anthropic_messages(deployment, payload) if azure_foundry_anthropic_model?(model)
+
+    client.chat_completion(deployment, payload)
+  end
+
+  def azure_foundry_anthropic_model?(model)
+    model.model_name.to_s.start_with?("claude-") || model.tags["api"] == "anthropic"
   end
 
   def azure_foundry_rate_limit_fallback_models(model)

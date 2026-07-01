@@ -84,11 +84,6 @@ class Invoice < Sequel::Model
     end
 
     if Config.polar_access_token
-      unless BillingInfo[content.dig("billing_info", "id")]
-        Clog.emit("Invoice doesn't have billing info.", {invoice_no_billing: {ubid:}})
-        return false
-      end
-
       Clog.emit("Polar billing is enabled. Invoice payment is handled by Polar checkout.", {polar_invoice_payment_pending: {ubid:, cost: amount}})
       send_payment_due_email
       return true
