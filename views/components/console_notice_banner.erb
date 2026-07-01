@@ -22,6 +22,7 @@
     }
   }
   notice = @console_notice
+  notice_link_url = notice.link_url_for(project: @project)
   style = styles.fetch(notice.style_key, styles["info"])
 %>
 
@@ -34,8 +35,8 @@
     <div class="min-w-0 flex-1 leading-6">
       <span class="font-semibold"><%= notice.title %></span>
       <span class="ml-1"><%= notice.body %></span>
-      <% if notice.link? %>
-        <a href="<%= notice.link_url %>" class="ml-1 font-medium <%= style[:link] %>"><%= notice.link_label %></a>
+      <% if notice.link? && notice_link_url %>
+        <a href="<%= notice_link_url %>" class="ml-1 font-medium <%= style[:link] %>"><%= notice.link_label %></a>
       <% end %>
     </div>
     <button

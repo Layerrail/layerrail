@@ -55,6 +55,20 @@ class ConsoleNotice < Sequel::Model(:console_notice)
     !link_label.to_s.empty? && !link_url.to_s.empty?
   end
 
+  def link_url_for(project: nil)
+    url = link_url.to_s
+    return nil if url.empty?
+
+    if url.include?("{project_id}") || url.include?("{project_path}")
+      return nil unless project
+
+      url = url.gsub("{project_id}", project.ubid)
+      url = url.gsub("{project_path}", project.path)
+    end
+
+    url
+  end
+
   def style_key
     SEVERITIES.include?(severity) ? severity : "maintenance"
   end
