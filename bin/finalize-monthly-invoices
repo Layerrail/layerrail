@@ -63,7 +63,7 @@ requested_project_ids.uniq!
 if ENV["RESET_EXISTING_INVOICES"] == "1"
   abort "RESET_EXISTING_INVOICES requires PROJECT_IDS or PROJECT_UBIDS." if requested_project_ids.empty?
 
-  deleted_count = Invoice.where(begin_time:, end_time:, project_id: requested_project_ids).delete
+  deleted_count = Invoice.where(begin_time:, end_time:, project_id: requested_project_ids).delete(force: true)
   puts "DELETED_EXISTING_INVOICES=#{deleted_count}"
 end
 
