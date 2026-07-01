@@ -16,7 +16,14 @@ end
 
 def fetch_usd_to_eur_rate
   uri = URI("https://api.frankfurter.app/latest?from=USD&to=EUR")
-  response = Net::HTTP.get_response(uri)
+  response = nil
+  3.times do
+    response = Net::HTTP.get_response(uri)
+    break unless response.is_a?(Net::HTTPRedirection) && response["location"]
+
+    uri = URI(response["location"])
+  end
+
   abort "Could not fetch EUR_RATE: #{response.code} #{response.message}" unless response.is_a?(Net::HTTPSuccess)
 
   rate = JSON.parse(response.body).dig("rates", "EUR")
