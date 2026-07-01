@@ -51,6 +51,22 @@ requested_project_ids = ENV.fetch("PROJECT_IDS", "")
   .map(&:strip)
   .reject(&:empty?)
 
+requested_project_ids.concat(
+  ENV.fetch("PROJECT_UBIDS", "")
+    .split(",")
+    .map(&:strip)
+    .reject(&:empty?)
+    .map { |ubid| Project[ubid]&.id || abort("Could not find project #{ubid}") }
+)
+requested_project_ids.uniq!
+
+if ENV["RESET_EXISTING_INVOICES"] == "1"
+  abort "RESET_EXISTING_INVOICES requires PROJECT_IDS or PROJECT_UBIDS." if requested_project_ids.empty?
+
+  deleted_count = Invoice.where(begin_time:, end_time:, project_id: requested_project_ids).delete
+  puts "DELETED_EXISTING_INVOICES=#{deleted_count}"
+end
+
 existing_invoice_project_ids = Invoice
   .where(begin_time:, end_time:)
   .select_map(:project_id)

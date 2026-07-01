@@ -12,6 +12,13 @@ on:
         description: "Only report invoices that would be created."
         required: false
         default: "false"
+      project_ubids:
+        description: "Optional comma-separated project UBIDs to process."
+        required: false
+      reset_existing:
+        description: "Delete existing invoices for the selected project UBIDs and month before recreating."
+        required: false
+        default: "false"
 
 permissions:
   contents: read
@@ -69,6 +76,12 @@ jobs:
           fi
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             printf 'DRY_RUN=1\0' >> "$ENV_ARGS_FILE"
+          fi
+          if [ -n "${{ inputs.project_ubids }}" ]; then
+            printf 'PROJECT_UBIDS=%s\0' "${{ inputs.project_ubids }}" >> "$ENV_ARGS_FILE"
+          fi
+          if [ "${{ inputs.reset_existing }}" = "true" ]; then
+            printf 'RESET_EXISTING_INVOICES=1\0' >> "$ENV_ARGS_FILE"
           fi
 
           mapfile -d '' ENV_ARGS < "$ENV_ARGS_FILE"
