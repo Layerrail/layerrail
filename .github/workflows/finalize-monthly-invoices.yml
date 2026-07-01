@@ -1,0 +1,105 @@
+name: Finalize Monthly Invoices
+
+on:
+  schedule:
+    - cron: "30 1 1 * *"
+  workflow_dispatch:
+    inputs:
+      invoice_month:
+        description: "Invoice month in YYYY-MM format. Defaults to previous month."
+        required: false
+      dry_run:
+        description: "Only report invoices that would be created."
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AZURE_CLIENT_ID: c2494d2b-1b17-4123-ae06-60bb30487d9b
+  AZURE_TENANT_ID: 0621cf68-51e6-470a-818e-e97563de3974
+  AZURE_SUBSCRIPTION_ID: 2b5d6bd8-700a-4f94-b0c0-c55ae046c080
+  AZURE_RESOURCE_GROUP: rg-layerrail-prod
+  ACR_NAME: layerrailregistry
+  IMAGE_NAME: layerrail
+  WEB_APP_NAME: layerrail-web
+
+jobs:
+  finalize:
+    name: Finalize invoices
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Run invoice finalizer
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          LOGIN_SERVER="$(az acr show --name "$ACR_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --query loginServer -o tsv)"
+          ACR_PASSWORD="$(az acr credential show --name "$ACR_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --query 'passwords[0].value' -o tsv)"
+          FINALIZER_CONTAINER="layerrail-finalize-invoices-${{ github.run_id }}"
+          APP_SETTINGS_FILE="$(mktemp)"
+          ENV_ARGS_FILE="$(mktemp)"
+
+          az webapp config appsettings list \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$WEB_APP_NAME" \
+            -o json > "$APP_SETTINGS_FILE"
+
+          jq -r '.[] | select(.value != null and .value != "") | [.name, .value] | @tsv' "$APP_SETTINGS_FILE" |
+            while IFS=$'\t' read -r name value; do
+              printf '%s=%s\0' "$name" "$value" >> "$ENV_ARGS_FILE"
+            done
+
+          printf 'RACK_ENV=production\0' >> "$ENV_ARGS_FILE"
+          if [ -n "${{ inputs.invoice_month }}" ]; then
+            printf 'INVOICE_MONTH=%s\0' "${{ inputs.invoice_month }}" >> "$ENV_ARGS_FILE"
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            printf 'DRY_RUN=1\0' >> "$ENV_ARGS_FILE"
+          fi
+
+          mapfile -d '' ENV_ARGS < "$ENV_ARGS_FILE"
+
+          az container create \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$FINALIZER_CONTAINER" \
+            --image "$LOGIN_SERVER/$IMAGE_NAME:prod" \
+            --registry-login-server "$LOGIN_SERVER" \
+            --registry-username "$ACR_NAME" \
+            --registry-password "$ACR_PASSWORD" \
+            --cpu 1 \
+            --memory 2 \
+            --os-type Linux \
+            --restart-policy Never \
+            --secure-environment-variables "${ENV_ARGS[@]}" \
+            --command-line "bin/finalize-monthly-invoices"
+
+          for i in {1..120}; do
+            STATUS="$(az container show --resource-group "$AZURE_RESOURCE_GROUP" --name "$FINALIZER_CONTAINER" --query 'containers[0].instanceView.currentState.state' -o tsv 2>/dev/null || echo Creating)"
+            echo "Finalizer status ($i/120): $STATUS"
+            if [ "$STATUS" = "Terminated" ]; then
+              EXIT_CODE="$(az container show --resource-group "$AZURE_RESOURCE_GROUP" --name "$FINALIZER_CONTAINER" --query 'containers[0].instanceView.currentState.exitCode' -o tsv)"
+              az container logs --resource-group "$AZURE_RESOURCE_GROUP" --name "$FINALIZER_CONTAINER" || true
+              az container delete --resource-group "$AZURE_RESOURCE_GROUP" --name "$FINALIZER_CONTAINER" --yes >/dev/null 2>&1 || true
+              exit "$EXIT_CODE"
+            fi
+            sleep 5
+          done
+
+          echo "Invoice finalizer did not finish in time"
+          az container logs --resource-group "$AZURE_RESOURCE_GROUP" --name "$FINALIZER_CONTAINER" || true
+          az container delete --resource-group "$AZURE_RESOURCE_GROUP" --name "$FINALIZER_CONTAINER" --yes >/dev/null 2>&1 || true
+          exit 1

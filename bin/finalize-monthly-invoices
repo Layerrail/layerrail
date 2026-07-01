@@ -2,6 +2,9 @@
 # frozen_string_literal: true
 
 require "date"
+require "json"
+require "net/http"
+require "uri"
 require_relative "../loader"
 
 def parse_invoice_month(value)
@@ -9,6 +12,19 @@ def parse_invoice_month(value)
   Date.new(date.year, date.month, 1)
 rescue Date::Error
   abort "INVOICE_MONTH must use YYYY-MM format."
+end
+
+def fetch_usd_to_eur_rate
+  uri = URI("https://api.frankfurter.app/latest?from=USD&to=EUR")
+  response = Net::HTTP.get_response(uri)
+  abort "Could not fetch EUR_RATE: #{response.code} #{response.message}" unless response.is_a?(Net::HTTPSuccess)
+
+  rate = JSON.parse(response.body).dig("rates", "EUR")
+  abort "Could not fetch EUR_RATE: missing USD to EUR rate" unless rate
+
+  Float(rate)
+rescue JSON::ParserError, ArgumentError => e
+  abort "Could not fetch EUR_RATE: #{e.message}"
 end
 
 invoice_month = if ENV["INVOICE_MONTH"]
@@ -21,8 +37,7 @@ end
 begin_time = Time.utc(invoice_month.year, invoice_month.month, 1)
 next_month = invoice_month >> 1
 end_time = Time.utc(next_month.year, next_month.month, 1)
-eur_rate = ENV["EUR_RATE"] && Float(ENV.fetch("EUR_RATE"))
-abort "Set EUR_RATE before finalizing invoices." unless eur_rate
+eur_rate = ENV["EUR_RATE"] ? Float(ENV.fetch("EUR_RATE")) : fetch_usd_to_eur_rate
 
 requested_project_ids = ENV.fetch("PROJECT_IDS", "")
   .split(",")
