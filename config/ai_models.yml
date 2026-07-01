@@ -201,7 +201,7 @@
     pricing: {input: 7.0, output: 35.0}
 - id: azure-anthropic-claude-fable-5
   model_name: claude-fable-5
-  enabled: false
+  enabled: true
   provider: azure_foundry
   prompt_billing_resource: azure-claude-fable-5-input
   completion_billing_resource: azure-claude-fable-5-output
@@ -214,7 +214,6 @@
     multimodal: true
     reasoning: true
     preview: true
-    unavailable_reason: Azure Foundry lists this model, but deployment currently returns ResourceNotFound for this resource.
     pricing: {input: 21.0, output: 105.0}
 - id: azure-anthropic-claude-sonnet-5
   model_name: claude-sonnet-5
