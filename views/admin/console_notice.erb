@@ -1,0 +1,66 @@
+<% @page_title = "Console Notice Banner" %>
+
+<div class="container">
+  <h1>Console Notice Banner</h1>
+  <p>Manage the announcement bar shown at the top of the signed-in LayerRail console.</p>
+
+  <form action="/console-notice" method="post" class="stack">
+    <%== csrf_tag("/console-notice") %>
+    <fieldset>
+      <legend>Notice</legend>
+      <p>
+        <label><input type="checkbox" name="enabled" <%= "checked" if @notice.enabled %>> Enabled</label>
+      </p>
+      <p>
+        <label>Severity<br>
+          <select name="severity">
+            <% ConsoleNotice::SEVERITIES.each do |severity| %>
+              <option value="<%= severity %>" <%= "selected" if @notice.severity == severity %>><%= severity.capitalize %></option>
+            <% end %>
+          </select>
+        </label>
+      </p>
+      <p>
+        <label>Title<br>
+          <input name="title" value="<%= @notice.title %>" placeholder="Upcoming maintenance" required>
+        </label>
+      </p>
+      <p>
+        <label>Message<br>
+          <textarea name="body" rows="4" required placeholder="We will be upgrading critical infrastructure on July 8th, 1:00 am UTC."><%= @notice.body %></textarea>
+        </label>
+      </p>
+      <p>
+        <label>Link label<br>
+          <input name="link_label" value="<%= @notice.link_label %>" placeholder="Follow our status page for updates">
+        </label>
+      </p>
+      <p>
+        <label>Link URL<br>
+          <input name="link_url" value="<%= @notice.link_url %>" placeholder="https://status.layerrail.com">
+        </label>
+      </p>
+      <p>
+        <label>Starts at UTC<br>
+          <input type="datetime-local" name="starts_at" value="<%= @notice.starts_at&.utc&.strftime("%Y-%m-%dT%H:%M") %>">
+        </label>
+      </p>
+      <p>
+        <label>Ends at UTC<br>
+          <input type="datetime-local" name="ends_at" value="<%= @notice.ends_at&.utc&.strftime("%Y-%m-%dT%H:%M") %>">
+        </label>
+      </p>
+      <p><button type="submit">Save Notice</button></p>
+    </fieldset>
+  </form>
+
+  <h2>Current status</h2>
+  <table class="page-table">
+    <tbody>
+      <tr><th>Enabled</th><td><%= @notice.enabled ? "yes" : "no" %></td></tr>
+      <tr><th>Severity</th><td><%= @notice.severity %></td></tr>
+      <tr><th>Last updated</th><td><%= @notice.updated_at.utc.strftime("%F %T UTC") %></td></tr>
+      <tr><th>Dismiss key</th><td><code><%= @notice.dismiss_key %></code></td></tr>
+    </tbody>
+  </table>
+</div>

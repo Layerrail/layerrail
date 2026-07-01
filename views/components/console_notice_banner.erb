@@ -1,0 +1,48 @@
+<%
+  styles = {
+    "info" => {
+      container: "border-blue-200 bg-blue-50 text-blue-950",
+      icon: "border-blue-500 text-blue-700",
+      link: "text-blue-800 underline decoration-blue-300 underline-offset-4 hover:text-blue-950"
+    },
+    "maintenance" => {
+      container: "border-amber-200 bg-amber-50 text-amber-950",
+      icon: "border-amber-600 text-amber-700",
+      link: "text-amber-900 underline decoration-amber-400 underline-offset-4 hover:text-amber-950"
+    },
+    "warning" => {
+      container: "border-orange-200 bg-orange-50 text-orange-950",
+      icon: "border-orange-600 text-orange-700",
+      link: "text-orange-900 underline decoration-orange-400 underline-offset-4 hover:text-orange-950"
+    },
+    "incident" => {
+      container: "border-red-200 bg-red-50 text-red-950",
+      icon: "border-red-600 text-red-700",
+      link: "text-red-900 underline decoration-red-400 underline-offset-4 hover:text-red-950"
+    }
+  }
+  style = styles.fetch(notice.style_key)
+%>
+
+<div
+  class="console-notice-banner border-b px-4 py-3 text-sm sm:px-6 lg:px-8 <%= style[:container] %>"
+  data-console-notice-key="<%= notice.dismiss_key %>"
+>
+  <div class="mx-auto flex max-w-screen-2xl items-start gap-3">
+    <span class="mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full border text-xs font-semibold <%= style[:icon] %>">!</span>
+    <div class="min-w-0 flex-1 leading-6">
+      <span class="font-semibold"><%= notice.title %></span>
+      <span class="ml-1"><%= notice.body %></span>
+      <% if notice.link? %>
+        <a href="<%= notice.link_url %>" class="ml-1 font-medium <%= style[:link] %>"><%= notice.link_label %></a>
+      <% end %>
+    </div>
+    <button
+      type="button"
+      class="console-notice-dismiss -m-1.5 inline-flex shrink-0 rounded-md p-1.5 opacity-70 hover:opacity-100"
+      aria-label="Dismiss announcement"
+    >
+      <%== part("components/icon", name: "hero-x-mark", classes: "size-5") %>
+    </button>
+  </div>
+</div>

@@ -9,6 +9,7 @@
   setupPgConfigCard();
   setupStructuredDataCard();
   setupLogDestinationForm();
+  setupConsoleNoticeBanner();
 });
 
 $(".toggle-mobile-menu").on("click", function (event) {
@@ -1605,5 +1606,27 @@ function setupLogDestinationForm() {
     const prefix = $("#url-prefix").text();
     const suffix = $("#url-display").val();
     $("#url-hidden").val(prefix + suffix);
+  });
+}
+
+function setupConsoleNoticeBanner() {
+  $(".console-notice-banner").each(function () {
+    const banner = $(this);
+    const key = banner.data("console-notice-key");
+    const storageKey = "layerrail-console-notice-dismissed-" + key;
+
+    if (window.localStorage && localStorage.getItem(storageKey) === "1") {
+      banner.remove();
+      return;
+    }
+
+    banner.find(".console-notice-dismiss").on("click", function () {
+      if (window.localStorage) {
+        localStorage.setItem(storageKey, "1");
+      }
+      banner.slideUp(120, function () {
+        banner.remove();
+      });
+    });
   });
 }

@@ -1285,6 +1285,42 @@ class CloverAdmin < Roda
       view("linode_catalog")
     end
 
+    r.on "console-notice" do
+      parse_time = lambda do |value|
+        value = value.to_s.strip
+        value.empty? ? nil : Time.parse("#{value} UTC").utc
+      end
+
+      r.get true do
+        @notice = ConsoleNotice.current
+        view("console_notice")
+      end
+
+      r.post true do
+        @notice = ConsoleNotice.current
+        begin
+          ConsoleNotice.update_current_from_admin(
+            enabled: request.params["enabled"] == "on",
+            severity: typecast_params.nonempty_str!("severity"),
+            title: typecast_params.nonempty_str!("title"),
+            body: typecast_params.nonempty_str!("body"),
+            link_label: request.params["link_label"],
+            link_url: request.params["link_url"],
+            starts_at: parse_time.call(request.params["starts_at"]),
+            ends_at: parse_time.call(request.params["ends_at"])
+          )
+          flash["notice"] = "Console notice saved."
+          r.redirect "/console-notice"
+        rescue Roda::RodaPlugins::TypecastParams::Error => e
+          flash.now["error"] = "Invalid parameter submitted: #{e.param_name}"
+          view("console_notice")
+        rescue ArgumentError, Sequel::ValidationFailed => e
+          flash.now["error"] = e.message
+          view("console_notice")
+        end
+      end
+    end
+
     r.on "domain-tlds" do
       parse_price_cents = lambda do |value|
         dollars = value.to_s.strip
