@@ -78,9 +78,13 @@ class ConsoleNotice < Sequel::Model(:console_notice)
   def validate_link
     return if link_url.to_s.empty?
 
-    uri = URI.parse(link_url)
+    url_for_validation = link_url
+      .gsub("{project_id}", "pjexample")
+      .gsub("{project_path}", "/project/pjexample")
+
+    uri = URI.parse(url_for_validation)
     valid = if uri.relative?
-      link_url.start_with?("/")
+      url_for_validation.start_with?("/")
     else
       %w[https http mailto].include?(uri.scheme)
     end
