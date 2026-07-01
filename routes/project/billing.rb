@@ -264,7 +264,16 @@ class Clover
               invoice_amount_cents:
             },
             {
-              amount: invoice_amount_cents,
+              prices: {
+                Config.polar_invoice_product_id => [
+                  {
+                    amount_type: "fixed",
+                    price_amount: invoice_amount_cents,
+                    price_currency: "usd"
+                  }
+                ]
+              },
+              allow_discount_codes: false,
               currency: "usd"
             }
           )
