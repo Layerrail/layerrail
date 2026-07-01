@@ -58,7 +58,7 @@ jobs:
             --name "$WEB_APP_NAME" \
             -o json > "$APP_SETTINGS_FILE"
 
-          jq -r '.[] | select(.value != null and .value != "") | [.name, .value] | @tsv' "$APP_SETTINGS_FILE" |
+          jq -r '.[] | select(.value != null and .value != "" and (.name | IN("RACK_ENV", "INVOICE_MONTH", "DRY_RUN") | not)) | [.name, .value] | @tsv' "$APP_SETTINGS_FILE" |
             while IFS=$'\t' read -r name value; do
               printf '%s=%s\0' "$name" "$value" >> "$ENV_ARGS_FILE"
             done
