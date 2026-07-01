@@ -51,7 +51,7 @@ class AzureFoundryClient
 
   def anthropic_messages(deployment, payload)
     response = @anthropic_connection.post(
-      path: "/v1/messages",
+      path: "v1/messages",
       body: anthropic_payload(deployment, payload).to_json,
       expects: EXPECTED_STATUSES,
     )
