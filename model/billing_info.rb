@@ -75,7 +75,8 @@ class BillingInfo < Sequel::Model
   end
 
   def country
-    ISO3166::Country.new(billing_data["country"]) if billing_data["country"]
+    data = billing_data || {}
+    ISO3166::Country.new(data["country"]) if data["country"]
   end
 
   def after_destroy
