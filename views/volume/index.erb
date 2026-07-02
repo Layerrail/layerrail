@@ -1,0 +1,72 @@
+<% @page_title = "Volumes"
+
+total_size = @volumes.sum(&:size_gib)
+data_volume_count = @volumes.count { !it.boot }
+encrypted_count = @volumes.count { it.key_encryption_key_1_id || it.key_encryption_key_2_id }
+
+volume_provider_id = lambda do |volume|
+  if volume.azure_storage_volume
+    volume.azure_disk_name
+  elsif volume.linode_storage_volume
+    volume.linode_storage_volume.volume_id
+  elsif volume.storage_device
+    volume.storage_device.name
+  else
+    "Managed by LayerRail"
+  end
+end
+%>
+
+<%== part(
+  "components/page_header",
+  title: "Volumes",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Volumes", "#"]]
+) %>
+
+<div class="space-y-6">
+  <div class="grid gap-4 md:grid-cols-3">
+    <div class="rounded-lg bg-white p-5 shadow">
+      <div class="text-sm font-medium text-gray-500">Total block storage</div>
+      <div class="mt-2 text-3xl font-semibold tracking-tight text-layerrail-600"><%= total_size %> GB</div>
+    </div>
+    <div class="rounded-lg bg-white p-5 shadow">
+      <div class="text-sm font-medium text-gray-500">Data volumes</div>
+      <div class="mt-2 text-3xl font-semibold tracking-tight text-layerrail-600"><%= data_volume_count %></div>
+    </div>
+    <div class="rounded-lg bg-white p-5 shadow">
+      <div class="text-sm font-medium text-gray-500">Encrypted volumes</div>
+      <div class="mt-2 text-3xl font-semibold tracking-tight text-layerrail-600"><%= encrypted_count %></div>
+    </div>
+  </div>
+
+  <% if @volumes.empty? %>
+    <div class="rounded-lg bg-white p-12 text-center shadow">
+      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-layerrail-50 text-layerrail-600">
+        <%== part("components/icon", name: "hero-circle-stack", classes: "h-6 w-6") %>
+      </div>
+      <h3 class="mt-4 text-sm font-semibold text-gray-900">No volumes yet</h3>
+      <p class="mt-1 text-sm text-gray-500">Create a virtual machine to see its OS and attached data volumes here.</p>
+    </div>
+  <% else %>
+    <%== part(
+      "components/table_card",
+      headers: ["Volume", "VM", "Location", "Size", "Device", "Protection"],
+      rows: @volumes.map do |volume|
+        volume_type = volume.boot ? "OS disk" : "Data disk"
+        encryption = (volume.key_encryption_key_1_id || volume.key_encryption_key_2_id) ? "Encrypted" : "Provider managed"
+        [
+          [
+            [[volume.ubid, {link: "#{path(volume.vm)}/overview"}], [volume_type]],
+            [[volume.vm.name, {link: path(volume.vm)}], [volume.vm.display_state]],
+            [volume.vm.location.ui_name],
+            ["#{volume.size_gib} GB"],
+            [[volume_provider_id.call(volume).to_s], [volume.device_path]],
+            [[encryption], [volume.track_written ? "Change tracking enabled" : "Snapshot ready"]]
+          ],
+          {id: "volume-#{volume.ubid}"}
+        ]
+      end,
+      allow_wrap: true
+    ) %>
+  <% end %>
+</div>

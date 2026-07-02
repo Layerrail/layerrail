@@ -80,6 +80,13 @@
             ) %>
             <%== part(
               "layouts/sidebar/item",
+              name: "Volumes",
+              url: "#{@project.path}/volume",
+              is_active: request.path.start_with?("#{@project.path}/volume"),
+              icon: "hero-circle-stack"
+            ) %>
+            <%== part(
+              "layouts/sidebar/item",
               name: "Buckets",
               url: "#{@project.path}/bucket",
               is_active: request.path.start_with?("#{@project.path}/bucket"),
