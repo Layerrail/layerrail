@@ -15,6 +15,8 @@ class Prog::EdgeServiceNexus < Prog::Base
     edge_service.update(state: "ready", last_error: nil, updated_at: Time.now)
     edge_service.ensure_billing_record!
     hop_wait
+  rescue Prog::Base::FlowControl
+    raise
   rescue => ex
     edge_service.update(state: "failed", last_error: ex.message, updated_at: Time.now)
     Clog.emit("Edge service provision failed", Util.exception_to_hash(ex).merge(edge_service_id: edge_service.id))
@@ -33,6 +35,8 @@ class Prog::EdgeServiceNexus < Prog::Base
     BillingRecord.finalize_active_for_resource(edge_service)
     edge_service.destroy
     pop "edge service destroyed"
+  rescue Prog::Base::FlowControl
+    raise
   rescue => ex
     edge_service.update(state: "failed", last_error: ex.message, updated_at: Time.now)
     Clog.emit("Edge service delete failed", Util.exception_to_hash(ex).merge(edge_service_id: edge_service.id))

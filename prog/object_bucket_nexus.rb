@@ -22,6 +22,8 @@ class Prog::ObjectBucketNexus < Prog::Base
     admin_client.admin_policy_add(object_bucket.ubid, bucket_policy)
     admin_client.admin_policy_set(object_bucket.ubid, object_bucket.access_key)
     bucket_client.create_bucket(object_bucket.bucket_name)
+  rescue Prog::Base::FlowControl
+    raise
   rescue => ex
     if ex.message.include?("BucketAlreadyOwnedByYou") || ex.message.include?("Your previous request to create the named bucket succeeded")
       object_bucket.update(state: "ready", last_error: nil)
@@ -59,6 +61,8 @@ class Prog::ObjectBucketNexus < Prog::Base
     BillingRecord.finalize_active_for_resource(object_bucket)
     object_bucket.destroy
     pop "object bucket destroyed"
+  rescue Prog::Base::FlowControl
+    raise
   rescue => ex
     object_bucket.update(state: "failed", last_error: ex.message)
     Clog.emit("Object bucket delete failed", Util.exception_to_hash(ex).merge(object_bucket_id: object_bucket.id))
