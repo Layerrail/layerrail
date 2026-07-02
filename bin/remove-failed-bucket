@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../loader"
+
+project_ubid = ENV.fetch("PROJECT_UBID")
+bucket_name = ENV.fetch("BUCKET_NAME")
+
+project_id = UBID.to_uuid(project_ubid)
+bucket = ObjectBucket.where(project_id:, name: bucket_name).first
+
+if bucket.nil?
+  puts "bucket #{bucket_name} not found"
+  exit 0
+end
+
+unless bucket.state == "failed" && bucket.minio_cluster_id.nil?
+  fail "refusing to remove bucket #{bucket_name}: state=#{bucket.state}, minio_cluster_id=#{bucket.minio_cluster_id}"
+end
+
+DB.transaction do
+  BillingRecord.finalize_active_for_resource(bucket)
+  bucket.strand&.destroy
+  bucket.destroy
+end
+
+puts "removed failed bucket #{bucket_name}"
