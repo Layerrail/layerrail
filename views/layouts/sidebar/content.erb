@@ -101,6 +101,12 @@
             has_permission: Config.domains_enabled,
           },
           {
+            name: "Edge",
+            url: "#{@project.path}/edge",
+            is_active: request.path.start_with?("#{@project.path}/edge"),
+            icon: "hero-bolt",
+          },
+          {
             name: "Web Shell",
             url: "#{@project.path}/cli",
             is_active: request.path.start_with?("#{@project.path}/cli"),

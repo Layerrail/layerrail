@@ -1,0 +1,41 @@
+<% @page_title = "Edge" %>
+
+<%== part(
+  "components/page_header",
+  title: "Edge",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Edge", "#"]],
+  right_items: [part("components/button", text: "Create Edge Service", link: "#{@project.path}/edge/create", icon: "hero-plus")]
+) %>
+
+<div class="grid gap-6">
+  <% if @edge_services.empty? %>
+    <div class="rounded-lg bg-white p-12 text-center shadow">
+      <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-layerrail-50 text-layerrail-600">
+        <%== part("components/icon", name: "hero-bolt", classes: "h-6 w-6") %>
+      </div>
+      <h3 class="mt-4 text-sm font-semibold text-gray-900">No edge services yet</h3>
+      <p class="mt-1 text-sm text-gray-500">Put a fast LayerRail edge hostname in front of an app, bucket, API, or static origin.</p>
+      <div class="mt-6">
+        <%== part("components/button", text: "Create Edge Service", link: "#{@project.path}/edge/create", icon: "hero-plus") %>
+      </div>
+    </div>
+  <% else %>
+    <%== part(
+      "components/table_card",
+      headers: ["Name", "Hostname", "Origin", "Cache", "State"],
+      allow_wrap: true,
+      rows: @edge_services.map do |edge|
+        [
+          [
+            [edge.name, {link: "#{@project.path}#{edge.path}"}],
+            [edge.hostname],
+            [edge.origin_url],
+            [edge.display_cache_mode],
+            [edge.state]
+          ],
+          {id: "edge-#{edge.ubid}"}
+        ]
+      end
+    ) %>
+  <% end %>
+</div>

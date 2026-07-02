@@ -1,0 +1,37 @@
+<% @page_title = @edge_service.name %>
+
+<%== part(
+  "components/page_header",
+  title: @edge_service.name,
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Edge", "#{@project.path}/edge"], [@edge_service.name, "#"]]
+) %>
+
+<div class="grid gap-6">
+  <div class="rounded-lg bg-white shadow">
+    <dl class="divide-y divide-gray-200">
+      <% [
+        ["State", @edge_service.state],
+        ["Hostname", @edge_service.hostname],
+        ["Origin", @edge_service.origin_url],
+        ["Cache mode", @edge_service.display_cache_mode],
+        ["TLS mode", @edge_service.display_tls_mode],
+        ["Billing", @edge_service.active_billing_records_dataset.any? ? "Active" : "Pending"]
+      ].each do |label, value| %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500"><%= label %></dt>
+          <dd class="mt-1 break-all text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= value %></dd>
+        </div>
+      <% end %>
+    </dl>
+  </div>
+
+  <% if @edge_service.last_error %>
+    <div class="rounded-md bg-red-50 p-4 text-sm text-red-700"><%= @edge_service.last_error %></div>
+  <% end %>
+
+  <div class="rounded-lg bg-white p-6 shadow">
+    <% form(action: "#{@project.path}#{@edge_service.path}", method: :delete) do %>
+      <%== part("components/form/submit_button", text: "Delete Edge Service", icon: "hero-trash", extra_class: "bg-red-600 hover:bg-red-500") %>
+    <% end %>
+  </div>
+</div>

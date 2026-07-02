@@ -54,6 +54,8 @@ class BillingRate
       "#{amount.to_i} GiB Object Storage"
     when "VmBackupStorage"
       "#{amount.to_i} GiB Backup Snapshot Storage"
+    when "EdgeService"
+      "#{resource_family.capitalize} Edge Service"
     when "IPAddress"
       "#{resource_family} Address"
     when "PostgresCores"

@@ -1,0 +1,35 @@
+<% @page_title = "Create Edge Service" %>
+
+<%== part(
+  "components/page_header",
+  title: "Create Edge Service",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Edge", "#{@project.path}/edge"], ["Create", "#"]]
+) %>
+
+<div class="rounded-lg bg-white p-6 shadow">
+  <% form(action: "#{@project.path}/edge", method: :post) do %>
+    <div class="grid gap-6 md:grid-cols-2">
+      <%== part("components/form/text", label: "Name", name: "name", attributes: {placeholder: "website", required: true}) %>
+      <%== part("components/form/text", label: "Origin URL", name: "origin_url", attributes: {placeholder: "https://example.com", required: true}) %>
+      <div>
+        <label class="block text-sm font-medium leading-6 text-gray-900">Cache mode</label>
+        <select name="cache_mode" class="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-layerrail-600 sm:text-sm sm:leading-6">
+          <% EdgeService::CACHE_MODES.each do |value, label| %>
+            <option value="<%= value %>"><%= label %></option>
+          <% end %>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium leading-6 text-gray-900">TLS mode</label>
+        <select name="tls_mode" class="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-layerrail-600 sm:text-sm sm:leading-6">
+          <% EdgeService::TLS_MODES.each do |value, label| %>
+            <option value="<%= value %>"><%= label %></option>
+          <% end %>
+        </select>
+      </div>
+    </div>
+    <div class="mt-6">
+      <%== part("components/form/submit_button", text: "Create Edge Service", icon: "hero-plus") %>
+    </div>
+  <% end %>
+</div>
