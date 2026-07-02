@@ -134,6 +134,7 @@ class Clover < Roda
     enable_ssl
     promote_read_replica
     recycle
+    retry
     remove_account
     remove_cert_auth_user
     remove_member
