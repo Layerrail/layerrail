@@ -10,11 +10,11 @@ reason = ENV.fetch("REASON", "Internal LayerRail account credit")
 
 abort "Usage: PROJECT_UBID=<project_ubid> [INVOICE_UBID=<invoice_ubid>] CLEARED_BY=<admin> REASON=<reason> bundle exec ruby bin/clear-project-invoice" if project_ubid.to_s.empty?
 
-project = Project.from_ubid(project_ubid)
+project = Project[project_ubid]
 abort "Project not found: #{project_ubid}" unless project
 
 invoice = if invoice_ubid
-  candidate = Invoice.from_ubid(invoice_ubid)
+  candidate = Invoice[invoice_ubid]
   candidate if candidate&.project_id == project.id
 else
   project.invoices_dataset
