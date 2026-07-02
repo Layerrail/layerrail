@@ -3,8 +3,8 @@
 
 require_relative "../loader"
 
-project_ubid = ENV.fetch("PROJECT_UBID")
-bucket_name = ENV.fetch("BUCKET_NAME")
+project_ubid = ARGV[0] || ENV.fetch("PROJECT_UBID")
+bucket_name = ARGV[1] || ENV.fetch("BUCKET_NAME")
 
 project_id = UBID.to_uuid(project_ubid)
 bucket = ObjectBucket.where(project_id:, name: bucket_name).first
