@@ -12,11 +12,12 @@
       <% [
         ["State", @bucket.state],
         ["Location", @bucket.display_location],
-        ["Endpoint", @bucket.endpoint || "Provisioning"],
+        ["S3 endpoint", @bucket.ready? ? @bucket.s3_endpoint : "Provisioning"],
         ["Bucket", @bucket.bucket_name],
         ["Access key", @bucket.access_key],
         ["Secret key", @bucket.secret_key],
-        ["S3 URL", @bucket.endpoint ? "s3://#{@bucket.bucket_name}" : "Provisioning"]
+        ["S3 URL", @bucket.ready? ? @bucket.s3_url : "Provisioning"],
+        ["Public URL", @bucket.ready? ? @bucket.public_url : "Provisioning"]
       ].each do |label, value| %>
         <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
           <dt class="text-sm font-medium text-gray-500"><%= label %></dt>

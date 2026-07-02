@@ -168,6 +168,8 @@ module Config
 
   # Minio
   override :minio_host_name, "minio.layerrail.com", string
+  override :object_storage_public_domain, "layerrail.com", string
+  override :object_storage_worker_name, "layerrail-s3-gateway", string
   optional :minio_service_project_id, uuid
   override :minio_version, "minio_20250723155402.0.0_amd64", string
 

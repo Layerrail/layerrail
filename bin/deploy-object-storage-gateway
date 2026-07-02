@@ -1,0 +1,99 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../config"
+require "excon"
+require "json"
+require "uri"
+
+account_id = Config.cloudflare_account_id || ENV["CLOUDFLARE_ACCOUNT_ID"]
+api_token = Config.cloudflare_api_token || Config.cloudflare_dns_api_token || ENV["CLOUDFLARE_API_TOKEN"] || ENV["CLOUDFLARE_DNS_API_TOKEN"]
+zone_id = Config.cloudflare_dns_zone_id || ENV["CLOUDFLARE_DNS_ZONE_ID"]
+script_name = Config.object_storage_worker_name
+public_domain = Config.object_storage_public_domain
+proxy_hostname = Config.edge_proxy_hostname
+regions = ENV.fetch("OBJECT_STORAGE_PUBLIC_REGIONS", "eastus2").split(",").map(&:strip).reject(&:empty?)
+
+abort "CLOUDFLARE_ACCOUNT_ID is required" unless account_id
+abort "CLOUDFLARE_API_TOKEN is required" unless api_token
+abort "CLOUDFLARE_DNS_ZONE_ID is required" unless zone_id
+
+worker = <<~JS
+  const PUBLIC_DOMAIN = #{public_domain.to_json};
+  const HOP_BY_HOP = new Set(["connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "transfer-encoding", "upgrade"]);
+
+  addEventListener("fetch", event => {
+    event.respondWith(handleRequest(event.request));
+  });
+
+  function parseHost(host) {
+    const suffix = `.s3.`;
+    const domainSuffix = `.${PUBLIC_DOMAIN}`;
+    if (!host.endsWith(domainSuffix)) return null;
+    const withoutDomain = host.slice(0, -domainSuffix.length);
+    const marker = withoutDomain.lastIndexOf(suffix);
+    if (marker <= 0) return null;
+    const bucketScope = withoutDomain.slice(0, marker);
+    const region = withoutDomain.slice(marker + suffix.length);
+    const parts = bucketScope.split(".");
+    if (parts.length < 2 || !region) return null;
+    const project = parts.pop();
+    const bucket = parts.join(".");
+    if (!bucket || !project) return null;
+    return { bucket, project, region };
+  }
+
+  async function handleRequest(request) {
+    const host = request.headers.get("host")?.toLowerCase();
+    const parsed = host && parseHost(host);
+    if (!parsed) return new Response("LayerRail object storage host not found\\n", { status: 404 });
+
+    const incoming = new URL(request.url);
+    const bucketName = `${parsed.project}-${parsed.bucket}`.replace(/[^a-z0-9-]/g, "-").slice(0, 63).replace(/-$/g, "");
+    const upstream = new URL(`https://object-storage-${parsed.region}.minio.${PUBLIC_DOMAIN}:9000/${bucketName}${incoming.pathname}`);
+    upstream.search = incoming.search;
+
+    const headers = new Headers(request.headers);
+    for (const key of HOP_BY_HOP) headers.delete(key);
+    headers.set("host", upstream.host);
+    headers.set("x-forwarded-host", host);
+    headers.set("x-layerrail-object-storage", "cloudflare-worker");
+
+    return fetch(upstream.toString(), {
+      method: request.method,
+      headers,
+      body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
+      redirect: "manual"
+    });
+  }
+JS
+
+conn = Excon.new("https://api.cloudflare.com", headers: {"Authorization" => "Bearer #{api_token}", "Content-Type" => "application/javascript"})
+conn.put(path: "/client/v4/accounts/#{account_id}/workers/scripts/#{script_name}", body: worker, expects: [200, 201])
+
+routes_conn = Excon.new("https://api.cloudflare.com", headers: {"Authorization" => "Bearer #{api_token}", "Content-Type" => "application/json"})
+routes_path = "/client/v4/zones/#{zone_id}/workers/routes"
+routes = JSON.parse(routes_conn.get(path: "#{routes_path}?per_page=100", expects: 200).body).fetch("result")
+
+dns_records_path = "/client/v4/zones/#{zone_id}/dns_records"
+regions.each do |region|
+  pattern = "*.s3.#{region}.#{public_domain}/*"
+  payload = {pattern:, script: script_name}.to_json
+  existing = routes.find { it["pattern"] == pattern }
+  if existing
+    routes_conn.put(path: "#{routes_path}/#{existing.fetch("id")}", body: payload, expects: [200, 201])
+  else
+    routes_conn.post(path: routes_path, body: payload, expects: [200, 201])
+  end
+
+  dns_name = "*.s3.#{region}.#{public_domain}"
+  dns_records = JSON.parse(routes_conn.get(path: "#{dns_records_path}?type=CNAME&name=#{URI.encode_www_form_component(dns_name)}", expects: 200).body).fetch("result")
+  dns_payload = {type: "CNAME", name: dns_name, content: proxy_hostname, ttl: 1, proxied: true}.to_json
+  if dns_records.empty?
+    routes_conn.post(path: dns_records_path, body: dns_payload, expects: [200, 201])
+  else
+    routes_conn.patch(path: "#{dns_records_path}/#{dns_records.first.fetch("id")}", body: dns_payload, expects: [200, 201])
+  end
+end
+
+puts "Deployed #{script_name} for #{regions.map { "*.s3.#{it}.#{public_domain}" }.join(", ")}"

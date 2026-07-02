@@ -27,6 +27,22 @@ class ObjectBucket < Sequel::Model
     1
   end
 
+  def public_region
+    location.name.to_s.delete_prefix("azure-")
+  end
+
+  def s3_endpoint
+    "https://s3.#{public_region}.#{Config.object_storage_public_domain}"
+  end
+
+  def s3_url
+    "#{s3_endpoint}/#{bucket_name}"
+  end
+
+  def public_url
+    "https://#{name}.#{project.ubid}.s3.#{public_region}.#{Config.object_storage_public_domain}/"
+  end
+
   def ensure_billing_record!
     rate = BillingRate.from_resource_properties("ObjectBucketStorage", "standard", "global")
     fail "Object bucket billing rate is not configured" unless rate

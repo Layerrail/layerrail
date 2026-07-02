@@ -22,13 +22,13 @@
   <% else %>
     <%== part(
       "components/table_card",
-      headers: ["Name", "Location", "Endpoint", "State", "Created"],
+      headers: ["Name", "Location", "S3 endpoint", "State", "Created"],
       rows: @buckets.map do |bucket|
         [
           [
             [bucket.name, {link: "#{@project.path}#{bucket.path}"}],
             [bucket.display_location],
-            [bucket.endpoint || "Provisioning"],
+            [bucket.ready? ? bucket.s3_endpoint : "Provisioning"],
             [bucket.state],
             [bucket.created_at.utc.strftime("%b %-d, %Y")]
           ],
