@@ -50,7 +50,7 @@ class Prog::Minio::MinioServerNexus < Prog::Base
 
     register_deadline("wait", 10 * 60)
 
-    minio_server.cluster.dns_zone&.insert_record(record_name: cluster.hostname, type: "A", ttl: 10, data: vm.ip4_string)
+    upsert_dns_records
     cert, cert_key = create_certificate
     minio_server.update(cert:, cert_key:)
 
@@ -161,7 +161,7 @@ class Prog::Minio::MinioServerNexus < Prog::Base
   label def destroy
     register_deadline(nil, 10 * 60)
     decr_destroy
-    minio_server.cluster.dns_zone&.delete_record(record_name: cluster.hostname, type: "A", data: vm.ip4_string)
+    delete_dns_records
     minio_server.vm.sshable.destroy
     minio_server.vm.nics.each { it.incr_destroy }
     minio_server.vm.incr_destroy
@@ -197,5 +197,19 @@ class Prog::Minio::MinioServerNexus < Prog::Base
       issuer_cert: root_cert,
       issuer_key: root_cert_key,
     ).map(&:to_pem)
+  end
+
+  def upsert_dns_records
+    return unless (zone = minio_server.cluster.dns_zone)
+
+    zone.insert_record(record_name: cluster.hostname, type: "A", ttl: 10, data: vm.ip4_string)
+    zone.insert_record(record_name: minio_server.hostname, type: "A", ttl: 10, data: vm.ip4_string)
+  end
+
+  def delete_dns_records
+    return unless (zone = minio_server.cluster.dns_zone)
+
+    zone.delete_record(record_name: cluster.hostname, type: "A", data: vm.ip4_string)
+    zone.delete_record(record_name: minio_server.hostname, type: "A", data: vm.ip4_string)
   end
 end

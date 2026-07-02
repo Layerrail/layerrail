@@ -16,7 +16,13 @@ class Prog::ObjectBucketNexus < Prog::Base
       nap 6 * 60 * 60
     end
 
-    object_bucket.update(minio_cluster_id: cluster.id, endpoint: cluster.url || cluster.ip4_urls.first)
+    endpoint = cluster.url || (!Config.production? && cluster.ip4_urls.first)
+    unless endpoint
+      object_bucket.update(state: "failed", last_error: "Object storage DNS is not configured for #{object_bucket.display_location}.")
+      nap 30 * 60
+    end
+
+    object_bucket.update(minio_cluster_id: cluster.id, endpoint:)
     nap 60 unless cluster.strand&.label == "wait"
 
     admin_client.admin_add_user(object_bucket.access_key, object_bucket.secret_key)

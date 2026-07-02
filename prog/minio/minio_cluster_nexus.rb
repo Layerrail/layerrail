@@ -21,6 +21,12 @@ class Prog::Minio::MinioClusterNexus < Prog::Base
     per_pool_server_count, per_pool_drive_count, per_pool_storage_size = Validation.validate_minio_setup(storage_size_gib:, pool_count:, server_count:, drive_count:)
 
     DB.transaction do
+      if Config.production?
+        DnsZone.ensure_service_zone!(project_id: Config.minio_service_project_id, name: Config.minio_host_name, service: "Object storage")
+      else
+        DnsZone.ensure_service_zone(project_id: Config.minio_service_project_id, name: Config.minio_host_name)
+      end
+
       ubid = MinioCluster.generate_ubid
       root_cert_1, root_cert_key_1 = Util.create_root_certificate(common_name: "#{ubid} Root Certificate Authority", duration: 60 * 60 * 24 * 365 * 5)
       root_cert_2, root_cert_key_2 = Util.create_root_certificate(common_name: "#{ubid} Root Certificate Authority", duration: 60 * 60 * 24 * 365 * 10)
