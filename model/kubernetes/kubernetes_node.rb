@@ -60,7 +60,7 @@ class KubernetesNode < Sequel::Model
     file_content = if ssh_session
       ssh_session.exec!("cat :MESH_STATUS_FILE_PATH 2>/dev/null || echo -n", MESH_STATUS_FILE_PATH:)
     else
-      sshable.cmd("cat :MESH_STATUS_FILE_PATH 2>/dev/null || echo -n", MESH_STATUS_FILE_PATH:)
+      sshable.cmd("cat :MESH_STATUS_FILE_PATH 2>/dev/null || echo -n", MESH_STATUS_FILE_PATH:, log: false)
     end
 
     if file_content.empty?
