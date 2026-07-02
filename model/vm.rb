@@ -27,6 +27,8 @@ class Vm < Sequel::Model
   one_to_one :vm_gcp_resource, key: :id, read_only: true
   one_to_one :init_script, class: :VmInitScript, key: :id, read_only: true
   one_to_one :github_runner, read_only: true
+  one_to_one :vm_backup_policy
+  one_to_many :vm_backup_snapshots, order: Sequel.desc(:created_at)
 
   many_through_many :private_subnet_firewalls,
     [
@@ -38,7 +40,7 @@ class Vm < Sequel::Model
     before_add: :validate_firewall_cap,
     after_add: :fire_firewall_rules_update_for_vm_firewall
 
-  plugin :association_dependencies, sshable: :destroy, assigned_vm_address: :destroy, vm_storage_volumes: :destroy, load_balancer_vm: :destroy, init_script: :destroy, linode_instance: :destroy, azure_instance: :destroy
+  plugin :association_dependencies, sshable: :destroy, assigned_vm_address: :destroy, vm_storage_volumes: :destroy, load_balancer_vm: :destroy, init_script: :destroy, linode_instance: :destroy, azure_instance: :destroy, vm_backup_policy: :destroy
 
   dataset_module Pagination
 
@@ -185,6 +187,15 @@ class Vm < Sequel::Model
 
   def storage_size_gib
     vm_storage_volumes.map { it.size_gib }.sum
+  end
+
+  def backup_provider
+    return "azure" if azure_instance
+    return "linode" if linode_instance
+    return "gcp" if vm_gcp_resource
+    return "aws" if aws_instance
+
+    location.provider_dispatcher_group_name
   end
 
   def check_pulse(session:, previous_pulse:)

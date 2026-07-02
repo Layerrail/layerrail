@@ -246,6 +246,28 @@ class AzureClient
     request(:delete, resource_path(resource_group, "Microsoft.Compute/disks", name), api_version: DISK_API, expected_status: [200, 202, 204, 404])
   end
 
+  def create_snapshot(resource_group:, region:, name:, source_disk_id:, tags: {})
+    request(:put, resource_path(resource_group, "Microsoft.Compute/snapshots", name), api_version: DISK_API, body: {
+      location: region,
+      tags:,
+      sku: {name: "Standard_LRS"},
+      properties: {
+        creationData: {
+          createOption: "Copy",
+          sourceResourceId: source_disk_id,
+        },
+      },
+    }, expected_status: [200, 201, 202])
+  end
+
+  def get_snapshot(resource_group, name)
+    request(:get, resource_path(resource_group, "Microsoft.Compute/snapshots", name), api_version: DISK_API)
+  end
+
+  def delete_snapshot(resource_group, name)
+    request(:delete, resource_path(resource_group, "Microsoft.Compute/snapshots", name), api_version: DISK_API, expected_status: [200, 202, 204, 404])
+  end
+
   def resource_id(resource_group, type, name)
     "/subscriptions/#{@subscription_id}/resourceGroups/#{resource_group}/providers/#{type}/#{name}"
   end

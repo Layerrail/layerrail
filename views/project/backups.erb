@@ -97,7 +97,7 @@ backup_total = @backup_rows.sum { it[:count].to_i }
       <div>
         <h2 class="text-base font-semibold text-gray-900">Virtual machine backups</h2>
         <p class="mt-1 text-sm text-gray-500">
-          This project has <%= @vm_backup_count %> virtual machine<%= @vm_backup_count == 1 ? "" : "s" %>. VM snapshots are the next backup engine to wire, so this page only reports managed PostgreSQL and Kubernetes protection for now.
+          This project has <%= @vm_backup_count %> virtual machine<%= @vm_backup_count == 1 ? "" : "s" %>, with <%= @vm_backup_policy_count %> backup polic<%= @vm_backup_policy_count == 1 ? "y" : "ies" %> enabled. Open a VM and use the Backups tab to enable scheduled disk snapshots or create an immediate backup.
         </p>
       </div>
     </div>

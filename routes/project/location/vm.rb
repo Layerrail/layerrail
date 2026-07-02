@@ -51,7 +51,49 @@ class Clover
 
       r.rename vm, perm: "Vm:edit", serializer: Serializers::Vm, template_prefix: "vm"
 
-      r.show_object(vm, actions: %w[overview networking settings], perm: "Vm:view", template: "vm/show")
+      r.show_object(vm, actions: %w[overview networking backups settings], perm: "Vm:view", template: "vm/show")
+
+      r.post web?, "backups" do
+        authorize("Vm:edit", vm)
+        handle_validation_failure("vm/show") { @page = "backups" }
+
+        schedule_hours = typecast_params.pos_int("schedule_hours") || 24
+        retention_days = typecast_params.pos_int("retention_days") || 7
+        enabled = typecast_params.bool("enabled")
+
+        unless [6, 12, 24, 168].include?(schedule_hours)
+          raise_web_error("Choose a valid backup schedule.")
+        end
+
+        unless (1..90).cover?(retention_days)
+          raise_web_error("Retention must be between 1 and 90 days.")
+        end
+
+        DB.transaction do
+          policy = vm.vm_backup_policy || VmBackupPolicy.create(vm_id: vm.id)
+          policy.update(enabled:, schedule_hours:, retention_days:, updated_at: Time.now)
+          Prog::Vm::BackupPolicyNexus.assemble(policy) unless policy.strand
+          audit_log(vm, "update_backup_policy")
+        end
+
+        flash["notice"] = "Backup policy updated."
+        r.redirect vm, "/backups"
+      end
+
+      r.post web?, "backups/create" do
+        authorize("Vm:edit", vm)
+        handle_validation_failure("vm/show") { @page = "backups" }
+
+        policy = nil
+        DB.transaction do
+          policy = vm.vm_backup_policy || VmBackupPolicy.create(vm_id: vm.id)
+          Strand.create(prog: "Vm::BackupPolicyNexus", label: "create_snapshot", stack: [{subject_id: policy.id, reason: "manual"}])
+          audit_log(vm, "create_backup")
+        end
+
+        flash["notice"] = "Backup snapshot started."
+        r.redirect vm, "/backups"
+      end
 
       r.post %w[restart start stop] do |action|
         authorize("Vm:edit", vm)

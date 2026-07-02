@@ -77,6 +77,7 @@ class Clover
         end
 
         @vm_backup_count = @project.vms_dataset.count
+        @vm_backup_policy_count = VmBackupPolicy.where(vm_id: @project.vms_dataset.select(:id), enabled: true).count
         @backup_rows = @postgres_backups + @kubernetes_backups
         view "project/backups"
       end
