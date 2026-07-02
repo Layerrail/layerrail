@@ -46,6 +46,14 @@ class ObjectBucket < Sequel::Model
   def self.generate_bucket_name(project, name)
     "#{project.ubid}-#{name}".downcase.gsub(/[^a-z0-9-]/, "-")[0, 63].delete_suffix("-")
   end
+
+  def self.available_locations
+    MinioCluster
+      .where(project_id: [Config.minio_service_project_id, Config.postgres_service_project_id].compact)
+      .select_map(:location_id)
+      .uniq
+      .then { |ids| ids.empty? ? [] : Location.where(id: ids, visible: true).order(:ui_name).all }
+  end
 end
 
 # Table: object_bucket

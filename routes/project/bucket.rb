@@ -11,7 +11,7 @@ class Clover
       end
 
       r.get "create" do
-        @locations = Location.where(visible: true).all
+        @locations = ObjectBucket.available_locations
         view "bucket/create"
       end
 
@@ -22,6 +22,7 @@ class Clover
 
         location = Location[typecast_params.nonempty_str!("location_id")]
         check_found_object(location)
+        raise_web_error("Object storage is not available in #{location.ui_name}.") unless ObjectBucket.available_locations.map(&:id).include?(location.id)
         raise_web_error("A bucket named #{name} already exists.") if @project.object_buckets_dataset.where(name:).count.positive?
 
         bucket = nil
@@ -53,7 +54,12 @@ class Clover
         r.delete true do
           authorize("Project:view", @project)
           DB.transaction do
-            bucket.incr_destroy
+            if bucket.state == "failed" && bucket.minio_cluster_id.nil?
+              BillingRecord.finalize_active_for_resource(bucket)
+              bucket.destroy
+            else
+              bucket.incr_destroy
+            end
             audit_log(bucket, "destroy")
           end
           flash["notice"] = "Bucket #{bucket.name} scheduled for deletion."

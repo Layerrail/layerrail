@@ -7,6 +7,11 @@
 ) %>
 
 <div class="rounded-lg bg-white p-6 shadow">
+  <% if @locations.empty? %>
+    <div class="rounded-md bg-yellow-50 p-4 text-sm text-yellow-800">
+      Object storage is not available in any active location yet.
+    </div>
+  <% else %>
   <% form(action: "#{@project.path}/bucket", method: :post) do %>
     <div class="grid gap-6 md:grid-cols-2">
       <%== part("components/form/text", label: "Bucket name", name: "name", attributes: {placeholder: "assets", required: true}) %>
@@ -22,5 +27,6 @@
     <div class="mt-6">
       <%== part("components/form/submit_button", text: "Create Bucket", icon: "hero-plus") %>
     </div>
+  <% end %>
   <% end %>
 </div>
