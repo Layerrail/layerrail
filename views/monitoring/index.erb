@@ -1,0 +1,82 @@
+<% @page_title = "Monitoring" %>
+
+<%== part(
+  "components/page_header",
+  title: "Monitoring",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Monitoring", "#"]],
+  right_items: [
+    part("components/button", text: "Create Metrics", link: "#{@project.path}/monitoring/metrics/create", icon: "hero-chart-pie"),
+    part("components/button", text: "Create Logs", link: "#{@project.path}/monitoring/logs/create", icon: "hero-document-text")
+  ]
+) %>
+
+<div class="grid gap-6">
+  <div class="grid gap-4 lg:grid-cols-3">
+    <div class="rounded-lg bg-white p-5 shadow">
+      <p class="text-sm font-medium text-gray-500">Metrics backends</p>
+      <p class="mt-2 text-3xl font-semibold text-gray-950"><%= @metrics_resources.count %></p>
+    </div>
+    <div class="rounded-lg bg-white p-5 shadow">
+      <p class="text-sm font-medium text-gray-500">Log backends</p>
+      <p class="mt-2 text-3xl font-semibold text-gray-950"><%= @log_resources.count %></p>
+    </div>
+    <div class="rounded-lg bg-white p-5 shadow">
+      <p class="text-sm font-medium text-gray-500">Ready services</p>
+      <p class="mt-2 text-3xl font-semibold text-gray-950"><%= (@metrics_resources + @log_resources).count(&:ready?) %></p>
+    </div>
+  </div>
+
+  <div class="rounded-lg bg-white shadow">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h2 class="text-base font-semibold text-gray-950">Metrics</h2>
+    </div>
+    <% if @metrics_resources.empty? %>
+      <div class="px-6 py-10 text-sm text-gray-500">No metrics backend yet.</div>
+    <% else %>
+      <%== part(
+        "components/table_card",
+        headers: ["Name", "Location", "Endpoint", "Storage", "State"],
+        allow_wrap: true,
+        rows: @metrics_resources.map do |resource|
+          [
+            [
+              [resource.name, {link: "#{@project.path}#{resource.path}"}],
+              [resource.location.ui_name],
+              [resource.hostname],
+              ["#{resource.target_storage_size_gib} GB"],
+              [resource.state]
+            ],
+            {id: "metrics-#{resource.ubid}"}
+          ]
+        end
+      ) %>
+    <% end %>
+  </div>
+
+  <div class="rounded-lg bg-white shadow">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h2 class="text-base font-semibold text-gray-950">Logs</h2>
+    </div>
+    <% if @log_resources.empty? %>
+      <div class="px-6 py-10 text-sm text-gray-500">No logs backend yet.</div>
+    <% else %>
+      <%== part(
+        "components/table_card",
+        headers: ["Name", "Location", "Endpoint", "Retention", "State"],
+        allow_wrap: true,
+        rows: @log_resources.map do |resource|
+          [
+            [
+              [resource.name, {link: "#{@project.path}#{resource.path}"}],
+              [resource.location.ui_name],
+              [resource.hostname],
+              ["#{ParseableResource::LOG_BUCKET_EXPIRATION_DAYS} days"],
+              [resource.state]
+            ],
+            {id: "logs-#{resource.ubid}"}
+          ]
+        end
+      ) %>
+    <% end %>
+  </div>
+</div>

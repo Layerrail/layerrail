@@ -107,6 +107,12 @@
             icon: "hero-globe-alt",
           },
           {
+            name: "Monitoring",
+            url: "#{@project.path}/monitoring",
+            is_active: request.path.start_with?("#{@project.path}/monitoring"),
+            icon: "hero-chart-pie",
+          },
+          {
             name: "Web Shell",
             url: "#{@project.path}/cli",
             is_active: request.path.start_with?("#{@project.path}/cli"),

@@ -59,6 +59,8 @@ class Prog::VictoriaMetrics::VictoriaMetricsServerNexus < Prog::Base
 
     register_deadline("wait", 10 * 60)
 
+    DnsZone.where(project_id: Config.victoria_metrics_service_project_id, name: Config.victoria_metrics_host_name).first&.insert_record(record_name: resource.hostname, type: "A", ttl: 10, data: vm.ip4_string)
+    DnsZone.where(project_id: Config.victoria_metrics_service_project_id, name: Config.victoria_metrics_host_name).first&.insert_record(record_name: resource.hostname, type: "AAAA", ttl: 10, data: vm.ip6_string)
     cert, cert_key = create_certificate
     victoria_metrics_server.update(cert:, cert_key:)
 
@@ -197,6 +199,8 @@ class Prog::VictoriaMetrics::VictoriaMetricsServerNexus < Prog::Base
     register_deadline(nil, 10 * 60)
     decr_destroy
 
+    DnsZone.where(project_id: Config.victoria_metrics_service_project_id, name: Config.victoria_metrics_host_name).first&.delete_record(record_name: resource.hostname, type: "A", data: vm.ip4_string)
+    DnsZone.where(project_id: Config.victoria_metrics_service_project_id, name: Config.victoria_metrics_host_name).first&.delete_record(record_name: resource.hostname, type: "AAAA", data: vm.ip6_string)
     Semaphore.incr(strand.children_dataset.select(:id), "destroy")
     hop_wait_children_destroyed
   end

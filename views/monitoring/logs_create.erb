@@ -1,0 +1,32 @@
+<% @page_title = "Create Logs Backend" %>
+
+<%== part(
+  "components/page_header",
+  title: "Create Logs Backend",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Monitoring", "#{@project.path}/monitoring"], ["Create Logs", "#"]]
+) %>
+
+<div class="rounded-lg bg-white p-6 shadow">
+  <% if @locations.empty? %>
+    <p class="text-sm text-gray-500">Logs is not available in any active location yet. Object storage must be active first.</p>
+  <% else %>
+    <% form(action: "#{@project.path}/monitoring/logs", method: :post) do %>
+      <div class="grid gap-6 md:grid-cols-2">
+        <%== part("components/form/text", label: "Name", name: "name", attributes: {placeholder: "logs", required: true}) %>
+        <div>
+          <label class="block text-sm font-medium leading-6 text-gray-900">Location</label>
+          <select name="location_id" required class="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-layerrail-600 sm:text-sm sm:leading-6">
+            <% @locations.each do |location| %>
+              <option value="<%= location.id %>"><%= location.ui_name %></option>
+            <% end %>
+          </select>
+        </div>
+        <%== part("components/form/text", label: "Storage size (GB)", name: "storage_size_gib", attributes: {type: "number", min: 50, max: 4096, value: 100, required: true}) %>
+        <%== part("components/form/text", label: "VM size", name: "vm_size", attributes: {value: "standard-2", required: true}) %>
+      </div>
+      <div class="mt-6">
+        <%== part("components/form/submit_button", text: "Create Logs", icon: "hero-plus") %>
+      </div>
+    <% end %>
+  <% end %>
+</div>

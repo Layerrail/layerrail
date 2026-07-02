@@ -7,6 +7,7 @@ class VictoriaMetricsResource < Sequel::Model
   many_to_one :project
   many_to_one :location, read_only: true
   one_to_many :servers, class: :VictoriaMetricsServer, is_used: true
+  one_to_many :active_billing_records, class: :BillingRecord, key: :resource_id, read_only: true, &:active
   many_to_one :private_subnet, read_only: true
 
   plugin ResourceMethods, redacted_columns: [:root_cert_1, :root_cert_2],
@@ -26,12 +27,52 @@ class VictoriaMetricsResource < Sequel::Model
     vmr&.servers&.first&.client || (VictoriaMetrics::Client.new(endpoint: "http://localhost:8428") if Config.development?)
   end
 
+  def self.available_locations
+    Location.where(visible: true).order(:ui_name).all.select { it.name.start_with?("azure-") }
+  end
+
+  def path
+    "/monitoring/metrics/#{name}"
+  end
+
+  def ready?
+    servers.any? && servers.all? { it.strand&.label == "wait" }
+  end
+
+  def state
+    return "ready" if ready? && strand&.label == "wait"
+    return "deleting" if destroy_set? || strand&.label == "destroy"
+    return "failed" if servers.any? { it.strand&.label == "unavailable" }
+
+    "creating"
+  end
+
   def hostname
     "#{name}.#{Config.victoria_metrics_host_name}"
   end
 
   def root_certs
     [root_cert_1, root_cert_2].join("\n") if root_cert_1 && root_cert_2
+  end
+
+  def ensure_billing_records!
+    [
+      ["MonitoringMetricsStorage", "standard", target_storage_size_gib],
+      ["MonitoringMetricsSamples", "standard", 1],
+    ].each do |resource_type, family, amount|
+      rate = BillingRate.from_resource_properties(resource_type, family, "global")
+      next unless rate
+      next if active_billing_records_dataset.where(billing_rate_id: rate.fetch("id")).first
+
+      BillingRecord.create(
+        project_id:,
+        resource_id: id,
+        resource_name: name,
+        amount:,
+        billing_rate_id: rate.fetch("id"),
+        resource_tags: Sequel.pg_jsonb_wrap({"service" => "monitoring-metrics", "hostname" => hostname})
+      )
+    end
   end
 
   def set_firewall_rules

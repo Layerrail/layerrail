@@ -1,0 +1,36 @@
+<% @page_title = @metrics_resource.name %>
+
+<%== part(
+  "components/page_header",
+  title: @metrics_resource.name,
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Monitoring", "#{@project.path}/monitoring"], [@metrics_resource.name, "#"]]
+) %>
+
+<div class="grid gap-6">
+  <div class="rounded-lg bg-white shadow">
+    <dl class="divide-y divide-gray-200">
+      <% [
+        ["State", @metrics_resource.state],
+        ["Location", @metrics_resource.location.ui_name],
+        ["Endpoint", @metrics_resource.hostname],
+        ["Storage", "#{@metrics_resource.target_storage_size_gib} GB"],
+        ["VM size", @metrics_resource.target_vm_size],
+        ["Billing", @metrics_resource.active_billing_records_dataset.any? ? "Active" : "Pending"]
+      ].each do |label, value| %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500"><%= label %></dt>
+          <dd class="mt-1 break-all text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= value %></dd>
+        </div>
+      <% end %>
+    </dl>
+  </div>
+
+  <div class="flex flex-wrap gap-3 rounded-lg bg-white p-6 shadow">
+    <% if @metrics_resource.state == "failed" || !@metrics_resource.ready? %>
+      <% form(action: "#{@project.path}#{@metrics_resource.path}/retry", method: :post) do %>
+        <%== part("components/form/submit_button", text: "Retry Metrics", icon: "hero-arrow-path") %>
+      <% end %>
+    <% end %>
+    <%== part("components/delete_button", url: "#{@project.path}#{@metrics_resource.path}", text: "Delete Metrics") %>
+  </div>
+</div>

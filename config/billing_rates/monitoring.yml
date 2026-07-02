@@ -1,0 +1,4 @@
+- { id: 52ae8fdb-72c2-446d-84de-c59afefc218e, resource_type: MonitoringMetricsStorage, resource_family: standard, location: global, unit_price: 0.0000009260, billed_by: duration, active_from: 2026-07-02T00:00:00Z, byoc: false }
+- { id: 27dcfa66-491e-4dc2-ae79-c4c943703e17, resource_type: MonitoringMetricsSamples, resource_family: standard, location: global, unit_price: 0.0000694444, billed_by: duration, active_from: 2026-07-02T00:00:00Z, byoc: false }
+- { id: 845ec84b-a5ff-4b7a-bd0b-3fc863103cc4, resource_type: MonitoringLogsStorage, resource_family: standard, location: global, unit_price: 0.0000009260, billed_by: duration, active_from: 2026-07-02T00:00:00Z, byoc: false }
+- { id: 856f20dc-aaee-41c2-9e21-9e97000a8f37, resource_type: MonitoringLogsIngest, resource_family: standard, location: global, unit_price: 0.0000694444, billed_by: duration, active_from: 2026-07-02T00:00:00Z, byoc: false }

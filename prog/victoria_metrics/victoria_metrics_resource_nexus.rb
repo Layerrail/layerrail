@@ -18,6 +18,12 @@ class Prog::VictoriaMetrics::VictoriaMetricsResourceNexus < Prog::Base
     storage_size_gib = Validation.validate_victoria_metrics_storage_size(storage_size_gib)
 
     DB.transaction do
+      if Config.production?
+        DnsZone.ensure_service_zone!(project_id: Config.victoria_metrics_service_project_id, name: Config.victoria_metrics_host_name, service: "Monitoring metrics")
+      else
+        DnsZone.ensure_service_zone(project_id: Config.victoria_metrics_service_project_id, name: Config.victoria_metrics_host_name)
+      end
+
       ubid = VictoriaMetricsResource.generate_ubid
       root_cert_1, root_cert_key_1 = Util.create_root_certificate(common_name: "#{ubid} Root Certificate Authority", duration: 60 * 60 * 24 * 365 * 5)
       root_cert_2, root_cert_key_2 = Util.create_root_certificate(common_name: "#{ubid} Root Certificate Authority", duration: 60 * 60 * 24 * 365 * 5)
@@ -59,6 +65,8 @@ class Prog::VictoriaMetrics::VictoriaMetricsResourceNexus < Prog::Base
   end
 
   label def wait
+    victoria_metrics_resource.ensure_billing_records!
+
     if victoria_metrics_resource.certificate_last_checked_at < Time.now - 60 * 60 * 24 * 30 # ~1 month
       hop_refresh_certificates
     end
@@ -97,6 +105,7 @@ class Prog::VictoriaMetrics::VictoriaMetricsResourceNexus < Prog::Base
 
     victoria_metrics_resource.private_subnet.firewalls.each(&:destroy)
     victoria_metrics_resource.private_subnet.incr_destroy
+    BillingRecord.finalize_active_for_resource(victoria_metrics_resource)
 
     victoria_metrics_resource.servers.each(&:incr_destroy)
     hop_wait_servers_destroyed

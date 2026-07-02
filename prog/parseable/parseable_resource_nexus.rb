@@ -9,6 +9,12 @@ class Prog::Parseable::ParseableResourceNexus < Prog::Base
     Validation.validate_name(name)
 
     DB.transaction do
+      if Config.production?
+        DnsZone.ensure_service_zone!(project_id: Config.parseable_service_project_id, name: Config.parseable_host_name, service: "Monitoring logs")
+      else
+        DnsZone.ensure_service_zone(project_id: Config.parseable_service_project_id, name: Config.parseable_host_name)
+      end
+
       ubid = ParseableResource.generate_ubid
       root_cert_1, root_cert_key_1 = Util.create_root_certificate(common_name: "#{ubid} Root Certificate Authority", duration: 60 * 60 * 24 * 365 * 5)
       root_cert_2, root_cert_key_2 = Util.create_root_certificate(common_name: "#{ubid} Root Certificate Authority", duration: 60 * 60 * 24 * 365 * 10)
@@ -82,6 +88,8 @@ class Prog::Parseable::ParseableResourceNexus < Prog::Base
   end
 
   label def wait
+    parseable_resource.ensure_billing_records!
+
     when_destroy_set? do
       hop_destroy
     end
@@ -120,6 +128,7 @@ class Prog::Parseable::ParseableResourceNexus < Prog::Base
     firewall = parseable_resource.private_subnet.firewalls_dataset.first(name: "#{parseable_resource.ubid}-firewall")
     firewall&.destroy
     parseable_resource.private_subnet.incr_destroy
+    BillingRecord.finalize_active_for_resource(parseable_resource)
 
     Semaphore.incr(parseable_resource.servers_dataset.select(:id), "destroy")
     hop_wait_servers_destroyed

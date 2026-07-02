@@ -1,0 +1,37 @@
+<% @page_title = @log_resource.name %>
+
+<%== part(
+  "components/page_header",
+  title: @log_resource.name,
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Monitoring", "#{@project.path}/monitoring"], [@log_resource.name, "#"]]
+) %>
+
+<div class="grid gap-6">
+  <div class="rounded-lg bg-white shadow">
+    <dl class="divide-y divide-gray-200">
+      <% [
+        ["State", @log_resource.state],
+        ["Location", @log_resource.location.ui_name],
+        ["Endpoint", @log_resource.hostname],
+        ["Retention", "#{ParseableResource::LOG_BUCKET_EXPIRATION_DAYS} days"],
+        ["Storage", "#{@log_resource.target_storage_size_gib} GB"],
+        ["VM size", @log_resource.target_vm_size],
+        ["Billing", @log_resource.active_billing_records_dataset.any? ? "Active" : "Pending"]
+      ].each do |label, value| %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500"><%= label %></dt>
+          <dd class="mt-1 break-all text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= value %></dd>
+        </div>
+      <% end %>
+    </dl>
+  </div>
+
+  <div class="flex flex-wrap gap-3 rounded-lg bg-white p-6 shadow">
+    <% if @log_resource.state == "failed" || !@log_resource.ready? %>
+      <% form(action: "#{@project.path}#{@log_resource.path}/retry", method: :post) do %>
+        <%== part("components/form/submit_button", text: "Retry Logs", icon: "hero-arrow-path") %>
+      <% end %>
+    <% end %>
+    <%== part("components/delete_button", url: "#{@project.path}#{@log_resource.path}", text: "Delete Logs") %>
+  </div>
+</div>
