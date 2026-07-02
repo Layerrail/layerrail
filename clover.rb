@@ -225,10 +225,10 @@ class Clover < Roda
 
     if Config.intercom_messenger_enabled
       style_sources << :unsafe_inline
-      img_sources.concat(["https://static.intercomassets.com", "https://js.intercomcdn.com", "https://downloads.intercomcdn.com", "https://uploads.intercomusercontent.com", "https://gifs.intercomcdn.com"])
-      script_sources.concat(["https://widget.intercom.io", "https://js.intercomcdn.com"])
-      frame_sources.concat(["https://intercom-sheets.com", "https://www.intercom-reporting.com"])
-      connect_sources.concat([Config.intercom_api_base, "https://api-ping.intercom.io", "https://nexus-websocket-a.intercom.io", "wss://nexus-websocket-a.intercom.io", "https://uploads.intercomcdn.com", "https://uploads.intercomusercontent.com"])
+      img_sources.concat(["blob:", "data:", "https://static.intercomassets.com", "https://js.intercomcdn.com", "https://downloads.intercomcdn.com", "https://uploads.intercomusercontent.com", "https://gifs.intercomcdn.com", "https://video-messages.intercomcdn.com", "https://messenger-apps.intercom.io", "https://*.intercom-attachments-1.com", "https://*.intercom-attachments-2.com", "https://*.intercom-attachments-3.com", "https://*.intercom-attachments-4.com", "https://*.intercom-attachments-5.com", "https://*.intercom-attachments-6.com", "https://*.intercom-attachments-7.com", "https://*.intercom-attachments-8.com", "https://*.intercom-attachments-9.com"])
+      script_sources.concat(["https://app.intercom.io", "https://widget.intercom.io", "https://js.intercomcdn.com"])
+      frame_sources.concat(["https://intercom-sheets.com", "https://www.intercom-reporting.com", "https://www.youtube.com", "https://player.vimeo.com", "https://fast.wistia.net"])
+      connect_sources.concat([Config.intercom_api_base, "https://via.intercom.io", "https://api.intercom.io", "https://api-iam.intercom.io", "https://api-ping.intercom.io", "https://*.intercom-messenger.com", "wss://*.intercom-messenger.com", "https://nexus-websocket-a.intercom.io", "wss://nexus-websocket-a.intercom.io", "https://nexus-websocket-b.intercom.io", "wss://nexus-websocket-b.intercom.io", "https://uploads.intercomcdn.com", "https://uploads.intercomusercontent.com"])
     end
 
     csp.style_src(*style_sources)

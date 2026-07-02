@@ -6,7 +6,7 @@
   <script nonce="<%= nonce %>">
     window.intercomSettings = <%== allow_unescaped(JSON.generate(settings)) %>;
     window.LayerRailSupport = window.LayerRailSupport || {};
-    window.LayerRailSupport.open = function(space) {
+    window.LayerRailSupport.open = function(action) {
       if (typeof window.Intercom === "function") {
         try {
           window.Intercom("update", window.intercomSettings);
@@ -14,12 +14,11 @@
           window.Intercom("boot", window.intercomSettings);
         }
 
-        if (space) {
-          try {
-            window.Intercom("showSpace", space);
-          } catch (e) {
-            window.Intercom("show");
-          }
+        if (action === "message") {
+          window.Intercom("show");
+          window.setTimeout(function() {
+            window.Intercom("showNewMessage");
+          }, 100);
         } else {
           window.Intercom("show");
         }
@@ -63,7 +62,7 @@
         var trigger = event.target.closest("[data-intercom-open]");
         if (!trigger) return;
         event.preventDefault();
-        window.LayerRailSupport.open(trigger.getAttribute("data-intercom-space") || "help");
+        window.LayerRailSupport.open(trigger.getAttribute("data-intercom-action") || "message");
       });
     })();
   </script>
