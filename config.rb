@@ -171,6 +171,10 @@ module Config
   optional :minio_service_project_id, uuid
   override :minio_version, "minio_20250723155402.0.0_amd64", string
 
+  # Edge
+  override :edge_service_hostname, "edge.layerrail.com", string
+  override :edge_proxy_hostname, "console.layerrail.com", string
+
   # Parseable
   optional :parseable_service_project_id, uuid
   override :parseable_host_name, "logs.layerrail.com", string

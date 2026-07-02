@@ -52,7 +52,7 @@ class Prog::EdgeServiceNexus < Prog::Base
       name: edge_service.hostname,
       type: "CNAME",
       ttl: 300,
-      content: URI(edge_service.origin_url).host
+      content: Config.edge_proxy_hostname
     )
   end
 
@@ -62,7 +62,7 @@ class Prog::EdgeServiceNexus < Prog::Base
     CloudflareDnsClient.new.delete_record(
       name: edge_service.hostname,
       type: "CNAME",
-      content: URI(edge_service.origin_url).host
+      content: Config.edge_proxy_hostname
     )
   end
 end

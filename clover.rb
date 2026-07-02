@@ -3,6 +3,7 @@
 require_relative "model"
 
 require "committee"
+require "net/http"
 require "roda"
 require "tilt"
 require "tilt/erubi"
@@ -180,13 +181,15 @@ class Clover < Roda
   # :nocov:
 
   plugin :host_routing, scope_predicates: true do |hosts|
-    hosts.register :api, :web, :runtime, :admin
+    hosts.register :api, :web, :runtime, :admin, :edge
     hosts.default :web do |host|
       configured_admin_host = URI(Config.admin_url).host&.downcase
       configured_api_host = Config.api_url && URI(Config.api_url).host&.downcase
       request_host = host.downcase
 
-      if request.path_info.start_with?("/v1/", "/api/") || request_host == configured_api_host || request_host.start_with?("api.")
+      if request_host.end_with?(".#{Config.edge_service_hostname}") || request_host == Config.edge_service_hostname
+        :edge
+      elsif request.path_info.start_with?("/v1/", "/api/") || request_host == configured_api_host || request_host.start_with?("api.")
         :api
       elsif request_host == configured_admin_host || request_host.start_with?("admin.")
         :admin
@@ -1094,7 +1097,54 @@ class Clover < Roda
       next llms_txt_response(filename)
     end
 
-    if api?
+    if edge?
+      edge_service = EdgeService.first(hostname: request.host.downcase, state: "ready")
+      unless edge_service
+        response.status = 404
+        response.content_type = :text
+        next "Edge service not found\n"
+      end
+
+      origin = URI(edge_service.origin_url)
+      proxy_uri = origin.dup
+      origin_path = origin.path.to_s.delete_suffix("/")
+      request_path = request.path_info.to_s
+      proxy_uri.path = "#{origin_path}#{request_path.start_with?("/") ? request_path : "/#{request_path}"}"
+      proxy_uri.query = request.query_string.empty? ? origin.query : [origin.query, request.query_string].compact.join("&")
+
+      proxy_request_class = case request.request_method
+      when "GET" then Net::HTTP::Get
+      when "HEAD" then Net::HTTP::Head
+      when "POST" then Net::HTTP::Post
+      when "PUT" then Net::HTTP::Put
+      when "PATCH" then Net::HTTP::Patch
+      when "DELETE" then Net::HTTP::Delete
+      else Net::HTTP::Get
+      end
+
+      proxy_request = proxy_request_class.new(proxy_uri)
+      env.each do |key, value|
+        next unless key.start_with?("HTTP_")
+        header = key.delete_prefix("HTTP_").split("_").map(&:capitalize).join("-")
+        next if %w[Host Connection Proxy-Connection Upgrade Keep-Alive Transfer-Encoding Te Trailer].include?(header)
+        proxy_request[header] = value
+      end
+      proxy_request["Host"] = origin.host
+      proxy_request["X-Forwarded-Host"] = request.host
+      proxy_request["X-Forwarded-Proto"] = request.scheme
+      proxy_request.body = request.body.read if proxy_request.request_body_permitted?
+
+      proxy_response = Net::HTTP.start(origin.host, origin.port, use_ssl: origin.scheme == "https", open_timeout: 10, read_timeout: 60) do |http|
+        http.request(proxy_request)
+      end
+
+      response.status = proxy_response.code.to_i
+      proxy_response.each_header do |key, value|
+        next if %w[connection proxy-connection upgrade keep-alive transfer-encoding te trailer content-length].include?(key.downcase)
+        response[key] = value
+      end
+      response.write(proxy_response.body.to_s)
+    elsif api?
       r.get "up" do
         health_check_response("api")
       end
