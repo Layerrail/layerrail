@@ -51,8 +51,8 @@ class Clover
           view "bucket/show"
         end
 
-        r.delete true do
-          authorize("Project:view", @project)
+        r.post "delete" do
+          authorize("Project:billing", @project)
           DB.transaction do
             if bucket.state == "failed" && bucket.minio_cluster_id.nil?
               BillingRecord.finalize_active_for_resource(bucket)

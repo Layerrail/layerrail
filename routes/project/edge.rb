@@ -54,7 +54,7 @@ class Clover
           view "edge/show"
         end
 
-        r.delete true do
+        r.post "delete" do
           authorize("Project:billing", @project)
           DB.transaction do
             edge_service.incr_destroy

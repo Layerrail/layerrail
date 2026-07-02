@@ -30,8 +30,6 @@
   <% end %>
 
   <div class="rounded-lg bg-white p-6 shadow">
-    <% form(action: "#{@project.path}#{@edge_service.path}", method: :delete) do %>
-      <%== part("components/form/submit_button", text: "Delete Edge Service", icon: "hero-trash", extra_class: "bg-red-600 hover:bg-red-500") %>
-    <% end %>
+    <%== part("components/delete_button", url: "#{@project.path}#{@edge_service.path}", text: "Delete Edge Service") %>
   </div>
 </div>
