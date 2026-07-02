@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../loader"
+
+project_ubid = ENV.fetch("PROJECT_UBID")
+bucket_name = ENV.fetch("BUCKET_NAME")
+
+project_id = UBID.to_uuid(project_ubid)
+bucket = ObjectBucket.where(project_id:, name: bucket_name).first
+abort "bucket #{bucket_name} not found" unless bucket
+
+zone = DnsZone.ensure_service_zone!(project_id: Config.minio_service_project_id, name: Config.minio_host_name, service: "Object storage")
+cluster = bucket.minio_cluster || MinioCluster
+  .where(project_id: [Config.minio_service_project_id, Config.postgres_service_project_id].compact, location_id: bucket.location_id)
+  .order(project_id: Config.minio_service_project_id)
+  .last
+abort "object storage cluster not found for #{bucket.display_location}" unless cluster
+abort "object storage cluster #{cluster.name} has no DNS URL" unless cluster.url
+
+cluster.servers.each do |server|
+  zone.insert_record(record_name: cluster.hostname, type: "A", ttl: 10, data: server.vm.ip4_string)
+  zone.insert_record(record_name: server.hostname, type: "A", ttl: 10, data: server.vm.ip4_string)
+end
+
+bucket.update(minio_cluster_id: cluster.id, endpoint: cluster.url, state: "creating", last_error: nil)
+
+if bucket.strand
+  bucket.strand.update(label: "start", schedule: Time.now, lease: Time.now - 1000 * 365 * 24 * 60 * 60, exitval: nil)
+else
+  Prog::ObjectBucketNexus.assemble(bucket)
+end
+
+puts JSON.generate(bucket: bucket.name, endpoint: bucket.endpoint, state: bucket.state, cluster: cluster.name, records: cluster.servers.count)
