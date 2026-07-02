@@ -79,10 +79,10 @@ class Prog::ObjectBucketNexus < Prog::Base
   private
 
   def storage_cluster
-    @storage_cluster ||= MinioCluster.where(
-      project_id: [Config.minio_service_project_id, Config.postgres_service_project_id].compact,
-      location_id: object_bucket.location_id,
-    ).order(project_id: Config.minio_service_project_id).last
+    @storage_cluster ||= begin
+      MinioCluster.where(project_id: Config.minio_service_project_id, location_id: object_bucket.location_id).first ||
+        MinioCluster.where(project_id: Config.postgres_service_project_id, location_id: object_bucket.location_id).first
+    end
   end
 
   def bucket_policy
