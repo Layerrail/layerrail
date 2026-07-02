@@ -184,7 +184,11 @@ class Invoice < Sequel::Model
     when "waiting_transfer"
       ["The invoice amount of #{data.total} is pending payment via bank transfer. Please follow the bank transfer instructions at the bottom of the invoice to complete the payment."]
     when "paid"
-      ["The invoice amount of #{data.total} has been paid through Polar."]
+      if content["admin_clearance"]
+        ["The invoice amount of #{data.total} has been cleared by a LayerRail account credit."]
+      else
+        ["The invoice amount of #{data.total} has been paid through Polar."]
+      end
     else
       fail "BUG: unexpected invoice status #{status}"
     end

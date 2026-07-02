@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../model"
+
+project_ubid = ARGV[0] || ENV["PROJECT_UBID"]
+invoice_ubid = ARGV[1] || ENV["INVOICE_UBID"]
+cleared_by = ENV.fetch("CLEARED_BY", ENV.fetch("USER", "layerrail-admin"))
+reason = ENV.fetch("REASON", "Internal LayerRail account credit")
+
+abort "Usage: PROJECT_UBID=<project_ubid> [INVOICE_UBID=<invoice_ubid>] CLEARED_BY=<admin> REASON=<reason> bundle exec ruby bin/clear-project-invoice" if project_ubid.to_s.empty?
+
+project = Project.from_ubid(project_ubid)
+abort "Project not found: #{project_ubid}" unless project
+
+invoice = if invoice_ubid
+  candidate = Invoice.from_ubid(invoice_ubid)
+  candidate if candidate&.project_id == project.id
+else
+  project.invoices_dataset
+    .where(status: "unpaid")
+    .exclude(ubid: "current")
+    .reverse(:begin_time)
+    .first
+end
+
+abort "Invoice not found for project #{project.ubid}" unless invoice
+abort "Invoice #{invoice.ubid} is already #{invoice.status}" unless invoice.status == "unpaid"
+
+content = invoice.content.merge(
+  "admin_clearance" => {
+    "cleared_by" => cleared_by,
+    "reason" => reason,
+    "cleared_at" => Time.now.utc.iso8601,
+    "original_status" => invoice.status,
+    "original_cost" => invoice.cost
+  }
+)
+
+DB.transaction do
+  invoice.update(status: "paid", content:)
+end
+
+invoice.send_success_email
+
+Clog.emit("Invoice cleared by LayerRail admin credit", {
+  invoice_admin_cleared: {
+    project_ubid: project.ubid,
+    invoice_ubid: invoice.ubid,
+    invoice_number: invoice.invoice_number,
+    cost: invoice.cost,
+    cleared_by:,
+    reason:
+  }
+})
+
+puts "Cleared invoice #{invoice.invoice_number} (#{invoice.ubid}) for project #{project.ubid}."
