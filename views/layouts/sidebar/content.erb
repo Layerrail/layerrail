@@ -71,6 +71,13 @@
                 icon: "hero-circle-stack"
               ) %>
             <% end %>
+            <%== part(
+              "layouts/sidebar/item",
+              name: "Backups",
+              url: "#{@project.path}/backups",
+              is_active: request.path.start_with?("#{@project.path}/backups"),
+              icon: "hero-archive-box"
+            ) %>
             <% if Config.ai_inference_enabled %>
               <%== part(
                 "layouts/sidebar/item",
