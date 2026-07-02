@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative "../model"
+require_relative "../loader"
 
 project_ubid = ARGV[0] || ENV["PROJECT_UBID"]
 invoice_ubid = ARGV[1] || ENV["INVOICE_UBID"]
