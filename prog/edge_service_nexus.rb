@@ -52,7 +52,8 @@ class Prog::EdgeServiceNexus < Prog::Base
       name: edge_service.hostname,
       type: "CNAME",
       ttl: 300,
-      content: Config.edge_proxy_hostname
+      content: Config.edge_proxy_hostname,
+      proxied: true
     )
   end
 

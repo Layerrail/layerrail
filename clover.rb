@@ -1097,7 +1097,17 @@ class Clover < Roda
       next llms_txt_response(filename)
     end
 
-    if edge?
+    if request.get? && request.path_info == "/edge-runtime/resolve"
+      edge_service = EdgeService.first(hostname: typecast_params.nonempty_str!("host").downcase, state: "ready")
+      response.json = true
+      response.status = 404 unless edge_service
+      next(edge_service ? {
+        origin_url: edge_service.origin_url,
+        cache_mode: edge_service.cache_mode,
+        tls_mode: edge_service.tls_mode,
+        hostname: edge_service.hostname
+      } : {error: "not_found"})
+    elsif edge?
       edge_service = EdgeService.first(hostname: request.host.downcase, state: "ready")
       unless edge_service
         response.status = 404

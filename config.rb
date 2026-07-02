@@ -174,6 +174,7 @@ module Config
   # Edge
   override :edge_service_hostname, "edge.layerrail.com", string
   override :edge_proxy_hostname, "layerrail-web.onrender.com", string
+  override :edge_worker_name, "layerrail-edge-proxy", string
 
   # Parseable
   optional :parseable_service_project_id, uuid

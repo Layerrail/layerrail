@@ -279,6 +279,30 @@ class AzureClient
     request(:delete, resource_path(resource_group, "Microsoft.Compute/disks", name), api_version: DISK_API, expected_status: [200, 202, 204, 404])
   end
 
+  def create_empty_disk(resource_group:, region:, name:, size_gib:, tags: {})
+    request(:put, resource_path(resource_group, "Microsoft.Compute/disks", name), api_version: DISK_API, body: {
+      location: region,
+      tags:,
+      sku: {name: "Premium_LRS"},
+      properties: {
+        creationData: {
+          createOption: "Empty",
+        },
+        diskSizeGB: size_gib,
+      },
+    }, expected_status: [200, 201, 202])
+  end
+
+  def update_virtual_machine_data_disks(resource_group:, name:, data_disks:)
+    request(:patch, resource_path(resource_group, "Microsoft.Compute/virtualMachines", name), api_version: COMPUTE_API, body: {
+      properties: {
+        storageProfile: {
+          dataDisks: data_disks,
+        },
+      },
+    }, expected_status: [200, 202])
+  end
+
   def create_disk_from_snapshot(resource_group:, region:, name:, snapshot_id:, size_gib:, tags: {})
     request(:put, resource_path(resource_group, "Microsoft.Compute/disks", name), api_version: DISK_API, body: {
       location: region,

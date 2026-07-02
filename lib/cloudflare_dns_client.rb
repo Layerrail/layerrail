@@ -37,7 +37,7 @@ class CloudflareDnsClient
     end
   end
 
-  def upsert_record(name:, type:, ttl:, content:)
+  def upsert_record(name:, type:, ttl:, content:, proxied: nil)
     name = normalize_name(name)
     content = normalize_content(type, content)
     existing_records = list_records(type:, name:)
@@ -47,7 +47,7 @@ class CloudflareDnsClient
       name:,
       content:,
       ttl: cloudflare_ttl(ttl),
-      proxied: proxied_record?(type),
+      proxied: proxied.nil? ? proxied_record?(type) : proxied,
     }
 
     if matches.empty?

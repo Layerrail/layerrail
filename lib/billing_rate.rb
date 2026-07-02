@@ -52,6 +52,8 @@ class BillingRate
       "#{amount.to_i} GiB Storage for Virtual Machine"
     when "ObjectBucketStorage"
       "#{amount.to_i} GiB Object Storage"
+    when "BlockVolumeStorage"
+      "#{amount.to_i} GiB Block Volume"
     when "VmBackupStorage"
       "#{amount.to_i} GiB Backup Snapshot Storage"
     when "EdgeService"
