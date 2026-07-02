@@ -30,7 +30,7 @@ class KubernetesNode < Sequel::Model
       if available_result[:available]
         "up"
       else
-        Clog.emit("Mesh connectivity issue detected", {kubernetes_node_mesh: {ubid:, **available_result}})
+        Clog.emit("Mesh connectivity degraded", {kubernetes_node_mesh: summarized_mesh_availability(available_result).merge(ubid:)})
         "down"
       end
     rescue IOError, Errno::ECONNRESET
@@ -92,6 +92,15 @@ class KubernetesNode < Sequel::Model
     else
       {available: true}
     end
+  end
+
+  def summarized_mesh_availability(availability)
+    {
+      available: availability[:available],
+      unreachable_pods: availability[:unreachable_pods] || [],
+      unreachable_external: availability[:unreachable_external] || [],
+      api_unavailable: !!availability[:api_error],
+    }
   end
 
   def billing_records

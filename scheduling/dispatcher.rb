@@ -516,6 +516,12 @@ class Scheduling::Dispatcher
   rescue Strand::RunError => ex
     # Already logged by Strand#run
     ex.cause
+  rescue Sequel::SerializationFailure => ex
+    # PostgreSQL can abort one of two concurrent strand workers when they touch
+    # the same coordination rows. The lease retry/backoff already handles this,
+    # so keep it out of error logs unless it persists as a real strand failure.
+    sleep(0.2 + rand * 0.8)
+    ex
   rescue Sequel::DatabaseDisconnectError, Sequel::DatabaseConnectionError => disconnect
     # Do not swallow disconnect errors, as that would break the current
     # strand thread. These errors must be raised so that handle_disconnects

@@ -272,7 +272,7 @@ SQL
       end
 
       ext
-    rescue RunError, InternalError, Sequel::DatabaseDisconnectError, Sequel::DatabaseConnectionError
+    rescue RunError, InternalError, Sequel::DatabaseDisconnectError, Sequel::DatabaseConnectionError, Sequel::SerializationFailure
       raise
     rescue => ex
       # Do not wrap errors in pry

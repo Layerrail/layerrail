@@ -68,11 +68,10 @@ class Prog::Kubernetes::KubernetesNodeNexus < Prog::Base
     end
 
     Clog.emit("KubernetesNode is unavailable due to mesh connectivity issues", {
-      kubernetes_node_unavailable: {
+      kubernetes_node_unavailable: kubernetes_node.summarized_mesh_availability(availability).merge(
         ubid: kubernetes_node.ubid,
         name: kubernetes_node.name,
-        availability:,
-      },
+      ),
     })
     register_deadline("wait", 15 * 60)
     nap 15
