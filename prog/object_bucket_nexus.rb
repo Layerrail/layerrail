@@ -80,7 +80,8 @@ class Prog::ObjectBucketNexus < Prog::Base
 
   def storage_cluster
     @storage_cluster ||= begin
-      MinioCluster.where(project_id: Config.minio_service_project_id, location_id: object_bucket.location_id).first ||
+      object_bucket.minio_cluster ||
+        MinioCluster.where(project_id: Config.minio_service_project_id, location_id: object_bucket.location_id).first ||
         MinioCluster.where(project_id: Config.postgres_service_project_id, location_id: object_bucket.location_id).first
     end
   end
