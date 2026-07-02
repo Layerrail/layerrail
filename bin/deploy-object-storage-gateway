@@ -8,6 +8,7 @@ require "uri"
 
 account_id = Config.cloudflare_account_id || ENV["CLOUDFLARE_ACCOUNT_ID"]
 api_token = Config.cloudflare_api_token || Config.cloudflare_dns_api_token || ENV["CLOUDFLARE_API_TOKEN"] || ENV["CLOUDFLARE_DNS_API_TOKEN"]
+dns_api_token = Config.cloudflare_dns_api_token || Config.cloudflare_api_token || ENV["CLOUDFLARE_DNS_API_TOKEN"] || ENV["CLOUDFLARE_API_TOKEN"]
 zone_id = Config.cloudflare_dns_zone_id || ENV["CLOUDFLARE_DNS_ZONE_ID"]
 script_name = Config.object_storage_worker_name
 public_domain = Config.object_storage_public_domain
@@ -72,6 +73,7 @@ conn = Excon.new("https://api.cloudflare.com", headers: {"Authorization" => "Bea
 conn.put(path: "/client/v4/accounts/#{account_id}/workers/scripts/#{script_name}", body: worker, expects: [200, 201])
 
 routes_conn = Excon.new("https://api.cloudflare.com", headers: {"Authorization" => "Bearer #{api_token}", "Content-Type" => "application/json"})
+dns_conn = Excon.new("https://api.cloudflare.com", headers: {"Authorization" => "Bearer #{dns_api_token}", "Content-Type" => "application/json"})
 routes_path = "/client/v4/zones/#{zone_id}/workers/routes"
 routes = JSON.parse(routes_conn.get(path: "#{routes_path}?per_page=100", expects: 200).body).fetch("result")
 
@@ -87,12 +89,12 @@ regions.each do |region|
   end
 
   dns_name = "*.s3.#{region}.#{public_domain}"
-  dns_records = JSON.parse(routes_conn.get(path: "#{dns_records_path}?type=CNAME&name=#{URI.encode_www_form_component(dns_name)}", expects: 200).body).fetch("result")
+  dns_records = JSON.parse(dns_conn.get(path: "#{dns_records_path}?type=CNAME&name=#{URI.encode_www_form_component(dns_name)}", expects: 200).body).fetch("result")
   dns_payload = {type: "CNAME", name: dns_name, content: proxy_hostname, ttl: 1, proxied: true}.to_json
   if dns_records.empty?
-    routes_conn.post(path: dns_records_path, body: dns_payload, expects: [200, 201])
+    dns_conn.post(path: dns_records_path, body: dns_payload, expects: [200, 201])
   else
-    routes_conn.patch(path: "#{dns_records_path}/#{dns_records.first.fetch("id")}", body: dns_payload, expects: [200, 201])
+    dns_conn.patch(path: "#{dns_records_path}/#{dns_records.first.fetch("id")}", body: dns_payload, expects: [200, 201])
   end
 end
 
