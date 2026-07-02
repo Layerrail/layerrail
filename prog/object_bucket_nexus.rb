@@ -8,6 +8,7 @@ class Prog::ObjectBucketNexus < Prog::Base
   end
 
   label def start
+    pop "object bucket missing" unless object_bucket
     when_destroy_set? { hop_destroy }
     cluster = storage_cluster
     unless cluster

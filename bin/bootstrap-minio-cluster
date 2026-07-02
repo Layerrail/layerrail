@@ -1,0 +1,39 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../loader"
+
+project_id = ENV["MINIO_BOOTSTRAP_PROJECT_ID"] || Config.minio_service_project_id
+abort "MINIO_SERVICE_PROJECT_ID is missing" unless project_id
+
+cluster_name = ENV.fetch("MINIO_BOOTSTRAP_CLUSTER_NAME", "object-storage-eastus2")
+location_id = ENV.fetch("MINIO_BOOTSTRAP_LOCATION_ID")
+admin_user = ENV.fetch("MINIO_BOOTSTRAP_ADMIN_USER", "minio_admin")
+storage_size_gib = Integer(ENV.fetch("MINIO_BOOTSTRAP_STORAGE_GIB", "100"))
+pool_count = Integer(ENV.fetch("MINIO_BOOTSTRAP_POOL_COUNT", "1"))
+server_count = Integer(ENV.fetch("MINIO_BOOTSTRAP_SERVER_COUNT", "1"))
+drive_count = Integer(ENV.fetch("MINIO_BOOTSTRAP_DRIVE_COUNT", "1"))
+vm_size = ENV.fetch("MINIO_BOOTSTRAP_VM_SIZE", "standard-2")
+
+Project[project_id] || Project.create_with_id(project_id, name: ENV.fetch("MINIO_BOOTSTRAP_PROJECT_NAME", "LayerRail Object Storage"))
+
+existing = MinioCluster.where(project_id:, location_id:).first
+if existing
+  puts "MinIO cluster already exists: #{existing.ubid} #{existing.name}"
+  exit 0
+end
+
+strand = Prog::Minio::MinioClusterNexus.assemble(
+  project_id,
+  cluster_name,
+  location_id,
+  admin_user,
+  storage_size_gib,
+  pool_count,
+  server_count,
+  drive_count,
+  vm_size
+)
+
+cluster = strand.subject
+puts "Started MinIO cluster: #{cluster.ubid} #{cluster.name}"
