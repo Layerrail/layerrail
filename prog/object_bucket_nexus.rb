@@ -25,6 +25,7 @@ class Prog::ObjectBucketNexus < Prog::Base
   rescue => ex
     if ex.message.include?("BucketAlreadyOwnedByYou") || ex.message.include?("Your previous request to create the named bucket succeeded")
       object_bucket.update(state: "ready", last_error: nil)
+      object_bucket.ensure_billing_record!
       hop_wait
     end
 
@@ -33,6 +34,7 @@ class Prog::ObjectBucketNexus < Prog::Base
     nap 30 * 60
   else
     object_bucket.update(state: "ready", last_error: nil)
+    object_bucket.ensure_billing_record!
     hop_wait
   end
 
@@ -54,6 +56,7 @@ class Prog::ObjectBucketNexus < Prog::Base
       admin_client.admin_remove_user(object_bucket.access_key)
       admin_client.admin_policy_remove(object_bucket.ubid)
     end
+    BillingRecord.finalize_active_for_resource(object_bucket)
     object_bucket.destroy
     pop "object bucket destroyed"
   rescue => ex

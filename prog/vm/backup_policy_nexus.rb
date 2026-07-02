@@ -32,6 +32,7 @@ class Prog::Vm::BackupPolicyNexus < Prog::Base
     begin
       refs = create_provider_snapshot(snapshot)
       snapshot.update(state: "available", snapshot_refs: Sequel.pg_jsonb_wrap(refs), completed_at: Time.now)
+      vm_backup_policy.sync_billing_record!
       vm_backup_policy.update(last_backup_at: Time.now, last_error: nil)
       vm_backup_policy.schedule_next!(from: Time.now)
     rescue => ex
@@ -59,6 +60,7 @@ class Prog::Vm::BackupPolicyNexus < Prog::Base
 
   label def destroy
     vm_backup_policy.snapshots.each { delete_snapshot(it) }
+    BillingRecord.finalize_active_for_resource(vm_backup_policy)
     vm_backup_policy.destroy
     pop "vm backup policy destroyed"
   end
@@ -129,6 +131,7 @@ class Prog::Vm::BackupPolicyNexus < Prog::Base
       end
     end
     snapshot.destroy
+    vm_backup_policy.sync_billing_record! unless vm_backup_policy.destroy_set?
   rescue AzureAPIError => ex
     return if ex.not_found?
     raise unless ex.retryable_delete?

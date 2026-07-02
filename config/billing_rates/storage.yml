@@ -1,0 +1,2 @@
+- { id: 72ef0ec2-cd86-4c2d-9f1a-d2045cff92ba, resource_type: ObjectBucketStorage, resource_family: standard, location: global, unit_price: 0.0000004630, billed_by: duration, active_from: 2026-07-02T00:00:00Z, byoc: false }
+- { id: 0d7fe1f1-29e5-4efb-b146-80e91f2f315d, resource_type: VmBackupStorage,     resource_family: standard, location: global, unit_price: 0.0000009260, billed_by: duration, active_from: 2026-07-02T00:00:00Z, byoc: false }

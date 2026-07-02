@@ -23,6 +23,26 @@ class ObjectBucket < Sequel::Model
     state == "ready"
   end
 
+  def billing_amount_gib
+    1
+  end
+
+  def ensure_billing_record!
+    rate = BillingRate.from_resource_properties("ObjectBucketStorage", "standard", "global")
+    fail "Object bucket billing rate is not configured" unless rate
+
+    return if BillingRecord.where(resource_id: id, billing_rate_id: rate.fetch("id")).active.first
+
+    BillingRecord.create(
+      project_id: project_id,
+      resource_id: id,
+      resource_name: name,
+      amount: billing_amount_gib,
+      billing_rate_id: rate.fetch("id"),
+      resource_tags: Sequel.pg_jsonb_wrap({"service" => "object-bucket", "bucket_name" => bucket_name})
+    )
+  end
+
   def self.generate_bucket_name(project, name)
     "#{project.ubid}-#{name}".downcase.gsub(/[^a-z0-9-]/, "-")[0, 63].delete_suffix("-")
   end
