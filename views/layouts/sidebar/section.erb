@@ -1,0 +1,15 @@
+<%# locals: (title: nil, items:) %>
+
+<% visible_items = items.select { it[:has_permission] != false } %>
+<% unless visible_items.empty? %>
+  <li>
+    <% if title %>
+      <div class="text-xs font-semibold leading-6 text-layerrail-200"><%= title %></div>
+    <% end %>
+    <ul role="list" class="-mx-2 <%= title ? "mt-2" : "" %> space-y-1">
+      <% visible_items.each do |item| %>
+        <%== part("layouts/sidebar/item", **item) %>
+      <% end %>
+    </ul>
+  </li>
+<% end %>

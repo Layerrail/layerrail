@@ -6,211 +6,180 @@
   </div>
   <nav class="flex flex-1 flex-col">
     <ul role="list" class="flex flex-1 flex-col gap-y-7">
-      <li>
-        <ul role="list" class="-mx-2 space-y-1">
-          <% if @project_permissions %>
-            <%== part(
-              "layouts/sidebar/item",
-              name: "Dashboard",
-              url: "#{@project.path}/dashboard",
-              is_active: request.path.start_with?("#{@project.path}/dashboard"),
-              icon: "hero-home"
-            ) %>
-            <%== part(
-              "layouts/sidebar/item",
-              name: "Compute",
-              url: "#{@project.path}/vm",
-              is_active: request.path.start_with?("#{@project.path}/vm"),
-              icon: "hero-server-stack"
-            ) %>
-            <% if Config.deploy_enabled %>
-              <%== part(
-                "layouts/sidebar/item",
-                name: "Deploy",
-                url: "#{@project.path}/deploy",
-                is_active: request.path.start_with?("#{@project.path}/deploy"),
-                icon: "hero-cloud-arrow-up"
-              ) %>
-            <% end %>
-            <% if Config.game_vps_enabled %>
-              <%== part(
-                "layouts/sidebar/item",
-                name: "Game VPS",
-                url: "#{@project.path}/game-vps",
-                is_active: request.path.start_with?("#{@project.path}/game-vps"),
-                icon: "hugeicons-game-controller-03"
-              ) %>
-            <% end %>
-            <%== part(
-              "layouts/sidebar/item",
-              name: "Networking",
-              url: "#{@project.path}/private-subnet",
-              is_active:
-                request.path.start_with?("#{@project.path}/private-subnet") ||
-                request.path.start_with?("#{@project.path}/firewall") ||
-                request.path.start_with?("#{@project.path}/load-balancer"),
-              icon: "hero-globe-alt"
-            ) %>
-            <% if Config.domains_enabled %>
-              <%== part(
-                "layouts/sidebar/item",
-                name: "Domains",
-                url: "https://cloud.layerrail.online",
-                is_active: false,
-                icon: "hero-map-pin",
-                target: "_blank",
-                rel: "noopener noreferrer"
-              ) %>
-            <% end %>
-            <% if Config.postgres_enabled %>
-              <%== part(
-                "layouts/sidebar/item",
-                name: "PostgreSQL",
-                url: "#{@project.path}/postgres",
-                is_active: request.path.start_with?("#{@project.path}/postgres"),
-                icon: "hero-circle-stack"
-              ) %>
-            <% end %>
-            <%== part(
-              "layouts/sidebar/item",
-              name: "Backups",
-              url: "#{@project.path}/backups",
-              is_active: request.path.start_with?("#{@project.path}/backups"),
-              icon: "hero-server-stack"
-            ) %>
-            <%== part(
-              "layouts/sidebar/item",
-              name: "Volumes",
-              url: "#{@project.path}/volume",
-              is_active: request.path.start_with?("#{@project.path}/volume"),
-              icon: "hero-circle-stack"
-            ) %>
-            <%== part(
-              "layouts/sidebar/item",
-              name: "Buckets",
-              url: "#{@project.path}/bucket",
-              is_active: request.path.start_with?("#{@project.path}/bucket"),
-              icon: "hero-circle-stack"
-            ) %>
-            <% if Config.ai_inference_enabled %>
-              <%== part(
-                "layouts/sidebar/item",
-                name: "AI Models",
-                url: "#{@project.path}/inference-endpoint",
-                is_active: request.path.start_with?("#{@project.path}/inference") || request.path.start_with?("#{@project.path}/ai-app"),
-                icon: "tabler-robot"
-              ) %>
-            <% end %>
-            <% if Config.kubernetes_enabled %>
-              <%== part(
-                "layouts/sidebar/item",
-                name: "Kubernetes",
-                url: "#{@project.path}/kubernetes-cluster",
-                is_active: request.path.start_with?("#{@project.path}/kubernetes-cluster"),
-                icon: "kubernetes"
-              ) %>
-            <% end %>
-            <%== part(
-              "layouts/sidebar/item",
-              name: "Web Shell",
-              url: "#{@project.path}/cli",
-              is_active: request.path.start_with?("#{@project.path}/cli"),
-              icon: "shell"
-            ) %>
-          <% else %>
-            <%== part(
-              "layouts/sidebar/item",
-              name: "My Account",
-              url: "/account",
-              is_active: request.path.start_with?("/account"),
-              icon: "hero-user"
-            ) %>
-            <%== part(
-              "layouts/sidebar/item",
-              name: "Projects",
-              url: "/project",
-              is_active: request.path.start_with?("/project"),
-              icon: "hero-folder-open"
-            ) %>
-          <% end %>
-        </ul>
-      </li>
-      <% if @project_permissions && has_project_permission(["Project:user", "Project:billing", "Project:view", "Project:viewaccess", "Project:token"]) %>
-        <li>
-          <div class="text-xs font-semibold leading-6 text-layerrail-200">Workspace Details</div>
-          <ul role="list" class="-mx-2 mt-2 space-y-1">
-            <% if has_project_permission("Project:user")
-                   users_url = "#{@project.path}/user"
-                   users_label = "Users"
-                 elsif has_project_permission("Project:viewaccess")
-                   users_url = "#{@project.path}/user/access-control"
-                   users_label = "Access Control"
-                 end
+      <% if @project_permissions %>
+        <%== part("layouts/sidebar/section", items: [
+          {
+            name: "Dashboard",
+            url: "#{@project.path}/dashboard",
+            is_active: request.path.start_with?("#{@project.path}/dashboard"),
+            icon: "hero-home",
+          },
+          {
+            name: "Compute",
+            url: "#{@project.path}/vm",
+            is_active: request.path.start_with?("#{@project.path}/vm"),
+            icon: "hero-server-stack",
+          },
+          {
+            name: "Networking",
+            url: "#{@project.path}/private-subnet",
+            is_active:
+              request.path.start_with?("#{@project.path}/private-subnet") ||
+              request.path.start_with?("#{@project.path}/firewall") ||
+              request.path.start_with?("#{@project.path}/load-balancer"),
+            icon: "hero-globe-alt",
+          },
+        ]) %>
 
-               if users_url %>
-                 <%== part(
-                    "layouts/sidebar/item",
-                    name: users_label,
-                    url: users_url,
-                    is_active: request.path.start_with?("#{@project.path}/user"),
-                    icon: "hero-users",
-                  ) %>
-               <% end %>
-            <%== part(
-              "layouts/sidebar/item",
-              name: "Tokens",
-              url: "#{@project.path}/token",
-              is_active: request.path.start_with?("#{@project.path}/token"),
-              icon: "hero-key",
-              has_permission: has_project_permission("Project:token")
-            ) %>
-            <% if Config.stripe_secret_key || Config.polar_verification_product_id || Config.polar_checkout_product_id %>
-              <%== part(
-                "layouts/sidebar/item",
-                name: "Billing",
-                url: "#{@project.path}/billing",
-                is_active: request.path.start_with?("#{@project.path}/billing"),
-                icon: "hero-banknotes",
-                html_id: "billing-icon",
-                has_permission: has_project_permission("Project:billing")
-              ) %>
-            <% end %>
-            <%== part(
-              "layouts/sidebar/item",
-              name: "Settings",
-              url: @project.path,
-              is_active: request.path == @project.path,
-              icon: "hero-cog-6-tooth",
-              has_permission: has_project_permission("Project:view")
-            ) %>
-            <% if @project.get_ff_private_locations %>
-              <%== part(
-                "layouts/sidebar/item",
-                name: "AWS Regions",
-                url: "#{@project.path}/private-location",
-                is_active: request.path.start_with?("#{@project.path}/private-location"),
-                icon: "hero-map-pin",
-                has_permission: true
-              ) %>
-            <% end %>
-          </ul>
-        </li>
+        <%== part("layouts/sidebar/section", title: "Platform", items: [
+          {
+            name: "Kubernetes",
+            url: "#{@project.path}/kubernetes-cluster",
+            is_active: request.path.start_with?("#{@project.path}/kubernetes-cluster"),
+            icon: "kubernetes",
+            has_permission: Config.kubernetes_enabled,
+          },
+          {
+            name: "Game VPS",
+            url: "#{@project.path}/game-vps",
+            is_active: request.path.start_with?("#{@project.path}/game-vps"),
+            icon: "hugeicons-game-controller-03",
+            has_permission: Config.game_vps_enabled,
+          },
+          {
+            name: "Deploy",
+            url: "#{@project.path}/deploy",
+            is_active: request.path.start_with?("#{@project.path}/deploy"),
+            icon: "hero-cloud-arrow-up",
+            has_permission: Config.deploy_enabled,
+          },
+        ]) %>
+
+        <%== part("layouts/sidebar/section", title: "Data", items: [
+          {
+            name: "PostgreSQL",
+            url: "#{@project.path}/postgres",
+            is_active: request.path.start_with?("#{@project.path}/postgres"),
+            icon: "hero-circle-stack",
+            has_permission: Config.postgres_enabled,
+          },
+          {
+            name: "Buckets",
+            url: "#{@project.path}/bucket",
+            is_active: request.path.start_with?("#{@project.path}/bucket"),
+            icon: "hero-circle-stack",
+          },
+          {
+            name: "Volumes",
+            url: "#{@project.path}/volume",
+            is_active: request.path.start_with?("#{@project.path}/volume"),
+            icon: "hero-circle-stack",
+          },
+          {
+            name: "Backups",
+            url: "#{@project.path}/backups",
+            is_active: request.path.start_with?("#{@project.path}/backups"),
+            icon: "hero-server-stack",
+          },
+        ]) %>
+
+        <%== part("layouts/sidebar/section", title: "Services", items: [
+          {
+            name: "AI Models",
+            url: "#{@project.path}/inference-endpoint",
+            is_active: request.path.start_with?("#{@project.path}/inference") || request.path.start_with?("#{@project.path}/ai-app"),
+            icon: "tabler-robot",
+            has_permission: Config.ai_inference_enabled,
+          },
+          {
+            name: "Domains",
+            url: "https://cloud.layerrail.online",
+            is_active: false,
+            icon: "hero-map-pin",
+            target: "_blank",
+            rel: "noopener noreferrer",
+            has_permission: Config.domains_enabled,
+          },
+          {
+            name: "Web Shell",
+            url: "#{@project.path}/cli",
+            is_active: request.path.start_with?("#{@project.path}/cli"),
+            icon: "shell",
+          },
+        ]) %>
+      <% else %>
+        <%== part("layouts/sidebar/section", items: [
+          {
+            name: "My Account",
+            url: "/account",
+            is_active: request.path.start_with?("/account"),
+            icon: "hero-user",
+          },
+          {
+            name: "Projects",
+            url: "/project",
+            is_active: request.path.start_with?("/project"),
+            icon: "hero-folder-open",
+          },
+        ]) %>
+      <% end %>
+      <% if @project_permissions && has_project_permission(["Project:user", "Project:billing", "Project:view", "Project:viewaccess", "Project:token"]) %>
+        <% if has_project_permission("Project:user")
+             users_url = "#{@project.path}/user"
+             users_label = "Users"
+           elsif has_project_permission("Project:viewaccess")
+             users_url = "#{@project.path}/user/access-control"
+             users_label = "Access Control"
+           end %>
+        <%== part("layouts/sidebar/section", title: "Workspace", items: [
+          {
+            name: users_label,
+            url: users_url,
+            is_active: request.path.start_with?("#{@project.path}/user"),
+            icon: "hero-users",
+            has_permission: !!users_url,
+          },
+          {
+            name: "Tokens",
+            url: "#{@project.path}/token",
+            is_active: request.path.start_with?("#{@project.path}/token"),
+            icon: "hero-key",
+            has_permission: has_project_permission("Project:token"),
+          },
+          {
+            name: "Billing",
+            url: "#{@project.path}/billing",
+            is_active: request.path.start_with?("#{@project.path}/billing"),
+            icon: "hero-banknotes",
+            html_id: "billing-icon",
+            has_permission: has_project_permission("Project:billing") && (Config.stripe_secret_key || Config.polar_verification_product_id || Config.polar_checkout_product_id),
+          },
+          {
+            name: "Settings",
+            url: @project.path,
+            is_active: request.path == @project.path,
+            icon: "hero-cog-6-tooth",
+            has_permission: has_project_permission("Project:view"),
+          },
+          {
+            name: "AWS Regions",
+            url: "#{@project.path}/private-location",
+            is_active: request.path.start_with?("#{@project.path}/private-location"),
+            icon: "hero-map-pin",
+            has_permission: @project.get_ff_private_locations,
+          },
+        ]) %>
       <% end %>
       <% if @project_permissions && has_project_permission("Project:github") && Config.github_app_name %>
-        <li>
-          <div class="text-xs font-semibold leading-6 text-layerrail-200">Integrations</div>
-          <ul role="list" class="-mx-2 mt-2 space-y-1">
-            <%== part(
-              "layouts/sidebar/item",
-              name: "GitHub Runners",
-              url: "#{@project.path}/github",
-              is_active: request.path.start_with?("#{@project.path}/github"),
-              icon: "github",
-              has_permission: has_project_permission("Project:github")
-            ) %>
-          </ul>
-        </li>
-
+        <%== part("layouts/sidebar/section", title: "Integrations", items: [
+          {
+            name: "GitHub Runners",
+            url: "#{@project.path}/github",
+            is_active: request.path.start_with?("#{@project.path}/github"),
+            icon: "github",
+            has_permission: has_project_permission("Project:github"),
+          },
+        ]) %>
       <% end %>
       <li class="mt-auto space-y-3">
         <% if intercom_messenger_enabled? %>
