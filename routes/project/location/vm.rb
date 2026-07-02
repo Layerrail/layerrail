@@ -95,6 +95,32 @@ class Clover
         r.redirect vm, "/backups"
       end
 
+      r.post web?, "backups", :id, "restore" do |snapshot_id|
+        authorize("Vm:create", @project)
+        handle_validation_failure("vm/show") { @page = "backups" }
+
+        snapshot = vm.vm_backup_snapshots_dataset.with_pk(snapshot_id)
+        check_found_object(snapshot)
+        raise_web_error("Only available snapshots can be restored.") unless snapshot.available?
+        raise_web_error("Only Azure VM snapshots can be restored right now.") unless snapshot.provider == "azure"
+
+        restore_name = typecast_params.nonempty_str("restore_name") || "#{vm.name}-restore"
+        Validation.validate_name(restore_name)
+        raise_web_error("A VM named #{restore_name} already exists in this location.") if @project.vms_dataset.where(location_id: vm.location_id, name: restore_name).count.positive?
+
+        DB.transaction do
+          Strand.create(
+            prog: "Vm::BackupPolicyNexus",
+            label: "restore_snapshot",
+            stack: [{subject_id: vm.vm_backup_policy.id, snapshot_id: snapshot.id, restore_name:}]
+          )
+          audit_log(vm, "restore_backup")
+        end
+
+        flash["notice"] = "Restore started. A new VM named #{restore_name} will be created from the selected backup."
+        r.redirect vm, "/backups"
+      end
+
       r.post %w[restart start stop] do |action|
         authorize("Vm:edit", vm)
         handle_validation_failure("vm/show") { @page = "settings" }

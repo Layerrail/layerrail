@@ -74,6 +74,7 @@ provider_supported = @vm.backup_provider == "azure"
             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Disks</th>
             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Size</th>
             <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Expires</th>
+            <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Restore</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-200 bg-white">
@@ -84,6 +85,23 @@ provider_supported = @vm.backup_provider == "azure"
               <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500"><%= Array(snapshot.snapshot_refs).count %></td>
               <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500"><%= snapshot.size_gib %> GiB</td>
               <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500"><%= snapshot.expires_at.utc.strftime("%b %-d, %Y") %></td>
+              <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
+                <% if snapshot.restore_vm_id %>
+                  <span class="text-gray-500">Restored</span>
+                <% elsif snapshot.available? && snapshot.provider == "azure" %>
+                  <% form(action: "#{path(@vm)}/backups/#{snapshot.id}/restore", method: :post) do %>
+                    <input
+                      type="text"
+                      name="restore_name"
+                      value="<%= "#{@vm.name}-restore" %>"
+                      class="mr-2 inline-block w-44 rounded-md border-0 py-1.5 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-layerrail-600"
+                    >
+                    <%== part("components/form/submit_button", text: "Restore") %>
+                  <% end %>
+                <% else %>
+                  <span class="text-gray-400">Unavailable</span>
+                <% end %>
+              </td>
             </tr>
           <% end %>
         </tbody>

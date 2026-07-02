@@ -43,6 +43,20 @@ class Prog::Vm::BackupPolicyNexus < Prog::Base
     hop_wait
   end
 
+  label def restore_snapshot
+    snapshot = VmBackupSnapshot[frame.fetch("snapshot_id")] || fail("VM backup snapshot not found")
+    fail "Snapshot is not available" unless snapshot.available?
+    fail "Only Azure VM snapshot restore is supported right now" unless snapshot.provider == "azure"
+
+    restored_vm = restore_azure_snapshot(snapshot)
+    snapshot.update(restore_vm_id: restored_vm.id, restored_at: Time.now)
+    pop "vm restored from backup"
+  rescue => ex
+    snapshot&.update(error_message: ex.message)
+    Clog.emit("VM backup restore failed", Util.exception_to_hash(ex).merge(snapshot_id: frame["snapshot_id"], vm_id: vm.id))
+    raise
+  end
+
   label def destroy
     vm_backup_policy.snapshots.each { delete_snapshot(it) }
     vm_backup_policy.destroy
@@ -122,9 +136,72 @@ class Prog::Vm::BackupPolicyNexus < Prog::Base
     nap 30
   end
 
+  def restore_azure_snapshot(snapshot)
+    source_instance = vm.azure_instance || fail("Azure instance metadata is missing")
+    restored_name = frame.fetch("restore_name")
+    source_refs = Array(snapshot.snapshot_refs)
+    restored_disks = source_refs.map do |ref|
+      disk_name = azure_restore_disk_name(snapshot.id, ref.fetch("role"), ref["lun"])
+      disk = azure.create_disk_from_snapshot(
+        resource_group: source_instance.resource_group,
+        region: source_instance.region,
+        name: disk_name,
+        snapshot_id: ref.fetch("provider_snapshot_id"),
+        size_gib: ref["size_gib"].to_i,
+        tags: {
+          "LayerRail" => "true",
+          "Project" => vm.project.ubid,
+          "SourceVM" => vm.ubid,
+          "SourceBackup" => snapshot.id.to_s,
+        },
+      )
+      {
+        "role" => ref.fetch("role"),
+        "lun" => ref["lun"],
+        "name" => disk_name,
+        "id" => disk.fetch("id"),
+        "size_gib" => ref["size_gib"].to_i,
+      }
+    end
+
+    storage_volumes = source_refs.sort_by { |ref| [ref["role"] == "os" ? 0 : 1, ref["lun"].to_i] }.map do |ref|
+      {size_gib: ref["size_gib"].to_i, boot: ref["role"] == "os"}
+    end
+
+    restored_vm = nil
+    DB.transaction do
+      restored_vm = Prog::Vm::Nexus.assemble(
+        vm.public_key,
+        vm.project_id,
+        name: restored_name,
+        size: vm.display_size,
+        unix_user: vm.unix_user,
+        location_id: vm.location_id,
+        boot_image: vm.boot_image,
+        private_subnet_id: vm.nic.private_subnet_id,
+        storage_volumes:,
+        enable_ip4: vm.ip4_enabled,
+        arch: vm.arch,
+      ).subject
+      restored_vm.strand.stack[0]["restored_disks"] = restored_disks
+      restored_vm.strand.save_changes
+    end
+    restored_vm
+  rescue AzureAPIError => ex
+    raise if !ex.retryable_create?
+
+    Clog.emit("Azure VM backup restore waiting on disk create", {azure_vm_restore_waiting: {vm_ubid: vm.ubid, status: ex.status, body: ex.body}})
+    nap 30
+  end
+
   def azure_snapshot_name(snapshot_id, role, lun)
     suffix = [snapshot_id, role, lun].compact.join("-")
     "lr-snap-#{vm.ubid}-#{suffix}".downcase.gsub(/[^a-z0-9-]/, "-")[0, 80].delete_suffix("-")
+  end
+
+  def azure_restore_disk_name(snapshot_id, role, lun)
+    suffix = [snapshot_id, role, lun, "restore"].compact.join("-")
+    "lr-disk-#{vm.ubid}-#{suffix}".downcase.gsub(/[^a-z0-9-]/, "-")[0, 80].delete_suffix("-")
   end
 
   def azure

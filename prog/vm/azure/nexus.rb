@@ -40,20 +40,7 @@ class Prog::Vm::Azure::Nexus < Prog::Base
       private_ip: nic.private_ipv4_address,
       tags:,
     )
-    client.create_virtual_machine(
-      resource_group:,
-      region: azure_region,
-      name: vm_name,
-      vm_size: azure_vm_size,
-      image: azure_image,
-      username: vm.unix_user,
-      ssh_key: vm.public_key,
-      custom_data: Base64.strict_encode64(cloud_init),
-      nic_id: nic_resource.fetch("id"),
-      os_disk_name: os_disk_name,
-      data_disks: data_disks_payload,
-      tags:,
-    )
+    create_virtual_machine(nic_resource.fetch("id"))
     AzureInstance.create_with_id(
       vm,
       resource_group:,
@@ -275,7 +262,7 @@ class Prog::Vm::Azure::Nexus < Prog::Base
   end
 
   def os_disk_name
-    @os_disk_name ||= azure_name("osdisk", 60)
+    @os_disk_name ||= restored_disks? ? restored_os_disk.fetch("name") : azure_name("osdisk", 60)
   end
 
   def azure_name(prefix, max_length)
@@ -305,10 +292,11 @@ class Prog::Vm::Azure::Nexus < Prog::Base
   def create_azure_storage_volume_records
     data_volumes.each_with_index do |volume, index|
       next if AzureStorageVolume[volume.id]
+      restored_disk = restored_disks? && frame.fetch("restored_disks").find { it["role"] == "data" && it["lun"].to_i == index }
 
       az = AzureStorageVolume.create_with_id(
         volume,
-        disk_name: azure_name("disk-#{volume.disk_index}", 60),
+        disk_name: restored_disk&.fetch("name") || azure_name("disk-#{volume.disk_index}", 60),
         lun: index,
         device_path: "/dev/disk/azure/data/by-lun/#{index}",
       )
@@ -330,6 +318,59 @@ class Prog::Vm::Azure::Nexus < Prog::Base
         }
       end,
     }
+  end
+
+  def create_virtual_machine(nic_id)
+    if restored_disks?
+      client.create_virtual_machine_from_disks(
+        resource_group:,
+        region: azure_region,
+        name: vm_name,
+        vm_size: azure_vm_size,
+        username: vm.unix_user,
+        ssh_key: vm.public_key,
+        custom_data: Base64.strict_encode64(cloud_init),
+        nic_id:,
+        os_disk_name:,
+        os_disk_id: restored_os_disk.fetch("id"),
+        data_disks: restored_data_disks_payload,
+        tags:,
+      )
+    else
+      client.create_virtual_machine(
+        resource_group:,
+        region: azure_region,
+        name: vm_name,
+        vm_size: azure_vm_size,
+        image: azure_image,
+        username: vm.unix_user,
+        ssh_key: vm.public_key,
+        custom_data: Base64.strict_encode64(cloud_init),
+        nic_id:,
+        os_disk_name:,
+        data_disks: data_disks_payload,
+        tags:,
+      )
+    end
+  end
+
+  def restored_disks?
+    frame["restored_disks"] && !frame["restored_disks"].empty?
+  end
+
+  def restored_os_disk
+    @restored_os_disk ||= frame.fetch("restored_disks").find { it["role"] == "os" } || fail("Restored OS disk is missing")
+  end
+
+  def restored_data_disks_payload
+    frame.fetch("restored_disks").select { it["role"] == "data" }.map do |disk|
+      {
+        lun: disk.fetch("lun"),
+        name: disk.fetch("name"),
+        createOption: "Attach",
+        managedDisk: {id: disk.fetch("id")},
+      }
+    end
   end
 
   def cloud_init

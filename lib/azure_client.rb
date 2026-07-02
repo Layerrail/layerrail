@@ -179,6 +179,39 @@ class AzureClient
     }, expected_status: [200, 201, 202])
   end
 
+  def create_virtual_machine_from_disks(resource_group:, region:, name:, vm_size:, username:, ssh_key:, custom_data:, nic_id:, os_disk_name:, os_disk_id:, data_disks:, tags: {})
+    request(:put, resource_path(resource_group, "Microsoft.Compute/virtualMachines", name), api_version: COMPUTE_API, body: {
+      location: region,
+      tags:,
+      properties: {
+        hardwareProfile: {vmSize: vm_size},
+        osProfile: {
+          computerName: name,
+          adminUsername: username,
+          customData: custom_data,
+          linuxConfiguration: {
+            disablePasswordAuthentication: true,
+            ssh: {
+              publicKeys: [{path: "/home/#{username}/.ssh/authorized_keys", keyData: ssh_key}],
+            },
+          },
+        },
+        storageProfile: {
+          osDisk: {
+            name: os_disk_name,
+            createOption: "Attach",
+            managedDisk: {id: os_disk_id},
+            osType: "Linux",
+          },
+          dataDisks: data_disks,
+        },
+        networkProfile: {
+          networkInterfaces: [{id: nic_id, properties: {primary: true}}],
+        },
+      },
+    }, expected_status: [200, 201, 202])
+  end
+
   def create_windows_virtual_machine(resource_group:, region:, name:, computer_name:, vm_size:, image:, username:, password:, nic_id:, os_disk_name:, os_disk_size_gib:, tags: {})
     request(:put, resource_path(resource_group, "Microsoft.Compute/virtualMachines", name), api_version: COMPUTE_API, body: {
       location: region,
@@ -244,6 +277,20 @@ class AzureClient
 
   def delete_disk(resource_group, name)
     request(:delete, resource_path(resource_group, "Microsoft.Compute/disks", name), api_version: DISK_API, expected_status: [200, 202, 204, 404])
+  end
+
+  def create_disk_from_snapshot(resource_group:, region:, name:, snapshot_id:, size_gib:, tags: {})
+    request(:put, resource_path(resource_group, "Microsoft.Compute/disks", name), api_version: DISK_API, body: {
+      location: region,
+      tags:,
+      properties: {
+        creationData: {
+          createOption: "Copy",
+          sourceResourceId: snapshot_id,
+        },
+        diskSizeGB: size_gib,
+      },
+    }, expected_status: [200, 201, 202])
   end
 
   def create_snapshot(resource_group:, region:, name:, source_disk_id:, tags: {})
