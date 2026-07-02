@@ -29,7 +29,12 @@
     <div class="rounded-md bg-red-50 p-4 text-sm text-red-700"><%= @edge_service.last_error %></div>
   <% end %>
 
-  <div class="rounded-lg bg-white p-6 shadow">
+  <div class="flex flex-wrap gap-3 rounded-lg bg-white p-6 shadow">
+    <% if @edge_service.state == "failed" %>
+      <% form(action: "#{@project.path}#{@edge_service.path}/retry", method: :post) do %>
+        <%== part("components/form/submit_button", text: "Retry Edge Service", icon: "hero-arrow-path") %>
+      <% end %>
+    <% end %>
     <%== part("components/delete_button", url: "#{@project.path}#{@edge_service.path}", text: "Delete Edge Service") %>
   </div>
 </div>

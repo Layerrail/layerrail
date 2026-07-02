@@ -54,6 +54,21 @@ class Clover
           view "edge/show"
         end
 
+        r.post "retry" do
+          authorize("Project:billing", @project)
+          DB.transaction do
+            edge_service.update(state: "creating", last_error: nil, updated_at: Time.now)
+            if (strand = edge_service.strand)
+              strand.update(label: "start", lease: Time.now - 1000 * 365 * 24 * 60 * 60, schedule: Time.now, try: 0)
+            else
+              Prog::EdgeServiceNexus.assemble(edge_service)
+            end
+            audit_log(edge_service, "retry")
+          end
+          flash["notice"] = "Edge service #{edge_service.name} retry started."
+          r.redirect "#{@project.path}#{edge_service.path}"
+        end
+
         r.post "delete" do
           authorize("Project:billing", @project)
           DB.transaction do
