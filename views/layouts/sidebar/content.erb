@@ -78,6 +78,13 @@
               is_active: request.path.start_with?("#{@project.path}/backups"),
               icon: "hero-archive-box"
             ) %>
+            <%== part(
+              "layouts/sidebar/item",
+              name: "Buckets",
+              url: "#{@project.path}/bucket",
+              is_active: request.path.start_with?("#{@project.path}/bucket"),
+              icon: "hero-circle-stack"
+            ) %>
             <% if Config.ai_inference_enabled %>
               <%== part(
                 "layouts/sidebar/item",

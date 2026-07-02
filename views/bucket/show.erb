@@ -1,0 +1,38 @@
+<% @page_title = @bucket.name %>
+
+<%== part(
+  "components/page_header",
+  title: @bucket.name,
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Buckets", "#{@project.path}/bucket"], [@bucket.name, "#"]]
+) %>
+
+<div class="grid gap-6">
+  <div class="rounded-lg bg-white shadow">
+    <dl class="divide-y divide-gray-200">
+      <% [
+        ["State", @bucket.state],
+        ["Location", @bucket.display_location],
+        ["Endpoint", @bucket.endpoint || "Provisioning"],
+        ["Bucket", @bucket.bucket_name],
+        ["Access key", @bucket.access_key],
+        ["Secret key", @bucket.secret_key],
+        ["S3 URL", @bucket.endpoint ? "s3://#{@bucket.bucket_name}" : "Provisioning"]
+      ].each do |label, value| %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500"><%= label %></dt>
+          <dd class="mt-1 break-all text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= value %></dd>
+        </div>
+      <% end %>
+    </dl>
+  </div>
+
+  <% if @bucket.last_error %>
+    <div class="rounded-md bg-red-50 p-4 text-sm text-red-700"><%= @bucket.last_error %></div>
+  <% end %>
+
+  <div class="rounded-lg bg-white p-6 shadow">
+    <% form(action: "#{@project.path}#{@bucket.path}", method: :delete) do %>
+      <%== part("components/form/submit_button", text: "Delete Bucket", icon: "hero-trash", extra_class: "bg-red-600 hover:bg-red-500") %>
+    <% end %>
+  </div>
+</div>

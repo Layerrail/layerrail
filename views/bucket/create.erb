@@ -1,0 +1,26 @@
+<% @page_title = "Create Bucket" %>
+
+<%== part(
+  "components/page_header",
+  title: "Create Bucket",
+  breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Buckets", "#{@project.path}/bucket"], ["Create", "#"]]
+) %>
+
+<div class="rounded-lg bg-white p-6 shadow">
+  <% form(action: "#{@project.path}/bucket", method: :post) do %>
+    <div class="grid gap-6 md:grid-cols-2">
+      <%== part("components/form/text", label: "Bucket name", name: "name", attributes: {placeholder: "assets", required: true}) %>
+      <div>
+        <label class="block text-sm font-medium leading-6 text-gray-900">Location</label>
+        <select name="location_id" class="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-layerrail-600 sm:text-sm sm:leading-6">
+          <% @locations.each do |location| %>
+            <option value="<%= location.id %>"><%= location.ui_name %></option>
+          <% end %>
+        </select>
+      </div>
+    </div>
+    <div class="mt-6">
+      <%== part("components/form/submit_button", text: "Create Bucket", icon: "hero-plus") %>
+    </div>
+  <% end %>
+</div>

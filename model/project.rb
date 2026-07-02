@@ -14,6 +14,7 @@ class Project < Sequel::Model
 
   many_to_many :accounts, join_table: :access_tag, right_key: :hyper_tag_id
   many_to_many :nics, join_table: :private_subnet, right_key: :id, right_primary_key: :private_subnet_id, read_only: true
+  one_to_many :object_buckets
   one_to_many :vms, read_only: true
   one_to_many :deploy_apps, read_only: true
   one_to_many :game_vpses, class: :GameVps, read_only: true
