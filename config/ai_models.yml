@@ -307,7 +307,8 @@
     reasoning: true
     gated: true
     preview: true
-    pricing: {input: 21.0, output: 105.0}
+    unavailable_reason: Azure Foundry does not list this model as deployable for the current resource yet.
+    pricing: {input: 35.0, output: 175.0}
 - id: azure-deepseek-r1
   model_name: DeepSeek-V4-Flash
   enabled: true
