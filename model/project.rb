@@ -19,6 +19,10 @@ class Project < Sequel::Model
   one_to_many :parseable_resources
   one_to_many :victoria_metrics_resources
   one_to_many :edge_services
+  one_to_many :uptime_checks
+  one_to_many :monitoring_alerts
+  one_to_many :monitoring_incidents
+  one_to_many :monitoring_notification_channels
   one_to_many :vms, read_only: true
   one_to_many :deploy_apps, read_only: true
   one_to_many :game_vpses, class: :GameVps, read_only: true
@@ -39,7 +43,7 @@ class Project < Sequel::Model
   one_to_many :machine_image_stores, read_only: true
   one_to_many :ssh_public_keys, order: :name, remover: nil, clearer: nil
 
-  RESOURCE_ASSOCIATIONS = %i[vms deploy_apps game_vpses minio_clusters private_subnets postgres_resources firewalls load_balancers object_buckets block_volumes parseable_resources victoria_metrics_resources edge_services domain_registrations domain_bundles kubernetes_clusters github_runners ai_agents ai_knowledge_bases]
+  RESOURCE_ASSOCIATIONS = %i[vms deploy_apps game_vpses minio_clusters private_subnets postgres_resources firewalls load_balancers object_buckets block_volumes parseable_resources victoria_metrics_resources edge_services uptime_checks monitoring_alerts monitoring_incidents monitoring_notification_channels domain_registrations domain_bundles kubernetes_clusters github_runners ai_agents ai_knowledge_bases]
   RESOURCE_ASSOCIATION_DATASET_METHODS = RESOURCE_ASSOCIATIONS.map { :"#{it}_dataset" }
 
   one_to_many :invoices, order: Sequel.desc(:created_at), read_only: true

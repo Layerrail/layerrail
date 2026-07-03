@@ -2,3 +2,5 @@
 - { id: 27dcfa66-491e-4dc2-ae79-c4c943703e17, resource_type: MonitoringMetricsSamples, resource_family: standard, location: global, unit_price: 0.0000694444, billed_by: duration, active_from: 2026-07-02T00:00:00Z, byoc: false }
 - { id: 845ec84b-a5ff-4b7a-bd0b-3fc863103cc4, resource_type: MonitoringLogsStorage, resource_family: standard, location: global, unit_price: 0.0000009260, billed_by: duration, active_from: 2026-07-02T00:00:00Z, byoc: false }
 - { id: 856f20dc-aaee-41c2-9e21-9e97000a8f37, resource_type: MonitoringLogsIngest, resource_family: standard, location: global, unit_price: 0.0000694444, billed_by: duration, active_from: 2026-07-02T00:00:00Z, byoc: false }
+- { id: 53be3ddd-3ddd-4e4d-b4b8-5273479003a1, resource_type: MonitoringUptimeCheck, resource_family: standard, location: global, unit_price: 0.0000231481, billed_by: duration, active_from: 2026-07-03T00:00:00Z, byoc: false }
+- { id: 3ca2e0fd-b900-4372-85a7-82d9d800458d, resource_type: MonitoringAlert, resource_family: standard, location: global, unit_price: 0.0000115741, billed_by: duration, active_from: 2026-07-03T00:00:00Z, byoc: false }

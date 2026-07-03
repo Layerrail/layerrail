@@ -1,0 +1,38 @@
+<% @page_title = @incident.title %>
+
+<%== part("components/page_header", title: @incident.title, breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Monitoring", "#{@project.path}/monitoring"], ["Incident", "#"]]) %>
+
+<div class="grid gap-6">
+  <div class="rounded-lg bg-white shadow">
+    <dl class="divide-y divide-gray-200">
+      <% [
+        ["Status", @incident.status],
+        ["Severity", @incident.severity],
+        ["Message", @incident.message],
+        ["Uptime check", @incident.uptime_check&.name || "None"],
+        ["Alert", @incident.monitoring_alert&.name || "None"],
+        ["Opened", @incident.opened_at],
+        ["Acknowledged", @incident.acknowledged_at || "Not acknowledged"],
+        ["Resolved", @incident.resolved_at || "Not resolved"]
+      ].each do |label, value| %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500"><%= label %></dt>
+          <dd class="mt-1 break-all text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= value %></dd>
+        </div>
+      <% end %>
+    </dl>
+  </div>
+
+  <% unless @incident.resolved? %>
+    <div class="flex flex-wrap gap-3 rounded-lg bg-white p-6 shadow">
+      <% unless @incident.acknowledged? %>
+        <% form(action: "#{@project.path}#{@incident.path}/acknowledge", method: :post) do %>
+          <%== part("components/form/submit_button", text: "Acknowledge", icon: "hero-check") %>
+        <% end %>
+      <% end %>
+      <% form(action: "#{@project.path}#{@incident.path}/resolve", method: :post) do %>
+        <%== part("components/form/submit_button", text: "Resolve", icon: "hero-check-circle") %>
+      <% end %>
+    </div>
+  <% end %>
+</div>

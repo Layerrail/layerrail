@@ -1,0 +1,32 @@
+<% @page_title = @channel.name %>
+
+<%== part("components/page_header", title: @channel.name, breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Monitoring", "#{@project.path}/monitoring"], [@channel.name, "#"]]) %>
+
+<div class="grid gap-6">
+  <div class="rounded-lg bg-white shadow">
+    <dl class="divide-y divide-gray-200">
+      <% [
+        ["Type", @channel.display_kind],
+        ["Target", @channel.target],
+        ["Status", @channel.enabled ? "enabled" : "disabled"],
+        ["Last tested", @channel.last_tested_at || "Never"],
+        ["Last error", @channel.last_error || "None"]
+      ].each do |label, value| %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500"><%= label %></dt>
+          <dd class="mt-1 break-all text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= value %></dd>
+        </div>
+      <% end %>
+    </dl>
+  </div>
+
+  <div class="flex flex-wrap gap-3 rounded-lg bg-white p-6 shadow">
+    <% form(action: "#{@project.path}#{@channel.path}/test", method: :post) do %>
+      <%== part("components/form/submit_button", text: "Send Test", icon: "hero-paper-airplane") %>
+    <% end %>
+    <% form(action: "#{@project.path}#{@channel.path}/toggle", method: :post) do %>
+      <%== part("components/form/submit_button", text: @channel.enabled ? "Disable" : "Enable", icon: "hero-power") %>
+    <% end %>
+    <%== part("components/delete_button", url: "#{@project.path}#{@channel.path}", text: "Delete Channel") %>
+  </div>
+</div>

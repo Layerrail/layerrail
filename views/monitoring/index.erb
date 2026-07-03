@@ -5,78 +5,136 @@
   title: "Monitoring",
   breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Monitoring", "#"]],
   right_items: [
-    part("components/button", text: "Create Metrics", link: "#{@project.path}/monitoring/metrics/create", icon: "hero-chart-pie"),
-    part("components/button", text: "Create Logs", link: "#{@project.path}/monitoring/logs/create", icon: "hero-document-text")
+    part("components/button", text: "Uptime Check", link: "#{@project.path}/monitoring/uptime/create", icon: "hero-signal"),
+    part("components/button", text: "Alert Rule", link: "#{@project.path}/monitoring/alerts/create", icon: "hero-bell-alert"),
+    part("components/button", text: "Channel", link: "#{@project.path}/monitoring/notification-channels/create", icon: "hero-paper-airplane")
   ]
 ) %>
 
 <div class="grid gap-6">
-  <div class="grid gap-4 lg:grid-cols-3">
-    <div class="rounded-lg bg-white p-5 shadow">
-      <p class="text-sm font-medium text-gray-500">Metrics backends</p>
-      <p class="mt-2 text-3xl font-semibold text-gray-950"><%= @metrics_resources.count %></p>
-    </div>
-    <div class="rounded-lg bg-white p-5 shadow">
-      <p class="text-sm font-medium text-gray-500">Log backends</p>
-      <p class="mt-2 text-3xl font-semibold text-gray-950"><%= @log_resources.count %></p>
-    </div>
-    <div class="rounded-lg bg-white p-5 shadow">
-      <p class="text-sm font-medium text-gray-500">Ready services</p>
-      <p class="mt-2 text-3xl font-semibold text-gray-950"><%= (@metrics_resources + @log_resources).count(&:ready?) %></p>
-    </div>
+  <div class="grid gap-4 lg:grid-cols-6">
+    <% [
+      ["Uptime", @uptime_checks.count, "#{@uptime_checks.count { it.state == "up" }} passing"],
+      ["Open incidents", @incidents.count { it.status != "resolved" }, "needs action"],
+      ["Alerts", @alerts.count, "#{@alerts.count(&:enabled)} enabled"],
+      ["Channels", @channels.count, "#{@channels.count(&:enabled)} enabled"],
+      ["Metrics", @metrics_resources.count, "#{@metrics_resources.count(&:ready?)} ready"],
+      ["Logs", @log_resources.count, "#{@log_resources.count(&:ready?)} ready"]
+    ].each do |label, value, note| %>
+      <div class="rounded-lg bg-white p-5 shadow">
+        <p class="text-sm font-medium text-gray-500"><%= label %></p>
+        <p class="mt-2 text-3xl font-semibold text-gray-950"><%= value %></p>
+        <p class="mt-1 text-xs text-gray-500"><%= note %></p>
+      </div>
+    <% end %>
   </div>
 
   <div class="rounded-lg bg-white shadow">
-    <div class="border-b border-gray-200 px-6 py-4">
-      <h2 class="text-base font-semibold text-gray-950">Metrics</h2>
+    <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+      <h2 class="text-base font-semibold text-gray-950">Uptime checks</h2>
+      <%== part("components/button", text: "Create", link: "#{@project.path}/monitoring/uptime/create", icon: "hero-plus") %>
     </div>
-    <% if @metrics_resources.empty? %>
-      <div class="px-6 py-10 text-sm text-gray-500">No metrics backend yet.</div>
+    <% if @uptime_checks.empty? %>
+      <div class="px-6 py-10 text-sm text-gray-500">No uptime checks yet.</div>
     <% else %>
-      <%== part(
-        "components/table_card",
-        headers: ["Name", "Location", "Endpoint", "Storage", "State"],
-        allow_wrap: true,
-        rows: @metrics_resources.map do |resource|
-          [
-            [
-              [resource.name, {link: "#{@project.path}#{resource.path}"}],
-              [resource.location.ui_name],
-              [resource.hostname],
-              ["#{resource.target_storage_size_gib} GB"],
-              [resource.state]
-            ],
-            {id: "metrics-#{resource.ubid}"}
-          ]
-        end
-      ) %>
+      <%== part("components/table_card", headers: ["Name", "Target", "State", "Last check", "Latency"], allow_wrap: true, rows: @uptime_checks.map { |check|
+        [[
+          [check.name, {link: "#{@project.path}#{check.path}"}],
+          [check.target_url],
+          [check.state],
+          [check.last_checked_at || "Never"],
+          [check.last_latency_ms ? "#{check.last_latency_ms} ms" : "Not measured"]
+        ], {id: "uptime-#{check.ubid}"}]
+      }) %>
     <% end %>
   </div>
 
   <div class="rounded-lg bg-white shadow">
     <div class="border-b border-gray-200 px-6 py-4">
-      <h2 class="text-base font-semibold text-gray-950">Logs</h2>
+      <h2 class="text-base font-semibold text-gray-950">Incidents</h2>
     </div>
-    <% if @log_resources.empty? %>
-      <div class="px-6 py-10 text-sm text-gray-500">No logs backend yet.</div>
+    <% if @incidents.empty? %>
+      <div class="px-6 py-10 text-sm text-gray-500">No incidents recorded.</div>
     <% else %>
-      <%== part(
-        "components/table_card",
-        headers: ["Name", "Location", "Endpoint", "Retention", "State"],
-        allow_wrap: true,
-        rows: @log_resources.map do |resource|
-          [
-            [
-              [resource.name, {link: "#{@project.path}#{resource.path}"}],
-              [resource.location.ui_name],
-              [resource.hostname],
-              ["#{ParseableResource::LOG_BUCKET_EXPIRATION_DAYS} days"],
-              [resource.state]
-            ],
-            {id: "logs-#{resource.ubid}"}
-          ]
-        end
-      ) %>
+      <%== part("components/table_card", headers: ["Incident", "Severity", "Status", "Opened", "Source"], allow_wrap: true, rows: @incidents.map { |incident|
+        [[
+          [incident.title, {link: "#{@project.path}#{incident.path}"}],
+          [incident.severity],
+          [incident.status],
+          [incident.opened_at],
+          [incident.uptime_check&.name || incident.monitoring_alert&.name || "Monitoring"]
+        ], {id: "incident-#{incident.ubid}"}]
+      }) %>
     <% end %>
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-2">
+    <div class="rounded-lg bg-white shadow">
+      <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+        <h2 class="text-base font-semibold text-gray-950">Alert rules</h2>
+        <%== part("components/button", text: "Create", link: "#{@project.path}/monitoring/alerts/create", icon: "hero-plus") %>
+      </div>
+      <% if @alerts.empty? %>
+        <div class="px-6 py-10 text-sm text-gray-500">No alert rules yet.</div>
+      <% else %>
+        <%== part("components/table_card", headers: ["Name", "Condition", "Channel", "State"], allow_wrap: true, rows: @alerts.map { |alert|
+          [[
+            [alert.name, {link: "#{@project.path}#{alert.path}"}],
+            [alert.display_condition],
+            [alert.notification_channel&.name || "None"],
+            [alert.enabled ? "enabled" : "disabled"]
+          ], {id: "alert-#{alert.ubid}"}]
+        }) %>
+      <% end %>
+    </div>
+
+    <div class="rounded-lg bg-white shadow">
+      <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+        <h2 class="text-base font-semibold text-gray-950">Notification channels</h2>
+        <%== part("components/button", text: "Create", link: "#{@project.path}/monitoring/notification-channels/create", icon: "hero-plus") %>
+      </div>
+      <% if @channels.empty? %>
+        <div class="px-6 py-10 text-sm text-gray-500">No notification channels yet.</div>
+      <% else %>
+        <%== part("components/table_card", headers: ["Name", "Type", "Target", "State"], allow_wrap: true, rows: @channels.map { |channel|
+          [[
+            [channel.name, {link: "#{@project.path}#{channel.path}"}],
+            [channel.display_kind],
+            [channel.target],
+            [channel.enabled ? "enabled" : "disabled"]
+          ], {id: "channel-#{channel.ubid}"}]
+        }) %>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="grid gap-6 xl:grid-cols-2">
+    <div class="rounded-lg bg-white shadow">
+      <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+        <h2 class="text-base font-semibold text-gray-950">Metrics backends</h2>
+        <%== part("components/button", text: "Create", link: "#{@project.path}/monitoring/metrics/create", icon: "hero-plus") %>
+      </div>
+      <% if @metrics_resources.empty? %>
+        <div class="px-6 py-10 text-sm text-gray-500">No metrics backend yet.</div>
+      <% else %>
+        <%== part("components/table_card", headers: ["Name", "Location", "Endpoint", "State"], allow_wrap: true, rows: @metrics_resources.map { |resource|
+          [[[resource.name, {link: "#{@project.path}#{resource.path}"}], [resource.location.ui_name], [resource.hostname], [resource.state]], {id: "metrics-#{resource.ubid}"}]
+        }) %>
+      <% end %>
+    </div>
+
+    <div class="rounded-lg bg-white shadow">
+      <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+        <h2 class="text-base font-semibold text-gray-950">Log backends</h2>
+        <%== part("components/button", text: "Create", link: "#{@project.path}/monitoring/logs/create", icon: "hero-plus") %>
+      </div>
+      <% if @log_resources.empty? %>
+        <div class="px-6 py-10 text-sm text-gray-500">No logs backend yet.</div>
+      <% else %>
+        <%== part("components/table_card", headers: ["Name", "Location", "Endpoint", "State"], allow_wrap: true, rows: @log_resources.map { |resource|
+          [[[resource.name, {link: "#{@project.path}#{resource.path}"}], [resource.location.ui_name], [resource.hostname], [resource.state]], {id: "logs-#{resource.ubid}"}]
+        }) %>
+      <% end %>
+    </div>
   </div>
 </div>

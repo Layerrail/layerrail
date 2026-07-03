@@ -120,6 +120,8 @@ module Prog::MachineImage; end
 
 module Prog::Minio; end
 
+module Prog::Monitoring; end
+
 module Prog::Parseable; end
 
 module Prog::Postgres; end

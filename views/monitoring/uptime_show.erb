@@ -1,0 +1,48 @@
+<% @page_title = @uptime_check.name %>
+
+<%== part("components/page_header", title: @uptime_check.name, breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Monitoring", "#{@project.path}/monitoring"], [@uptime_check.name, "#"]]) %>
+
+<div class="grid gap-6">
+  <div class="rounded-lg bg-white shadow">
+    <dl class="divide-y divide-gray-200">
+      <% [
+        ["State", @uptime_check.state],
+        ["Target", @uptime_check.target_url],
+        ["Method", @uptime_check.method],
+        ["Expected status", @uptime_check.expected_status],
+        ["Interval", "#{@uptime_check.interval_seconds} seconds"],
+        ["Last status", @uptime_check.last_status_code || "Not checked"],
+        ["Latency", @uptime_check.last_latency_ms ? "#{@uptime_check.last_latency_ms} ms" : "Not measured"],
+        ["Last checked", @uptime_check.last_checked_at || "Never"]
+      ].each do |label, value| %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500"><%= label %></dt>
+          <dd class="mt-1 break-all text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= value %></dd>
+        </div>
+      <% end %>
+    </dl>
+  </div>
+
+  <% if @uptime_check.last_error %>
+    <div class="rounded-md bg-red-50 p-4 text-sm text-red-700"><%= @uptime_check.last_error %></div>
+  <% end %>
+
+  <div class="flex flex-wrap gap-3 rounded-lg bg-white p-6 shadow">
+    <% form(action: "#{@project.path}#{@uptime_check.path}/run", method: :post) do %>
+      <%== part("components/form/submit_button", text: "Run Now", icon: "hero-play") %>
+    <% end %>
+    <% form(action: "#{@project.path}#{@uptime_check.path}/#{@uptime_check.enabled ? "pause" : "resume"}", method: :post) do %>
+      <%== part("components/form/submit_button", text: @uptime_check.enabled ? "Pause" : "Resume", icon: @uptime_check.enabled ? "hero-pause" : "hero-play") %>
+    <% end %>
+    <%== part("components/delete_button", url: "#{@project.path}#{@uptime_check.path}", text: "Delete Uptime Check") %>
+  </div>
+
+  <div class="rounded-lg bg-white shadow">
+    <div class="border-b border-gray-200 px-6 py-4"><h2 class="text-base font-semibold text-gray-950">Recent incidents</h2></div>
+    <% if @incidents.empty? %>
+      <div class="px-6 py-10 text-sm text-gray-500">No incidents for this check.</div>
+    <% else %>
+      <%== part("components/table_card", headers: ["Incident", "Severity", "Status", "Opened"], rows: @incidents.map { |incident| [[[incident.title, {link: "#{@project.path}#{incident.path}"}], [incident.severity], [incident.status], [incident.opened_at]], {id: "incident-#{incident.ubid}"}] }) %>
+    <% end %>
+  </div>
+</div>

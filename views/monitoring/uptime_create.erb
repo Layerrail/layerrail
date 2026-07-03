@@ -1,0 +1,25 @@
+<% @page_title = "Create Uptime Check" %>
+
+<%== part("components/page_header", title: "Create Uptime Check", breadcrumbs: [%w[Projects /project], [@project.name, @project.path], ["Monitoring", "#{@project.path}/monitoring"], ["Create", "#"]]) %>
+
+<div class="rounded-lg bg-white p-6 shadow">
+  <% form(action: "#{@project.path}/monitoring/uptime", method: :post) do %>
+    <div class="grid gap-6 md:grid-cols-2">
+      <%== part("components/form/text", label: "Name", name: "name", attributes: {placeholder: "website", required: true}) %>
+      <%== part("components/form/text", label: "Target URL", name: "target_url", attributes: {placeholder: "https://example.com", required: true}) %>
+      <div>
+        <label class="block text-sm font-medium leading-6 text-gray-900">Method</label>
+        <select name="method" class="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-layerrail-600 sm:text-sm sm:leading-6">
+          <option>GET</option>
+          <option>HEAD</option>
+        </select>
+      </div>
+      <%== part("components/form/text", label: "Expected HTTP status", name: "expected_status", attributes: {type: "number", value: 200, min: 100, max: 599, required: true}) %>
+      <%== part("components/form/text", label: "Check interval seconds", name: "interval_seconds", attributes: {type: "number", value: 60, min: 30, max: 86400, required: true}) %>
+      <%== part("components/form/text", label: "Timeout seconds", name: "timeout_seconds", attributes: {type: "number", value: 10, min: 1, max: 60, required: true}) %>
+    </div>
+    <div class="mt-6">
+      <%== part("components/form/submit_button", text: "Create Uptime Check", icon: "hero-plus") %>
+    </div>
+  <% end %>
+</div>
