@@ -23,7 +23,7 @@
 
   <div class="flex flex-wrap gap-3 rounded-lg bg-white p-6 shadow">
     <% form(action: "#{@project.path}#{@alert.path}/toggle", method: :post) do %>
-      <%== part("components/form/submit_button", text: @alert.enabled ? "Disable Alert" : "Enable Alert", icon: "hero-bell-alert") %>
+      <%== part("components/form/submit_button", text: @alert.enabled ? "Disable Alert" : "Enable Alert", icon: "hero-megaphone") %>
     <% end %>
     <%== part("components/delete_button", url: "#{@project.path}#{@alert.path}", text: "Delete Alert") %>
   </div>

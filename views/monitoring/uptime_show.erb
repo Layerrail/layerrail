@@ -29,10 +29,10 @@
 
   <div class="flex flex-wrap gap-3 rounded-lg bg-white p-6 shadow">
     <% form(action: "#{@project.path}#{@uptime_check.path}/run", method: :post) do %>
-      <%== part("components/form/submit_button", text: "Run Now", icon: "hero-play") %>
+      <%== part("components/form/submit_button", text: "Run Now", icon: "hero-arrow-path") %>
     <% end %>
     <% form(action: "#{@project.path}#{@uptime_check.path}/#{@uptime_check.enabled ? "pause" : "resume"}", method: :post) do %>
-      <%== part("components/form/submit_button", text: @uptime_check.enabled ? "Pause" : "Resume", icon: @uptime_check.enabled ? "hero-pause" : "hero-play") %>
+      <%== part("components/form/submit_button", text: @uptime_check.enabled ? "Pause" : "Resume", icon: "hero-cog-6-tooth") %>
     <% end %>
     <%== part("components/delete_button", url: "#{@project.path}#{@uptime_check.path}", text: "Delete Uptime Check") %>
   </div>

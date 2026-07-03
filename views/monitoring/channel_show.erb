@@ -22,10 +22,10 @@
 
   <div class="flex flex-wrap gap-3 rounded-lg bg-white p-6 shadow">
     <% form(action: "#{@project.path}#{@channel.path}/test", method: :post) do %>
-      <%== part("components/form/submit_button", text: "Send Test", icon: "hero-paper-airplane") %>
+      <%== part("components/form/submit_button", text: "Send Test", icon: "hero-envelope") %>
     <% end %>
     <% form(action: "#{@project.path}#{@channel.path}/toggle", method: :post) do %>
-      <%== part("components/form/submit_button", text: @channel.enabled ? "Disable" : "Enable", icon: "hero-power") %>
+      <%== part("components/form/submit_button", text: @channel.enabled ? "Disable" : "Enable", icon: "hero-cog-6-tooth") %>
     <% end %>
     <%== part("components/delete_button", url: "#{@project.path}#{@channel.path}", text: "Delete Channel") %>
   </div>
