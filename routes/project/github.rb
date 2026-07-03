@@ -57,6 +57,12 @@ class Clover
       r.redirect "https://github.com/login/oauth/authorize?#{query}", 302
     end
 
+    @runner_catalog = Github.runner_labels
+      .values
+      .select { |label| label["boot_image"] == "github-ubuntu-2404" && label["name"]&.include?("-ubuntu-2404") }
+      .uniq { |label| label["name"] }
+      .sort_by { |label| [label["family"] == "premium" ? 1 : 0, label["arch"] == "arm64" ? 1 : 0, label["vcpus"]] }
+
     r.on GITHUB_INSTALLATION_NAME_OR_UBID do |installation_name, installation_id|
       installation = if installation_name
         @project.github_installations_dataset.first(name: installation_name)
@@ -126,6 +132,11 @@ class Clover
             .exclude(Sequel[:strand][:prog] => "Github::GithubRunnerNexus", Sequel[:strand][:label] => ["destroy", "wait_vm_destroy"])
             .reverse(Sequel[:github_runner][:created_at])
             .all
+          @repositories = @installation.repositories_dataset.order(:name).all
+          @running_runners = @runners.count { it.workflow_job && it.workflow_job["status"] != "completed" }
+          @ready_runners = @runners.count { it.ready_at && it.workflow_job.nil? }
+          @queued_runners = @runners.count { !it.ready_at && it.strand_label != "wait_concurrency_limit" }
+          @waiting_for_capacity = @runners.count { it.strand_label == "wait_concurrency_limit" || it.strand_label == "apply_custom_label_quota" }
 
           @requested_vcpus = @runners.sum { Github.runner_labels[it.label]["vcpus"] }
           @allocated_vcpus = @runners.sum { it.vm&.allocated_at ? it.vm.vcpus : 0 }
@@ -135,6 +146,8 @@ class Clover
           last_30_day = (date - 29).to_time
           @today_usage = @project.total_github_amount(today_begin, today_end)
           @last_30_usage = @project.total_github_amount(last_30_day, today_end)
+          @cache_entries_count = @installation.cache_entries_dataset.exclude(committed_at: nil).count
+          @cache_bytes = @installation.cache_entries_dataset.exclude(committed_at: nil).sum(:size).to_i
 
           view "github/runner"
         end
