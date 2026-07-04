@@ -39,16 +39,6 @@ class AzureFoundryClient
     [response.status, parse_response_body(response)]
   end
 
-  def chat_completion_stream(deployment, payload, &)
-    @connection.post(
-      path: "/openai/deployments/#{deployment}/chat/completions",
-      query: { "api-version" => @api_version },
-      body: payload.to_json,
-      expects: EXPECTED_STATUSES,
-      response_block: proc { |chunk, _remaining, _total| yield chunk },
-    )
-  end
-
   def anthropic_messages(deployment, payload)
     response = @anthropic_connection.post(
       path: "/anthropic/v1/messages",

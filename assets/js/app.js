@@ -450,7 +450,7 @@ function setupPlayground() {
     });
   }
 
-  function recordUsage(prompt_tokens, completion_tokens, message_id, input_price, output_price) {
+  function recordUsage(prompt_tokens, completion_tokens, message_id, input_price, output_price, uses_free_quota = true) {
     prompt_tokens = Number(prompt_tokens || 0);
     completion_tokens = Number(completion_tokens || 0);
     const cost = estimateCost(prompt_tokens, completion_tokens, input_price, output_price);
@@ -463,7 +463,9 @@ function setupPlayground() {
     session_usage.prompt_tokens += prompt_tokens;
     session_usage.completion_tokens += completion_tokens;
     session_usage.cost += cost;
-    remaining_free_quota = Math.max(remaining_free_quota - total_tokens, 0);
+    if (uses_free_quota) {
+      remaining_free_quota = Math.max(remaining_free_quota - total_tokens, 0);
+    }
     updateUsagePanel();
     updateFreeQuotaDisplay();
   }
@@ -1076,7 +1078,7 @@ function setupPlayground() {
         const rendered = renderInferenceResult(parsed, capability);
         const prompt_tokens = parsed?.usage?.prompt_tokens ?? estimateTokenCount(prompt || request_payload);
         const completion_tokens = parsed?.usage?.completion_tokens ?? (["Text-to-Image", "Text-to-Speech", "Embeddings"].includes(capability) ? 1 : estimateTokenCount(rendered.text || parsed));
-        recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price);
+        recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price, endpoint_provider !== "azure_foundry");
 
         assistant_message.content[0].text = rendered.text;
         $assistant_message_container.html(rendered.html);
@@ -1089,7 +1091,7 @@ function setupPlayground() {
         content = extractTextGenerationResponse(parsed);
         const prompt_tokens = usage.prompt_tokens ?? usage.input_tokens ?? estimateTokenCount(request_payload);
         const completion_tokens = usage.completion_tokens ?? usage.output_tokens ?? estimateTokenCount(content);
-        recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price);
+        recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price, endpoint_provider !== "azure_foundry");
 
         assistant_message.content[0].text = content;
         const rendered_response = DOMPurify.sanitize(marked.parse(content));
@@ -1124,7 +1126,7 @@ function setupPlayground() {
           const prompt_tokens = parsedLine?.usage?.prompt_tokens;
           const completion_tokens = parsedLine?.usage?.completion_tokens;
           if (prompt_tokens !== undefined && completion_tokens !== undefined) {
-            recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price);
+            recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price, endpoint_provider !== "azure_foundry");
           }
           const new_content = parsedLine?.choices?.[0]?.delta?.content;
           const new_reasoning_content = parsedLine?.choices?.[0]?.delta?.reasoning_content ?? parsedLine?.choices?.[0]?.delta?.reasoning;

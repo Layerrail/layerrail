@@ -153,12 +153,8 @@ class Clover
     deployment = model.tags["deployment"] || model.model_name
     payload["model"] = deployment
 
-    if payload["stream"]
-      fail CloverError.new(400, "InvalidRequest", "Streaming is not supported for Claude models on Azure AI Foundry.") if azure_foundry_anthropic_model?(model)
-
-      stream_azure_foundry_ai_request(api_key, model, deployment, payload)
-    end
-
+    # Azure AI Foundry does not support streaming responses.
+    payload.delete("stream")
     payload.delete("stream_options")
     status, body, served_model = azure_foundry_chat_completion_with_fallback(model, deployment, payload)
     response.status = status
@@ -645,35 +641,6 @@ class Clover
     request.halt [200, response.headers, body]
   end
 
-  def stream_azure_foundry_ai_request(api_key, model, deployment, payload)
-    response.json = false
-    response.status = 200
-    response["Content-Type"] = "text/event-stream"
-    response["Cache-Control"] = "no-cache, no-transform"
-    response["X-Accel-Buffering"] = "no"
-
-    prompt_tokens = estimate_inference_tokens(cloudflare_request_text({}, payload))
-    completion_text = +""
-    usage = {}
-    body = Enumerator.new do |stream|
-      AzureFoundryClient.new.chat_completion_stream(deployment, payload) do |chunk|
-        stream << chunk
-        cloudflare_stream_events(chunk).each do |event|
-          usage = event["usage"] if event["usage"].is_a?(Hash)
-          completion_text << event.dig("choices", 0, "delta", "content").to_s
-        end
-      end
-    ensure
-      completion_tokens = (usage["completion_tokens"] || usage["output_tokens"]).to_i
-      completion_tokens = estimate_inference_tokens(completion_text) if completion_tokens.zero?
-      prompt_tokens = (usage["prompt_tokens"] || usage["input_tokens"]).to_i if (usage["prompt_tokens"] || usage["input_tokens"]).to_i.positive?
-      record_inference_tokens(api_key, model, "input", model.prompt_billing_resource, prompt_tokens)
-      record_inference_tokens(api_key, model, "output", model.completion_billing_resource, completion_tokens)
-    end
-
-    request.halt [200, response.headers, body]
-  end
-
   def cloudflare_stream_events(chunk)
     chunk.to_s.each_line.filter_map do |line|
       next unless line.start_with?("data:")
@@ -770,7 +737,7 @@ class Clover
           provider: model.provider,
           model: model.model_name,
           token_kind:,
-          premium_ai: rate["unit_price"].to_f.positive? || model.tags["tier"].to_s == "premium" || model.tags["premium"] == true
+          premium_ai: PremiumAiUsageMeter.premium_model?(model)
         },
       )
     end

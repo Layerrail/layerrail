@@ -5,12 +5,10 @@ class PremiumAiUsageMeter
     new(api_key:, model:, token_kind:, resource_family:, tokens:, billing_rate:).record
   end
 
+  # Azure AI Foundry models are premium (billed usage); Cloudflare models use
+  # the free inference token quota. Tags can still force premium explicitly.
   def self.premium_model?(model)
-    model.tags["tier"].to_s == "premium" || model.tags["premium"] == true ||
-      %w[input output].any? { |kind| model.tags["pricing"]&.[](kind).to_f.positive? } ||
-      [model.prompt_billing_resource, model.completion_billing_resource].any? {
-        (BillingRate.unit_price_from_resource_properties("InferenceTokens", it, "global") || 0).positive?
-      }
+    model.provider == "azure_foundry" || model.tags["tier"].to_s == "premium" || model.tags["premium"] == true
   end
 
   def self.current_month_premium_usage_cents(project)
@@ -55,7 +53,7 @@ class PremiumAiUsageMeter
   end
 
   def premium?
-    unit_price.positive? || @model.tags["tier"].to_s == "premium" || @model.tags["premium"] == true
+    self.class.premium_model?(@model)
   end
 
   def unit_price
