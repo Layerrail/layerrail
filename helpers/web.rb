@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "jwt"
 require "openssl"
 require "securerandom"
 
@@ -260,20 +261,25 @@ class Clover < Roda
       app_id: Config.intercom_app_id,
       api_base: Config.intercom_api_base,
       hide_default_launcher: true,
-      user_id: account.ubid,
-      email: account.email,
-      name: account.name,
       created_at: account.created_at.to_i,
       layerrail_user_id: account.ubid,
       last_project_id: @project&.ubid
     }.compact
 
-    if Config.intercom_identity_verification_secret
-      settings[:user_hash] = OpenSSL::HMAC.hexdigest(
-        "sha256",
-        Config.intercom_identity_verification_secret,
-        account.ubid
-      )
+    if (secret = Config.intercom_identity_verification_secret)
+      # Sensitive identity attributes go only in the signed JWT so they
+      # cannot be spoofed via insecure messenger updates.
+      payload = {
+        user_id: account.ubid,
+        email: account.email,
+        name: account.name,
+        exp: Time.now.to_i + 3600
+      }.compact
+      settings[:intercom_user_jwt] = JWT.encode(payload, secret, "HS256")
+    else
+      settings[:user_id] = account.ubid
+      settings[:email] = account.email
+      settings[:name] = account.name
     end
 
     settings
