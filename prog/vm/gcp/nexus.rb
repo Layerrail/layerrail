@@ -327,8 +327,11 @@ class Prog::Vm::Gcp::Nexus < Prog::Base
   end
 
   GCE_BOOT_IMAGE_FAMILIES = {
-    "ubuntu-noble" => {project: "ubuntu-os-cloud", family: "ubuntu-2404-lts-ARCH"},
-    "ubuntu-jammy" => {project: "ubuntu-os-cloud", family: "ubuntu-2204-lts-ARCH"},
+    "ubuntu-resolute" => {project: "ubuntu-os-cloud", x64: "ubuntu-2604-lts-amd64", arm64: "ubuntu-2604-lts-arm64"},
+    "ubuntu-noble" => {project: "ubuntu-os-cloud", x64: "ubuntu-2404-lts-amd64", arm64: "ubuntu-2404-lts-arm64"},
+    "ubuntu-jammy" => {project: "ubuntu-os-cloud", x64: "ubuntu-2204-lts-amd64", arm64: "ubuntu-2204-lts-arm64"},
+    "debian-13" => {project: "debian-cloud", x64: "debian-13", arm64: "debian-13-arm64"},
+    "debian-12" => {project: "debian-cloud", x64: "debian-12", arm64: "debian-12-arm64"},
   }.freeze
 
   def gce_source_image
@@ -337,8 +340,7 @@ class Prog::Vm::Gcp::Nexus < Prog::Base
     entry = GCE_BOOT_IMAGE_FAMILIES[vm.boot_image]
     raise "Unknown boot image '#{vm.boot_image}'. Expected a projects/* path or one of: #{GCE_BOOT_IMAGE_FAMILIES.keys.join(", ")}" unless entry
 
-    gce_arch = (vm.arch == "arm64") ? "arm64" : "amd64"
-    family = entry[:family].sub("ARCH", gce_arch)
+    family = entry[(vm.arch == "arm64") ? :arm64 : :x64]
     "projects/#{entry[:project]}/global/images/family/#{family}"
   end
 

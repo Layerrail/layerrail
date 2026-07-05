@@ -55,9 +55,11 @@ module Option
     LinodePlan.new("g2-gpu-rtx4000a1-s", "RTX 4000 Ada x1 Small", "standard", "standard-4", 4, 16, 512, 350, 0.52, 1, LINODE_GPU_DEVICE, "standard"),
   ].freeze
   LINODE_BOOT_IMAGES = {
+    "ubuntu-resolute" => "linode/ubuntu26.04",
     "ubuntu-noble" => "linode/ubuntu24.04",
     "ubuntu-jammy" => "linode/ubuntu22.04",
     "gpu-ubuntu-noble" => "linode/ubuntu24.04",
+    "debian-13" => "linode/debian13",
     "debian-12" => "linode/debian12",
     "almalinux-9" => "linode/almalinux9",
     "rocky-9" => "linode/rocky9",
@@ -110,9 +112,11 @@ module Option
     },
   }.freeze
   AZURE_BOOT_IMAGES = {
+    "ubuntu-resolute" => {publisher: "Canonical", offer: "ubuntu-26_04-lts", sku: "server", version: "latest"},
     "ubuntu-noble" => {publisher: "Canonical", offer: "ubuntu-24_04-lts", sku: "server", version: "latest"},
     "ubuntu-jammy" => {publisher: "Canonical", offer: "0001-com-ubuntu-server-jammy", sku: "22_04-lts-gen2", version: "latest"},
     "gpu-ubuntu-noble" => {publisher: "Canonical", offer: "ubuntu-24_04-lts", sku: "server", version: "latest"},
+    "debian-13" => {publisher: "Debian", offer: "debian-13", sku: "13-gen2", version: "latest"},
     "debian-12" => {publisher: "Debian", offer: "debian-12", sku: "12-gen2", version: "latest"},
     "almalinux-9" => {publisher: "almalinux", offer: "almalinux-x86_64", sku: "9-gen2", version: "latest"},
     "rocky-9" => {publisher: "resf", offer: "rockylinux-x86_64", sku: "9-base", version: "latest"},
@@ -373,8 +377,10 @@ module Option
   BootImage = Struct.new(:name, :display_name)
   BootImages = [
     ["gpu-ubuntu-noble", "Ubuntu 24.04 LTS for GPU VMs"],
+    ["ubuntu-resolute", "Ubuntu Resolute 26.04 LTS"],
     ["ubuntu-noble", "Ubuntu Noble 24.04 LTS"],
     ["ubuntu-jammy", "Ubuntu Jammy 22.04 LTS"],
+    ["debian-13", "Debian 13"],
     ["debian-12", "Debian 12"],
     ["almalinux-9", "AlmaLinux 9"],
     ["rocky-9", "Rocky Linux 9"],

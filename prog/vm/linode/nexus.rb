@@ -109,6 +109,16 @@ class Prog::Vm::Linode::Nexus < Prog::Base
       )
     end
 
+    if vm.ip4_enabled && vm.assigned_vm_address
+      BillingRecord.create(
+        project_id: project.id,
+        resource_id: vm.id,
+        resource_name: vm.assigned_vm_address.ip,
+        billing_rate_id: BillingRate.from_resource_properties("IPAddress", "IPv4", vm.location.name)["id"],
+        amount: 1,
+      )
+    end
+
     hop_wait
   end
 
