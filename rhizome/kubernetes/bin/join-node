@@ -44,6 +44,13 @@ config = {
   },
 }
 
+kubelet_config = {
+  "apiVersion" => "kubelet.config.k8s.io/v1beta1",
+  "kind" => "KubeletConfiguration",
+  "cgroupDriver" => "systemd",
+  "serverTLSBootstrap" => true,
+}
+
 if is_control_plane
   config["controlPlane"] = {
     "certificateKey" => certificate_key,
@@ -55,7 +62,7 @@ if is_control_plane
 end
 
 config_path = "/tmp/join-config.yaml"
-safe_write_to_file(config_path, config.to_yaml)
+safe_write_to_file(config_path, "#{config.to_yaml}---\n#{kubelet_config.to_yaml}")
 r("kubeadm join --config #{config_path}")
 
 r("sudo /home/ubi/kubernetes/bin/setup-cni")

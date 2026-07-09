@@ -145,6 +145,7 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
       ],
     )
     node.update(state: "active")
+    sync_azure_pod_routes_on_all_nodes
 
     # Mark VM ports on any associated load balancer as "up" so that they can be used immediately
     # without waiting for the health check cycle.
@@ -156,6 +157,50 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
     kubernetes_cluster.incr_sync_internal_dns_config
     kubernetes_cluster.incr_sync_worker_mesh
     pop({node_id: node.id})
+  end
+
+  def sync_azure_pod_routes_on_all_nodes
+    return unless vm.location.azure?
+
+    route_nodes = kubernetes_cluster.all_functional_nodes.select { it.vm.location.azure? }
+    route_nodes.each do |route_node|
+      install_azure_pod_routes(route_node, route_nodes)
+    rescue => ex
+      Clog.emit("failed to install Azure Kubernetes pod routes", Util.exception_to_hash(ex, into: {
+        node_ubid: route_node.ubid,
+        kubernetes_cluster_ubid: kubernetes_cluster.ubid,
+      }))
+    end
+  end
+
+  def install_azure_pod_routes(route_node, route_nodes)
+    routes = route_nodes.reject { it.id == route_node.id }.map do |peer|
+      "ip route replace #{peer.vm.nics.first.private_ipv4} via #{peer.vm.private_ipv4_string} dev eth0"
+    end
+    return if routes.empty?
+
+    route_script = <<~SH
+      #!/bin/sh
+      set -eu
+      #{routes.join("\n")}
+    SH
+    service = <<~UNIT
+      [Unit]
+      Description=LayerRail Kubernetes pod routes
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/sbin/layerrail-k8s-routes
+      RemainAfterExit=yes
+
+      [Install]
+      WantedBy=multi-user.target
+    UNIT
+
+    route_node.sshable.cmd("sudo tee /usr/local/sbin/layerrail-k8s-routes > /dev/null && sudo chmod 755 /usr/local/sbin/layerrail-k8s-routes", stdin: route_script, log: false)
+    route_node.sshable.cmd("sudo tee /etc/systemd/system/layerrail-k8s-routes.service > /dev/null && sudo systemctl daemon-reload && sudo systemctl enable --now layerrail-k8s-routes.service && sudo systemctl restart layerrail-k8s-routes.service", stdin: service, log: false)
   end
 
   def finish_join_or_init
@@ -406,7 +451,7 @@ EOF
 sudo sysctl --system
 sudo mkdir -p /etc/containerd
 sudo containerd config default | sudo tee /etc/containerd/config.toml >/dev/null
-sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+sudo ruby -0777 -i -pe 'gsub(/SystemdCgroup = false/, "SystemdCgroup = true"); unless include?("SystemdCgroup = true"); sub(/(\\[plugins\\.(?:\\"io\\.containerd\\.grpc\\.v1\\.cri\\"|\\x27io\\.containerd\\.cri\\.v1\\.runtime\\x27)\\.containerd\\.runtimes\\.runc\\.options\\]\\n)/, "\\\\1            SystemdCgroup = true\\n"); end' /etc/containerd/config.toml
 sudo systemctl enable --now containerd
 curl -fsSL https://pkgs.k8s.io/core:/stable:/#{repo_version}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg.tmp
 sudo mv /etc/apt/keyrings/kubernetes-apt-keyring.gpg.tmp /etc/apt/keyrings/kubernetes-apt-keyring.gpg

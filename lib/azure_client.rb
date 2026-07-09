@@ -127,11 +127,12 @@ class AzureClient
     })
   end
 
-  def create_network_interface(resource_group:, region:, name:, subnet_id:, public_ip_id:, private_ip:, tags: {})
+  def create_network_interface(resource_group:, region:, name:, subnet_id:, public_ip_id:, private_ip:, enable_ip_forwarding: false, tags: {})
     request(:put, resource_path(resource_group, "Microsoft.Network/networkInterfaces", name), api_version: NETWORK_API, body: {
       location: region,
       tags:,
       properties: {
+        enableIPForwarding: enable_ip_forwarding,
         ipConfigurations: [{
           name: "ipconfig1",
           properties: {

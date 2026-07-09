@@ -38,6 +38,7 @@ class Prog::Vm::Azure::Nexus < Prog::Base
       subnet_id:,
       public_ip_id: public_ip.fetch("id"),
       private_ip: nic.private_ipv4_address,
+      enable_ip_forwarding: kubernetes_vm?,
       tags:,
     )
     create_virtual_machine(nic_resource.fetch("id"))
@@ -289,6 +290,10 @@ class Prog::Vm::Azure::Nexus < Prog::Base
       "Project" => vm.project.ubid,
       "VM" => vm.ubid,
     }
+  end
+
+  def kubernetes_vm?
+    vm.boot_image.to_s.start_with?("kubernetes-")
   end
 
   def boot_volume
