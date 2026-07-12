@@ -8,6 +8,7 @@ class Project < Sequel::Model
   one_to_many :action_tags, order: :name, read_only: true
   one_to_many :object_tags, order: :name, read_only: true
   many_to_one :billing_info
+  one_to_one :premium_ai_trial, read_only: true
   one_to_many :usage_alerts, read_only: true
   one_to_many :github_installations, read_only: true
   many_to_many :github_runners, join_table: :github_installation, right_key: :id, right_primary_key: :installation_id, read_only: true

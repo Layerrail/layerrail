@@ -697,6 +697,7 @@ class Clover
   def validate_premium_ai_access!(api_key, model)
     return unless Config.premium_ai_metering_enabled
     return unless PremiumAiUsageMeter.premium_model?(model)
+    return if PremiumAiTrial.active_for?(api_key.project, model)
 
     fail CloverError.new(402, "BillingRequired", "Premium AI models require billing to be connected before use.") unless api_key.project.billing_info&.polar_external_customer_id || api_key.project.billing_info
 
@@ -712,13 +713,15 @@ class Clover
     return unless tokens.positive?
 
     rate = BillingRate.from_resource_properties("InferenceTokens", resource_family, "global")
-    PremiumAiUsageMeter.record(api_key:, model:, token_kind:, resource_family:, tokens:, billing_rate: rate)
+    trial = PremiumAiTrial.active_for?(api_key.project, model)
+    PremiumAiUsageMeter.record(api_key:, model:, token_kind:, resource_family:, tokens:, billing_rate: rate) unless trial
     return unless rate
 
     begin_time = Time.now.to_date.to_time
     end_time = begin_time + 24 * 60 * 60
     today_record = BillingRecord
       .where(project_id: api_key.project_id, resource_id: api_key.id, billing_rate_id: rate["id"])
+      .where(Sequel.pg_jsonb_op(:resource_tags).contains({"premium_ai_trial" => trial}))
       .where { Sequel.pg_range(it.span).overlaps(Sequel.pg_range(begin_time...end_time)) }
       .first
 
@@ -737,7 +740,8 @@ class Clover
           provider: model.provider,
           model: model.model_name,
           token_kind:,
-          premium_ai: PremiumAiUsageMeter.premium_model?(model)
+          premium_ai: PremiumAiUsageMeter.premium_model?(model),
+          premium_ai_trial: trial
         },
       )
     end

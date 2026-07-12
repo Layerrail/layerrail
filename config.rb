@@ -294,6 +294,8 @@ module Config
   optional :inference_router_access_token, string, clear: true
   override :inference_router_release_tag, "v0.1.8", string
   override :premium_ai_metering_enabled, true, bool
+  override :premium_ai_trial_enabled, true, bool
+  override :premium_ai_trial_days, 30, int
   override :premium_ai_polar_event_name, "layerrail_ai_usage", string
   override :premium_ai_charge_threshold_cents, 500, int
   override :premium_ai_monthly_spend_cap_cents, 1000, int

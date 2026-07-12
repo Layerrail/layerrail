@@ -93,7 +93,7 @@ class InvoiceGenerator
 
         project_content[:resources] = []
         project_content[:subtotal] = 0
-        project_records.group_by { |pr| [pr[:resource_id], pr[:resource_name]] }.each do |(resource_id, resource_name), line_items|
+        project_records.reject { |record| record[:resource_tags]&.[]("premium_ai_trial") }.group_by { |pr| [pr[:resource_id], pr[:resource_name]] }.each do |(resource_id, resource_name), line_items|
           resource_content = {}
           resource_content[:resource_id] = resource_id
           resource_content[:resource_name] = resource_name

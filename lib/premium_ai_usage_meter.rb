@@ -18,6 +18,7 @@ class PremiumAiUsageMeter
     BillingRecord
       .where(project_id: project.id)
       .where(Sequel.pg_jsonb_op(:resource_tags).contains({"premium_ai" => true}))
+      .exclude(Sequel.pg_jsonb_op(:resource_tags).contains({"premium_ai_trial" => true}))
       .where { Sequel.pg_range(it.span).overlaps(Sequel.pg_range(month_start...month_end)) }
       .all
       .sum { |record| (record.amount.to_f * record.billing_rate["unit_price"].to_f * 100).ceil }
