@@ -36,7 +36,7 @@ class InvoiceGenerator
           if is_eu
             {
               "Beneficiary" => "LayerRail",
-              "IBAN" => "NL30REVO6759811127",
+              "IBAN" => Config.invoice_eu_bank_iban,
               "BIC" => "REVONL22",
               "Intermediary BIC" => "CHASGB2L",
               "Bank/Payment institution" => "Revolut Bank UAB",
