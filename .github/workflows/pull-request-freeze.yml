@@ -1,0 +1,40 @@
+name: Pull request freeze
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  close-pull-request:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close pull request during the contribution freeze
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = context.payload.pull_request.number;
+            const body = [
+              "Thanks for taking the time to contribute to LayerRail.",
+              "",
+              "Pull requests are temporarily closed while we complete core platform work and stabilize the public codebase. This is not a review of your contribution.",
+              "",
+              "Please watch this repository for the reopening notice."
+            ].join("\\n");
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: pull_number,
+              body
+            });
+
+            await github.rest.pulls.update({
+              owner,
+              repo,
+              pull_number,
+              state: "closed"
+            });

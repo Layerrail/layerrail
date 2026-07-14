@@ -32,3 +32,4 @@ configuration.
 - [ ] I updated documentation where setup, API behavior, or operator workflow changed.
 - [ ] I did not include credentials, secrets, customer data, or private infrastructure details.
 - [ ] I considered AGPL-3.0 license compatibility for any new dependency.
+> **Contribution freeze:** Pull requests are temporarily closed while LayerRail stabilizes the platform. New pull requests will be automatically closed without review. Please watch the repository for the reopening notice.
