@@ -5,10 +5,10 @@ require "countries"
 class Clover
   hash_branch(:project_prefix, "billing") do |r|
     r.web do
-      unless PolarClient.configured_for_checkout?
+      unless PolarClient.configured_for_checkout? || BachsClient.enabled?
         response.status = 501
         response.content_type = :text
-        next "Billing is not enabled. Set POLAR_ACCESS_TOKEN and POLAR_VERIFICATION_PRODUCT_ID to enable Polar billing."
+        next "Billing is not enabled. Configure Polar or Bachs checkout credentials."
       end
 
       authorize("Project:billing", @project)
@@ -249,6 +249,23 @@ class Clover
           no_audit_log
           handle_validation_failure("project/billing")
           raise_web_error("Invoice is not payable") unless invoice.payable?
+
+          if BachsClient.invoice_checkout_enabled?
+            begin
+              checkout = BachsInvoiceCheckout.create!(
+                invoice:,
+                project: @project,
+                account: current_account,
+                success_url: "#{Config.base_url}#{path(invoice)}/success?provider=bachs",
+                cancel_url: "#{Config.base_url}#{path(invoice)}"
+              )
+              r.redirect checkout.fetch("checkout_url"), 303
+            rescue BachsAPIError => e
+              Clog.emit("Bachs invoice checkout creation failed", {bachs_invoice_checkout_failed: {invoice_ubid: invoice.ubid, error: e.message}})
+              raise_web_error("We couldn't start your invoice checkout. Please try again or contact support@layerrail.com")
+            end
+          end
+
           raise_web_error("Polar invoice checkout is not configured. Set POLAR_INVOICE_PRODUCT_ID.") unless Config.polar_invoice_product_id
 
           invoice_amount_cents = (invoice.cost.to_f * 100).round
@@ -284,7 +301,20 @@ class Clover
         r.get "success" do
           handle_validation_failure("project/billing")
           checkout_id = typecast_params.nonempty_str("checkout_id") || typecast_params.nonempty_str("session_id")
-          raise_web_error("Missing Polar checkout id") unless checkout_id
+          raise_web_error("Missing checkout id") unless checkout_id
+
+          if typecast_params.str("provider") == "bachs"
+            begin
+              result = BachsInvoiceCheckout.reconcile!(invoice:, checkout_id:)
+            rescue BachsAPIError => e
+              Clog.emit("invalid Bachs invoice payment", {unsuccessful_invoice_payment: {invoice_ubid: invoice.ubid, checkout_id:, message: e.message}})
+              raise_web_error("We couldn't validate your payment. If you think this is a mistake, please contact support@layerrail.com")
+            end
+            raise_web_error("Invoice payment was not successful") unless %w[paid already_paid].include?(result[:status])
+
+            flash["notice"] = "Invoice #{invoice.invoice_number} paid successfully"
+            r.redirect billing_path
+          end
 
           begin
             checkout_session = PolarClient.get_checkout(checkout_id)

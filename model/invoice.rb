@@ -83,8 +83,8 @@ class Invoice < Sequel::Model
       return true
     end
 
-    if Config.polar_access_token
-      Clog.emit("Polar billing is enabled. Invoice payment is handled by Polar checkout.", {polar_invoice_payment_pending: {ubid:, cost: amount}})
+    if Config.polar_access_token || BachsClient.enabled?
+      Clog.emit("Invoice payment is handled by hosted checkout.", {invoice_payment_pending: {ubid:, cost: amount, provider: invoice_checkout_provider_name}})
       send_payment_due_email
       return true
     end
@@ -161,7 +161,7 @@ class Invoice < Sequel::Model
     Util.send_email(receivers, "LayerRail #{data.name} Invoice ##{data.invoice_number}",
       greeting: invoice_email_greeting(data),
       body: ["Please find your current invoice ##{data.invoice_number} below.",
-        "The invoice amount of #{data.total} is ready for payment through Polar.",
+        "The invoice amount of #{data.total} is ready for payment through #{invoice_checkout_provider_name}.",
         "You can pay it from your project's billing page.",
         "If you have any questions, please send us a support request via support@layerrail.com, and include your invoice number."],
       button_title: "Pay Invoice",
@@ -187,7 +187,9 @@ class Invoice < Sequel::Model
       if content["admin_clearance"]
         ["The invoice amount of #{data.total} has been cleared by a LayerRail account credit."]
       else
-        ["The invoice amount of #{data.total} has been paid through Polar."]
+        provider = content["payment_gateway"].to_s.strip
+        provider = invoice_checkout_provider_name if provider.empty?
+        ["The invoice amount of #{data.total} has been paid through #{provider.capitalize}."]
       end
     else
       fail "BUG: unexpected invoice status #{status}"
@@ -221,6 +223,10 @@ class Invoice < Sequel::Model
         "If you have any questions, please send us a support request via support@layerrail.com."],
       button_title: "Open Billing",
       button_link: "#{Config.base_url}#{project.path}/billing")
+  end
+
+  def invoice_checkout_provider_name
+    BachsClient.invoice_checkout_enabled? ? "Bachs" : "Polar"
   end
 
   def invoice_billing_country
