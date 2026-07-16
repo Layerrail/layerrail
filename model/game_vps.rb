@@ -197,6 +197,22 @@ class GameVps < Sequel::Model(:game_vps)
     product_id
   end
 
+  def self.bachs_product_ids
+    raw = Config.bachs_game_vps_product_ids.to_s.strip
+    return {} if raw.empty?
+
+    JSON.parse(raw)
+  rescue JSON::ParserError
+    raise "BACHS_GAME_VPS_PRODUCT_IDS must be a JSON object keyed by Game VPS plan"
+  end
+
+  def self.bachs_product_id_for(plan_key)
+    product_id = bachs_product_ids[plan_key.to_s]
+    raise "Set BACHS_GAME_VPS_PRODUCT_IDS with a Bachs product id for #{plan_key}." unless product_id
+
+    product_id
+  end
+
   def location_label
     LOCATIONS.dig(location, :name) || location
   end
@@ -227,6 +243,10 @@ class GameVps < Sequel::Model(:game_vps)
 
   def polar_product_id
     self.class.polar_product_id_for(plan)
+  end
+
+  def bachs_product_id
+    self.class.bachs_product_id_for(plan)
   end
 
   def polar_external_customer_id

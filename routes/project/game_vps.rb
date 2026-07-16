@@ -4,6 +4,8 @@ require "bigdecimal"
 
 class Clover
   def start_game_vps_checkout(game_vps)
+    return start_bachs_game_vps_checkout(game_vps) if Config.game_vps_checkout_provider == "bachs"
+
     product_id = game_vps.polar_product_id
     checkout = PolarClient.create_checkout(
       {
@@ -40,6 +42,28 @@ class Clover
 
     GameVpsCheckout.mark_pending!(game_vps, checkout_id)
     checkout_url
+  end
+
+  def start_bachs_game_vps_checkout(game_vps)
+    raise "Bachs checkout is not configured." unless BachsClient.enabled?
+
+    product_id = game_vps.bachs_product_id
+    checkout = BachsClient.create_checkout(
+      {
+        product_cart: [{product_id:, quantity: 1}],
+        customer: {name: current_account.name || current_account.email, email: current_account.email},
+        billing_currency: "USD",
+        allowed_payment_method_types: ["card"],
+        success_url: "#{Config.base_url}#{@project.path}/game-vps/success?provider=bachs",
+        cancel_url: "#{Config.base_url}#{@project.path}/game-vps",
+        metadata: {kind: "game_vps_checkout", project_id: @project.ubid, game_vps_id: game_vps.ubid, plan: game_vps.plan, product_id:, amount_cents: game_vps.amount_cents},
+        reference: "layerrail-game-vps-#{game_vps.ubid}",
+        expires_in_minutes: 60
+      },
+      idempotency_key: "layerrail-game-vps-#{game_vps.ubid}"
+    )
+    GameVpsCheckout.mark_pending!(game_vps, checkout.fetch("checkout_id"))
+    checkout.fetch("checkout_url")
   end
 
   def cleanup_unstarted_game_vps_checkout(game_vps, exception)
@@ -100,7 +124,7 @@ class Clover
         if Config.game_vps_provider == "azure"
           raise_web_error("Invalid Windows image.") unless GameVps.windows_images.key?(image_alias)
           begin
-            GameVps.polar_product_id_for(plan_key)
+            Config.game_vps_checkout_provider == "bachs" ? GameVps.bachs_product_id_for(plan_key) : GameVps.polar_product_id_for(plan_key)
           rescue RuntimeError => ex
             raise_web_error(ex.message)
           end
@@ -130,7 +154,7 @@ class Clover
         if Config.game_vps_provider == "azure"
           begin
             r.redirect start_game_vps_checkout(game_vps), 303
-          rescue PolarAPIError, Sequel::Error, RuntimeError => ex
+          rescue PolarAPIError, BachsAPIError, Sequel::Error, RuntimeError => ex
             cleanup_unstarted_game_vps_checkout(game_vps, ex)
             Clog.emit("game vps checkout failed", Util.exception_to_hash(ex, into: {game_vps_checkout_failed: {game_vps_ubid: game_vps&.ubid, project_ubid: @project.ubid}}))
             raise_web_error("We couldn't start checkout. #{ex.message}")
@@ -146,12 +170,12 @@ class Clover
         handle_validation_failure("game_vps/index")
         checkout_id = typecast_params.str("checkout_id").to_s.strip
         checkout_id = typecast_params.str("session_id").to_s.strip if checkout_id.empty?
-        raise_web_error("Missing Polar checkout id") if checkout_id.empty?
+        raise_web_error("Missing checkout id") if checkout_id.empty?
 
         begin
-          result = GameVpsCheckout.reconcile!(checkout_id, project: @project)
-        rescue PolarAPIError => ex
-          raise_web_error("We couldn't validate your Polar checkout. #{ex.message}")
+          result = typecast_params.str("provider") == "bachs" ? BachsGameVpsCheckout.reconcile!(checkout_id, project: @project) : GameVpsCheckout.reconcile!(checkout_id, project: @project)
+        rescue PolarAPIError, BachsAPIError => ex
+          raise_web_error("We couldn't validate your checkout. #{ex.message}")
         rescue => ex
           Clog.emit("game vps checkout success failed", Util.exception_to_hash(ex, into: {game_vps_checkout_success_failed: {checkout_id:, project_ubid: @project.ubid}}))
           raise_web_error("Payment was received, but provisioning did not start cleanly. Support has been notified.")
@@ -201,7 +225,7 @@ class Clover
 
           begin
             r.redirect start_game_vps_checkout(@game_vps), 303
-          rescue PolarAPIError, Sequel::Error, RuntimeError => ex
+          rescue PolarAPIError, BachsAPIError, Sequel::Error, RuntimeError => ex
             @game_vps.update(failure_message: ex.message.to_s.slice(0, 1000), updated_at: Time.now)
             Clog.emit("game vps checkout retry failed", Util.exception_to_hash(ex, into: {game_vps_checkout_retry_failed: {game_vps_ubid: @game_vps.ubid, project_ubid: @project.ubid}}))
             raise_web_error("We couldn't restart checkout. #{ex.message}")

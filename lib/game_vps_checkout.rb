@@ -89,21 +89,7 @@ class GameVpsCheckout
           states: processed_items.map(&:status).uniq
         }
       else
-        locked_items.each do |game_vps|
-          GameVps.where(id: game_vps.id).update(
-            status: "creating",
-            failure_message: nil,
-            polar_subscription_id:,
-            paid_until: Time.now + (30 * 24 * 60 * 60),
-            updated_at: Time.now
-          )
-          game_vps.refresh
-          begin
-            Prog::GameVpsNexus.assemble(game_vps) unless game_vps.strand
-          rescue Sequel::UniqueConstraintViolation
-            nil
-          end
-        end
+        activate_items!(locked_items, subscription_id: polar_subscription_id)
       end
     end
 
@@ -114,6 +100,19 @@ class GameVpsCheckout
 
   def self.checkout_paid?(status)
     %w[succeeded paid complete completed confirmed].include?(status)
+  end
+
+  def self.activate_items!(items, subscription_id: nil)
+    items.each do |game_vps|
+      GameVps.where(id: game_vps.id).update(status: "creating", failure_message: nil, polar_subscription_id: subscription_id, paid_until: Time.now + (30 * 24 * 60 * 60), updated_at: Time.now)
+      game_vps.refresh
+      begin
+        Prog::GameVpsNexus.assemble(game_vps) unless game_vps.strand
+      rescue Sequel::UniqueConstraintViolation
+        nil
+      end
+    end
+    {status: "provisioning", count: items.length}
   end
 
   def self.expected_external_customer_ids(items, project)

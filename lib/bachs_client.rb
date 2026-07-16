@@ -59,6 +59,10 @@ class BachsClient
     request(:get, "/v1/checkout-sessions/#{id}")
   end
 
+  def self.get_subscription(id)
+    request(:get, "/v1/subscriptions/#{id}")
+  end
+
   def self.create_webhook_endpoint(payload)
     request(:post, "/v1/webhooks/endpoints", body: payload, expected_status: 201)
   end

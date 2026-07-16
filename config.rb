@@ -346,6 +346,8 @@ module Config
   optional :bachs_api_key, string, clear: true
   optional :bachs_webhook_secret, string, clear: true
   override :bachs_api_base_url, "https://api.bachs.io", string
+  optional :bachs_game_vps_product_ids, string, clear: true
+  override :game_vps_checkout_provider, "bachs", string
   # Polar remains the default while existing subscriptions and metered AI usage migrate separately.
   override :billing_checkout_provider, "polar", string
   optional :invoice_eu_bank_iban, string, clear: true
