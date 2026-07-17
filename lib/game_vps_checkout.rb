@@ -102,9 +102,9 @@ class GameVpsCheckout
     %w[succeeded paid complete completed confirmed].include?(status)
   end
 
-  def self.activate_items!(items, subscription_id: nil)
+  def self.activate_items!(items, subscription_id: nil, paid_until: Time.now + (30 * 24 * 60 * 60))
     items.each do |game_vps|
-      GameVps.where(id: game_vps.id).update(status: "creating", failure_message: nil, polar_subscription_id: subscription_id, paid_until: Time.now + (30 * 24 * 60 * 60), updated_at: Time.now)
+      GameVps.where(id: game_vps.id).update(status: "creating", failure_message: nil, polar_subscription_id: subscription_id, paid_until:, updated_at: Time.now)
       game_vps.refresh
       begin
         Prog::GameVpsNexus.assemble(game_vps) unless game_vps.strand

@@ -256,7 +256,7 @@ class Clover
                 invoice:,
                 project: @project,
                 account: current_account,
-                success_url: "#{Config.base_url}#{path(invoice)}/success?provider=bachs",
+                success_url: "#{Config.base_url}#{path(invoice)}/success",
                 cancel_url: "#{Config.base_url}#{path(invoice)}"
               )
               r.redirect checkout.fetch("checkout_url"), 303
@@ -303,7 +303,8 @@ class Clover
           checkout_id = typecast_params.nonempty_str("checkout_id") || typecast_params.nonempty_str("session_id")
           raise_web_error("Missing checkout id") unless checkout_id
 
-          if typecast_params.str("provider") == "bachs"
+          bachs_checkout = typecast_params.str("provider") == "bachs" || checkout_id.start_with?("chk_") || invoice.content["payment_gateway"] == "bachs"
+          if bachs_checkout
             begin
               result = BachsInvoiceCheckout.reconcile!(invoice:, checkout_id:)
             rescue BachsAPIError => e

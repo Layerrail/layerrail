@@ -48,19 +48,20 @@ class Clover
     raise "Bachs checkout is not configured." unless BachsClient.enabled?
 
     product_id = game_vps.bachs_product_id
+    checkout_attempt = game_vps.values[:checkout_id] || "initial"
     checkout = BachsClient.create_checkout(
       {
         product_cart: [{product_id:, quantity: 1}],
         customer: {name: current_account.name || current_account.email, email: current_account.email},
         billing_currency: "USD",
         allowed_payment_method_types: ["card"],
-        success_url: "#{Config.base_url}#{@project.path}/game-vps/success?provider=bachs",
+        success_url: "#{Config.base_url}#{@project.path}/game-vps/success",
         cancel_url: "#{Config.base_url}#{@project.path}/game-vps",
         metadata: {kind: "game_vps_checkout", project_id: @project.ubid, game_vps_id: game_vps.ubid, plan: game_vps.plan, product_id:, amount_cents: game_vps.amount_cents},
-        reference: "layerrail-game-vps-#{game_vps.ubid}",
+        reference: "layerrail-game-vps-#{game_vps.ubid}-#{checkout_attempt}",
         expires_in_minutes: 60
       },
-      idempotency_key: "layerrail-game-vps-#{game_vps.ubid}"
+      idempotency_key: "layerrail-game-vps-#{game_vps.ubid}-#{checkout_attempt}"
     )
     GameVpsCheckout.mark_pending!(game_vps, checkout.fetch("checkout_id"))
     checkout.fetch("checkout_url")
@@ -173,7 +174,8 @@ class Clover
         raise_web_error("Missing checkout id") if checkout_id.empty?
 
         begin
-          result = typecast_params.str("provider") == "bachs" ? BachsGameVpsCheckout.reconcile!(checkout_id, project: @project) : GameVpsCheckout.reconcile!(checkout_id, project: @project)
+          bachs_checkout = typecast_params.str("provider") == "bachs" || checkout_id.start_with?("chk_")
+          result = bachs_checkout ? BachsGameVpsCheckout.reconcile!(checkout_id, project: @project) : GameVpsCheckout.reconcile!(checkout_id, project: @project)
         rescue PolarAPIError, BachsAPIError => ex
           raise_web_error("We couldn't validate your checkout. #{ex.message}")
         rescue => ex

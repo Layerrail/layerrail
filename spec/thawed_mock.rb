@@ -100,6 +100,7 @@ module ThawedMock
 
   # Progs
   allow_mocking(Prog::Base, :current_prog)
+  allow_mocking(Prog::GameVpsNexus, :assemble)
   allow_mocking(Prog::Ai::InferenceEndpointNexus, :assemble, :model_for_id)
   allow_mocking(Prog::Ai::InferenceEndpointReplicaNexus, :assemble)
   allow_mocking(Prog::Ai::InferenceRouterReplicaNexus, :assemble)
@@ -120,6 +121,8 @@ module ThawedMock
   allow_mocking(Prog::Vnet::SubnetNexus, :assemble, :random_private_ipv4, :random_private_ipv6)
 
   # Other Classes
+  allow_mocking(BachsClient, :archive_product, :create_checkout, :create_product, :get_checkout, :get_subscription)
+  allow_mocking(BachsInvoiceCheckout, :reconcile!)
   allow_mocking(BillingRate, :from_resource_properties)
   allow_mocking(Clog, :emit, :write)
   allow_mocking(CloudflareClient, :new)

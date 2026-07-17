@@ -182,6 +182,12 @@ URLs and prepare directory submissions.
 
 ### Billing
 
+- `BACHS_API_KEY`
+- `BACHS_WEBHOOK_SECRET`
+- `BACHS_GAME_VPS_PRODUCT_IDS` is a JSON object mapping each Game VPS plan to
+  its recurring Bachs product ID
+- `GAME_VPS_CHECKOUT_PROVIDER` and `BILLING_CHECKOUT_PROVIDER` default to
+  `bachs` for new Game VPS subscriptions and invoice payments
 - `POLAR_ACCESS_TOKEN`
 - `POLAR_ORGANIZATION_ID`
 - `POLAR_VERIFICATION_PRODUCT_ID`
