@@ -51,6 +51,13 @@ RSpec.describe Clover do
     )
   end
 
+  it "handles sessionless admin health checks" do
+    page.driver.get("/up", {}, {"HTTP_HOST" => URI(Config.admin_url).host})
+
+    expect(page.status_code).to eq(200)
+    expect(page.body).to include('"status":"ok"', '"service":"admin"')
+  end
+
   it "handles CSRF token errors" do
     visit "/login"
     find(".rodauth input[name=_csrf]", visible: false).set("")
