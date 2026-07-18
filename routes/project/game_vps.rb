@@ -85,7 +85,8 @@ class Clover
 
     r.get true do
       @game_vpses = dataset_authorize(@project.game_vpses_dataset.reverse(:created_at), "Vm:view")
-        .exclude(status: ["pending_payment", "deleting", "deleted"])
+        .eager(:semaphores)
+        .exclude(status: ["deleting", "deleted"])
         .all
       view "game_vps/index"
     end

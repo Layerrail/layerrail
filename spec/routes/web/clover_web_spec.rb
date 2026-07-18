@@ -3,13 +3,19 @@
 require_relative "spec_helper"
 
 RSpec.describe Clover do
+  it "allows form submission redirects to Bachs checkout" do
+    visit "/login"
+
+    expect(page.response_headers.fetch("content-security-policy")).to include("form-action", "https://checkout.bachs.io")
+  end
+
   it "handles CSRF token errors" do
     visit "/login"
     find(".rodauth input[name=_csrf]", visible: false).set("")
     click_button "Sign in"
 
     expect(page.status_code).to eq(400)
-    expect(page.title).to eq "Ubicloud - Invalid Security Token"
+    expect(page.title).to eq "LayerRail - Invalid Security Token"
     expect(page).to have_content("An invalid security token was submitted, please click back, refresh, and try again.")
   end
 
@@ -67,7 +73,7 @@ RSpec.describe Clover do
   it "handles typecast errors when rendering validation failure template errors" do
     visit "/webhook/test-typecast-error-during-validation-failure"
 
-    expect(page.title).to eq("Ubicloud - Invalid Parameter Type")
+    expect(page.title).to eq("LayerRail - Invalid Parameter Type")
     expect(page.status_code).to eq(400)
   end
 
@@ -80,7 +86,7 @@ RSpec.describe Clover do
     ENV["SHOW_WEB_ERROR_PAGE"] = "1"
     expect(Clog).to receive(:emit).with("web error without handle_validation_failure", instance_of(Hash)).and_call_original
     visit "/webhook/test-missing-handle-validation-failure"
-    expect(page.title).to eq "Ubicloud - InvalidRequest"
+    expect(page.title).to eq "LayerRail - InvalidRequest"
     expect(page).to have_content "expected string but received {}"
   ensure
     ENV.delete("SHOW_WEB_ERROR_PAGE")
@@ -91,7 +97,7 @@ RSpec.describe Clover do
 
     visit "/webhook/test-error"
 
-    expect(page.title).to eq("Ubicloud - UnexceptedError")
+    expect(page.title).to eq("LayerRail - UnexceptedError")
   end
 
   it "raises unexpected errors in test environment" do

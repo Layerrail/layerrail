@@ -236,7 +236,7 @@ class Clover < Roda
 
     csp.style_src(*style_sources)
     csp.img_src(*img_sources)
-    csp.form_action :self, Config.base_url, "https://checkout.stripe.com", "https://checkout.polar.sh", "https://polar.sh", "https://github.com/login/oauth/authorize", "https://accounts.google.com/o/oauth2/auth"
+    csp.form_action :self, Config.base_url, "https://checkout.stripe.com", "https://checkout.polar.sh", "https://polar.sh", "https://checkout.bachs.io", "https://github.com/login/oauth/authorize", "https://accounts.google.com/o/oauth2/auth"
     csp.script_src(*script_sources)
     csp.frame_src(*frame_sources)
     csp.connect_src(*connect_sources)

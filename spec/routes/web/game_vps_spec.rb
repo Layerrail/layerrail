@@ -45,14 +45,17 @@ RSpec.describe Clover, "game vps" do
       expect(page.status_code).to eq(200)
     end
 
-    it "does not show pending payment reservations in the list" do
+    it "shows pending payment reservations so checkout can be resumed" do
       create_game_vps(project, name: "paid-game", status: "running")
       create_game_vps(project, name: "payment-waiting", status: "pending_payment")
 
       visit "#{project.path}/game-vps"
 
       expect(page).to have_content("paid-game")
-      expect(page).to have_no_content("payment-waiting")
+      expect(page).to have_content("payment-waiting")
+
+      click_link "payment-waiting"
+      expect(page).to have_button("Continue checkout")
     end
   end
 end
