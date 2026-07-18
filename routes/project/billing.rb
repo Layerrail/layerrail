@@ -145,7 +145,7 @@ class Clover
 
         begin
           result = BachsBillingVerificationCheckout.reconcile!(checkout_id, project: @project)
-        rescue BachsAPIError, PolarAPIError => e
+        rescue BachsAPIError, BachsBillingVerificationCheckout::VerificationError, PolarAPIError => e
           Clog.emit("invalid Bachs billing verification", {invalid_bachs_billing_verification: {project_id: @project.id, checkout_id:, message: e.message}})
           raise_web_error("We couldn't validate your Bachs checkout. If you think this is a mistake, please contact support@layerrail.com.")
         end

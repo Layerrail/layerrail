@@ -117,4 +117,44 @@ RSpec.describe BachsBillingVerificationCheckout do
 
     expect(described_class.reconcile_event!(event)).to eq(status: "verified")
   end
+
+  it "does not connect billing when the automatic refund request fails" do
+    checkout_id = "checkout-refund-failure"
+    allow(BachsClient).to receive(:get_checkout).with(checkout_id).and_return(
+      "status" => "COMPLETED",
+      "payment_status" => "succeeded",
+      "amount" => "1.00",
+      "currency" => "USD",
+      "customer" => {"id" => "cust_bachs_1", "email" => account.email},
+      "products" => [{"product_id" => product_id}],
+      "metadata" => {"kind" => "project_billing_setup", "project_id" => project.ubid, "product_id" => product_id},
+      "charge" => {"payment_id" => "pay_bachs_1", "status" => "succeeded"}
+    )
+    allow(PolarClient).to receive(:get_customer_by_external_id).and_return("id" => "polar_customer_1")
+    allow(BachsClient).to receive(:create_refund).and_raise(BachsAPIError.new(503, "temporarily unavailable"))
+
+    expect { described_class.reconcile!(checkout_id, project:) }.to raise_error(BachsAPIError)
+    expect(project.refresh.billing_info).to be_nil
+  end
+
+  it "does not connect billing when Bachs omits the refundable charge id" do
+    checkout_id = "checkout-missing-charge"
+    allow(BachsClient).to receive(:get_checkout).with(checkout_id).and_return(
+      "status" => "COMPLETED",
+      "payment_status" => "succeeded",
+      "amount" => "1.00",
+      "currency" => "USD",
+      "customer" => {"id" => "cust_bachs_1", "email" => account.email},
+      "products" => [{"product_id" => product_id}],
+      "metadata" => {"kind" => "project_billing_setup", "project_id" => project.ubid, "product_id" => product_id},
+      "charge" => {"status" => "succeeded"}
+    )
+    allow(PolarClient).to receive(:get_customer_by_external_id).and_return("id" => "polar_customer_1")
+
+    expect { described_class.reconcile!(checkout_id, project:) }.to raise_error(
+      BachsBillingVerificationCheckout::VerificationError,
+      /refundable charge id/
+    )
+    expect(project.refresh.billing_info).to be_nil
+  end
 end

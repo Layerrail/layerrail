@@ -21,7 +21,8 @@ class Clover
     rescue JSON::ParserError
       response.status = 400
       {error: {message: "Invalid JSON"}}
-    rescue BachsAPIError => ex
+    rescue BachsAPIError, BachsBillingVerificationCheckout::VerificationError => ex
+      response.status = 503
       Clog.emit("Bachs webhook reconciliation failed", Util.exception_to_hash(ex, into: {bachs_webhook_reconciliation_failed: {}}))
       {message: "Bachs webhook accepted; reconciliation will be retried"}
     rescue => ex

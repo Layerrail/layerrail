@@ -3,6 +3,8 @@
 require "bigdecimal"
 
 class BachsBillingVerificationCheckout
+  class VerificationError < StandardError; end
+
   def self.create!(project:, account:, success_url:, cancel_url:)
     product_id = Config.bachs_verification_product_id.to_s
     raise "Set BACHS_VERIFICATION_PRODUCT_ID to enable Bachs billing verification." if product_id.empty?
@@ -50,6 +52,7 @@ class BachsBillingVerificationCheckout
     polar_customer = ensure_polar_customer(project, checkout.fetch("customer"))
     payment_id = checkout.dig("charge", "payment_id") || checkout.dig("charge", "charge_id") || checkout_id
     customer_id = checkout.dig("customer", "id") || project.ubid
+    refund_status = refund_verification_charge(checkout_id, checkout)
     changed = false
 
     DB.transaction do
@@ -74,7 +77,7 @@ class BachsBillingVerificationCheckout
 
     {
       status: changed ? "verified" : "already_verified",
-      refund_status: refund_verification_charge(checkout_id, checkout),
+      refund_status:,
       checkout:
     }
   end
@@ -117,7 +120,7 @@ class BachsBillingVerificationCheckout
   def self.refund_verification_charge(checkout_id, checkout)
     charge = checkout["charge"].is_a?(Hash) ? checkout["charge"] : {}
     charge_id = charge["charge_id"] || charge["payment_id"]
-    return "unavailable" unless charge_id
+    raise VerificationError, "Bachs verification checkout did not include a refundable charge id" unless charge_id
 
     idempotency_key = "layerrail-billing-verification-refund-#{checkout_id}"
     refund = BachsClient.create_refund(
@@ -130,8 +133,5 @@ class BachsBillingVerificationCheckout
       idempotency_key:
     )
     refund["status"] || "processing"
-  rescue BachsAPIError => ex
-    Clog.emit("Bachs verification refund failed", Util.exception_to_hash(ex, into: {bachs_verification_refund_failed: {checkout_id:}}))
-    "failed"
   end
 end
