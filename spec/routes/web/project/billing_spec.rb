@@ -25,6 +25,41 @@ RSpec.describe Clover, "billing" do
     login(user.email)
   end
 
+  context "when Bachs verification is enabled" do
+    before do
+      allow(Config).to receive(:billing_checkout_provider).and_return("bachs")
+      allow(BachsClient).to receive(:enabled?).and_return(true)
+      allow(BachsClient).to receive(:verification_checkout_enabled?).and_return(true)
+    end
+
+    it "redirects billing setup to Bachs checkout" do
+      checkout_url = "https://checkout.bachs.io/c/verification-token"
+      expect(BachsBillingVerificationCheckout).to receive(:create!).with(
+        project:,
+        account: have_attributes(id: user.id),
+        success_url: "#{Config.base_url}#{project.path}/billing/success/bachs",
+        cancel_url: "#{Config.base_url}#{project.path}/billing"
+      ).and_return("checkout_url" => checkout_url)
+
+      visit "#{project.path}/billing"
+      csrf_token = find("form[action='#{project.path}/billing'] input[name='_csrf']", visible: false).value
+      page.driver.post "#{project.path}/billing", {_csrf: csrf_token}
+
+      expect(page.driver.response.status).to eq(303)
+      expect(page.driver.response.headers["Location"]).to eq(checkout_url)
+    end
+
+    it "completes Bachs verification and reports the refund" do
+      checkout_id = "808e9dc2-2af3-4a8b-9fc9-956f34fac3c2"
+      expect(BachsBillingVerificationCheckout).to receive(:reconcile!).with(checkout_id, project:).and_return(status: "verified", refund_status: "processing")
+
+      visit "#{project.path}/billing/success/bachs?checkout_id=#{checkout_id}"
+
+      expect(page).to have_current_path("#{project.path}/billing")
+      expect(page).to have_flash_notice("Bachs billing connected successfully. Your verification charge refund has been initiated.")
+    end
+  end
+
   it "disabled when Stripe secret key not provided" do
     allow(Config).to receive(:stripe_secret_key).and_return(nil)
 

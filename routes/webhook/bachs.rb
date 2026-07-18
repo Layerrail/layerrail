@@ -14,6 +14,7 @@ class Clover
       response.content_type = :json
       event = JSON.parse(body)
       result = BachsGameVpsCheckout.reconcile_event!(event)
+      result = BachsBillingVerificationCheckout.reconcile_event!(event) if result[:status] == "ignored"
       result = BachsInvoiceCheckout.reconcile_event!(event) if result[:status] == "ignored"
       Clog.emit("Bachs webhook received", {bachs_webhook: {event_type: event["event_type"] || event["type"], result:}})
       {message: "Bachs webhook accepted", result:}

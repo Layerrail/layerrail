@@ -37,4 +37,13 @@ RSpec.describe PaymentMethod do
     expect(payment_methods_service).not_to receive(:detach)
     payment_method.destroy
   end
+
+  it "renders and deletes a Bachs verification method locally" do
+    bachs_method = described_class.create(stripe_id: "bachs:payment:pay_123")
+    expect(payment_methods_service).not_to receive(:retrieve)
+    expect(payment_methods_service).not_to receive(:detach)
+
+    expect(bachs_method.billing_data).to include("brand" => "Bachs", "funding" => "hosted checkout")
+    bachs_method.destroy
+  end
 end

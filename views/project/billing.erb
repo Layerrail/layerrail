@@ -174,7 +174,7 @@
       "components/table_card",
       title: "Payment Methods",
       right_items: [
-        part("components/button", text: "Open Polar Portal", link: "#{billing_path}/portal")
+        part("components/button", text: "Open Billing Profile", link: "#{billing_path}/portal")
       ],
       rows:
         billing_info.payment_methods.map do |pm|
@@ -186,6 +186,8 @@
           end
           payment_subtitle = if payment_data["exp_month"] && payment_data["exp_year"]
             "Expires #{payment_data["exp_month"]}/#{payment_data["exp_year"]}"
+          elsif payment_data["brand"] == "Bachs"
+            "Verified through Bachs hosted checkout"
           else
             "Managed in the Polar customer portal"
           end
@@ -200,7 +202,7 @@
                   component: {
                     url: path(pm),
                     hidden_inputs: { project_id: @project.ubid },
-                    confirmation: payment_data["last4"] || "Polar"
+                    confirmation: payment_data["last4"] || payment_data["brand"] || "billing"
                   },
                   extra_class: "flex justify-end"
                 }
@@ -209,7 +211,7 @@
             { id: "payment-method-#{pm.ubid}" }
           ]
         end,
-      empty_state: "No Polar billing method connected. Complete checkout to create resources in this project."
+      empty_state: "No billing method connected. Complete checkout to create resources in this project."
     ) %>
     <%== part("components/discount_code") %>
     <!-- Invoices -->
@@ -282,8 +284,8 @@
       "components/empty_state",
       icon: "hero-banknotes",
       title: "No billing information",
-      description: @outstanding_invoices.any? ? "Reconnect Polar billing or pay the outstanding invoices below to keep this project active." : "Connect Polar billing to create paid resources in this project.",
-      button_title: "Connect Polar billing"
+      description: @outstanding_invoices.any? ? "Reconnect Bachs billing or pay the outstanding invoices below to keep this project active." : "Connect Bachs billing to create paid resources in this project.",
+      button_title: "Connect Bachs billing"
     ) %>
   <% end %>
   <br/>
@@ -291,7 +293,7 @@
     <div id="invoices" class="mb-6 overflow-hidden rounded-lg shadow ring-1 ring-red-200 bg-white divide-y divide-gray-200">
       <div class="px-4 py-5 sm:px-6 bg-red-50">
         <h3 class="text-lg font-semibold text-red-800">Outstanding invoices</h3>
-        <p class="mt-1 text-sm text-red-700">These invoices stay on the account until they are paid through Polar.</p>
+        <p class="mt-1 text-sm text-red-700">These invoices stay on the account until they are paid through Bachs.</p>
       </div>
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-300">

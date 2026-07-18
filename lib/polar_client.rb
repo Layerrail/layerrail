@@ -109,6 +109,10 @@ class PolarClient
     request(:get, "/customers/external/#{external_id}")
   end
 
+  def self.create_customer(payload)
+    request(:post, "/customers/", body: payload, expected_status: 201)
+  end
+
   def self.update_customer_by_external_id(external_id, payload)
     request(:patch, "/customers/external/#{external_id}", body: payload)
   end

@@ -23,6 +23,10 @@ class BachsClient
     enabled? && Config.billing_checkout_provider == "bachs"
   end
 
+  def self.verification_checkout_enabled?
+    invoice_checkout_enabled? && !Config.bachs_verification_product_id.to_s.empty?
+  end
+
   def self.request(method, path, body: nil, query: nil, expected_status: 200, idempotency_key: nil)
     url = "#{Config.bachs_api_base_url}#{path}"
     url = "#{url}#{path.include?("?") ? "&" : "?"}#{URI.encode_www_form(query.compact)}" if query && !query.empty?
@@ -61,6 +65,10 @@ class BachsClient
 
   def self.get_subscription(id)
     request(:get, "/v1/subscriptions/#{id}")
+  end
+
+  def self.create_refund(payload, idempotency_key: nil)
+    request(:post, "/v1/refunds", body: payload, expected_status: [200, 201], idempotency_key:)
   end
 
   def self.create_webhook_endpoint(payload)

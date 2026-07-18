@@ -184,6 +184,8 @@ URLs and prepare directory submissions.
 
 - `BACHS_API_KEY`
 - `BACHS_WEBHOOK_SECRET`
+- `BACHS_VERIFICATION_PRODUCT_ID` identifies the one-time $1 Bachs product used
+  to verify billing before paid resources are created
 - `BACHS_GAME_VPS_PRODUCT_IDS` is a JSON object mapping each Game VPS plan to
   its recurring Bachs product ID
 - `GAME_VPS_CHECKOUT_PROVIDER` and `BILLING_CHECKOUT_PROVIDER` default to

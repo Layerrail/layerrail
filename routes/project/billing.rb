@@ -117,8 +117,49 @@ class Clover
           no_audit_log
         end
 
+        if Config.billing_checkout_provider == "bachs"
+          raise_web_error("Bachs billing verification is not configured. Set BACHS_VERIFICATION_PRODUCT_ID.") unless BachsClient.verification_checkout_enabled?
+
+          begin
+            checkout = BachsBillingVerificationCheckout.create!(
+              project: @project,
+              account: current_account,
+              success_url: "#{Config.base_url}#{@project.path}/billing/success/bachs",
+              cancel_url: "#{Config.base_url}#{billing_path}"
+            )
+            r.redirect checkout.fetch("checkout_url"), 303
+          rescue BachsAPIError => e
+            Clog.emit("Bachs billing verification checkout failed", {bachs_billing_verification_checkout_failed: {project_id: @project.id, error: e.message}})
+            raise_web_error("We couldn't start billing verification. Please try again or contact support@layerrail.com.")
+          end
+        end
+
         checkout = polar_checkout.call("project_billing_setup", PolarClient.verification_product_id, "#{@project.path}/billing/success")
         r.redirect checkout.fetch("url"), 303
+      end
+
+      r.get "success", "bachs" do
+        handle_validation_failure("project/billing")
+        checkout_id = typecast_params.nonempty_str("checkout_id") || typecast_params.nonempty_str("session_id")
+        raise_web_error("Missing Bachs checkout id") unless checkout_id
+
+        begin
+          result = BachsBillingVerificationCheckout.reconcile!(checkout_id, project: @project)
+        rescue BachsAPIError, PolarAPIError => e
+          Clog.emit("invalid Bachs billing verification", {invalid_bachs_billing_verification: {project_id: @project.id, checkout_id:, message: e.message}})
+          raise_web_error("We couldn't validate your Bachs checkout. If you think this is a mistake, please contact support@layerrail.com.")
+        end
+        raise_web_error("Bachs verification checkout was not successful") unless %w[verified already_verified].include?(result[:status])
+
+        flash["notice"] = case result[:refund_status]
+        when "processing"
+          "Bachs billing connected successfully. Your verification charge refund has been initiated."
+        when "success"
+          "Bachs billing connected successfully. Your verification charge was refunded."
+        else
+          "Bachs billing connected successfully. We couldn't confirm the verification refund yet; contact support@layerrail.com if it does not appear."
+        end
+        r.redirect billing_path
       end
 
       r.get "success" do

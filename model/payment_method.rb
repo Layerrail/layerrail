@@ -12,7 +12,18 @@ class PaymentMethod < Sequel::Model
   end
 
   def billing_data
-    if Config.polar_access_token
+    if stripe_id.start_with?("bachs:")
+      {
+        "brand" => "Bachs",
+        "last4" => nil,
+        "exp_month" => nil,
+        "exp_year" => nil,
+        "country" => nil,
+        "funding" => "hosted checkout",
+        "wallet" => nil,
+        "checks" => nil
+      }
+    elsif Config.polar_access_token
       {
         "brand" => "Polar",
         "last4" => nil,
@@ -31,7 +42,7 @@ class PaymentMethod < Sequel::Model
   alias_method :stripe_data, :billing_data
 
   def after_destroy
-    if Config.stripe_secret_key && !Config.polar_access_token
+    if Config.stripe_secret_key && !Config.polar_access_token && !stripe_id.start_with?("bachs:")
       StripeClient.payment_methods.detach(stripe_id)
     end
     super
