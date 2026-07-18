@@ -55,7 +55,7 @@ class Clover
         customer: {name: current_account.name || current_account.email, email: current_account.email},
         billing_currency: "USD",
         allowed_payment_method_types: ["card"],
-        success_url: "#{Config.base_url}#{@project.path}/game-vps/success",
+        success_url: "#{Config.base_url}#{@project.path}/game-vps/success/bachs",
         cancel_url: "#{Config.base_url}#{@project.path}/game-vps",
         metadata: {kind: "game_vps_checkout", project_id: @project.ubid, game_vps_id: game_vps.ubid, plan: game_vps.plan, product_id:, amount_cents: game_vps.amount_cents},
         reference: "layerrail-game-vps-#{game_vps.ubid}-#{checkout_attempt}",
@@ -78,6 +78,28 @@ class Clover
     end
   rescue Sequel::NoExistingObject
     nil
+  end
+
+  def complete_game_vps_checkout(r, provider: nil)
+    authorize("Vm:create", @project)
+    handle_validation_failure("game_vps/index")
+    checkout_id = typecast_params.str("checkout_id").to_s.strip
+    checkout_id = typecast_params.str("session_id").to_s.strip if checkout_id.empty?
+    raise_web_error("Missing checkout id") if checkout_id.empty?
+
+    begin
+      bachs_checkout = provider == "bachs" || typecast_params.str("provider") == "bachs" || checkout_id.start_with?("chk_")
+      result = bachs_checkout ? BachsGameVpsCheckout.reconcile!(checkout_id, project: @project) : GameVpsCheckout.reconcile!(checkout_id, project: @project)
+    rescue PolarAPIError, BachsAPIError => ex
+      raise_web_error("We couldn't validate your checkout. #{ex.message}")
+    rescue => ex
+      Clog.emit("game vps checkout success failed", Util.exception_to_hash(ex, into: {game_vps_checkout_success_failed: {checkout_id:, project_ubid: @project.ubid}}))
+      raise_web_error("Payment was received, but provisioning did not start cleanly. Support has been notified.")
+    end
+
+    raise_web_error("Game VPS checkout was not successful.") unless ["provisioning", "already_processed"].include?(result[:status])
+    flash["notice"] = "Game VPS payment received. Provisioning started."
+    r.redirect "#{@project.path}/game-vps"
   end
 
   hash_branch(:project_prefix, "game-vps") do |r|
@@ -167,27 +189,8 @@ class Clover
         r.redirect game_vps
       end
 
-      r.get "success" do
-        authorize("Vm:create", @project)
-        handle_validation_failure("game_vps/index")
-        checkout_id = typecast_params.str("checkout_id").to_s.strip
-        checkout_id = typecast_params.str("session_id").to_s.strip if checkout_id.empty?
-        raise_web_error("Missing checkout id") if checkout_id.empty?
-
-        begin
-          bachs_checkout = typecast_params.str("provider") == "bachs" || checkout_id.start_with?("chk_")
-          result = bachs_checkout ? BachsGameVpsCheckout.reconcile!(checkout_id, project: @project) : GameVpsCheckout.reconcile!(checkout_id, project: @project)
-        rescue PolarAPIError, BachsAPIError => ex
-          raise_web_error("We couldn't validate your checkout. #{ex.message}")
-        rescue => ex
-          Clog.emit("game vps checkout success failed", Util.exception_to_hash(ex, into: {game_vps_checkout_success_failed: {checkout_id:, project_ubid: @project.ubid}}))
-          raise_web_error("Payment was received, but provisioning did not start cleanly. Support has been notified.")
-        end
-
-        raise_web_error("Game VPS checkout was not successful.") unless ["provisioning", "already_processed"].include?(result[:status])
-        flash["notice"] = "Game VPS payment received. Provisioning started."
-        r.redirect "#{@project.path}/game-vps"
-      end
+      r.get("success", "bachs") { complete_game_vps_checkout(r, provider: "bachs") }
+      r.get("success") { complete_game_vps_checkout(r) }
 
       r.on GAME_VPS_NAME_OR_UBID do |name, id|
         authorized_game_vpses = dataset_authorize(@project.game_vpses_dataset, "Vm:view")

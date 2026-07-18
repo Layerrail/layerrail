@@ -122,6 +122,7 @@ module ThawedMock
 
   # Other Classes
   allow_mocking(BachsClient, :archive_product, :create_checkout, :create_product, :get_checkout, :get_subscription)
+  allow_mocking(BachsGameVpsCheckout, :reconcile!)
   allow_mocking(BachsInvoiceCheckout, :reconcile!)
   allow_mocking(BillingRate, :from_resource_properties)
   allow_mocking(Clog, :emit, :write)

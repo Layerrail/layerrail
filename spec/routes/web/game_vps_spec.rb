@@ -57,5 +57,16 @@ RSpec.describe Clover, "game vps" do
       click_link "payment-waiting"
       expect(page).to have_button("Continue checkout")
     end
+
+    it "reconciles UUID checkout returns through Bachs" do
+      checkout_id = "808e9dc2-2af3-4a8b-9fc9-956f34fac3c2"
+      expect(BachsGameVpsCheckout).to receive(:reconcile!).with(checkout_id, project:).and_return(status: "provisioning", count: 1)
+      expect(GameVpsCheckout).not_to receive(:reconcile!)
+
+      visit "#{project.path}/game-vps/success/bachs?checkout_id=#{checkout_id}"
+
+      expect(page).to have_current_path("#{project.path}/game-vps")
+      expect(page).to have_flash_notice("Game VPS payment received. Provisioning started.")
+    end
   end
 end
