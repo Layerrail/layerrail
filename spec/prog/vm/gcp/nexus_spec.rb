@@ -146,6 +146,15 @@ RSpec.describe Prog::Vm::Gcp::Nexus do
     end
   end
 
+  describe "usage-limit suspension" do
+    it "network-quarantines a local-SSD VM instead of discarding data" do
+      VmStorageVolume.create(vm_id: vm.id, boot: false, size_gib: 375, disk_index: 1)
+      expect(compute_client).not_to receive(:stop)
+
+      expect { nx.stop }.to hop("usage_limit_quarantine")
+    end
+  end
+
   describe "#start" do
     before do
       nic.private_subnet.strand.update(label: "wait")

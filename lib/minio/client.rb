@@ -53,6 +53,14 @@ class Minio::Client
     response.status
   end
 
+  def admin_set_user_status(access_key, status)
+    raise ArgumentError, "status must be enabled or disabled" unless %w[enabled disabled].include?(status)
+
+    query = URI.encode_www_form({"accessKey" => access_key, "status" => status})
+    response = send_request("PUT", admin_uri("set-user-status?#{query}"))
+    response.status
+  end
+
   def admin_policy_list
     send_request("GET", admin_uri("list-canned-policies"))
   end

@@ -47,7 +47,8 @@ class Vm < Sequel::Model
   plugin ResourceMethods, redacted_columns: :public_key
   plugin ProviderDispatcher, __FILE__
   plugin SemaphoreMethods, :destroy, :start_after_host_reboot, :prevent_destroy, :update_firewall_rules,
-    :checkup, :update_spdk_dependency, :waiting_for_capacity, :lb_expiry_started, :restart, :start, :stop, :migrate_to_separate_progs, :admin_stop, :stopping
+    :checkup, :update_spdk_dependency, :waiting_for_capacity, :lb_expiry_started, :restart, :start, :stop, :migrate_to_separate_progs, :admin_stop, :stopping,
+    :usage_limit_suspended
   include HealthMonitorMethods
 
   include ObjectTag::Cleanup
@@ -134,6 +135,8 @@ class Vm < Sequel::Model
   def display_state
     label = strand&.label
     return "deleting" if destroying_set? || destroy_set?
+    return "stopped by usage limit" if usage_limit_suspended_set? && %w[stopped stopped_by_admin].include?(label)
+    return "stopping at usage limit" if usage_limit_suspended_set?
     return "stopped by admin" if admin_stop_set? || label == "stopped_by_admin"
     return "restarting" if restart_set? || label == "restart"
     return "starting" if start_set? || label == "start_after_stop"
@@ -158,7 +161,7 @@ class Vm < Sequel::Model
   end
 
   def can_start?
-    %w[unavailable stopped].include?(display_state)
+    !usage_limit_suspended_set? && %w[unavailable stopped].include?(display_state)
   end
 
   # Reverse look-up the vm_size instance that was used to create this VM

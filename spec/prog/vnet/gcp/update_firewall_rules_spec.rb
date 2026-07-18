@@ -125,6 +125,22 @@ RSpec.describe Prog::Vnet::Gcp::UpdateFirewallRules do
       expect(bound).to contain_exactly(fw_tag_value_name, subnet_tag_value_name)
     end
 
+    it "removes every access tag while usage-limited" do
+      nx.incr_usage_limit_suspended
+      firewall_binding = instance_double(Google::Apis::CloudresourcemanagerV3::TagBinding,
+        name: "tagBindings/firewall", tag_value_namespaced_name: fw_tag_value_name)
+      subnet_binding = instance_double(Google::Apis::CloudresourcemanagerV3::TagBinding,
+        name: "tagBindings/subnet", tag_value_namespaced_name: subnet_tag_value_name)
+      bindings = instance_double(Google::Apis::CloudresourcemanagerV3::ListTagBindingsResponse,
+        tag_bindings: [firewall_binding, subnet_binding], next_page_token: nil)
+      allow(regional_crm_client).to receive(:list_tag_bindings).and_return(bindings)
+      expect(regional_crm_client).not_to receive(:create_tag_binding)
+      expect(regional_crm_client).to receive(:delete_tag_binding).with("tagBindings/firewall")
+      expect(regional_crm_client).to receive(:delete_tag_binding).with("tagBindings/subnet")
+
+      expect { nx.update_firewall_rules }.to hop("wait_sshable", "Vm::Gcp::Nexus")
+    end
+
     it "handles nil tag_bindings in list response without iterating" do
       nil_bindings = instance_double(Google::Apis::CloudresourcemanagerV3::ListTagBindingsResponse,
         tag_bindings: nil, next_page_token: nil)

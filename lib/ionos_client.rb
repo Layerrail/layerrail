@@ -136,6 +136,14 @@ class IonosClient
     request(:get, "/datacenters/#{datacenter_id}/servers/#{server_id}?depth=5").body
   end
 
+  def stop_server(datacenter_id, server_id)
+    request(:post, "/datacenters/#{datacenter_id}/servers/#{server_id}/stop", expected_status: [202])
+  end
+
+  def start_server(datacenter_id, server_id)
+    request(:post, "/datacenters/#{datacenter_id}/servers/#{server_id}/start", expected_status: [202])
+  end
+
   def get_request_status(status_url)
     request(:get, status_path(status_url)).body
   end

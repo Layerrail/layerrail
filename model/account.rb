@@ -43,6 +43,7 @@ class Account < Sequel::Model(:accounts)
   }.freeze
 
   one_to_many :usage_alerts, key: :user_id, read_only: true
+  one_to_many :usage_limits, key: :user_id, read_only: true
   one_to_many :api_keys, key: :owner_id, conditions: {owner_table: "accounts"}, read_only: true
   one_to_many :identities, class: :AccountIdentity, remover: nil, clearer: nil
   one_to_many :invitations, class: :ProjectInvitation, primary_key: :email, key: :email, read_only: true
@@ -53,7 +54,8 @@ class Account < Sequel::Model(:accounts)
   plugin :association_dependencies,
     projects: :nullify,
     sent_invitations: :destroy,
-    usage_alerts: :destroy
+    usage_alerts: :destroy,
+    usage_limits: :destroy
 
   plugin ResourceMethods
   include SubjectTag::Cleanup
@@ -197,3 +199,4 @@ end
 #  account_webauthn_user_ids        | account_webauthn_user_ids_id_fkey                | (id) REFERENCES accounts(id)
 #  project_invitation               | project_invitation_inviter_id_fkey               | (inviter_id) REFERENCES accounts(id)
 #  usage_alert                      | usage_alert_user_id_fkey                         | (user_id) REFERENCES accounts(id)
+#  usage_limit                      | usage_limit_user_id_fkey                         | (user_id) REFERENCES accounts(id)

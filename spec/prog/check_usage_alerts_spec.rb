@@ -84,5 +84,25 @@ RSpec.describe Prog::CheckUsageAlerts do
       expect { prog.wait }.to nap(5 * 60)
       expect(alert.reload.last_triggered_at).to eq(last_triggered_at)
     end
+
+    it "enforces a monthly usage limit at 100 percent" do
+      user = Account.create(email: "limit-owner@example.com")
+      project = Project.create(name: "limited-project")
+      usage_limit = UsageLimit.create(project_id: project.id, user_id: user.id, limit: 1)
+      BillingRecord.create(
+        project_id: project.id,
+        resource_id: "d5c1c540-407e-8374-a5f3-337204777db4",
+        resource_name: "expensive-resource",
+        span: Sequel::Postgres::PGRange.new(Time.now - 60 * 60, nil),
+        billing_rate_id: BillingRate.from_resource_properties("VmVCpu", "standard", "hetzner-hel1")["id"],
+        amount: 1_000_000,
+      )
+
+      expect { prog.wait }.to nap(5 * 60)
+
+      expect(usage_limit.reload.last_notification_threshold).to eq(100)
+      expect(usage_limit.suspended?).to be(true)
+      expect(project.reload.active?).to be(false)
+    end
   end
 end

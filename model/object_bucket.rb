@@ -9,7 +9,7 @@ class ObjectBucket < Sequel::Model
   one_to_one :strand, key: :id
 
   plugin ResourceMethods, etc_type: true, encrypted_columns: :secret_key
-  plugin SemaphoreMethods, :destroy
+  plugin SemaphoreMethods, :destroy, :usage_limit_suspended, :usage_limit_resume
 
   def path
     "/bucket/#{name}"
@@ -20,7 +20,7 @@ class ObjectBucket < Sequel::Model
   end
 
   def ready?
-    state == "ready"
+    state == "ready" && !usage_limit_suspended_set?
   end
 
   def billing_amount_gib

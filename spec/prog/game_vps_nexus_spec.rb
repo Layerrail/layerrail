@@ -49,4 +49,47 @@ RSpec.describe Prog::GameVpsNexus do
     expect(game_vps.reload.status).to eq("failed")
     expect(game_vps.failure_message).to include("InvalidParameter")
   end
+
+  it "redirects a provisioned server into usage-limit suspension" do
+    game_vps.update(server_id: "game-vm", datacenter_id: "game-rg", status: "running")
+    strand.update(label: "wait")
+    game_vps.incr_usage_limit_suspended
+
+    expect { nx.before_run }.to hop("usage_limit_suspend")
+  end
+
+  it "holds paid provisioning until a project usage limit is adjusted" do
+    user = Account.create(email: "limit-owner@example.com")
+    UsageLimit.create(
+      project_id: project.id,
+      user_id: user.id,
+      limit: 100,
+      suspended_at: Time.now,
+      suspended_revision: 1,
+    )
+
+    expect { nx.before_run }.to nap(5 * 60)
+    expect(nx.usage_limit_suspended_set?).to be(true)
+    expect(game_vps.reload.status).to eq("creating")
+    expect(game_vps.server_id).to be_nil
+  end
+
+  it "deallocates and later starts an Azure Game VPS" do
+    game_vps.update(server_id: "game-vm", datacenter_id: "game-rg", status: "running")
+    game_vps.incr_usage_limit_suspended
+    expect(client).to receive(:shutdown_virtual_machine)
+
+    expect { nx.usage_limit_suspend }.to hop("wait_usage_limit_suspended")
+    expect(game_vps.reload.status).to eq("stopping")
+
+    allow(client).to receive(:get_virtual_machine).and_return({"properties" => {"instanceView" => {"statuses" => [{"code" => "PowerState/deallocated"}]}}})
+    expect { nx.wait_usage_limit_suspended }.to hop("usage_limit_suspended")
+    expect(game_vps.reload.status).to eq("stopped")
+
+    game_vps.decr_usage_limit_suspended
+    game_vps.incr_usage_limit_resume
+    expect(client).to receive(:power_on_virtual_machine)
+    expect { nx.usage_limit_resume }.to hop("wait_usage_limit_resumed")
+    expect(game_vps.reload.status).to eq("starting")
+  end
 end

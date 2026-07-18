@@ -47,6 +47,13 @@ RSpec.describe Prog::Vnet::Aws::UpdateFirewallRules do
       expect { nx.update_firewall_rules }.to hop("remove_aws_old_rules")
     end
 
+    it "does not add ingress rules while usage-limited" do
+      allow(nx).to receive(:usage_limit_suspended_set?).and_return(true)
+      expect(vm).not_to receive(:firewall_rules)
+
+      expect { nx.update_firewall_rules }.to hop("remove_aws_old_rules")
+    end
+
     it "hops to remove_aws_firewall_rules after adding new rules" do
       expect(nx).to receive(:vm).and_return(vm).at_least(:once)
       expect(vm).to receive(:firewall_rules).and_return([
@@ -226,6 +233,30 @@ RSpec.describe Prog::Vnet::Aws::UpdateFirewallRules do
         },
       ]])
       expect(ec2_client).not_to receive(:revoke_security_group_ingress)
+
+      expect { nx.remove_aws_old_rules }.to exit({"msg" => "firewall rule is added"})
+    end
+
+    it "removes all ingress while usage-limited" do
+      allow(nx).to receive(:usage_limit_suspended_set?).and_return(true)
+      expect(vm).not_to receive(:firewall_rules)
+      expect(vm.private_subnets.first).to receive(:private_subnet_aws_resource).and_return(instance_double(PrivateSubnetAwsResource, security_group_id: "sg-1234567890")).at_least(:once)
+      ec2_client.stub_responses(:describe_security_groups, security_groups: [ip_permissions: [{
+        ip_protocol: "tcp",
+        from_port: 443,
+        to_port: 443,
+        ip_ranges: [{cidr_ip: "0.0.0.0/0"}],
+        ipv_6_ranges: [],
+      }]])
+      expect(ec2_client).to receive(:revoke_security_group_ingress).with({
+        group_id: "sg-1234567890",
+        ip_permissions: [{
+          ip_protocol: "tcp",
+          from_port: 443,
+          to_port: 443,
+          ip_ranges: [Aws::EC2::Types::IpRange.new(cidr_ip: "0.0.0.0/0")],
+        }],
+      })
 
       expect { nx.remove_aws_old_rules }.to exit({"msg" => "firewall rule is added"})
     end

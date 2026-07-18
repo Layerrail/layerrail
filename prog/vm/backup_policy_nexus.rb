@@ -7,6 +7,14 @@ class Prog::Vm::BackupPolicyNexus < Prog::Base
     Strand.create_with_id(policy, prog: "Vm::BackupPolicyNexus", label: "wait", stack: [{subject_id: policy.id}])
   end
 
+  def before_run
+    super
+    return if strand.label == "destroy"
+
+    project_id = Vm.where(id: vm_backup_policy.vm_id).get(:project_id)
+    nap 5 * 60 if Project[project_id]&.usage_limit_suspended?
+  end
+
   label def wait
     nap 6 * 60 * 60 unless vm_backup_policy.enabled
     when_destroy_set? { hop_destroy }

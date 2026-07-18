@@ -8,7 +8,7 @@ class EdgeService < Sequel::Model
   one_to_many :active_billing_records, class: :BillingRecord, key: :resource_id, read_only: true, &:active
 
   plugin ResourceMethods, etc_type: true
-  plugin SemaphoreMethods, :destroy
+  plugin SemaphoreMethods, :destroy, :usage_limit_suspended, :usage_limit_resume
 
   CACHE_MODES = {
     "standard" => "Standard",
@@ -26,7 +26,7 @@ class EdgeService < Sequel::Model
   end
 
   def ready?
-    state == "ready"
+    state == "ready" && !usage_limit_suspended_set?
   end
 
   def display_cache_mode

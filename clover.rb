@@ -1098,14 +1098,15 @@ class Clover < Roda
     end
 
     if request.get? && request.path_info == "/edge-runtime/resolve"
-      edge_service = EdgeService.first(hostname: typecast_params.nonempty_str!("host").downcase, state: "ready")
+      edge_service = EdgeService.eager(:project).first(hostname: typecast_params.nonempty_str!("host").downcase, state: "ready")
+      edge_service = nil if edge_service&.project&.usage_limit_suspended?
       response.json = true
       response.status = 404 unless edge_service
       next(edge_service ? {
         origin_url: edge_service.origin_url,
         cache_mode: edge_service.cache_mode,
         tls_mode: edge_service.tls_mode,
-        hostname: edge_service.hostname
+        hostname: edge_service.hostname,
       } : {error: "not_found"})
     elsif edge?
       edge_service = EdgeService.first(hostname: request.host.downcase, state: "ready")

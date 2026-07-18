@@ -158,6 +158,7 @@ class Prog::Vm::Azure::Nexus < Prog::Base
   end
 
   label def wait
+    when_usage_limit_suspended_set? { hop_stop }
     when_stop_set? { hop_stop }
     when_start_set? { hop_start_after_stop }
     when_restart_set? { hop_restart }
@@ -190,8 +191,10 @@ class Prog::Vm::Azure::Nexus < Prog::Base
   end
 
   label def stopped
-    when_start_set? { hop_start_after_stop }
-    when_restart_set? { hop_start_after_stop }
+    unless usage_limit_suspended_set?
+      when_start_set? { hop_start_after_stop }
+      when_restart_set? { hop_start_after_stop }
+    end
     nap 6 * 60 * 60
   end
 

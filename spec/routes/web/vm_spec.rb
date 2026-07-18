@@ -59,6 +59,22 @@ RSpec.describe Clover, "vm" do
     end
 
     describe "create" do
+      it "blocks service changes while the monthly usage limit is reached" do
+        UsageLimit.create(
+          project_id: project.id,
+          user_id: user.id,
+          limit: 100,
+          suspended_at: Time.now,
+          suspended_revision: 1,
+        )
+        visit "#{project.path}/vm/create"
+        click_button "Create"
+
+        expect(page.status_code).to eq(409)
+        expect(page).to have_content("Raise or remove the limit on the billing page")
+        expect(Vm.where(project_id: project.id)).to be_empty
+      end
+
       it "can create new virtual machine" do
         project
 

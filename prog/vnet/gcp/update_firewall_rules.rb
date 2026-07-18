@@ -24,13 +24,17 @@ class Prog::Vnet::Gcp::UpdateFirewallRules < Prog::Base
     # canonical tagValues/{numeric-id} form. Namespaced names are
     # deterministic from project_id + firewall.ubid + subnet.ubid, so the
     # VM side needs neither a DB column nor a CRM lookup to resolve them.
-    desired_tag_values = vm.firewalls(eager: :firewall_rules).filter_map do |fw|
-      firewall_tag_namespaced_name(fw) if fw.firewall_rules.any?
+    desired_tag_values = if usage_limit_suspended_set?
+      []
+    else
+      vm.firewalls(eager: :firewall_rules).filter_map do |fw|
+        firewall_tag_namespaced_name(fw) if fw.firewall_rules.any?
+      end.tap do |values|
+        # Subnet "active" tag - without it, the VPC-wide DENY rules
+        # (65531-65534) block private egress from this VM.
+        values << subnet_tag_namespaced_name
+      end
     end
-
-    # Subnet "active" tag - without it, the VPC-wide DENY rules
-    # (65531-65534) would block all private egress from this VM.
-    desired_tag_values << subnet_tag_namespaced_name
 
     # Vm::Gcp#enforce_firewall_cap caps firewalls at 9 per GCP VM,
     # so with the subnet tag we are always <= 10. If we hit this, the

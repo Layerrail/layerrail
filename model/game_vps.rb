@@ -5,7 +5,7 @@ require "json"
 require_relative "../model"
 
 class GameVps < Sequel::Model(:game_vps)
-  STATUSES = %w[pending_payment creating running failed deleting deleted].freeze
+  STATUSES = %w[pending_payment creating running stopping stopped starting failed deleting deleted].freeze
   WINDOWS_USERNAME_PATTERN = /\A[A-Za-z][A-Za-z0-9._-]{0,19}\z/
   WINDOWS_USERNAME_RESERVED = %w[
     admin administrator guest user user1 test test1 root support layerrailadmin
@@ -117,7 +117,7 @@ class GameVps < Sequel::Model(:game_vps)
   one_to_many :active_billing_records, class: :BillingRecord, key: :resource_id, read_only: true, &:active
 
   plugin ResourceMethods, encrypted_columns: [:rdp_password, :txadmin_password]
-  plugin SemaphoreMethods, :destroy
+  plugin SemaphoreMethods, :destroy, :usage_limit_suspended, :usage_limit_resume
 
   dataset_module Pagination
 
@@ -271,6 +271,7 @@ class GameVps < Sequel::Model(:game_vps)
 
   def display_state
     return "deleting" if destroy_set? || destroying_set?
+    return "stopped by usage limit" if usage_limit_suspended_set? && status == "stopped"
 
     status
   end
@@ -326,6 +327,6 @@ end
 #  game_vps_project_id_name_index | UNIQUE btree (project_id, name)
 #  game_vps_project_id_index      | btree (project_id)
 # Check constraints:
-#  valid_game_vps_status | (status = ANY (ARRAY['pending_payment'::text, 'creating'::text, 'running'::text, 'failed'::text, 'deleting'::text, 'deleted'::text]))
+#  valid_game_vps_status | (status = ANY (ARRAY['pending_payment'::text, 'creating'::text, 'running'::text, 'stopping'::text, 'stopped'::text, 'starting'::text, 'failed'::text, 'deleting'::text, 'deleted'::text]))
 # Foreign key constraints:
 #  game_vps_project_id_fkey | (project_id) REFERENCES project(id)

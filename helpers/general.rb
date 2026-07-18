@@ -269,6 +269,7 @@ class Clover < Roda
   end
 
   def authorize(actions, object_id)
+    enforce_usage_limit_suspension!(actions)
     if @project_permissions && (object_id == @project || object_id == @project.id)
       fail Authorization::Unauthorized unless has_project_permission(actions)
     else
@@ -276,6 +277,29 @@ class Clover < Roda
         super(@project, id, actions, object_id)
       end
     end
+  end
+
+  USAGE_LIMIT_SERVICE_PATH = %r{
+    /(?:
+      game-vps|deploy|bucket|edge|monitoring|volume|backups|github|ai-app|
+      inference(?:-api-key|-endpoint|-playground)?|
+      location/[^/]+/(?:vm|postgres|kubernetes-cluster|load-balancer|private-subnet|firewall)|
+      (?:vm|postgres|kubernetes-cluster|load-balancer|private-subnet|firewall)
+    )(?:/|$)
+  }x
+
+  private def enforce_usage_limit_suspension!(actions)
+    return if request.get?
+    return unless request.path_info.match?(USAGE_LIMIT_SERVICE_PATH)
+    return if Array(actions).any? { |action| action.to_s == "delete" || action.to_s.end_with?(":delete") }
+    return unless @project&.usage_limit_suspended?
+
+    fail CloverError.new(
+      409,
+      "UsageLimitReached",
+      "This project's monthly usage limit has been reached. Raise or remove the limit on the billing page before changing or starting services.",
+      {},
+    )
   end
 
   def has_permission?(actions, object_id)

@@ -8,7 +8,7 @@ class Prog::Vnet::Aws::UpdateFirewallRules < Prog::Base
   end
 
   label def update_firewall_rules
-    rules = vm.firewall_rules
+    rules = usage_limit_suspended_set? ? [] : vm.firewall_rules
     rules.select(&:port_range).map! do |rule|
       perm = {
         ip_protocol: rule.protocol,
@@ -35,7 +35,7 @@ class Prog::Vnet::Aws::UpdateFirewallRules < Prog::Base
   end
 
   label def remove_aws_old_rules
-    rules = vm.firewall_rules
+    rules = usage_limit_suspended_set? ? [] : vm.firewall_rules
     ip6_rules, ip4_rules = rules.select(&:port_range).partition(&:ip6?)
 
     # Fetch existing security group rules

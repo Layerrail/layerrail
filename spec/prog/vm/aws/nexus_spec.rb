@@ -152,6 +152,14 @@ usermod -L ubuntu
     end
   end
 
+  describe "usage-limit suspension" do
+    it "network-quarantines an instance-store VM instead of stopping it" do
+      expect(client).not_to receive(:stop_instances)
+
+      expect { nx.stop }.to hop("usage_limit_quarantine")
+    end
+  end
+
   describe "#start" do
     it "naps if vm nics are not in wait state" do
       vm.nics.first.strand.update(label: "start")

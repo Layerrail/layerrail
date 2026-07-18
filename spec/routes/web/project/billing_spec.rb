@@ -842,5 +842,46 @@ RSpec.describe Clover, "billing" do
         expect(page.status_code).to eq(404)
       end
     end
+
+    describe "monthly usage limit" do
+      before do
+        allow(BachsClient).to receive(:enabled?).and_return(true)
+        allow(UsageLimitEmail).to receive(:deliver)
+      end
+
+      it "can set and update the hard usage limit" do
+        visit "#{project.path}/billing"
+        expect(page).to have_field("usage_limit"), page.body
+        fill_in "usage_limit", with: 100
+        click_button "Set limit"
+
+        expect(page).to have_flash_notice "Monthly usage limit set."
+        expect(project.reload.usage_limit.limit).to eq(100)
+
+        fill_in "usage_limit", with: 250
+        click_button "Update limit"
+
+        expect(page).to have_flash_notice "Monthly usage limit updated."
+        expect(project.reload.usage_limit.limit).to eq(250)
+        expect(project.usage_limit.revision).to eq(2)
+      end
+
+      it "validates the hard usage limit" do
+        visit "#{project.path}/billing"
+        fill_in "usage_limit", with: 0
+        click_button "Set limit"
+
+        expect(page).to have_flash_error "Value must be an integer greater than 0 for parameter usage_limit"
+      end
+
+      it "can remove the hard usage limit" do
+        UsageLimit.create(project_id: project.id, user_id: user.id, limit: 100)
+        visit "#{project.path}/billing"
+        click_button "Remove limit"
+
+        expect(page).to have_flash_notice "Monthly usage limit removed."
+        expect(project.reload.usage_limit).to be_nil
+      end
+    end
   end
 end

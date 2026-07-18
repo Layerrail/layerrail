@@ -123,6 +123,10 @@ class Prog::Vm::Linode::Nexus < Prog::Base
   end
 
   label def wait
+    when_usage_limit_suspended_set? do
+      hop_stop
+    end
+
     when_stop_set? do
       hop_stop
     end
@@ -164,12 +168,14 @@ class Prog::Vm::Linode::Nexus < Prog::Base
   end
 
   label def stopped
-    when_start_set? do
-      hop_start_after_stop
-    end
+    unless usage_limit_suspended_set?
+      when_start_set? do
+        hop_start_after_stop
+      end
 
-    when_restart_set? do
-      hop_start_after_stop
+      when_restart_set? do
+        hop_start_after_stop
+      end
     end
 
     nap 6 * 60 * 60

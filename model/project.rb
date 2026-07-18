@@ -9,6 +9,7 @@ class Project < Sequel::Model
   one_to_many :object_tags, order: :name, read_only: true
   many_to_one :billing_info
   one_to_one :premium_ai_trial, read_only: true
+  one_to_one :usage_limit, read_only: true
   one_to_many :usage_alerts, read_only: true
   one_to_many :github_installations, read_only: true
   many_to_many :github_runners, join_table: :github_installation, right_key: :id, right_primary_key: :installation_id, read_only: true
@@ -87,7 +88,8 @@ class Project < Sequel::Model
     object_tags: :destroy,
     quotas: :destroy,
     ssh_public_keys: :destroy,
-    subject_tags: :destroy
+    subject_tags: :destroy,
+    usage_limit: :destroy
 
   plugin ResourceMethods
 
@@ -166,6 +168,7 @@ class Project < Sequel::Model
       DB.ignore_duplicate_queries do
         github_installations.each { Prog::Github::DestroyGithubInstallation.assemble(it) }
       end
+      usage_limit_dataset.destroy
 
       # We still keep the project object for billing purposes.
       # These need to be cleaned up manually once in a while.
@@ -175,7 +178,11 @@ class Project < Sequel::Model
   end
 
   def active?
-    visible && accounts_dataset.exclude(suspended_at: nil).empty?
+    visible && !usage_limit_suspended? && accounts_dataset.exclude(suspended_at: nil).empty?
+  end
+
+  def usage_limit_suspended?
+    usage_limit_dataset.exclude(suspended_at: nil).any?
   end
 
   def current_invoice(since: nil)
@@ -350,5 +357,6 @@ end
 #  ssh_public_key            | ssh_public_key_project_id_fkey            | (project_id) REFERENCES project(id)
 #  subject_tag               | subject_tag_project_id_fkey               | (project_id) REFERENCES project(id)
 #  usage_alert               | usage_alert_project_id_fkey               | (project_id) REFERENCES project(id)
+#  usage_limit               | usage_limit_project_id_fkey               | (project_id) REFERENCES project(id)
 #  victoria_metrics_resource | victoria_metrics_resource_project_id_fkey | (project_id) REFERENCES project(id)
 #  vm                        | vm_project_id_fkey                        | (project_id) REFERENCES project(id)

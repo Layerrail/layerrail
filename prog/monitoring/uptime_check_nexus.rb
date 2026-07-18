@@ -21,6 +21,10 @@ class Prog::Monitoring::UptimeCheckNexus < Prog::Base
 
   label def wait
     when_destroy_set? { hop_destroy }
+    if Project[uptime_check.project_id]&.usage_limit_suspended?
+      uptime_check.update(state: "paused", updated_at: Time.now) unless uptime_check.state == "paused"
+      nap uptime_check.interval_seconds
+    end
     unless uptime_check.enabled
       uptime_check.update(state: "paused", updated_at: Time.now) unless uptime_check.state == "paused"
       nap uptime_check.interval_seconds

@@ -3,8 +3,19 @@
 class Prog::ObjectBucketNexus < Prog::Base
   subject_is :object_bucket
 
+  USAGE_LIMIT_LABELS = %w[usage_limit_suspend usage_limit_suspended usage_limit_resume destroy].freeze
+
   def self.assemble(bucket)
     Strand.create_with_id(bucket, prog: "ObjectBucketNexus", label: "start", stack: [{subject_id: bucket.id}])
+  end
+
+  def before_run
+    super
+    return unless usage_limit_suspended_set?
+    return if USAGE_LIMIT_LABELS.include?(strand.label)
+
+    hop_usage_limit_suspend if object_bucket.state == "ready"
+    nap 5 * 60
   end
 
   label def start
@@ -49,7 +60,41 @@ class Prog::ObjectBucketNexus < Prog::Base
 
   label def wait
     when_destroy_set? { hop_destroy }
+    when_usage_limit_suspended_set? { hop_usage_limit_suspend }
+    decr_usage_limit_resume if usage_limit_resume_set?
     nap 6 * 60 * 60
+  end
+
+  label def usage_limit_suspend
+    admin_client.admin_set_user_status(object_bucket.access_key, "disabled")
+    object_bucket.update(state: "suspended", last_error: nil)
+    hop_usage_limit_suspended
+  rescue Prog::Base::FlowControl
+    raise
+  rescue => ex
+    object_bucket.update(last_error: ex.message)
+    Clog.emit("Object bucket usage-limit suspension failed", Util.exception_to_hash(ex).merge(object_bucket_id: object_bucket.id))
+    nap 5 * 60
+  end
+
+  label def usage_limit_suspended
+    when_destroy_set? { hop_destroy }
+    when_usage_limit_resume_set? { hop_usage_limit_resume } unless usage_limit_suspended_set?
+    nap 6 * 60 * 60
+  end
+
+  label def usage_limit_resume
+    admin_client.admin_set_user_status(object_bucket.access_key, "enabled")
+    decr_usage_limit_resume
+    object_bucket.update(state: "ready", last_error: nil)
+    object_bucket.ensure_billing_record!
+    hop_wait
+  rescue Prog::Base::FlowControl
+    raise
+  rescue => ex
+    object_bucket.update(last_error: ex.message)
+    Clog.emit("Object bucket usage-limit resume failed", Util.exception_to_hash(ex).merge(object_bucket_id: object_bucket.id))
+    nap 5 * 60
   end
 
   label def destroy

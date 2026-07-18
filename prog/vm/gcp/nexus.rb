@@ -226,12 +226,75 @@ class Prog::Vm::Gcp::Nexus < Prog::Base
   end
 
   label def wait
+    when_usage_limit_suspended_set? { hop_stop }
+    when_stop_set? { hop_stop }
+    when_start_set? { hop_start_after_stop }
+
     when_update_firewall_rules_set? do
       register_deadline("wait", 5 * 60)
       hop_update_firewall_rules
     end
 
     nap 6 * 60 * 60
+  end
+
+  label def stop
+    decr_stop
+    hop_usage_limit_quarantine if vm.vm_storage_volumes_dataset.exclude(boot: true).any?
+
+    compute_client.stop(project: gcp_project_id, zone: gcp_zone, instance: vm.name)
+    vm.update(display_state: "stopping")
+    hop_wait_stopped
+  end
+
+  label def usage_limit_quarantine
+    if retval&.dig("msg") == "firewall rule is added"
+      decr_update_firewall_rules if update_firewall_rules_set?
+      vm.update(display_state: "stopped")
+      hop_stopped
+    end
+
+    incr_update_firewall_rules unless update_firewall_rules_set?
+    push vm.update_firewall_rules_prog, {}, :update_firewall_rules
+  end
+
+  label def wait_stopped
+    instance = compute_client.get(project: gcp_project_id, zone: gcp_zone, instance: vm.name)
+    nap 5 unless instance.status == "TERMINATED"
+    hop_stopped
+  end
+
+  label def stopped
+    when_start_set? { hop_start_after_stop } unless usage_limit_suspended_set?
+    nap 6 * 60 * 60
+  end
+
+  label def start_after_stop
+    hop_usage_limit_unquarantine if vm.vm_storage_volumes_dataset.exclude(boot: true).any?
+
+    compute_client.start(project: gcp_project_id, zone: gcp_zone, instance: vm.name)
+    vm.update(display_state: "creating")
+    hop_wait_started
+  end
+
+  label def usage_limit_unquarantine
+    if retval&.dig("msg") == "firewall rule is added"
+      decr_update_firewall_rules if update_firewall_rules_set?
+      decr_start
+      vm.update(display_state: "running")
+      hop_wait
+    end
+
+    incr_update_firewall_rules unless update_firewall_rules_set?
+    push vm.update_firewall_rules_prog, {}, :update_firewall_rules
+  end
+
+  label def wait_started
+    instance = compute_client.get(project: gcp_project_id, zone: gcp_zone, instance: vm.name)
+    nap 5 unless instance.status == "RUNNING"
+    decr_start
+    vm.update(display_state: "running")
+    hop_wait
   end
 
   label def update_firewall_rules

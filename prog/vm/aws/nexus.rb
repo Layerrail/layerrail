@@ -283,12 +283,75 @@ class Prog::Vm::Aws::Nexus < Prog::Base
   end
 
   label def wait
+    when_usage_limit_suspended_set? { hop_stop }
+    when_stop_set? { hop_stop }
+    when_start_set? { hop_start_after_stop }
+
     when_update_firewall_rules_set? do
       register_deadline("wait", 5 * 60)
       hop_update_firewall_rules
     end
 
     nap 6 * 60 * 60
+  end
+
+  label def stop
+    decr_stop
+    hop_usage_limit_quarantine if usage_limit_requires_network_quarantine?
+
+    client.stop_instances(instance_ids: [aws_instance.instance_id])
+    vm.update(display_state: "stopping")
+    hop_wait_stopped
+  end
+
+  label def usage_limit_quarantine
+    if retval&.dig("msg") == "firewall rule is added"
+      decr_update_firewall_rules if update_firewall_rules_set?
+      vm.update(display_state: "stopped")
+      hop_stopped
+    end
+
+    incr_update_firewall_rules unless update_firewall_rules_set?
+    push vm.update_firewall_rules_prog, {}, :update_firewall_rules
+  end
+
+  label def wait_stopped
+    state = client.describe_instances(instance_ids: [aws_instance.instance_id]).reservations.first&.instances&.first&.state&.name
+    nap 5 unless state == "stopped"
+    hop_stopped
+  end
+
+  label def stopped
+    when_start_set? { hop_start_after_stop } unless usage_limit_suspended_set?
+    nap 6 * 60 * 60
+  end
+
+  label def start_after_stop
+    hop_usage_limit_unquarantine if usage_limit_requires_network_quarantine?
+
+    client.start_instances(instance_ids: [aws_instance.instance_id])
+    vm.update(display_state: "creating")
+    hop_wait_started
+  end
+
+  label def usage_limit_unquarantine
+    if retval&.dig("msg") == "firewall rule is added"
+      decr_update_firewall_rules if update_firewall_rules_set?
+      decr_start
+      vm.update(display_state: "running")
+      hop_wait
+    end
+
+    incr_update_firewall_rules unless update_firewall_rules_set?
+    push vm.update_firewall_rules_prog, {}, :update_firewall_rules
+  end
+
+  label def wait_started
+    state = client.describe_instances(instance_ids: [aws_instance.instance_id]).reservations.first&.instances&.first&.state&.name
+    nap 5 unless state == "running"
+    decr_start
+    vm.update(display_state: "running")
+    hop_wait
   end
 
   label def update_firewall_rules
@@ -380,6 +443,10 @@ class Prog::Vm::Aws::Nexus < Prog::Base
 
   def client
     @client ||= vm.location.location_credential_aws.client
+  end
+
+  def usage_limit_requires_network_quarantine?
+    is_runner? || vm.vm_storage_volumes_dataset.exclude(boot: true).any?
   end
 
   def iam_client

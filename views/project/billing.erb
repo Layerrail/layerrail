@@ -3,7 +3,8 @@
 @invoices = @project.invoices.prepend(@project.current_invoice)
 @outstanding_invoices = @project.outstanding_invoices_dataset.all
 
-@usage_alerts = @project.usage_alerts_dataset.eager(:user).all %>
+@usage_alerts = @project.usage_alerts_dataset.eager(:user).all
+@usage_limit = @project.usage_limit_dataset.eager(:user).first %>
 
 <% if billing_info = @project.billing_info %>
   <%== part(
@@ -326,6 +327,70 @@
   <% end %>
   <%== part("components/discount_code") %>
 <% end %>
+<br/>
+<!-- Monthly usage limit -->
+<div>
+  <div class="md:flex md:items-center md:justify-between pb-1 lg:pb-2">
+    <div class="min-w-0 flex-1">
+      <h3 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-2xl sm:tracking-tight">
+        Monthly Usage Limit
+      </h3>
+    </div>
+  </div>
+  <div class="overflow-hidden rounded-lg shadow ring-1 ring-black ring-opacity-5 bg-white divide-y divide-gray-200">
+    <div class="px-4 py-5 sm:p-6">
+      <% current_limit_cost = @invoices.first.content["cost"].to_f %>
+      <% if @usage_limit %>
+        <% percentage = @usage_limit.usage_percentage(current_limit_cost) %>
+        <% if @usage_limit.suspended? %>
+          <div class="mb-5 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            This project reached its usage limit. Running services are stopped until the limit is raised above current usage or removed.
+          </div>
+        <% end %>
+        <div class="mb-5">
+          <div class="flex items-center justify-between text-sm">
+            <span class="font-medium text-gray-900"><%= money(current_limit_cost) %> used</span>
+            <span class="text-gray-500"><%= percentage %>% of <%= money(@usage_limit.limit) %></span>
+          </div>
+          <div class="mt-2 h-2 overflow-hidden rounded-full bg-gray-200">
+            <div class="h-full rounded-full <%= percentage >= 100 ? "bg-red-600" : (percentage >= 90 ? "bg-orange-500" : "bg-layerrail-600") %>" style="width: <%= [percentage, 100].min %>%"></div>
+          </div>
+        </div>
+      <% end %>
+
+      <p class="mb-5 text-sm text-gray-500">
+        Email notifications are sent when usage reaches 80%, 90%, and 100%. At 100%, LayerRail temporarily stops every running service in this project and pauses ongoing metered runtime charges. Nothing is deleted. Services start automatically only after the limit is raised or removed.
+      </p>
+
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <% form(action: "#{@project.path}/usage-limit", method: :post) do %>
+          <div class="flex items-end gap-3">
+            <div class="w-48">
+              <%== part(
+                "components/form/text",
+                name: "usage_limit",
+                label: "Monthly limit (USD)",
+                type: "number",
+                value: @usage_limit&.limit,
+                attributes: {required: true, min: 1, step: 1, placeholder: "100"}
+              ) %>
+            </div>
+            <%== part("components/form/submit_button", text: @usage_limit ? "Update limit" : "Set limit") %>
+          </div>
+        <% end %>
+
+        <% if @usage_limit %>
+          <%== part(
+            "components/delete_button",
+            text: "Remove limit",
+            url: "#{@project.path}/usage-limit",
+            confirmation_message: "Remove this usage limit? Any services stopped by it will start automatically."
+          ) %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
 <br/>
 <!-- Usage alerts -->
 <div>

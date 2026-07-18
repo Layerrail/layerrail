@@ -267,6 +267,10 @@ class Prog::Vm::Metal::Nexus < Prog::Base
   end
 
   label def wait
+    when_usage_limit_suspended_set? do
+      hop_stopped
+    end
+
     when_stop_set? do
       hop_stopped
     end
@@ -382,6 +386,8 @@ class Prog::Vm::Metal::Nexus < Prog::Base
         nap 10
       end
     end
+
+    nap 5 * 60 if usage_limit_suspended_set?
 
     when_start_set? do
       register_deadline("wait", 5 * 60)

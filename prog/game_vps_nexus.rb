@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "securerandom"
+require_relative "../lib/ionos_client"
 
 class Prog::GameVpsNexus < Prog::Base
   subject_is :game_vps
@@ -15,6 +16,18 @@ class Prog::GameVpsNexus < Prog::Base
     else
       Strand.create_with_id(game_vps, prog: "GameVpsNexus", label: "destroy")
     end
+  end
+
+  def before_run
+    super
+    if !usage_limit_suspended_set? && Project[game_vps.project_id]&.usage_limit_suspended?
+      incr_usage_limit_suspended
+    end
+    return unless usage_limit_suspended_set?
+    return if %w[usage_limit_suspend wait_usage_limit_suspended usage_limit_suspended usage_limit_resume wait_usage_limit_resumed destroy wait_destroy].include?(strand.label)
+
+    nap 5 * 60 unless game_vps.server_id
+    hop_usage_limit_suspend
   end
 
   label def start
@@ -220,7 +233,79 @@ class Prog::GameVpsNexus < Prog::Base
   end
 
   label def wait
+    when_usage_limit_suspended_set? { hop_usage_limit_suspend }
+    decr_usage_limit_resume if usage_limit_resume_set?
     nap 6 * 60 * 60
+  end
+
+  label def usage_limit_suspend
+    game_vps.update(status: "stopping", updated_at: Time.now)
+    if game_vps.provider == "azure"
+      azure_client.shutdown_virtual_machine(azure_resource_group, azure_vm_name)
+      hop_wait_usage_limit_suspended
+    end
+
+    result = client.stop_server(game_vps.datacenter_id, game_vps.server_id)
+    game_vps.update(request_status_url: result.status_url, updated_at: Time.now)
+    hop_wait_usage_limit_suspended
+  rescue AzureAPIError, IonosAPIError => ex
+    Clog.emit("Game VPS usage-limit suspension is waiting on the provider", Util.exception_to_hash(ex).merge(game_vps_id: game_vps.id))
+    nap 30
+  end
+
+  label def wait_usage_limit_suspended
+    if game_vps.provider == "azure"
+      statuses = Array(azure_client.get_virtual_machine(azure_resource_group, azure_vm_name).dig("properties", "instanceView", "statuses")).map { it["code"] }
+      nap 10 unless statuses.include?("PowerState/deallocated") || statuses.include?("PowerState/stopped")
+    else
+      nap 5 unless client.request_done?(game_vps.request_status_url)
+      vm_state = client.get_server(game_vps.datacenter_id, game_vps.server_id).dig("properties", "vmState").to_s.upcase
+      nap 10 unless %w[SHUTOFF STOPPED].include?(vm_state)
+    end
+
+    game_vps.update(status: "stopped", request_status_url: nil, updated_at: Time.now)
+    hop_usage_limit_suspended
+  rescue AzureAPIError, IonosAPIError => ex
+    Clog.emit("Game VPS usage-limit suspension status check failed", Util.exception_to_hash(ex).merge(game_vps_id: game_vps.id))
+    nap 30
+  end
+
+  label def usage_limit_suspended
+    when_usage_limit_resume_set? { hop_usage_limit_resume } unless usage_limit_suspended_set?
+    nap 6 * 60 * 60
+  end
+
+  label def usage_limit_resume
+    game_vps.update(status: "starting", updated_at: Time.now)
+    if game_vps.provider == "azure"
+      azure_client.power_on_virtual_machine(azure_resource_group, azure_vm_name)
+      hop_wait_usage_limit_resumed
+    end
+
+    result = client.start_server(game_vps.datacenter_id, game_vps.server_id)
+    game_vps.update(request_status_url: result.status_url, updated_at: Time.now)
+    hop_wait_usage_limit_resumed
+  rescue AzureAPIError, IonosAPIError => ex
+    Clog.emit("Game VPS usage-limit resume is waiting on the provider", Util.exception_to_hash(ex).merge(game_vps_id: game_vps.id))
+    nap 30
+  end
+
+  label def wait_usage_limit_resumed
+    if game_vps.provider == "azure"
+      statuses = Array(azure_client.get_virtual_machine(azure_resource_group, azure_vm_name).dig("properties", "instanceView", "statuses")).map { it["code"] }
+      nap 10 unless statuses.include?("PowerState/running")
+    else
+      nap 5 unless client.request_done?(game_vps.request_status_url)
+      vm_state = client.get_server(game_vps.datacenter_id, game_vps.server_id).dig("properties", "vmState").to_s.upcase
+      nap 10 unless %w[RUNNING AVAILABLE].include?(vm_state)
+    end
+
+    decr_usage_limit_resume
+    game_vps.update(status: "running", request_status_url: nil, updated_at: Time.now)
+    hop_wait
+  rescue AzureAPIError, IonosAPIError => ex
+    Clog.emit("Game VPS usage-limit resume status check failed", Util.exception_to_hash(ex).merge(game_vps_id: game_vps.id))
+    nap 30
   end
 
   def before_destroy

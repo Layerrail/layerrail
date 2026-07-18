@@ -65,6 +65,20 @@ RSpec.describe Minio::Client do
     end
   end
 
+  describe "admin_set_user_status" do
+    it "disables and enables a user through the admin API" do
+      stub_request(:put, "#{endpoint}/minio/admin/v3/set-user-status?accessKey=test&status=disabled").to_return(status: 200)
+      stub_request(:put, "#{endpoint}/minio/admin/v3/set-user-status?accessKey=test&status=enabled").to_return(status: 200)
+
+      expect(minio_client.admin_set_user_status("test", "disabled")).to eq(200)
+      expect(minio_client.admin_set_user_status("test", "enabled")).to eq(200)
+    end
+
+    it "rejects unsupported states" do
+      expect { minio_client.admin_set_user_status("test", "paused") }.to raise_error(ArgumentError)
+    end
+  end
+
   describe "admin_policy_list" do
     it "sends a GET request to /minio/admin/v3/list-canned-policies" do
       stub_request(:get, "#{endpoint}/minio/admin/v3/list-canned-policies").to_return(status: 200, body: "test")
