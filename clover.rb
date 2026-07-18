@@ -1185,7 +1185,7 @@ class Clover < Roda
   end
 
   route do |r|
-    enable_intercom_content_security_policy if !edge? && !api? && intercom_messenger_enabled?
+    enable_intercom_content_security_policy if request.get? && !edge? && !api? && intercom_messenger_enabled?
 
     if request.get? && (filename = llms_txt_filename)
       next llms_txt_response(filename)

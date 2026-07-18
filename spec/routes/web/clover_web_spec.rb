@@ -42,6 +42,15 @@ RSpec.describe Clover do
     )
   end
 
+  it "handles sessionless HEAD health probes" do
+    page.driver.submit(:head, "/", {})
+
+    expect(page.status_code).to eq(200)
+    expect(page.response_headers).to include(
+      "x-content-type-options" => "nosniff",
+    )
+  end
+
   it "handles CSRF token errors" do
     visit "/login"
     find(".rodauth input[name=_csrf]", visible: false).set("")
