@@ -32,11 +32,12 @@ class UptimeCheck < Sequel::Model
 
   def run_check!
     started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    uri = URI(target_url)
-    klass = (method == "HEAD") ? Net::HTTP::Head : Net::HTTP::Get
+    uri = SafeHttp.validate_url!(target_url, allowed_schemes: %w[http https])
+    klass = (self[:method] == "HEAD") ? Net::HTTP::Head : Net::HTTP::Get
     request = klass.new(uri)
-    response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", read_timeout: timeout_seconds, open_timeout: timeout_seconds) do |http|
-      http.request(request)
+    response = nil
+    SafeHttp.start(uri, allowed_schemes: %w[http https], read_timeout: timeout_seconds, open_timeout: timeout_seconds) do |http|
+      http.request(request) { |upstream_response| response = upstream_response }
     end
     latency = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000).round
     ok = response.code.to_i == expected_status
@@ -46,7 +47,7 @@ class UptimeCheck < Sequel::Model
       last_status_code: response.code.to_i,
       last_latency_ms: latency,
       last_error: ok ? nil : "Expected HTTP #{expected_status}, received #{response.code}",
-      updated_at: Time.now
+      updated_at: Time.now,
     )
     ok
   rescue => ex
@@ -54,7 +55,7 @@ class UptimeCheck < Sequel::Model
       state: "down",
       last_checked_at: Time.now,
       last_error: ex.message,
-      updated_at: Time.now
+      updated_at: Time.now,
     )
     false
   end
@@ -76,12 +77,12 @@ class UptimeCheck < Sequel::Model
     return if active_billing_records_dataset.where(billing_rate_id: rate.fetch("id")).first
 
     BillingRecord.create(
-      project_id: project_id,
+      project_id:,
       resource_id: id,
       resource_name: name,
       amount: 1,
       billing_rate_id: rate.fetch("id"),
-      resource_tags: Sequel.pg_jsonb_wrap({"service" => "uptime-check", "target_url" => target_url})
+      resource_tags: Sequel.pg_jsonb_wrap({"service" => "uptime-check", "target_url" => target_url}),
     )
   end
 end

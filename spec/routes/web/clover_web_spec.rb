@@ -9,6 +9,39 @@ RSpec.describe Clover do
     expect(page.response_headers.fetch("content-security-policy")).to include("form-action", "https://checkout.bachs.io")
   end
 
+  it "sets browser security headers and loads patched DOMPurify" do
+    visit "/login"
+
+    expect(page.response_headers).to include(
+      "cache-control" => "no-store",
+      "cross-origin-resource-policy" => "same-site",
+      "permissions-policy" => include("geolocation=()"),
+      "referrer-policy" => "strict-origin-when-cross-origin",
+      "x-content-type-options" => "nosniff",
+      "x-frame-options" => "deny",
+    )
+    expect(page.response_headers.fetch("content-security-policy")).not_to include("'unsafe-inline'")
+    expect(page.body).to include("dompurify@3.4.11", "sha256-26u1sgWjM+xJyMCef8ow72bfBSO7i8D6nqhDhB8RHb0=")
+    expect(page.body).not_to include("dompurify@3.4.0")
+  end
+
+  it "sets universal security headers on assets and redirects" do
+    page.driver.get("/brand/layerrail/layerrail-favicon.png")
+    expect(page.status_code).to eq(200)
+    expect(page.response_headers).to include(
+      "cross-origin-resource-policy" => "same-site",
+      "permissions-policy" => include("geolocation=()"),
+      "x-content-type-options" => "nosniff",
+    )
+
+    page.driver.get("/")
+    expect(page.status_code).to eq(302)
+    expect(page.response_headers).to include(
+      "permissions-policy" => include("geolocation=()"),
+      "x-content-type-options" => "nosniff",
+    )
+  end
+
   it "handles CSRF token errors" do
     visit "/login"
     find(".rodauth input[name=_csrf]", visible: false).set("")

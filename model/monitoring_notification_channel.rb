@@ -16,7 +16,7 @@ class MonitoringNotificationChannel < Sequel::Model
   end
 
   def display_kind
-    kind == "email" ? "Email" : "Webhook"
+    (kind == "email") ? "Email" : "Webhook"
   end
 
   def deliver!(incident)
@@ -33,13 +33,13 @@ class MonitoringNotificationChannel < Sequel::Model
           incident.message,
           "Project: #{project.name}",
           "Status: #{incident.status}",
-          "Opened: #{incident.opened_at}"
+          "Opened: #{incident.opened_at}",
         ].compact.join("\n\n"),
         button_title: "Open incident",
-        button_link:
+        button_link:,
       )
     when "webhook"
-      uri = URI(target)
+      uri = SafeHttp.validate_url!(target)
       req = Net::HTTP::Post.new(uri)
       req["Content-Type"] = "application/json"
       req.body = JSON.generate({
@@ -50,10 +50,11 @@ class MonitoringNotificationChannel < Sequel::Model
         severity: incident.severity,
         status: incident.status,
         message: incident.message,
-        opened_at: incident.opened_at
+        opened_at: incident.opened_at,
       })
-      Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", read_timeout: 10, open_timeout: 5) do |http|
-        response = http.request(req)
+      SafeHttp.start(uri, read_timeout: 10, open_timeout: 5) do |http|
+        response = nil
+        http.request(req) { |upstream_response| response = upstream_response }
         fail "Webhook returned HTTP #{response.code}" unless response.code.to_i.between?(200, 299)
       end
     end
@@ -65,12 +66,12 @@ class MonitoringNotificationChannel < Sequel::Model
 
   def deliver_test!
     incident = MonitoringIncident.new(
-      project_id: project_id,
+      project_id:,
       title: "LayerRail monitoring test",
       severity: "info",
       status: "open",
       message: "This is a test notification from LayerRail Monitoring.",
-      opened_at: Time.now
+      opened_at: Time.now,
     )
     deliver!(incident)
   end

@@ -289,6 +289,12 @@ module Validation
     fail ValidationFailed.new({url: "Invalid URL"})
   end
 
+  def self.validate_public_http_url(url, allowed_schemes: %w[https], allow_query: true, field: :url)
+    SafeHttp.validate_url!(url, allowed_schemes:, allow_query:).to_s
+  rescue SafeHttp::UnsafeUrl => ex
+    fail ValidationFailed.new({field => "#{field.to_s.tr("_", " ").capitalize} #{ex.message}."})
+  end
+
   def self.validate_log_destination_options(type, options)
     return unless options
 

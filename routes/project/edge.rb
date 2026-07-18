@@ -20,10 +20,14 @@ class Clover
         handle_validation_failure("edge/create")
         name = typecast_params.nonempty_str!("name").downcase
         Validation.validate_name(name)
-        origin_url = typecast_params.nonempty_str!("origin_url").strip
+        origin_url = Validation.validate_public_http_url(
+          typecast_params.nonempty_str!("origin_url").strip,
+          allowed_schemes: %w[http https],
+          allow_query: false,
+          field: :origin_url,
+        )
         cache_mode = typecast_params.nonempty_str("cache_mode") || "standard"
         tls_mode = typecast_params.nonempty_str("tls_mode") || "full"
-        raise_web_error("Origin must start with http:// or https://") unless origin_url.match?(%r{\Ahttps?://}i)
         raise_web_error("Choose a valid cache mode.") unless EdgeService::CACHE_MODES.key?(cache_mode)
         raise_web_error("Choose a valid TLS mode.") unless EdgeService::TLS_MODES.key?(tls_mode)
         raise_web_error("An edge service named #{name} already exists.") if @project.edge_services_dataset.where(name:).count.positive?
@@ -36,7 +40,7 @@ class Clover
             hostname: EdgeService.generate_hostname(@project, name),
             origin_url:,
             cache_mode:,
-            tls_mode:
+            tls_mode:,
           )
           Prog::EdgeServiceNexus.assemble(edge_service)
           audit_log(edge_service, "create")

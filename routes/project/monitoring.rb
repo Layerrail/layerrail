@@ -38,7 +38,7 @@ class Clover
               method:,
               expected_status: typecast_params.pos_int("expected_status") || 200,
               interval_seconds: typecast_params.pos_int("interval_seconds") || 60,
-              timeout_seconds: typecast_params.pos_int("timeout_seconds") || 10
+              timeout_seconds: typecast_params.pos_int("timeout_seconds") || 10,
             )
             Prog::Monitoring::UptimeCheckNexus.assemble(check)
             audit_log(check, "create")
@@ -118,7 +118,7 @@ class Clover
             resource_type: typecast_params.nonempty_str("resource_type") || "uptime",
             condition: typecast_params.nonempty_str("condition") || "down",
             threshold: typecast_params.pos_int("threshold"),
-            severity: typecast_params.nonempty_str("severity") || "warning"
+            severity: typecast_params.nonempty_str("severity") || "warning",
           )
           alert.ensure_billing_record!
           audit_log(alert, "create")
@@ -191,7 +191,7 @@ class Clover
           kind = typecast_params.nonempty_str("kind") || "email"
           target = typecast_params.nonempty_str!("target").strip
           raise_web_error("Channel type must be email or webhook.") unless %w[email webhook].include?(kind)
-          raise_web_error("Webhook target must be an HTTPS URL.") if kind == "webhook" && !https_url?(target)
+          target = Validation.validate_public_http_url(target, field: :target) if kind == "webhook"
           raise_web_error("A notification channel named #{name} already exists.") if @project.monitoring_notification_channels_dataset.where(name:).count.positive?
 
           channel = MonitoringNotificationChannel.create(project_id: @project.id, name:, kind:, target:)
@@ -386,18 +386,6 @@ class Clover
   end
 
   def normalize_monitoring_url(raw)
-    uri = URI(raw.strip)
-    raise_web_error("Target URL must start with http:// or https://.") unless %w[http https].include?(uri.scheme)
-    raise_web_error("Target URL must include a host.") if uri.host.to_s.empty?
-    uri.to_s
-  rescue URI::InvalidURIError
-    raise_web_error("Target URL is invalid.")
-  end
-
-  def https_url?(raw)
-    uri = URI(raw)
-    uri.scheme == "https" && !uri.host.to_s.empty?
-  rescue URI::InvalidURIError
-    false
+    Validation.validate_public_http_url(raw.strip, allowed_schemes: %w[http https], field: :target_url)
   end
 end

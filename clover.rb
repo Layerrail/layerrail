@@ -222,17 +222,9 @@ class Clover < Roda
     csp.default_src :none
     style_sources = [:self, "https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css"]
     img_sources = [:self, "data: image/svg+xml", "https://github.com", "https://avatars.githubusercontent.com"]
-    script_sources = [:self, "https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js", "https://cdn.jsdelivr.net/npm/dompurify@3.4.0/dist/purify.min.js", "https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js", "https://challenges.cloudflare.com/turnstile/v0/api.js", "https://cdn.jsdelivr.net/npm/marked@15.0.5/marked.min.js", "https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"]
+    script_sources = [:self, "https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js", "https://cdn.jsdelivr.net/npm/dompurify@3.4.11/dist/purify.min.js", "https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js", "https://challenges.cloudflare.com/turnstile/v0/api.js", "https://cdn.jsdelivr.net/npm/marked@15.0.5/marked.min.js", "https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"]
     frame_sources = [:self, "https://challenges.cloudflare.com", "https://status.layerrail.com"]
     connect_sources = [:self, "https://cdn.jsdelivr.net"]
-
-    if Config.intercom_messenger_enabled
-      style_sources << :unsafe_inline
-      img_sources.concat(["blob:", "data:", "https://static.intercomassets.com", "https://js.intercomcdn.com", "https://downloads.intercomcdn.com", "https://uploads.intercomusercontent.com", "https://gifs.intercomcdn.com", "https://video-messages.intercomcdn.com", "https://messenger-apps.intercom.io", "https://*.intercom-attachments-1.com", "https://*.intercom-attachments-2.com", "https://*.intercom-attachments-3.com", "https://*.intercom-attachments-4.com", "https://*.intercom-attachments-5.com", "https://*.intercom-attachments-6.com", "https://*.intercom-attachments-7.com", "https://*.intercom-attachments-8.com", "https://*.intercom-attachments-9.com"])
-      script_sources.concat(["https://app.intercom.io", "https://widget.intercom.io", "https://js.intercomcdn.com"])
-      frame_sources.concat(["https://intercom-sheets.com", "https://www.intercom-reporting.com", "https://www.youtube.com", "https://player.vimeo.com", "https://fast.wistia.net"])
-      connect_sources.concat([Config.intercom_api_base, "https://via.intercom.io", "https://api.intercom.io", "https://api-iam.intercom.io", "https://api-ping.intercom.io", "https://*.intercom-messenger.com", "wss://*.intercom-messenger.com", "https://nexus-websocket-a.intercom.io", "wss://nexus-websocket-a.intercom.io", "https://nexus-websocket-b.intercom.io", "wss://nexus-websocket-b.intercom.io", "https://uploads.intercomcdn.com", "https://uploads.intercomusercontent.com"])
-    end
 
     csp.style_src(*style_sources)
     csp.img_src(*img_sources)
@@ -1054,7 +1046,7 @@ class Clover < Roda
     payload = {
       status: "ok",
       service:,
-      checked_at: Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+      checked_at: Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
 
     if database
@@ -1092,14 +1084,115 @@ class Clover < Roda
   end
   # :nocov:
 
+  EDGE_MAX_BODY_BYTES = 16 * 1024 * 1024
+  EDGE_HOP_HEADERS = %w[
+    Host Connection Proxy-Authenticate Proxy-Authorization Proxy-Connection Upgrade Keep-Alive Transfer-Encoding Te Trailer
+    Forwarded X-Forwarded-For X-Forwarded-Host X-Forwarded-Proto X-Layerrail-Edge
+  ].freeze
+
+  def safe_edge_service(host)
+    edge_service = EdgeService.eager(:project).first(hostname: host.downcase, state: "ready")
+    return if !edge_service || edge_service.project.usage_limit_suspended?
+
+    SafeHttp.validate_url!(edge_service.origin_url, allowed_schemes: %w[http https], allow_query: false)
+    edge_service
+  rescue SafeHttp::UnsafeUrl => ex
+    Clog.emit("Blocked unsafe Edge origin", {edge_origin_blocked: {edge_service_id: edge_service&.id, error: ex.message}})
+    nil
+  end
+
+  def proxy_edge_request(edge_service)
+    origin = SafeHttp.validate_url!(edge_service.origin_url, allowed_schemes: %w[http https], allow_query: false)
+    proxy_uri = origin.dup
+    origin_path = origin.path.to_s.delete_suffix("/")
+    request_path = request.path_info.to_s
+    proxy_uri.path = "#{origin_path}#{request_path.start_with?("/") ? request_path : "/#{request_path}"}"
+    proxy_uri.query = request.query_string unless request.query_string.empty?
+
+    proxy_request_class = {
+      "GET" => Net::HTTP::Get,
+      "HEAD" => Net::HTTP::Head,
+      "POST" => Net::HTTP::Post,
+      "PUT" => Net::HTTP::Put,
+      "PATCH" => Net::HTTP::Patch,
+      "DELETE" => Net::HTTP::Delete,
+      "OPTIONS" => Net::HTTP::Options,
+    }[request.request_method]
+    unless proxy_request_class
+      response.status = 405
+      response["allow"] = "GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS"
+      return "Method not allowed\n"
+    end
+
+    proxy_request = proxy_request_class.new(proxy_uri)
+    connection_headers = env["HTTP_CONNECTION"].to_s.split(",").map { it.strip.downcase.tr("_", "-") }
+    env.each do |key, value|
+      next unless key.start_with?("HTTP_")
+      header = key.delete_prefix("HTTP_").split("_").map(&:capitalize).join("-")
+      proxy_request[header] = value unless EDGE_HOP_HEADERS.include?(header) || connection_headers.include?(header.downcase)
+    end
+    proxy_request["Content-Type"] = env["CONTENT_TYPE"] if env["CONTENT_TYPE"]
+    proxy_request["Host"] = origin.host
+    proxy_request["X-Forwarded-For"] = env["REMOTE_ADDR"].to_s
+    proxy_request["X-Forwarded-Host"] = request.host
+    proxy_request["X-Forwarded-Proto"] = request.scheme
+    proxy_request["X-Layerrail-Edge"] = "control-plane"
+
+    if proxy_request.request_body_permitted?
+      body = request.body.read(EDGE_MAX_BODY_BYTES + 1)
+      if body.bytesize > EDGE_MAX_BODY_BYTES
+        response.status = 413
+        return "Request body too large\n"
+      end
+      proxy_request.body = body
+    end
+
+    proxy_response = nil
+    proxy_body = +""
+    SafeHttp.start(proxy_uri, allowed_schemes: %w[http https], open_timeout: 10, read_timeout: 60) do |http|
+      http.request(proxy_request) do |upstream_response|
+        proxy_response = upstream_response
+        raise SafeHttp::ResponseTooLarge if upstream_response["content-length"].to_i > EDGE_MAX_BODY_BYTES
+
+        upstream_response.read_body do |chunk|
+          proxy_body << chunk
+          raise SafeHttp::ResponseTooLarge if proxy_body.bytesize > EDGE_MAX_BODY_BYTES
+        end
+      end
+    end
+
+    response.status = proxy_response.code.to_i
+    response_connection_headers = proxy_response["connection"].to_s.split(",").map { it.strip.downcase }
+    proxy_response.each_header do |key, value|
+      next if %w[connection proxy-authenticate proxy-authorization proxy-connection upgrade keep-alive transfer-encoding te trailer content-length].include?(key.downcase)
+      next if response_connection_headers.include?(key.downcase)
+      response[key] = value
+    end
+    response.write(proxy_body)
+  rescue SafeHttp::UnsafeUrl, SafeHttp::ResponseTooLarge, Timeout::Error, SocketError, SystemCallError, OpenSSL::SSL::SSLError => ex
+    Clog.emit("Edge origin request blocked or failed", {edge_origin_request_failed: {edge_service_id: edge_service.id, error_class: ex.class.name}})
+    response.status = 502
+    response.content_type = :text
+    "Edge origin unavailable\n"
+  end
+
+  def enable_intercom_content_security_policy
+    content_security_policy.add_style_src :unsafe_inline
+    content_security_policy.add_img_src("blob:", "data:", "https://static.intercomassets.com", "https://js.intercomcdn.com", "https://downloads.intercomcdn.com", "https://uploads.intercomusercontent.com", "https://gifs.intercomcdn.com", "https://video-messages.intercomcdn.com", "https://messenger-apps.intercom.io", "https://*.intercom-attachments-1.com", "https://*.intercom-attachments-2.com", "https://*.intercom-attachments-3.com", "https://*.intercom-attachments-4.com", "https://*.intercom-attachments-5.com", "https://*.intercom-attachments-6.com", "https://*.intercom-attachments-7.com", "https://*.intercom-attachments-8.com", "https://*.intercom-attachments-9.com")
+    content_security_policy.add_script_src("https://app.intercom.io", "https://widget.intercom.io", "https://js.intercomcdn.com")
+    content_security_policy.add_frame_src("https://intercom-sheets.com", "https://www.intercom-reporting.com", "https://www.youtube.com", "https://player.vimeo.com", "https://fast.wistia.net")
+    content_security_policy.add_connect_src(Config.intercom_api_base, "https://via.intercom.io", "https://api.intercom.io", "https://api-iam.intercom.io", "https://api-ping.intercom.io", "https://*.intercom-messenger.com", "wss://*.intercom-messenger.com", "https://nexus-websocket-a.intercom.io", "wss://nexus-websocket-a.intercom.io", "https://nexus-websocket-b.intercom.io", "wss://nexus-websocket-b.intercom.io", "https://uploads.intercomcdn.com", "https://uploads.intercomusercontent.com")
+  end
+
   route do |r|
+    enable_intercom_content_security_policy if !edge? && !api? && intercom_messenger_enabled?
+
     if request.get? && (filename = llms_txt_filename)
       next llms_txt_response(filename)
     end
 
     if request.get? && request.path_info == "/edge-runtime/resolve"
-      edge_service = EdgeService.eager(:project).first(hostname: typecast_params.nonempty_str!("host").downcase, state: "ready")
-      edge_service = nil if edge_service&.project&.usage_limit_suspended?
+      edge_service = safe_edge_service(typecast_params.nonempty_str!("host"))
       response.json = true
       response.status = 404 unless edge_service
       next(edge_service ? {
@@ -1109,52 +1202,13 @@ class Clover < Roda
         hostname: edge_service.hostname,
       } : {error: "not_found"})
     elsif edge?
-      edge_service = EdgeService.first(hostname: request.host.downcase, state: "ready")
+      edge_service = safe_edge_service(request.host)
       unless edge_service
         response.status = 404
         response.content_type = :text
         next "Edge service not found\n"
       end
-
-      origin = URI(edge_service.origin_url)
-      proxy_uri = origin.dup
-      origin_path = origin.path.to_s.delete_suffix("/")
-      request_path = request.path_info.to_s
-      proxy_uri.path = "#{origin_path}#{request_path.start_with?("/") ? request_path : "/#{request_path}"}"
-      proxy_uri.query = request.query_string.empty? ? origin.query : [origin.query, request.query_string].compact.join("&")
-
-      proxy_request_class = case request.request_method
-      when "GET" then Net::HTTP::Get
-      when "HEAD" then Net::HTTP::Head
-      when "POST" then Net::HTTP::Post
-      when "PUT" then Net::HTTP::Put
-      when "PATCH" then Net::HTTP::Patch
-      when "DELETE" then Net::HTTP::Delete
-      else Net::HTTP::Get
-      end
-
-      proxy_request = proxy_request_class.new(proxy_uri)
-      env.each do |key, value|
-        next unless key.start_with?("HTTP_")
-        header = key.delete_prefix("HTTP_").split("_").map(&:capitalize).join("-")
-        next if %w[Host Connection Proxy-Connection Upgrade Keep-Alive Transfer-Encoding Te Trailer].include?(header)
-        proxy_request[header] = value
-      end
-      proxy_request["Host"] = origin.host
-      proxy_request["X-Forwarded-Host"] = request.host
-      proxy_request["X-Forwarded-Proto"] = request.scheme
-      proxy_request.body = request.body.read if proxy_request.request_body_permitted?
-
-      proxy_response = Net::HTTP.start(origin.host, origin.port, use_ssl: origin.scheme == "https", open_timeout: 10, read_timeout: 60) do |http|
-        http.request(proxy_request)
-      end
-
-      response.status = proxy_response.code.to_i
-      proxy_response.each_header do |key, value|
-        next if %w[connection proxy-connection upgrade keep-alive transfer-encoding te trailer content-length].include?(key.downcase)
-        response[key] = value
-      end
-      response.write(proxy_response.body.to_s)
+      next proxy_edge_request(edge_service)
     elsif api?
       r.get "up" do
         health_check_response("api")
@@ -1423,5 +1477,13 @@ class Clover < Roda
         super
       end
     end)
+  end
+
+  after do |res|
+    headers = res && res[1]
+    unless edge? || !headers
+      headers.merge!(RodaResponse::UNIVERSAL_SECURITY_HEADERS)
+      headers["cache-control"] ||= "no-store" unless request.path_info.start_with?("/assets/", "/brand/")
+    end
   end
 end

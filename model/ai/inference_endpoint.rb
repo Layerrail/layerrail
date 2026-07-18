@@ -40,8 +40,8 @@ class InferenceEndpoint < Sequel::Model
     header = {"Content-Type": "application/json", Authorization: "Bearer " + api_key}
     http = Net::HTTP.new(uri.host, uri.port)
     http.read_timeout = 30
-    http.verify_mode = OpenSSL::SSL::VERIFY_NONE if Config.development?
     http.use_ssl = (uri.scheme == "https")
+    http.verify_mode = OpenSSL::SSL::VERIFY_PEER if http.use_ssl?
     req = Net::HTTP::Post.new(uri.request_uri, header)
     req.body = {model: model_name, messages: [{role: "user", content:}]}.to_json
     http.request(req)

@@ -71,21 +71,18 @@ RSpec.describe InferenceEndpoint do
     end
   end
 
-  shared_examples "chat completion request" do |development|
+  shared_examples "chat completion request" do
     let(:http) { instance_double(Net::HTTP, read_timeout: 30) }
 
     before do
       allow(Net::HTTP).to receive(:new).and_return(http)
       allow(http).to receive(:use_ssl=).with(true)
+      allow(http).to receive(:use_ssl?).and_return(true)
+      allow(http).to receive(:verify_mode=).with(OpenSSL::SSL::VERIFY_PEER)
       allow(http).to receive(:read_timeout=).with(30)
     end
 
     it "sends the request correctly" do
-      if development
-        allow(Config).to receive(:development?).and_return(true)
-        allow(http).to receive(:verify_mode=).with(OpenSSL::SSL::VERIFY_NONE)
-      end
-
       expect(http).to receive(:request) do |req|
         expect(req).to be_an_instance_of(Net::HTTP::Post)
         expect(req["Content-Type"]).to eq("application/json")
@@ -98,12 +95,6 @@ RSpec.describe InferenceEndpoint do
   end
 
   describe "#chat_completion_request" do
-    context "when production" do
-      it_behaves_like "chat completion request", false
-    end
-
-    context "when development" do
-      it_behaves_like "chat completion request", true
-    end
+    it_behaves_like "chat completion request"
   end
 end

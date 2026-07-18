@@ -80,6 +80,18 @@ class Clover < Roda
   end
 
   class RodaResponse
+    UNIVERSAL_SECURITY_HEADERS = {
+      "cross-origin-resource-policy" => "same-site",
+      "referrer-policy" => "strict-origin-when-cross-origin",
+      "permissions-policy" => "browsing-topics=(), geolocation=(), payment=(), usb=()",
+      "x-content-type-options" => "nosniff",
+    }
+    # :nocov:
+    if Config.production?
+      UNIVERSAL_SECURITY_HEADERS["strict-transport-security"] = "max-age=63072000; includeSubDomains"
+    end
+    # :nocov:
+    UNIVERSAL_SECURITY_HEADERS.freeze
     API_DEFAULT_HEADERS = DEFAULT_HEADERS.merge("content-type" => "application/json").freeze
     WEB_DEFAULT_HEADERS = DEFAULT_HEADERS.merge(
       "content-type" => "text/html",
@@ -289,7 +301,7 @@ class Clover < Roda
   }x
 
   private def enforce_usage_limit_suspension!(actions)
-    return if request.get?
+    return if request.get? || request.head?
     return unless request.path_info.match?(USAGE_LIMIT_SERVICE_PATH)
     return if Array(actions).any? { |action| action.to_s == "delete" || action.to_s.end_with?(":delete") }
     return unless @project&.usage_limit_suspended?

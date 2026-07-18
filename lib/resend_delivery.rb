@@ -10,8 +10,17 @@ class ResendDeliveryError < StandardError
 
   def initialize(status, body)
     @status = status
-    @body = body
-    super("Resend email delivery failed with HTTP #{status}: #{body}")
+    @body = self.class.safe_body(body)
+    super("Resend email delivery failed with HTTP #{status}: #{@body}")
+  end
+
+  def self.safe_body(body)
+    parsed = JSON.parse(body.to_s)
+    return "[redacted]" unless parsed.is_a?(Hash)
+
+    JSON.generate(parsed.slice("name", "type", "code", "statusCode"))
+  rescue JSON::ParserError
+    "[redacted]"
   end
 end
 
@@ -33,10 +42,10 @@ module Mail
         headers: {
           "Accept" => "application/json",
           "Authorization" => "Bearer #{@api_key}",
-          "Content-Type" => "application/json"
+          "Content-Type" => "application/json",
         },
         body: JSON.generate(payload_for(mail)),
-        expects: [200, 201, 202]
+        expects: [200, 201, 202],
       )
       response.body.to_s.empty? ? {} : JSON.parse(response.body)
     rescue Excon::Error => ex
@@ -50,7 +59,7 @@ module Mail
       payload = {
         from: formatted_header(mail, :from),
         to: formatted_addresses(mail, :to),
-        subject: mail.subject
+        subject: mail.subject,
       }
 
       payload[:cc] = formatted_addresses(mail, :cc) if mail[:cc]
@@ -67,7 +76,7 @@ module Mail
       attachments = mail.attachments.map do |attachment|
         {
           filename: attachment.filename,
-          content: Base64.strict_encode64(attachment.body.decoded)
+          content: Base64.strict_encode64(attachment.body.decoded),
         }
       end
       payload[:attachments] = attachments unless attachments.empty?
