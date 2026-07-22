@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "ParseableServer" do
   it "displays the ParseableServer instance page correctly" do
     click_link "ParseableServer"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - ParseableServer"
+    expect(page.title).to eq "LayerRail Admin - ParseableServer"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - ParseableServer #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - ParseableServer #{@instance.ubid}"
   end
 end

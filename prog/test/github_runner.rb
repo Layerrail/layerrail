@@ -36,12 +36,12 @@ class Prog::Test::GithubRunner < Prog::Test::Base
     )
 
     labels = []
-    labels << "ubicloud-standard-2-ubuntu-2204" if test_cases.any? { it["name"].include?("2204") }
-    labels << "ubicloud-standard-2-ubuntu-2404" if test_cases.any? { it["name"].include?("2404") }
+    labels << "layerrail-standard-2-ubuntu-2204" if test_cases.any? { it["name"].include?("2204") }
+    labels << "layerrail-standard-2-ubuntu-2404" if test_cases.any? { it["name"].include?("2404") }
 
     if provider == "aws"
-      labels << "ubicloud-standard-2-arm-ubuntu-2204" if test_cases.any? { it["name"].include?("2204") }
-      labels << "ubicloud-standard-2-arm-ubuntu-2404" if test_cases.any? { it["name"].include?("2404") }
+      labels << "layerrail-standard-2-arm-ubuntu-2204" if test_cases.any? { it["name"].include?("2204") }
+      labels << "layerrail-standard-2-arm-ubuntu-2404" if test_cases.any? { it["name"].include?("2404") }
     end
 
     Strand.create(

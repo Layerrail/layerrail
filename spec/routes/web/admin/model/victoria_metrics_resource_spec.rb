@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "VictoriaMetricsResource" do
   it "displays the VictoriaMetricsResource instance page correctly" do
     click_link "VictoriaMetricsResource"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - VictoriaMetricsResource"
+    expect(page.title).to eq "LayerRail Admin - VictoriaMetricsResource"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - VictoriaMetricsResource #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VictoriaMetricsResource #{@instance.ubid}"
   end
 end

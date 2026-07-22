@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "Address" do
   it "displays the Address instance page correctly" do
     click_link "Address"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - Address"
+    expect(page.title).to eq "LayerRail Admin - Address"
 
     click_link @instance.admin_label.to_s
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - Address #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Address #{@instance.ubid}"
   end
 end

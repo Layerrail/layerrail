@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "OidcProvider" do
   it "displays the OidcProvider instance page correctly" do
     click_link "OidcProvider"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - OidcProvider"
+    expect(page.title).to eq "LayerRail Admin - OidcProvider"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - OidcProvider #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - OidcProvider #{@instance.ubid}"
   end
 end

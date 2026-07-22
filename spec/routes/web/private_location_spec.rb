@@ -49,13 +49,13 @@ RSpec.describe Clover, "location-credential" do
     it "can not list without login" do
       visit "/private-location"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
 
     it "can not create without login" do
       visit "/private-location/create"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
   end
 
@@ -77,11 +77,11 @@ RSpec.describe Clover, "location-credential" do
       it "can list no aws regions" do
         visit "#{project.path}/private-location"
 
-        expect(page.title).to eq("Ubicloud - AWS Regions")
+        expect(page.title).to eq("LayerRail - AWS Regions")
         expect(page).to have_content "No AWS Regions"
 
         click_link "Create AWS Region"
-        expect(page.title).to eq("Ubicloud - Create AWS Region")
+        expect(page.title).to eq("LayerRail - Create AWS Region")
       end
 
       it "can not list aws regions when does not have permissions" do
@@ -89,7 +89,7 @@ RSpec.describe Clover, "location-credential" do
         private_location_wo_permission
         visit "#{project.path}/private-location"
 
-        expect(page.title).to eq("Ubicloud - AWS Regions")
+        expect(page.title).to eq("LayerRail - AWS Regions")
         expect(page).to have_content private_location.display_name
         expect(page).to have_no_content private_location_wo_permission.display_name
       end
@@ -117,16 +117,16 @@ RSpec.describe Clover, "location-credential" do
         project
         visit "#{project.path}/private-location/create"
 
-        expect(page.title).to eq("Ubicloud - Create AWS Region")
+        expect(page.title).to eq("LayerRail - Create AWS Region")
         name = "dummy-private-location"
-        fill_in "Ubicloud Region Name", with: name
+        fill_in "LayerRail Region Name", with: name
         fill_in "AWS Access Key", with: "access_key"
         fill_in "AWS Secret Key", with: "secret_key"
         select "us-west-2", from: "AWS Region Name"
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - dummy-private-location")
+        expect(page.title).to eq("LayerRail - dummy-private-location")
         expect(LocationCredentialAws.count).to eq(1)
         expect(LocationCredentialAws.first.access_key).to eq("access_key")
         expect(LocationCredentialAws.first.secret_key).to eq("secret_key")
@@ -139,16 +139,16 @@ RSpec.describe Clover, "location-credential" do
         project
         visit "#{project.path}/private-location/create"
 
-        expect(page.title).to eq("Ubicloud - Create AWS Region")
+        expect(page.title).to eq("LayerRail - Create AWS Region")
 
-        fill_in "Ubicloud Region Name", with: private_location.display_name
+        fill_in "LayerRail Region Name", with: private_location.display_name
         fill_in "AWS Access Key", with: "access_key"
         fill_in "AWS Secret Key", with: "secret_key"
         select "us-west-2", from: "AWS Region Name"
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - Create AWS Region")
+        expect(page.title).to eq("LayerRail - Create AWS Region")
         expect(page).to have_flash_error("project_id and display_name is already taken, project_id and ui_name is already taken")
       end
     end
@@ -158,18 +158,18 @@ RSpec.describe Clover, "location-credential" do
         private_location
         visit "#{project.path}/private-location"
 
-        expect(page.title).to eq("Ubicloud - AWS Regions")
+        expect(page.title).to eq("LayerRail - AWS Regions")
         expect(page).to have_content private_location.ui_name
 
         click_link private_location.ui_name, href: "#{project.path}#{private_location.path}"
-        # expect(page.title).to eq("Ubicloud - #{private_location.location.ui_name}")
+        # expect(page.title).to eq("LayerRail - #{private_location.location.ui_name}")
         expect(page).to have_content private_location.ui_name
       end
 
       it "raises not found when aws location credential not exists" do
         visit "#{project.path}/private-location/eu-central-h1"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content "ResourceNotFound"
       end
@@ -188,7 +188,7 @@ RSpec.describe Clover, "location-credential" do
         AccessControlEntry.create(project_id: project_wo_permissions.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Location:view"])
 
         visit "#{project_wo_permissions.path}#{private_location_wo_permission.path}"
-        expect(page.title).to eq "Ubicloud - aws-us-west-1"
+        expect(page.title).to eq "LayerRail - aws-us-west-1"
 
         expect { find ".delete-btn" }.to raise_error Capybara::ElementNotFound
       end

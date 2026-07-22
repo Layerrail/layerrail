@@ -14,13 +14,13 @@ RSpec.describe Clover, "project" do
     it "can not list without login" do
       visit "/project"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
 
     it "can not create without login" do
       visit "/project/create"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
   end
 
@@ -44,14 +44,14 @@ RSpec.describe Clover, "project" do
         user.remove_all_projects
 
         visit "/project"
-        expect(page.title).to eq("Ubicloud - Projects")
+        expect(page.title).to eq("LayerRail - Projects")
 
         within ".empty-state" do
           expect(page).to have_content "No projects"
 
           click_link "Create Project"
         end
-        expect(page.title).to eq("Ubicloud - Create Project")
+        expect(page.title).to eq("LayerRail - Create Project")
       end
 
       it "can not list projects when does not invited" do
@@ -60,7 +60,7 @@ RSpec.describe Clover, "project" do
 
         visit "/project"
 
-        expect(page.title).to eq("Ubicloud - Projects")
+        expect(page.title).to eq("LayerRail - Projects")
         expect(page).to have_content project.name
         expect(page).to have_no_content new_project.name
       end
@@ -72,7 +72,7 @@ RSpec.describe Clover, "project" do
 
         visit "/project"
 
-        expect(page.title).to eq("Ubicloud - Projects")
+        expect(page.title).to eq("LayerRail - Projects")
         expect(page).to have_content "Project Invitations"
         expect(page).to have_content new_project.name
         expect(page).to have_content user2.email
@@ -84,7 +84,7 @@ RSpec.describe Clover, "project" do
         expect(page).to have_no_content "Project Invitations"
         expect(page).to have_content new_project.name
         within("#project-#{new_project.ubid}") { click_link new_project.name }
-        expect(page.title).to eq "Ubicloud - project-3 Dashboard"
+        expect(page.title).to eq "LayerRail - project-3 Dashboard"
       end
 
       it "can accept invitations to projects and not join invalid subject tag" do
@@ -94,7 +94,7 @@ RSpec.describe Clover, "project" do
 
         visit "/project"
 
-        expect(page.title).to eq("Ubicloud - Projects")
+        expect(page.title).to eq("LayerRail - Projects")
         expect(page).to have_content "Project Invitations"
         expect(page).to have_content new_project.name
         expect(page).to have_content user2.email
@@ -106,7 +106,7 @@ RSpec.describe Clover, "project" do
         expect(page).to have_no_content "Project Invitations"
         expect(page).to have_content new_project.name
         within("#project-#{new_project.ubid}") { click_link new_project.name }
-        expect(page.title).to eq "Ubicloud - project-3 Dashboard"
+        expect(page.title).to eq "LayerRail - project-3 Dashboard"
       end
 
       it "shows error if accepting an invitation to a project where account is already a member" do
@@ -117,7 +117,7 @@ RSpec.describe Clover, "project" do
 
         visit "/project"
 
-        expect(page.title).to eq("Ubicloud - Projects")
+        expect(page.title).to eq("LayerRail - Projects")
         expect(page).to have_content "Project Invitations"
         expect(page).to have_content new_project.name
         click_button "Accept"
@@ -127,7 +127,7 @@ RSpec.describe Clover, "project" do
         expect(page).to have_no_content "Project Invitations"
         expect(page).to have_content new_project.name
         within("#project-#{new_project.ubid}") { click_link new_project.name }
-        expect(page.title).to eq "Ubicloud - project-3 Dashboard"
+        expect(page.title).to eq "LayerRail - project-3 Dashboard"
       end
 
       it "can decline invitations to projects" do
@@ -137,7 +137,7 @@ RSpec.describe Clover, "project" do
 
         visit "/project"
 
-        expect(page.title).to eq("Ubicloud - Projects")
+        expect(page.title).to eq("LayerRail - Projects")
         expect(page).to have_content "Project Invitations"
         expect(page).to have_content new_project.name
         click_button "Decline"
@@ -172,7 +172,7 @@ RSpec.describe Clover, "project" do
         within("#project-#{project.ubid}") { click_button "Remove Access" }
         expect(page).to have_flash_error("You can't remove the last user from 'project-1' project. Delete project instead.")
         within("#project-#{project.ubid}") { click_link project.name }
-        expect(page.title).to eq "Ubicloud - project-1 Dashboard"
+        expect(page.title).to eq "LayerRail - project-1 Dashboard"
       end
 
       it "removes invitations for project sent by user when removing user from project" do
@@ -193,34 +193,34 @@ RSpec.describe Clover, "project" do
       it "depends on the account default_project association" do
         project
         visit "/"
-        expect(page.title).to eq "Ubicloud - Default Dashboard"
+        expect(page.title).to eq "LayerRail - Default Dashboard"
 
         user.default_project = user.create_project_with_default_policy("project-3")
         visit "/"
-        expect(page.title).to eq "Ubicloud - project-3 Dashboard"
+        expect(page.title).to eq "LayerRail - project-3 Dashboard"
 
         user.default_project = project
         visit "/"
-        expect(page.title).to eq "Ubicloud - project-1 Dashboard"
+        expect(page.title).to eq "LayerRail - project-1 Dashboard"
       end
 
       it "can be updated on project page" do
         project
         visit "/"
-        expect(page.title).to eq "Ubicloud - Default Dashboard"
+        expect(page.title).to eq "LayerRail - Default Dashboard"
 
         visit "/project"
         within("#project-#{project.ubid}") { click_button "Set As Default" }
         expect(page).to have_flash_notice("Default project updated")
 
         visit "/"
-        expect(page.title).to eq "Ubicloud - project-1 Dashboard"
+        expect(page.title).to eq "LayerRail - project-1 Dashboard"
       end
 
       it "shows error if attempting to make invalid project the default" do
         project
         visit "/"
-        expect(page.title).to eq "Ubicloud - Default Dashboard"
+        expect(page.title).to eq "LayerRail - Default Dashboard"
 
         visit "/project"
         project.remove_account(user)
@@ -228,7 +228,7 @@ RSpec.describe Clover, "project" do
         expect(page).to have_flash_error("Invalid default project selected")
 
         visit "/"
-        expect(page.title).to eq "Ubicloud - Default Dashboard"
+        expect(page.title).to eq "LayerRail - Default Dashboard"
       end
     end
 
@@ -238,7 +238,7 @@ RSpec.describe Clover, "project" do
         visit "/project/create"
 
         expect(project.accounts_dataset.count).to eq 1
-        expect(page.title).to eq("Ubicloud - Create Project")
+        expect(page.title).to eq("LayerRail - Create Project")
 
         click_button "Create"
         expect(page).to have_flash_error("empty string provided for parameter name")
@@ -254,7 +254,7 @@ RSpec.describe Clover, "project" do
         fill_in "Name", with: name
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("Project created")
         expect(page).to have_content name
 
@@ -273,14 +273,14 @@ RSpec.describe Clover, "project" do
         end
 
         expect(user.projects_dataset.count).to eq 10
-        expect(page.title).to eq("Ubicloud - Create Project")
+        expect(page.title).to eq("LayerRail - Create Project")
 
         fill_in "Name", with: "new-project-10"
 
         click_button "Create"
 
-        expect(page).to have_flash_error("Project limit exceeded. You can create up to 10 projects. Contact support@ubicloud.com if you need more.")
-        expect(page.title).to eq("Ubicloud - Create Project")
+        expect(page).to have_flash_error("Project limit exceeded. You can create up to 10 projects. Contact support@layerrail.com if you need more.")
+        expect(page.title).to eq("LayerRail - Create Project")
         expect(user.projects_dataset.count).to eq 10
       end
     end
@@ -289,7 +289,7 @@ RSpec.describe Clover, "project" do
       it "can view project dashboard always" do
         visit "#{project_wo_permissions.path}/dashboard"
 
-        expect(page.title).to eq("Ubicloud - #{project_wo_permissions.name} Dashboard")
+        expect(page.title).to eq("LayerRail - #{project_wo_permissions.name} Dashboard")
         expect(page).to have_content project_wo_permissions.name
       end
 
@@ -297,7 +297,7 @@ RSpec.describe Clover, "project" do
         new_project = Project.create(name: "new-project")
         visit "#{new_project.path}/dashboard"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content "ResourceNotFound"
       end
@@ -376,24 +376,24 @@ RSpec.describe Clover, "project" do
         project.add_quota(quota_id: ProjectQuota.default_quotas["VmVCpu"]["id"], value: 0)
         visit "/project"
 
-        expect(page.title).to eq("Ubicloud - Projects")
+        expect(page.title).to eq("LayerRail - Projects")
         expect(page).to have_content project.name
 
         find("#project-#{project.ubid}").click_link project.name
 
-        expect(page.title).to eq("Ubicloud - #{project.name} Dashboard")
+        expect(page.title).to eq("LayerRail - #{project.name} Dashboard")
         expect(page).to have_content project.name
 
         find_by_id("desktop-menu").click_link "Settings"
 
-        expect(page.title).to eq("Ubicloud - #{project.name}")
+        expect(page.title).to eq("LayerRail - #{project.name}")
       end
 
       it "raises forbidden when does not have permissions" do
         project_wo_permissions
         visit "/project/#{project_wo_permissions.ubid}"
 
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
         expect(page.status_code).to eq(403)
         expect(page).to have_content "Forbidden"
       end
@@ -401,7 +401,7 @@ RSpec.describe Clover, "project" do
       it "raises not found when project not exists" do
         visit "/project/08s56d4kaj94xsmrnf5v5m3mav"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content "ResourceNotFound"
       end
@@ -446,7 +446,7 @@ RSpec.describe Clover, "project" do
           click_link "Users"
         end
 
-        expect(page.title).to eq("Ubicloud - #{project.name} - Users")
+        expect(page.title).to eq("LayerRail - #{project.name} - Users")
         expect(page).to have_content user.email
       end
 
@@ -454,7 +454,7 @@ RSpec.describe Clover, "project" do
         project_wo_permissions
         visit "#{project_wo_permissions.path}/user"
 
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
         expect(page.status_code).to eq(403)
         expect(page).to have_content "Forbidden"
 
@@ -465,7 +465,7 @@ RSpec.describe Clover, "project" do
 
         AccessControlEntry.create(project_id: project.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Project:user"])
         page.refresh
-        expect(page.title).to eq("Ubicloud - project-1 - Users")
+        expect(page.title).to eq("LayerRail - project-1 - Users")
       end
 
       it "requires Project:user permissions to invite users, and SubjectTag:add to add to policies" do
@@ -920,7 +920,7 @@ RSpec.describe Clover, "project" do
       it "raises not found when user not exists" do
         visit "#{project.path}/user/08s56d4kaj94xsmrnf5v5m3mav"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content "ResourceNotFound"
       end
@@ -949,7 +949,7 @@ RSpec.describe Clover, "project" do
         visit project.path
         click_link "View Audit Logs"
 
-        expect(page.title).to eq("Ubicloud - project-1 - Audit Log")
+        expect(page.title).to eq("LayerRail - project-1 - Audit Log")
         expect(audit_log_content).to eq ["vm/create", user.ubid, ""]
       end
 
@@ -980,7 +980,7 @@ RSpec.describe Clover, "project" do
         ]
 
         click_link "vm/create"
-        expect(page.title).to eq("Ubicloud - project-1 - Audit Log")
+        expect(page.title).to eq("LayerRail - project-1 - Audit Log")
         expect(audit_log_content).to eq ["vm/create", user.ubid, ""]
 
         visit "#{project.path}/audit-log?limit=2"
@@ -1035,11 +1035,11 @@ RSpec.describe Clover, "project" do
         expect(audit_log_content).to eq ["vm/create", "Test User", user.ubid]
 
         click_link "Test User"
-        expect(page.title).to eq("Ubicloud - project-1 - Audit Log")
+        expect(page.title).to eq("LayerRail - project-1 - Audit Log")
         expect(audit_log_content).to eq ["vm/create", "Test User", user.ubid]
 
         click_link user.ubid
-        expect(page.title).to eq("Ubicloud - project-1 - Audit Log")
+        expect(page.title).to eq("LayerRail - project-1 - Audit Log")
         expect(audit_log_content).to eq ["vm/create", "Test User", user.ubid]
 
         fill_in "Account", with: "NoMatch"
@@ -1059,11 +1059,11 @@ RSpec.describe Clover, "project" do
         expect(audit_log_content).to eq ["vm/create", user.ubid, "vm-test (View)"]
 
         click_link "vm-test"
-        expect(page.title).to eq("Ubicloud - project-1 - Audit Log")
+        expect(page.title).to eq("LayerRail - project-1 - Audit Log")
         expect(audit_log_content).to eq ["vm/create", user.ubid, "vm-test (View)"]
 
         click_link "View"
-        expect(page.title).to eq("Ubicloud - vm-test")
+        expect(page.title).to eq("LayerRail - vm-test")
       end
 
       it "can filter by date, including correct pagination at same timestamp" do
@@ -1182,7 +1182,7 @@ RSpec.describe Clover, "project" do
         AccessControlEntry.create(project_id: project_wo_permissions.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Project:view"])
 
         visit project_wo_permissions.path
-        expect(page.title).to eq "Ubicloud - project-2"
+        expect(page.title).to eq "LayerRail - project-2"
 
         expect { find ".delete-btn" }.to raise_error Capybara::ElementNotFound
       end

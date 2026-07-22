@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "VhostBlockBackend" do
   it "displays the VhostBlockBackend instance page correctly" do
     click_link "VhostBlockBackend"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - VhostBlockBackend"
+    expect(page.title).to eq "LayerRail Admin - VhostBlockBackend"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - VhostBlockBackend #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VhostBlockBackend #{@instance.ubid}"
   end
 end

@@ -52,7 +52,7 @@ RSpec.describe Clover, "inference-api-key" do
     it "inference api key page is not accessible" do
       visit "/inference-api-key"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
   end
 end

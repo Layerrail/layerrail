@@ -52,7 +52,7 @@ jobs:
       matrix:
         provider: ${{ fromJson(needs.setup.outputs.providers) }}
     name: E2E - ${{ matrix.provider }}
-    runs-on: ubicloud-standard-4
+    runs-on: layerrail-standard-4
     environment: E2E-${{ matrix.provider }}
     timeout-minutes: 93
     concurrency: ${{ (matrix.provider == 'metal' && 'E2E-metal') || (matrix.provider == 'gcp' && format('E2E-gcp-{0}', github.run_id)) || (needs.setup.outputs.has_github_runner == 'true' && 'E2E-aws') || format('E2E-aws-{0}', github.run_id) }}
@@ -60,12 +60,6 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-    - name: Setup SSH access
-      uses: ubicloud/ssh-runner@b6ccad69f047c476b84a54a990f89b1ea5f2a828 # v2.0
-      with:
-        public-ssh-key: ${{ secrets.OPERATOR_SSH_PUBLIC_KEYS }}
-        wait-minutes: 0
 
     - name: Set up Clover
       uses: ./.github/actions/setup-clover
@@ -138,14 +132,14 @@ jobs:
         HETZNER_SSH_PRIVATE_KEY: ${{ secrets.HETZNER_SSH_PRIVATE_KEY }}
         HETZNER_USER: ${{ secrets.HETZNER_USER }}
         HETZNER_PASSWORD: ${{ secrets.HETZNER_PASSWORD }}
-        UBICLOUD_IMAGES_BLOB_STORAGE_ENDPOINT: ${{ secrets.UBICLOUD_IMAGES_BLOB_STORAGE_ENDPOINT }}
-        UBICLOUD_IMAGES_BLOB_STORAGE_ACCESS_KEY: ${{ secrets.UBICLOUD_IMAGES_BLOB_STORAGE_ACCESS_KEY }}
-        UBICLOUD_IMAGES_BLOB_STORAGE_SECRET_KEY: ${{ secrets.UBICLOUD_IMAGES_BLOB_STORAGE_SECRET_KEY }}
-        UBICLOUD_IMAGES_BLOB_STORAGE_CERTS: ${{ secrets.UBICLOUD_IMAGES_BLOB_STORAGE_CERTS }}
-        UBICLOUD_IMAGES_R2_BUCKET_NAME: ${{ secrets.UBICLOUD_IMAGES_R2_BUCKET_NAME }}
-        UBICLOUD_IMAGES_R2_ENDPOINT: ${{ secrets.UBICLOUD_IMAGES_R2_ENDPOINT }}
-        UBICLOUD_IMAGES_R2_ACCESS_KEY: ${{ secrets.UBICLOUD_IMAGES_R2_ACCESS_KEY }}
-        UBICLOUD_IMAGES_R2_SECRET_KEY: ${{ secrets.UBICLOUD_IMAGES_R2_SECRET_KEY }}
+        LAYERRAIL_IMAGES_BLOB_STORAGE_ENDPOINT: ${{ secrets.LAYERRAIL_IMAGES_BLOB_STORAGE_ENDPOINT }}
+        LAYERRAIL_IMAGES_BLOB_STORAGE_ACCESS_KEY: ${{ secrets.LAYERRAIL_IMAGES_BLOB_STORAGE_ACCESS_KEY }}
+        LAYERRAIL_IMAGES_BLOB_STORAGE_SECRET_KEY: ${{ secrets.LAYERRAIL_IMAGES_BLOB_STORAGE_SECRET_KEY }}
+        LAYERRAIL_IMAGES_BLOB_STORAGE_CERTS: ${{ secrets.LAYERRAIL_IMAGES_BLOB_STORAGE_CERTS }}
+        LAYERRAIL_IMAGES_R2_BUCKET_NAME: ${{ secrets.LAYERRAIL_IMAGES_R2_BUCKET_NAME }}
+        LAYERRAIL_IMAGES_R2_ENDPOINT: ${{ secrets.LAYERRAIL_IMAGES_R2_ENDPOINT }}
+        LAYERRAIL_IMAGES_R2_ACCESS_KEY: ${{ secrets.LAYERRAIL_IMAGES_R2_ACCESS_KEY }}
+        LAYERRAIL_IMAGES_R2_SECRET_KEY: ${{ secrets.LAYERRAIL_IMAGES_R2_SECRET_KEY }}
         GITHUB_APP_NAME: ${{ secrets.GH_APP_NAME }}
         GITHUB_APP_ID: ${{ secrets.GH_APP_ID }}
         GITHUB_APP_CLIENT_ID: ${{ secrets.GH_APP_CLIENT_ID }}
@@ -318,7 +312,7 @@ jobs:
   cleanup-aws:
     needs: [setup, e2e]
     if: always() && contains(needs.setup.outputs.providers, 'aws')
-    runs-on: ubicloud-standard-4
+    runs-on: layerrail-standard-4
     environment: E2E-aws
     timeout-minutes: 20
     steps:
@@ -404,7 +398,7 @@ jobs:
   cleanup-gcp:
     needs: [setup, e2e]
     if: always() && contains(needs.setup.outputs.providers, 'gcp')
-    runs-on: ubicloud-standard-4
+    runs-on: layerrail-standard-4
     environment: E2E-gcp
     timeout-minutes: 20
     steps:

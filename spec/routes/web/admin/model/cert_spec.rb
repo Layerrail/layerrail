@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "Cert" do
   it "displays the Cert instance page correctly" do
     click_link "Cert"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - Cert"
+    expect(page.title).to eq "LayerRail Admin - Cert"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - Cert #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Cert #{@instance.ubid}"
   end
 end

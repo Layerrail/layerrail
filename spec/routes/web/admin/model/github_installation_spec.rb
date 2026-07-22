@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "GithubInstallation" do
   it "displays the GithubInstallation instance page correctly" do
     click_link "GithubInstallation"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - GithubInstallation - Browse"
+    expect(page.title).to eq "LayerRail Admin - GithubInstallation - Browse"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - GithubInstallation #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - GithubInstallation #{@instance.ubid}"
   end
 end

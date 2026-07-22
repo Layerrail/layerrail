@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "LoadBalancerPort" do
   it "displays the LoadBalancerPort instance page correctly" do
     click_link "LoadBalancerPort"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - LoadBalancerPort"
+    expect(page.title).to eq "LayerRail Admin - LoadBalancerPort"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - LoadBalancerPort #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - LoadBalancerPort #{@instance.ubid}"
   end
 end

@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "SpdkInstallation" do
   it "displays the SpdkInstallation instance page correctly" do
     click_link "SpdkInstallation"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - SpdkInstallation"
+    expect(page.title).to eq "LayerRail Admin - SpdkInstallation"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - SpdkInstallation #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - SpdkInstallation #{@instance.ubid}"
   end
 end

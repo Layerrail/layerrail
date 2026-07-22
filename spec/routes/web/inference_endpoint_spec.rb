@@ -16,7 +16,7 @@ RSpec.describe Clover, "inference-endpoint" do
     it "can handle empty list of inference endpoints" do
       visit "#{project.path}/inference-endpoint"
 
-      expect(page.title).to eq("Ubicloud - Inference Endpoints")
+      expect(page.title).to eq("LayerRail - Inference Endpoints")
     end
 
     it "shows the right inference endpoints" do
@@ -37,7 +37,7 @@ RSpec.describe Clover, "inference-endpoint" do
 
       visit "#{project.path}/inference-endpoint"
 
-      expect(page.title).to eq("Ubicloud - Inference Endpoints")
+      expect(page.title).to eq("LayerRail - Inference Endpoints")
       expect(page).to have_content("e5-mistral-7b-it")
       expect(page.all("a").any? { |a| a["href"] == "https://huggingface.co/foo/bar" }).to be true
       expect(page).to have_no_content("e5-mistral-8b-it") # not visible
@@ -80,7 +80,7 @@ RSpec.describe Clover, "inference-endpoint" do
 
       visit "#{project.path}/inference-endpoint"
 
-      expect(page.title).to eq("Ubicloud - Inference Endpoints")
+      expect(page.title).to eq("LayerRail - Inference Endpoints")
       expect(page).to have_content("meta-llama/Llama-3.2-1B-Instruct")
       expect(page).to have_link(href: "https://huggingface.co/foo/bar")
       expect(page).to have_content("Input: $0.10 / 1M tokens")
@@ -141,7 +141,7 @@ RSpec.describe Clover, "inference-endpoint" do
         enabled: true,
       )
       visit "#{project.path}/inference-endpoint"
-      expect(page.title).to eq("Ubicloud - Inference Endpoints")
+      expect(page.title).to eq("LayerRail - Inference Endpoints")
       expect(page).to have_content("mistral-small-3")
       expect(page).to have_content("meta-llama/Llama-3.2-1B-Instruct")
     end
@@ -153,7 +153,7 @@ RSpec.describe Clover, "inference-endpoint" do
       InferenceEndpoint.create(name: "ie1", model_name: "test-model", project_id: project_wo_permissions.id, is_public: true, visible: true, location_id: Location::HETZNER_FSN1_ID, vm_size: "size", replica_count: 1, boot_image: "image", storage_volumes: [], engine_params: "", engine: "vllm", private_subnet_id: ps.id, load_balancer_id: lb.id)
       visit "#{project_wo_permissions.path}/inference-endpoint"
 
-      expect(page.title).to eq("Ubicloud - Inference Endpoints")
+      expect(page.title).to eq("LayerRail - Inference Endpoints")
       expect(page).to have_no_content("e5-mistral-7b-it")
     end
 
@@ -208,7 +208,7 @@ RSpec.describe Clover, "inference-endpoint" do
     it "inference endpoint page is not accessible" do
       visit "/inference-endpoint"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
   end
 end

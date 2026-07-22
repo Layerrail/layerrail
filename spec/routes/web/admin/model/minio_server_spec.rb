@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "MinioServer" do
   it "displays the MinioServer instance page correctly" do
     click_link "MinioServer"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - MinioServer"
+    expect(page.title).to eq "LayerRail Admin - MinioServer"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - MinioServer #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - MinioServer #{@instance.ubid}"
   end
 end

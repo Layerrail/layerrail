@@ -122,7 +122,7 @@ RSpec.describe Prog::DownloadBootImage do
 
       mcl = instance_double(Minio::Client)
       expect(Minio::Client).to receive(:new).and_return(mcl)
-      expect(mcl).to receive(:get_presigned_url).with("GET", Config.ubicloud_images_bucket_name, "ai-model-test-model-20240924.1.0.raw", 60 * 60).and_return("https://minio.example.com/ubicloud-image/ai-model-test-model-20240924.1.0.raw")
+      expect(mcl).to receive(:get_presigned_url).with("GET", Config.layerrail_images_bucket_name, "ai-model-test-model-20240924.1.0.raw", 60 * 60).and_return("https://minio.example.com/layerrail-image/ai-model-test-model-20240924.1.0.raw")
       expect(dbi.url).to eq("https://minio.example.com/ubicloud-image/ai-model-test-model-20240924.1.0.raw")
     end
 
@@ -167,7 +167,7 @@ RSpec.describe Prog::DownloadBootImage do
       }.to_json
       refresh_frame(dbi, new_values: {"image_name" => "github-ubuntu-2204", "version" => version, "custom_url" => nil})
       expect(Minio::Client).to receive(:new).and_return(instance_double(Minio::Client, get_presigned_url: "https://minio.example.com/my-image.raw"))
-      expect(Config).to receive(:ubicloud_images_blob_storage_certs).and_return("certs").at_least(:once)
+      expect(Config).to receive(:layerrail_images_blob_storage_certs).and_return("certs").at_least(:once)
       expect(sshable).to receive(:_cmd).with("common/bin/daemonizer --check download_github-ubuntu-2204_#{version}").and_return("NotStarted")
       expect(sshable).to receive(:_cmd).with("common/bin/daemonizer 'host/bin/download-boot-image' download_github-ubuntu-2204_#{version}", stdin: params_json)
       expect { dbi.download }.to nap(15)
@@ -175,7 +175,7 @@ RSpec.describe Prog::DownloadBootImage do
 
     it "generates R2 presigned URL for github-runners images if a custom_url not provided" do
       version = described_class::BOOT_IMAGE_SHA256.dig("github-ubuntu-2204", vm_host.arch).keys.max
-      allow(Config).to receive_messages(ubicloud_images_r2_bucket_name: "images-bucket", ubicloud_images_blob_storage_certs: nil)
+      allow(Config).to receive_messages(layerrail_images_r2_bucket_name: "images-bucket", layerrail_images_blob_storage_certs: nil)
       url_presigner = instance_double(Aws::S3::Presigner)
       s3_client = instance_double(Aws::S3::Client)
       allow(Aws::S3::Presigner).to receive(:new).with(client: s3_client).and_return(url_presigner)

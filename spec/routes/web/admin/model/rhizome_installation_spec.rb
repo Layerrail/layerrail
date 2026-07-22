@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "RhizomeInstallation" do
   it "displays the RhizomeInstallation instance page correctly" do
     click_link "RhizomeInstallation"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - RhizomeInstallation"
+    expect(page.title).to eq "LayerRail Admin - RhizomeInstallation"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - RhizomeInstallation #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - RhizomeInstallation #{@instance.ubid}"
   end
 end

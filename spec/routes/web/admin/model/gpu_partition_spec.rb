@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "GpuPartition" do
   it "displays the GpuPartition instance page correctly" do
     click_link "GpuPartition"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - GpuPartition"
+    expect(page.title).to eq "LayerRail Admin - GpuPartition"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - GpuPartition #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - GpuPartition #{@instance.ubid}"
   end
 end

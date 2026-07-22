@@ -284,24 +284,24 @@ class Prog::DownloadBootImage < Prog::Base
 
   def r2_signed_url(key)
     client = Aws::S3::Client.new(
-      endpoint: Config.ubicloud_images_r2_endpoint,
-      access_key_id: Config.ubicloud_images_r2_access_key,
-      secret_access_key: Config.ubicloud_images_r2_secret_key,
+      endpoint: Config.layerrail_images_r2_endpoint,
+      access_key_id: Config.layerrail_images_r2_access_key,
+      secret_access_key: Config.layerrail_images_r2_secret_key,
       region: "auto",
       request_checksum_calculation: "when_required",
       response_checksum_validation: "when_required",
     )
-    Aws::S3::Presigner.new(client:).presigned_url(:get_object, bucket: Config.ubicloud_images_r2_bucket_name, key:, expires_in: 60 * 60)
+    Aws::S3::Presigner.new(client:).presigned_url(:get_object, bucket: Config.layerrail_images_r2_bucket_name, key:, expires_in: 60 * 60)
   end
 
   def minio_signed_url(key)
     client = Minio::Client.new(
-      endpoint: Config.ubicloud_images_blob_storage_endpoint,
-      access_key: Config.ubicloud_images_blob_storage_access_key,
-      secret_key: Config.ubicloud_images_blob_storage_secret_key,
-      ssl_ca_data: Config.ubicloud_images_blob_storage_certs,
+      endpoint: Config.layerrail_images_blob_storage_endpoint,
+      access_key: Config.layerrail_images_blob_storage_access_key,
+      secret_key: Config.layerrail_images_blob_storage_secret_key,
+      ssl_ca_data: Config.layerrail_images_blob_storage_certs,
     )
-    client.get_presigned_url("GET", Config.ubicloud_images_bucket_name, key, 60 * 60).to_s
+    client.get_presigned_url("GET", Config.layerrail_images_bucket_name, key, 60 * 60).to_s
   end
 
   def image_size_gib(suffix: nil)
@@ -335,7 +335,7 @@ class Prog::DownloadBootImage < Prog::Base
         image.destroy
         pop "operation cancelled"
       end
-      certs = download_from_blob_storage? ? Config.ubicloud_images_blob_storage_certs : nil
+      certs = download_from_blob_storage? ? Config.layerrail_images_blob_storage_certs : nil
       params = {image_name:, url:, version:, sha256sum:, certs:, use_htcat: download_from_r2?}
       sshable.cmd("common/bin/daemonizer 'host/bin/download-boot-image' :daemon_name", daemon_name:, stdin: params.to_json)
     when "Failed"

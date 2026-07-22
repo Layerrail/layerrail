@@ -21,13 +21,13 @@ RSpec.describe Clover, "firewall" do
     it "can not list without login" do
       visit "/firewall"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
 
     it "can not create without login" do
       visit "/firewall/create"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
   end
 
@@ -40,11 +40,11 @@ RSpec.describe Clover, "firewall" do
       it "can list no firewalls" do
         visit "#{project.path}/firewall"
 
-        expect(page.title).to eq("Ubicloud - Firewalls")
+        expect(page.title).to eq("LayerRail - Firewalls")
         expect(page).to have_content "No firewalls"
 
         click_link "Create Firewall"
-        expect(page.title).to eq("Ubicloud - Create Firewall")
+        expect(page.title).to eq("LayerRail - Create Firewall")
       end
 
       it "can not list firewalls when does not have permissions" do
@@ -52,7 +52,7 @@ RSpec.describe Clover, "firewall" do
         fw_wo_permission
         visit "#{project.path}/firewall"
 
-        expect(page.title).to eq("Ubicloud - Firewalls")
+        expect(page.title).to eq("LayerRail - Firewalls")
         expect(page).to have_content firewall.name
         expect(page).to have_no_content fw_wo_permission.name
       end
@@ -108,14 +108,14 @@ RSpec.describe Clover, "firewall" do
         project
         visit "#{project.path}/firewall/create"
 
-        expect(page.title).to eq("Ubicloud - Create Firewall")
+        expect(page.title).to eq("LayerRail - Create Firewall")
         name = "dummy-fw"
         fill_in "Name", with: name
         fill_in "Description", with: name
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' is created")
         expect(Firewall.count).to eq(1)
         expect(Firewall.first.project_id).to eq(project.id)
@@ -126,7 +126,7 @@ RSpec.describe Clover, "firewall" do
 
         visit "#{project.path}/firewall/create"
 
-        expect(page.title).to eq("Ubicloud - Create Firewall")
+        expect(page.title).to eq("LayerRail - Create Firewall")
         name = "dummy-fw-1"
         fill_in "Name", with: name
         fill_in "Description", with: name
@@ -134,7 +134,7 @@ RSpec.describe Clover, "firewall" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' is created")
         fw = Firewall[name:]
         expect(fw.private_subnets.first.id).to eq(ps.id)
@@ -151,13 +151,13 @@ RSpec.describe Clover, "firewall" do
         project
         visit "#{project.path}/firewall/create"
 
-        expect(page.title).to eq("Ubicloud - Create Firewall")
+        expect(page.title).to eq("LayerRail - Create Firewall")
 
         fill_in "Name", with: "invalid name"
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - Create Firewall")
+        expect(page.title).to eq("LayerRail - Create Firewall")
         expect(page).to have_content "Name must only contain"
         expect((find "input[name=name]")["value"]).to eq("invalid name")
       end
@@ -166,7 +166,7 @@ RSpec.describe Clover, "firewall" do
         project_wo_permissions
         visit "#{project_wo_permissions.path}/firewall/create"
 
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
         expect(page.status_code).to eq(403)
         expect(page).to have_content "Forbidden"
       end
@@ -180,7 +180,7 @@ RSpec.describe Clover, "firewall" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content "ResourceNotFound"
       end
@@ -191,19 +191,19 @@ RSpec.describe Clover, "firewall" do
         firewall
         visit "#{project.path}/firewall"
 
-        expect(page.title).to eq("Ubicloud - Firewalls")
+        expect(page.title).to eq("LayerRail - Firewalls")
         expect(page).to have_content firewall.name
 
         click_link firewall.name, href: "#{project.path}#{firewall.path}"
 
-        expect(page.title).to eq("Ubicloud - #{firewall.name}")
+        expect(page.title).to eq("LayerRail - #{firewall.name}")
         expect(page).to have_content firewall.name
       end
 
       it "raises forbidden when does not have permissions" do
         visit "#{project_wo_permissions.path}#{fw_wo_permission.path}"
 
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
         expect(page.status_code).to eq(403)
         expect(page).to have_content "Forbidden"
       end
@@ -211,7 +211,7 @@ RSpec.describe Clover, "firewall" do
       it "raises not found when firewall not exists" do
         visit "#{project.path}/location/eu-central-h1/firewall/08s56d4kaj94xsmrnf5v5m3mav"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content "ResourceNotFound"
       end
@@ -224,7 +224,7 @@ RSpec.describe Clover, "firewall" do
 
         visit "#{project.path}#{firewall.path}/networking"
 
-        expect(page.title).to eq("Ubicloud - #{firewall.name}")
+        expect(page.title).to eq("LayerRail - #{firewall.name}")
         expect(page).to have_content ps.name
       end
 
@@ -235,7 +235,7 @@ RSpec.describe Clover, "firewall" do
         select ps.name, from: "private_subnet_id"
         click_button "Attach"
 
-        expect(page.title).to eq("Ubicloud - #{firewall.name}")
+        expect(page.title).to eq("LayerRail - #{firewall.name}")
         expect(page).to have_flash_notice("Private subnet #{ps.name} is attached to the firewall")
         expect(firewall.private_subnets_dataset.count).to eq(1)
 
@@ -253,7 +253,7 @@ RSpec.describe Clover, "firewall" do
         ps.destroy
         click_button "Attach"
 
-        expect(page.title).to eq("Ubicloud - #{firewall.name}")
+        expect(page.title).to eq("LayerRail - #{firewall.name}")
         expect(page).to have_flash_error("Validation failed for following fields: private_subnet_id")
         expect(page).to have_content("Private subnet with the given id \"#{ps.ubid}\" and the location \"eu-central-h1\" is not found")
         expect(firewall.private_subnets_dataset.count).to eq(0)
@@ -268,7 +268,7 @@ RSpec.describe Clover, "firewall" do
         visit "#{project.path}#{firewall.path}/networking"
         click_button "Detach"
 
-        expect(page.title).to eq("Ubicloud - #{firewall.name}")
+        expect(page.title).to eq("LayerRail - #{firewall.name}")
         expect(page).to have_flash_notice("Private subnet #{ps.name} is detached from the firewall")
         expect(firewall.private_subnets_dataset.count).to eq(0)
 
@@ -283,12 +283,12 @@ RSpec.describe Clover, "firewall" do
         click_button "Attach"
 
         visit "#{project.path}#{firewall.path}/networking"
-        expect(page.title).to eq("Ubicloud - #{firewall.name}")
+        expect(page.title).to eq("LayerRail - #{firewall.name}")
         ps.destroy
         expect(firewall.private_subnets_dataset.count).to eq(0)
         click_button "Detach"
 
-        expect(page.title).to eq("Ubicloud - #{firewall.name}")
+        expect(page.title).to eq("LayerRail - #{firewall.name}")
         expect(page).to have_flash_error("Validation failed for following fields: private_subnet_id")
         expect(page).to have_content("Private subnet with the given id \"#{ps.ubid}\" and the location \"eu-central-h1\" is not found")
         expect(firewall.private_subnets_dataset.count).to eq(0)
@@ -308,7 +308,7 @@ RSpec.describe Clover, "firewall" do
           fill_in "Source IP Address Range (CIDR)", with: "1.1.1.1"
           click_button "Add Firewall Rule"
 
-          expect(page.title).to eq("Ubicloud - #{firewall.name}")
+          expect(page.title).to eq("LayerRail - #{firewall.name}")
           expect(page).to have_flash_notice("Firewall rule is created")
           expect(page.all("#firewall-rules td").map(&:text)).to eq ["1.1.1.1", "#{protocol}: 80..82", "", "", ""]
 
@@ -344,7 +344,7 @@ RSpec.describe Clover, "firewall" do
           fill_in "Source IP Address Range (CIDR)", with: "1.1.1.1"
           click_button "Add Firewall Rule"
 
-          expect(page.title).to eq("Ubicloud - #{firewall.name}")
+          expect(page.title).to eq("LayerRail - #{firewall.name}")
           expect(page).to have_flash_notice("Firewall rule is created")
           expect(page.all("#firewall-rules td").map(&:text)).to eq ["1.1.1.1", "All #{protocol}", "", "", ""]
 
@@ -380,7 +380,7 @@ RSpec.describe Clover, "firewall" do
         fill_in "Rule Description", with: "my desc"
         click_button "Add Firewall Rule"
 
-        expect(page.title).to eq("Ubicloud - #{firewall.name}")
+        expect(page.title).to eq("LayerRail - #{firewall.name}")
         expect(page).to have_flash_notice("Firewall rule is created")
         expect(page.all("#firewall-rules td").map(&:text)).to eq ["All IPv6", "SSH", "my desc", "", ""]
 
@@ -414,7 +414,7 @@ RSpec.describe Clover, "firewall" do
         fill_in "Rule Description", with: "my desc"
         click_button "Add Firewall Rule"
 
-        expect(page.title).to eq("Ubicloud - #{firewall.name}")
+        expect(page.title).to eq("LayerRail - #{firewall.name}")
         expect(page).to have_flash_notice("Firewall rule is created")
         expect(page.all("#firewall-rules td").map(&:text)).to eq ["IPv4 Subnet: dummy-ps-1", "HTTPS", "my desc", "", ""]
 
@@ -447,7 +447,7 @@ RSpec.describe Clover, "firewall" do
         select "dummy-ps-1"
         click_button "Add Firewall Rule"
 
-        expect(page.title).to eq("Ubicloud - #{firewall.name}")
+        expect(page.title).to eq("LayerRail - #{firewall.name}")
         expect(page).to have_flash_notice("Firewall rule is created")
         expect(page.all("#firewall-rules td").map(&:text)).to eq ["IPv6 Subnet: dummy-ps-1", "PostgreSQL", "", "", ""]
 
@@ -480,14 +480,14 @@ RSpec.describe Clover, "firewall" do
         fill_in "Source IP Address Range (CIDR)", with: "invalid"
         click_button "Add Firewall Rule"
 
-        expect(page.title).to eq("Ubicloud - #{firewall.name}")
+        expect(page.title).to eq("LayerRail - #{firewall.name}")
         expect(page).to have_content "Invalid CIDR"
 
         fill_in "Start Port", with: "65536"
         fill_in "Source IP Address Range (CIDR)", with: "1.1.1.1"
         click_button "Add Firewall Rule"
 
-        expect(page.title).to eq("Ubicloud - #{firewall.name}")
+        expect(page.title).to eq("LayerRail - #{firewall.name}")
         expect(page).to have_flash_error "Validation failed for following fields: port_range"
 
         expect(firewall.firewall_rules_dataset.count).to eq(0)
@@ -501,7 +501,7 @@ RSpec.describe Clover, "firewall" do
         within("#source-type") { select "All IPv4" }
         click_button "Add Firewall Rule"
 
-        expect(page.title).to eq("Ubicloud - #{firewall.name}")
+        expect(page.title).to eq("LayerRail - #{firewall.name}")
         expect(page).to have_flash_notice("Firewall rule is created")
         expect(page.all("#firewall-rules td").map(&:text)).to eq ["All IPv4", "UDP: 53", "", "", ""]
 
@@ -531,7 +531,7 @@ RSpec.describe Clover, "firewall" do
         select "All IPv4"
         click_button "Edit Firewall Rule"
 
-        expect(page.title).to eq("Ubicloud - #{firewall.name}")
+        expect(page.title).to eq("LayerRail - #{firewall.name}")
         expect(page).to have_flash_notice("Firewall rule updated")
         expect(page.all("#firewall-rules td").map(&:text)).to eq ["All IPv4", "pgBouncer", "my desc", "", ""]
 
@@ -553,7 +553,7 @@ RSpec.describe Clover, "firewall" do
         within("#source-type") { select "All IPv4" }
         click_button "Edit Firewall Rule"
 
-        expect(page.title).to eq("Ubicloud - #{firewall.name}")
+        expect(page.title).to eq("LayerRail - #{firewall.name}")
         expect(page).to have_flash_notice("Firewall rule updated")
         expect(page.all("#firewall-rules td").map(&:text)).to eq ["All IPv4", "UDP: 53", "", "", ""]
 
@@ -602,7 +602,7 @@ RSpec.describe Clover, "firewall" do
         fw_wo_permission.insert_firewall_rule("1.0.0.0/8", nil)
 
         visit "#{project_wo_permissions.path}#{fw_wo_permission.path}/networking"
-        expect(page.title).to eq "Ubicloud - dummy-fw-2"
+        expect(page.title).to eq "LayerRail - dummy-fw-2"
         expect(page.all("#fw-private-subnets a").to_a).to eq []
 
         expect(page).to have_no_content "Add Firewall Rule"
@@ -675,7 +675,7 @@ RSpec.describe Clover, "firewall" do
         AccessControlEntry.create(project_id: project_wo_permissions.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Firewall:view"])
 
         visit "#{project_wo_permissions.path}#{fw_wo_permission.path}/settings"
-        expect(page.title).to eq "Ubicloud - dummy-fw-2"
+        expect(page.title).to eq "LayerRail - dummy-fw-2"
 
         expect { find ".delete-btn" }.to raise_error Capybara::ElementNotFound
       end

@@ -15,11 +15,11 @@ RSpec.describe CloverAdmin, "PostgresResource" do
 
     click_link "PostgresResource"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - PostgresResource - Browse"
+    expect(page.title).to eq "LayerRail Admin - PostgresResource - Browse"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - PostgresResource #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - PostgresResource #{@instance.ubid}"
 
     expect(page.all("a").any? { |a| a.text == "View in Clover" }).to be(false)
   end

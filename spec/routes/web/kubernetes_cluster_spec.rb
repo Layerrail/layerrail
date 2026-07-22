@@ -65,13 +65,13 @@ RSpec.describe Clover, "Kubernetes" do
   describe "unauthenticated" do
     it "can not list without login" do
       visit "#{project.path}/kubernetes-cluster"
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
 
     it "can not create without login" do
       visit "#{project.path}/kubernetes-cluster/create"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
   end
 
@@ -83,12 +83,12 @@ RSpec.describe Clover, "Kubernetes" do
     describe "list" do
       it "works with 0 kubernetes clusters" do
         visit "#{project.path}/kubernetes-cluster"
-        expect(page.title).to eq("Ubicloud - Kubernetes Clusters")
+        expect(page.title).to eq("LayerRail - Kubernetes Clusters")
         expect(page).to have_content "No Kubernetes Clusters"
         expect(page).to have_content "Create Kubernetes Cluster"
 
         click_link "Create Kubernetes Cluster"
-        expect(page.title).to eq("Ubicloud - Create Kubernetes Cluster")
+        expect(page.title).to eq("LayerRail - Create Kubernetes Cluster")
       end
 
       it "lists existing permissible clusters" do
@@ -131,7 +131,7 @@ RSpec.describe Clover, "Kubernetes" do
       before do
         kc
         visit "#{project.path}/kubernetes-cluster/create"
-        expect(page.title).to eq("Ubicloud - Create Kubernetes Cluster")
+        expect(page.title).to eq("LayerRail - Create Kubernetes Cluster")
       end
 
       it "cannot create kubernetes cluster when location does not exist" do
@@ -143,7 +143,7 @@ RSpec.describe Clover, "Kubernetes" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content("ResourceNotFound")
       end
@@ -163,7 +163,7 @@ RSpec.describe Clover, "Kubernetes" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - Create Kubernetes Cluster")
+        expect(page.title).to eq("LayerRail - Create Kubernetes Cluster")
         expect(page).to have_content "Project doesn't have valid billing information"
       end
 
@@ -178,7 +178,7 @@ RSpec.describe Clover, "Kubernetes" do
         end
 
         click_button "Create"
-        expect(page.title).to eq("Ubicloud - k8stest")
+        expect(page.title).to eq("LayerRail - k8stest")
         expect(page).to have_flash_notice("'k8stest' will be ready in a few minutes")
         expect(KubernetesCluster.count).to eq(2)
 
@@ -197,7 +197,7 @@ RSpec.describe Clover, "Kubernetes" do
         find('select#worker_nodes option[value="4"]:not([disabled])').select_option
 
         click_button "Create"
-        expect(page.title).to eq("Ubicloud - Create Kubernetes Cluster")
+        expect(page.title).to eq("LayerRail - Create Kubernetes Cluster")
         expect(page).to have_content "Kubernetes cluster name must only contain lowercase"
         expect((find "input[name=name]")["value"]).to eq("invalid name")
       end
@@ -209,7 +209,7 @@ RSpec.describe Clover, "Kubernetes" do
         find('select#worker_nodes option[value="4"]:not([disabled])').select_option
 
         click_button "Create"
-        expect(page.title).to eq("Ubicloud - Create Kubernetes Cluster")
+        expect(page.title).to eq("LayerRail - Create Kubernetes Cluster")
         expect(page).to have_flash_error("project_id and location_id and name is already taken")
       end
 
@@ -220,7 +220,7 @@ RSpec.describe Clover, "Kubernetes" do
       it "can not create kubernetes cluster in a project when does not have permissions" do
         visit "#{project_wo_permissions.path}/kubernetes-cluster/create"
 
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
         expect(page.status_code).to eq(403)
         expect(page).to have_content "Forbidden"
       end
@@ -230,13 +230,13 @@ RSpec.describe Clover, "Kubernetes" do
       it "can show kubernetes cluster details" do
         kc
         visit "#{project.path}/kubernetes-cluster"
-        expect(page.title).to eq("Ubicloud - Kubernetes Clusters")
+        expect(page.title).to eq("LayerRail - Kubernetes Clusters")
 
         expect(page).to have_content kc.name
 
         click_link kc.name, href: "#{project.path}#{kc.path}"
 
-        expect(page.title).to eq("Ubicloud - #{kc.name}")
+        expect(page.title).to eq("LayerRail - #{kc.name}")
         expect(page).to have_content kc.name
         expect(page).to have_content kc.ubid
         expect(page).to have_content kc.display_location
@@ -281,17 +281,17 @@ RSpec.describe Clover, "Kubernetes" do
 
       it "shows up on customer private subnet vms page" do
         visit "#{project.path}/location/#{kc.display_location}/private-subnet/#{kc.private_subnet.ubid}/vms"
-        expect(page.title).to eq "Ubicloud - mysubnet"
+        expect(page.title).to eq "LayerRail - mysubnet"
         expect(page.all("#private-subnet-nics h3").map(&:text)).to eq ["Attached VMs", "Other Attached Resources"]
         expect(page.all("#private-subnet-nics td").map(&:text)).to eq ["No VM attached", "Kubernetes Cluster", kc.name, kc.ubid]
         click_link kc.name
-        expect(page.title).to eq "Ubicloud - #{kc.name}"
+        expect(page.title).to eq "LayerRail - #{kc.name}"
       end
 
       it "works with ubid" do
         visit "#{project.path}/location/#{kc.display_location}/kubernetes-cluster/#{kc.ubid}"
 
-        expect(page.title).to eq("Ubicloud - #{kc.name}")
+        expect(page.title).to eq("LayerRail - #{kc.name}")
         expect(page).to have_content kc.name
       end
 
@@ -301,7 +301,7 @@ RSpec.describe Clover, "Kubernetes" do
         AccessControlEntry.create(project_id: project.id, subject_id: user.id, action_id: ActionType::NAME_MAP["KubernetesCluster:view"])
         visit "#{project.path}#{kc.path}"
 
-        expect(page.title).to eq("Ubicloud - #{kc.name}")
+        expect(page.title).to eq("LayerRail - #{kc.name}")
         expect(page).to have_content kc.name
         expect(page).to have_content kc.ubid
         expect(page).to have_content kc.display_location
@@ -311,7 +311,7 @@ RSpec.describe Clover, "Kubernetes" do
 
       it "raises forbidden when does not have permissions" do
         visit "#{project_wo_permissions.path}#{kc_no_perm.path}"
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
         expect(page.status_code).to eq(403)
         expect(page).to have_content "Forbidden"
       end
@@ -319,7 +319,7 @@ RSpec.describe Clover, "Kubernetes" do
       it "raises not found when kubernetes cluster does not exist" do
         visit "#{project.path}/location/eu-central-h1/kubernetes-cluster/blabla"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content "ResourceNotFound"
       end
@@ -347,7 +347,7 @@ RSpec.describe Clover, "Kubernetes" do
 
         expect(page.response_headers["Content-Type"]).to include("text/html")
         expect(page.response_headers["Content-Disposition"]).to be_nil
-        expect(page.title).to eq "Ubicloud - myk8s"
+        expect(page.title).to eq "LayerRail - myk8s"
         expect(page).to have_flash_error("Temporary error downloading kubeconfig.yaml. Please try again.")
       end
 
@@ -510,7 +510,7 @@ RSpec.describe Clover, "Kubernetes" do
         AccessControlEntry.create(project_id: project_wo_permissions.id, subject_id: user.id, action_id: ActionType::NAME_MAP["KubernetesCluster:view"])
 
         visit "#{project_wo_permissions.path}#{kc_no_perm.path}/settings"
-        expect(page.title).to eq "Ubicloud - not-my-k8s"
+        expect(page.title).to eq "LayerRail - not-my-k8s"
 
         expect { find ".delete-btn" }.to raise_error Capybara::ElementNotFound
       end

@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "Sshable" do
   it "displays the Sshable instance page correctly" do
     click_link "Sshable"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - Sshable"
+    expect(page.title).to eq "LayerRail Admin - Sshable"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - Sshable #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Sshable #{@instance.ubid}"
   end
 end

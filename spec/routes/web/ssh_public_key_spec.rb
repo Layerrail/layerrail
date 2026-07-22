@@ -15,29 +15,29 @@ RSpec.describe Clover do
   it "can navigate to management page from project page" do
     visit project.path
     click_link "Manage SSH Public Keys"
-    expect(page.title).to eq "Ubicloud - SSH Public Keys"
+    expect(page.title).to eq "LayerRail - SSH Public Keys"
   end
 
   it "can navigate to management page from vm create page" do
     visit "#{project.path}/vm/create"
     click_link "register SSH keys for this project"
-    expect(page.title).to eq "Ubicloud - SSH Public Keys"
+    expect(page.title).to eq "LayerRail - SSH Public Keys"
   end
 
   it "does not show link on vm create page if user lacks permissions" do
     visit "#{project.path}/vm/create"
-    expect(page.title).to eq "Ubicloud - Create Virtual Machine"
+    expect(page.title).to eq "LayerRail - Create Virtual Machine"
     expect(page).to have_content("register SSH keys for this project")
 
     AccessControlEntry.dataset.destroy
     AccessControlEntry.create(project_id: project.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Vm:create"])
     page.refresh
-    expect(page.title).to eq "Ubicloud - Create Virtual Machine"
+    expect(page.title).to eq "LayerRail - Create Virtual Machine"
     expect(page).to have_no_content("register SSH keys for this project")
 
     AccessControlEntry.create(project_id: project.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Project:edit"])
     page.refresh
-    expect(page.title).to eq "Ubicloud - Create Virtual Machine"
+    expect(page.title).to eq "LayerRail - Create Virtual Machine"
     expect(page).to have_content("register SSH keys for this project")
   end
 
@@ -53,9 +53,9 @@ RSpec.describe Clover do
   end
 
   it "support creating, updating, and deleting SSH public keys" do
-    expect(page.title).to eq "Ubicloud - SSH Public Keys"
+    expect(page.title).to eq "LayerRail - SSH Public Keys"
     click_link "Register SSH Public Key"
-    expect(page.title).to eq "Ubicloud - Register SSH Public Key"
+    expect(page.title).to eq "LayerRail - Register SSH Public Key"
 
     click_button "Register"
     expect(page).to have_flash_error("Error registering SSH public key")
@@ -77,7 +77,7 @@ RSpec.describe Clover do
 
     expect(page.all("td a").map(&:text)).to eq ["a"]
     click_link "a"
-    expect(page.title).to eq "Ubicloud - Update SSH Public Key"
+    expect(page.title).to eq "LayerRail - Update SSH Public Key"
 
     fill_in "Name", with: "A A"
     fill_in "Public Key", with: "a"

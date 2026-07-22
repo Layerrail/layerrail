@@ -31,7 +31,7 @@ use_htcat = params_json["use_htcat"]
 if certs.nil?
   ca_path = nil
 else
-  ca_path = "/usr/lib/ssl/certs/ubicloud_images_blob_storage_certs.crt"
+  ca_path = "/usr/lib/ssl/certs/layerrail_images_blob_storage_certs.crt"
   safe_write_to_file(ca_path, certs)
 end
 

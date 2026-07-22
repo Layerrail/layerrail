@@ -67,7 +67,7 @@ RSpec.describe Clover, "billing" do
     within "#desktop-menu" do
       expect { click_link "Billing" }.to raise_error Capybara::ElementNotFound
     end
-    expect(page.title).to eq("Ubicloud - #{project.name}")
+    expect(page.title).to eq("LayerRail - #{project.name}")
 
     visit "#{project.path}/billing"
     expect(page.status_code).to eq(501)
@@ -96,7 +96,7 @@ RSpec.describe Clover, "billing" do
       project_wo_permissions
       visit "#{project_wo_permissions.path}/billing"
 
-      expect(page.title).to eq("Ubicloud - Forbidden")
+      expect(page.title).to eq("LayerRail - Forbidden")
       expect(page.status_code).to eq(403)
       expect(page).to have_content "Forbidden"
     end
@@ -117,10 +117,10 @@ RSpec.describe Clover, "billing" do
         click_link "Billing"
       end
 
-      expect(page.title).to eq("Ubicloud - Project Billing")
+      expect(page.title).to eq("LayerRail - Project Billing")
       click_button "Add new billing information"
 
-      expect(page.title).to eq("Ubicloud - Project Billing")
+      expect(page.title).to eq("LayerRail - Project Billing")
       expect(page).to have_flash_notice("Payment method added successfully. $#{PaymentMethod[stripe_id: "pm_1234567890"].preauth_amount / 100} is authorized on your card for verification purposes. It's canceled already and depending on your bank, it may take up to two weeks to refund the money.")
 
       billing_info = project.reload.billing_info
@@ -153,11 +153,11 @@ RSpec.describe Clover, "billing" do
         click_link "Billing"
       end
 
-      expect(page.title).to eq("Ubicloud - Project Billing")
+      expect(page.title).to eq("LayerRail - Project Billing")
       click_button "Add new billing information"
 
       expect(page.status_code).to eq(400)
-      expect(page).to have_flash_error("We couldn't pre-authorize your card for verification. Please make sure it can be pre-authorized up to $5 or contact our support team at support@ubicloud.com.")
+      expect(page).to have_flash_error("We couldn't pre-authorize your card for verification. Please make sure it can be pre-authorized up to $5 or contact our support team at support@layerrail.com.")
     end
 
     it "can update billing info" do
@@ -167,7 +167,7 @@ RSpec.describe Clover, "billing" do
       expect(customers_service).to receive(:update).with(billing_info.stripe_id, anything)
       visit "#{project.path}/billing"
 
-      expect(page.title).to eq("Ubicloud - Project Billing")
+      expect(page.title).to eq("LayerRail - Project Billing")
       fill_in "Billing Name", with: "New Inc."
       select "United States", from: "Country"
 
@@ -187,7 +187,7 @@ RSpec.describe Clover, "billing" do
       expect(customers_service).to receive(:update).with(billing_info.stripe_id, anything)
       visit "#{project.path}/billing"
 
-      expect(page.title).to eq("Ubicloud - Project Billing")
+      expect(page.title).to eq("LayerRail - Project Billing")
       expect(page).to have_field("Billing Name", with: "Old Inc.")
 
       fill_in "Billing Name", with: "New Inc."
@@ -207,7 +207,7 @@ RSpec.describe Clover, "billing" do
       expect(customers_service).to receive(:update).with(billing_info.stripe_id, anything).at_least(:once)
       visit "#{project.path}/billing"
 
-      expect(page.title).to eq("Ubicloud - Project Billing")
+      expect(page.title).to eq("LayerRail - Project Billing")
       select "United States", from: "Country"
       fill_in "VAT ID", with: "DE 456-789"
 
@@ -231,7 +231,7 @@ RSpec.describe Clover, "billing" do
 
       visit "#{project.path}/billing"
 
-      expect(page.title).to eq("Ubicloud - Project Billing")
+      expect(page.title).to eq("LayerRail - Project Billing")
       fill_in "VAT ID", with: nil
 
       click_button "Update"
@@ -249,7 +249,7 @@ RSpec.describe Clover, "billing" do
 
       visit "#{project.path}/billing"
 
-      expect(page.title).to eq("Ubicloud - Project Billing")
+      expect(page.title).to eq("LayerRail - Project Billing")
       fill_in "Billing Email", with: "  test@test.com"
 
       click_button "Update"
@@ -276,7 +276,7 @@ RSpec.describe Clover, "billing" do
       click_link "Add Payment Method"
 
       expect(page.status_code).to eq(200)
-      expect(page.title).to eq("Ubicloud - Project Billing")
+      expect(page.title).to eq("LayerRail - Project Billing")
       expect(billing_info.payment_methods.count).to eq(2)
       expect(page).to have_content "Visa"
       expect(page).to have_content "Mastercard"
@@ -307,7 +307,7 @@ RSpec.describe Clover, "billing" do
       click_link "Add Payment Method"
 
       expect(page.status_code).to eq(200)
-      expect(page.title).to eq("Ubicloud - Project Billing")
+      expect(page.title).to eq("LayerRail - Project Billing")
       expect(billing_info.payment_methods.count).to eq(2)
       expect(page).to have_content "Visa"
       expect(page).to have_content "Mastercard"
@@ -330,7 +330,7 @@ RSpec.describe Clover, "billing" do
       click_link "Add Payment Method"
 
       expect(page.status_code).to eq(400)
-      expect(page.title).to eq("Ubicloud - Project Billing")
+      expect(page.title).to eq("LayerRail - Project Billing")
       expect(billing_info.payment_methods.count).to eq(1)
       expect(page).to have_content "Visa"
       expect(page).to have_flash_error("Payment method you added is labeled as fraud. Please contact support.")
@@ -339,7 +339,7 @@ RSpec.describe Clover, "billing" do
     it "raises not found when payment method not exists" do
       visit "#{project.path}/billing/payment-method/08s56d4kaj94xsmrnf5v5m3mav"
 
-      expect(page.title).to eq("Ubicloud - ResourceNotFound")
+      expect(page.title).to eq("LayerRail - ResourceNotFound")
       expect(page.status_code).to eq(404)
       expect(page).to have_content "ResourceNotFound"
     end
@@ -347,7 +347,7 @@ RSpec.describe Clover, "billing" do
     it "raises not found when add payment method if project not exists" do
       visit "#{project.path}/billing/payment-method/create"
 
-      expect(page.title).to eq("Ubicloud - ResourceNotFound")
+      expect(page.title).to eq("LayerRail - ResourceNotFound")
       expect(page.status_code).to eq(404)
       expect(page).to have_content "ResourceNotFound"
     end
@@ -526,7 +526,7 @@ RSpec.describe Clover, "billing" do
         visit "#{project.path}/billing"
 
         expect(page.status_code).to eq(200)
-        expect(page.title).to eq("Ubicloud - Project Billing")
+        expect(page.title).to eq("LayerRail - Project Billing")
         expect(page).to have_content invoice.name
 
         invoice.content["cost"] = 123.45
@@ -553,7 +553,7 @@ RSpec.describe Clover, "billing" do
         visit "#{project.path}/billing/invoice/current"
 
         expect(page.status_code).to eq(200)
-        expect(page.title).to eq("Ubicloud - Current Usage Summary")
+        expect(page.title).to eq("LayerRail - Current Usage Summary")
         expect(page).to have_content "Aggregated"
         expect(page).to have_content "40420 minutes"
         expect(page).to have_content "$31.10"
@@ -578,7 +578,7 @@ RSpec.describe Clover, "billing" do
         visit "#{project.path}/billing"
 
         expect(page.status_code).to eq(200)
-        expect(page.title).to eq("Ubicloud - Project Billing")
+        expect(page.title).to eq("LayerRail - Project Billing")
         expect(page).to have_content "current"
         expect(page).to have_content "not finalized"
 
@@ -597,7 +597,7 @@ RSpec.describe Clover, "billing" do
         visit "#{project.path}/billing"
 
         expect(page.status_code).to eq(200)
-        expect(page.title).to eq("Ubicloud - Project Billing")
+        expect(page.title).to eq("LayerRail - Project Billing")
         expect(page).to have_content "current"
         expect(page).to have_content "not finalized"
         expect(page).to have_content "$%0.02f" % invoice_current.content["cost"]
@@ -753,7 +753,7 @@ RSpec.describe Clover, "billing" do
         end
 
         expect(page.status_code).to eq(200)
-        expect(page.title).to eq("Ubicloud - Project Billing")
+        expect(page.title).to eq("LayerRail - Project Billing")
         expect(page).to have_flash_notice "Invoice #{invoice.invoice_number} paid successfully"
         within("#invoice-#{invoice.ubid}") do
           expect(page).to have_content "paid"
@@ -780,7 +780,7 @@ RSpec.describe Clover, "billing" do
         end
 
         expect(page.status_code).to eq(400)
-        expect(page.title).to eq("Ubicloud - Project Billing")
+        expect(page.title).to eq("LayerRail - Project Billing")
         expect(page).to have_flash_error "Invoice payment was not successful"
 
         expect(checkout_sessions_service).to receive(:retrieve).with("session_123").and_raise(Stripe::InvalidRequestError.new("No such checkout session", "id"))
@@ -791,7 +791,7 @@ RSpec.describe Clover, "billing" do
         end
 
         expect(page.status_code).to eq(400)
-        expect(page).to have_flash_error "We couldn't validate your payment. If you think this is a mistake, please reach out to our support team at support@ubicloud"
+        expect(page).to have_flash_error "We couldn't validate your payment. If you think this is a mistake, please reach out to our support team at support@layerrail.com"
       end
 
       it "fails if invoice already paid" do
@@ -814,7 +814,7 @@ RSpec.describe Clover, "billing" do
       it "raises not found when invoice not exists" do
         visit "#{project.path}/billing/invoice/1vfp96nprnxe7gneajmxn5ncnh"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content "ResourceNotFound"
       end

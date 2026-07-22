@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "PciDevice" do
   it "displays the PciDevice instance page correctly" do
     click_link "PciDevice"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - PciDevice"
+    expect(page.title).to eq "LayerRail Admin - PciDevice"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - PciDevice #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - PciDevice #{@instance.ubid}"
   end
 end

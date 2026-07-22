@@ -12,7 +12,7 @@ RSpec.describe Prog::Github::GithubRepositoryNexus do
   let(:project) { Project.create(name: "test") }
   let(:installation) { GithubInstallation.create(installation_id: 123, project_id: project.id, name: "test-user", type: "User") }
   let(:repository) {
-    GithubRepository.create(name: "ubicloud/ubicloud", last_job_at: Time.now, installation_id: installation.id)
+    GithubRepository.create(name: "layerrail/layerrail", last_job_at: Time.now, installation_id: installation.id)
   }
 
   let(:now) { Time.now.round }
@@ -27,52 +27,52 @@ RSpec.describe Prog::Github::GithubRepositoryNexus do
   describe ".assemble" do
     it "creates github repository or updates last_job_at if the repository exists" do
       expect {
-        described_class.assemble(installation, "ubicloud/ubicloud", "master")
+        described_class.assemble(installation, "layerrail/layerrail", "master")
       }.to change(GithubRepository, :count).from(0).to(1)
-      repository = described_class.assemble(installation, "ubicloud/ubicloud", "main").subject
+      repository = described_class.assemble(installation, "layerrail/layerrail", "main").subject
       expect(GithubRepository.count).to eq(1)
       expect(Strand.count).to eq(1)
       expect(repository.last_job_at).to eq(now)
       expect(repository.default_branch).to eq("main")
-      described_class.assemble(installation, "ubicloud/ubicloud", nil)
+      described_class.assemble(installation, "layerrail/layerrail", nil)
       expect(repository.default_branch).to eq("main")
     end
   end
 
   describe ".check_queued_jobs" do
     it "creates extra runner if needed" do
-      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "ubicloud-standard-4")
-      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-2", alias_for: "ubicloud-standard-8")
+      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "layerrail-standard-4")
+      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-2", alias_for: "layerrail-standard-8")
 
       expect(client).to receive(:repository_workflow_runs).and_return({workflow_runs: [
         {id: 1, run_attempt: 2, status: "queued"},
         {id: 2, run_attempt: 1, status: "queued"},
       ]})
       expect(client).to receive(:rate_limit).and_return(instance_double(Octokit::RateLimit, remaining: 100, limit: 100)).at_least(:once)
-      expect(client).to receive(:workflow_run_attempt_jobs).with("ubicloud/ubicloud", 1, 2).and_return({jobs: [
+      expect(client).to receive(:workflow_run_attempt_jobs).with("layerrail/layerrail", 1, 2).and_return({jobs: [
         {status: "queued", labels: ["ubuntu-latest"]},
-        {status: "queued", labels: ["ubicloud"]},
-        {status: "queued", labels: ["ubicloud"]},
-        {status: "queued", labels: ["ubicloud-standard-4"]},
-        {status: "queued", labels: ["ubicloud-standard-8"]},
+        {status: "queued", labels: ["layerrail"]},
+        {status: "queued", labels: ["layerrail"]},
+        {status: "queued", labels: ["layerrail-standard-4"]},
+        {status: "queued", labels: ["layerrail-standard-8"]},
         {status: "queued", labels: ["custom-label-1"]},
         {status: "queued", labels: ["custom-label-2"]},
-        {status: "failed", labels: ["ubicloud"]},
+        {status: "failed", labels: ["layerrail"]},
       ]})
-      expect(client).to receive(:workflow_run_attempt_jobs).with("ubicloud/ubicloud", 2, 1).and_return({jobs: [
-        {status: "queued", labels: ["ubicloud"]},
+      expect(client).to receive(:workflow_run_attempt_jobs).with("layerrail/layerrail", 2, 1).and_return({jobs: [
+        {status: "queued", labels: ["layerrail"]},
       ]})
 
       # Create existing runners (idle, no workflow_job) - these reduce the number of new runners needed
-      [["ubicloud"], ["ubicloud-standard-8"], ["ubicloud-standard-4", "custom-label-1"]].each do |label, actual_label|
-        GithubRunner.create(installation_id: installation.id, repository_id: repository.id, repository_name: "ubicloud/ubicloud", label:, actual_label: actual_label || label)
+      [["layerrail"], ["layerrail-standard-8"], ["layerrail-standard-4", "custom-label-1"]].each do |label, actual_label|
+        GithubRunner.create(installation_id: installation.id, repository_id: repository.id, repository_name: "layerrail/layerrail", label:, actual_label: actual_label || label)
       end
 
       expect { nx.check_queued_jobs }
         .to change(GithubRunner, :count).from(3).to(7)
-        .and change { GithubRunner.where(label: "ubicloud").count }.from(1).to(3)
-        .and change { GithubRunner.where(label: "ubicloud-standard-4").count }.from(1).to(2)
-        .and change { GithubRunner.where(label: "ubicloud-standard-8").count }.from(1).to(2)
+        .and change { GithubRunner.where(label: "layerrail").count }.from(1).to(3)
+        .and change { GithubRunner.where(label: "layerrail-standard-4").count }.from(1).to(2)
+        .and change { GithubRunner.where(label: "layerrail-standard-8").count }.from(1).to(2)
       expect(nx.polling_interval).to eq(5 * 60)
     end
 
@@ -225,7 +225,7 @@ RSpec.describe Prog::Github::GithubRepositoryNexus do
     end
 
     it "does not destroys repository and if not found but has active runners" do
-      GithubRunner.create(repository_id: repository.id, repository_name: "ubicloud/ubicloud", label: "ubicloud")
+      GithubRunner.create(repository_id: repository.id, repository_name: "layerrail/layerrail", label: "layerrail")
       expect(nx).to receive(:check_queued_jobs).and_raise(Octokit::NotFound)
       expect { nx.wait }.to nap(5 * 60)
       expect(Semaphore.where(strand_id: repository.id, name: "destroy").count).to eq(0)
@@ -247,7 +247,7 @@ RSpec.describe Prog::Github::GithubRepositoryNexus do
 
   describe "#destroy" do
     it "does not destroy if has active runner" do
-      GithubRunner.create(repository_id: repository.id, repository_name: "ubicloud/ubicloud", label: "ubicloud")
+      GithubRunner.create(repository_id: repository.id, repository_name: "layerrail/layerrail", label: "layerrail")
       expect { nx.destroy }.to nap(5 * 60)
     end
 

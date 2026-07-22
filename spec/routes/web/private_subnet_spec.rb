@@ -26,13 +26,13 @@ RSpec.describe Clover, "private subnet" do
     it "can not list without login" do
       visit "/private-subnet"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
 
     it "can not create without login" do
       visit "/private-subnet/create"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
   end
 
@@ -45,11 +45,11 @@ RSpec.describe Clover, "private subnet" do
       it "can list no private subnets" do
         visit "#{project.path}/private-subnet"
 
-        expect(page.title).to eq("Ubicloud - Private Subnets")
+        expect(page.title).to eq("LayerRail - Private Subnets")
         expect(page).to have_content "No Private Subnets"
 
         click_link "Create Private Subnet"
-        expect(page.title).to eq("Ubicloud - Create Private Subnet")
+        expect(page.title).to eq("LayerRail - Create Private Subnet")
       end
 
       it "can not list private subnets when does not have permissions" do
@@ -57,7 +57,7 @@ RSpec.describe Clover, "private subnet" do
         ps_wo_permission
         visit "#{project.path}/private-subnet"
 
-        expect(page.title).to eq("Ubicloud - Private Subnets")
+        expect(page.title).to eq("LayerRail - Private Subnets")
         expect(page).to have_content private_subnet.name
         expect(page).to have_no_content ps_wo_permission.name
       end
@@ -85,14 +85,14 @@ RSpec.describe Clover, "private subnet" do
         project
         visit "#{project.path}/private-subnet/create"
 
-        expect(page.title).to eq("Ubicloud - Create Private Subnet")
+        expect(page.title).to eq("LayerRail - Create Private Subnet")
         name = "dummy-ps"
         fill_in "Name", with: name
         choose option: Location::HETZNER_FSN1_UBID
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few seconds")
         expect(PrivateSubnet.count).to eq(1)
         expect(PrivateSubnet.first.project_id).to eq(project.id)
@@ -102,14 +102,14 @@ RSpec.describe Clover, "private subnet" do
         project
         visit "#{project.path}/private-subnet/create"
 
-        expect(page.title).to eq("Ubicloud - Create Private Subnet")
+        expect(page.title).to eq("LayerRail - Create Private Subnet")
 
         fill_in "Name", with: private_subnet.name
         choose option: Location::HETZNER_FSN1_UBID
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - Create Private Subnet")
+        expect(page.title).to eq("LayerRail - Create Private Subnet")
         expect(page).to have_flash_error("project_id and location_id and name is already taken")
       end
 
@@ -120,7 +120,7 @@ RSpec.describe Clover, "private subnet" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content("ResourceNotFound")
       end
@@ -130,7 +130,7 @@ RSpec.describe Clover, "private subnet" do
           project
           visit "#{project.path}/private-subnet/create"
 
-          expect(page.title).to eq("Ubicloud - Create Private Subnet")
+          expect(page.title).to eq("LayerRail - Create Private Subnet")
           name = "a123456789" * 6
           fill_in "Name", with: name
           choose option: Location::HETZNER_FSN1_UBID
@@ -138,7 +138,7 @@ RSpec.describe Clover, "private subnet" do
           click_button "Create"
 
           expect(page).to have_flash_notice("'#{name}' will be ready in a few seconds")
-          expect(page.title).to eq("Ubicloud - #{name}")
+          expect(page.title).to eq("LayerRail - #{name}")
           expect(PrivateSubnet.count).to eq(1)
 
           ps = PrivateSubnet.first
@@ -163,19 +163,19 @@ RSpec.describe Clover, "private subnet" do
         private_subnet
         visit "#{project.path}/private-subnet"
 
-        expect(page.title).to eq("Ubicloud - Private Subnets")
+        expect(page.title).to eq("LayerRail - Private Subnets")
         expect(page).to have_content private_subnet.name
 
         click_link private_subnet.name, href: "#{project.path}#{private_subnet.path}"
 
-        expect(page.title).to eq("Ubicloud - #{private_subnet.name}")
+        expect(page.title).to eq("LayerRail - #{private_subnet.name}")
         expect(page).to have_content private_subnet.name
       end
 
       it "raises not found when private subnet not exists" do
         visit "#{project.path}/location/eu-central-h1/private-subnet/08s56d4kaj94xsmrnf5v5m3mav"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content "ResourceNotFound"
       end
@@ -191,7 +191,7 @@ RSpec.describe Clover, "private subnet" do
         visit "#{project.path}#{private_subnet.path}"
         within("#private-subnet-submenu") { click_link "Virtual Machines" }
 
-        expect(page.title).to eq("Ubicloud - #{private_subnet.name}")
+        expect(page.title).to eq("LayerRail - #{private_subnet.name}")
         expect(page).to have_content nic.private_ipv4.network.to_s
         expect(page).to have_content nic.private_ipv6.nth(2).to_s
 
@@ -200,7 +200,7 @@ RSpec.describe Clover, "private subnet" do
         expect(page).to have_content "dummy-vm"
         expect(page.all("#private-subnet-nics a").length).to eq 1
         click_link "dummy-vm"
-        expect(page.title).to eq("Ubicloud - dummy-vm")
+        expect(page.title).to eq("LayerRail - dummy-vm")
 
         AccessControlEntry.where(project_id: project.id, action_id: nil).update(action_id: ActionType::NAME_MAP["PrivateSubnet:view"])
         visit "#{project.path}#{private_subnet.path}/vms"
@@ -224,7 +224,7 @@ RSpec.describe Clover, "private subnet" do
 
         visit "#{project.path}#{private_subnet.path}/networking"
 
-        expect(page.title).to eq("Ubicloud - #{private_subnet.name}")
+        expect(page.title).to eq("LayerRail - #{private_subnet.name}")
         expect(page).to have_content fw.name
         expect(page).to have_content fw.description
       end
@@ -313,7 +313,7 @@ RSpec.describe Clover, "private subnet" do
         click_button "Disconnect"
         expect(page.status_code).to eq(400)
         expect(page).to have_flash_error("Subnet to be disconnected not found")
-        expect(page.title).to eq("Ubicloud - dummy-ps-1")
+        expect(page.title).to eq("LayerRail - dummy-ps-1")
       end
 
       it "cannot connect to a subnet without access to connected subnet" do
@@ -330,7 +330,7 @@ RSpec.describe Clover, "private subnet" do
         select "dummy-ps-2"
         click_button "Connect"
         expect(private_subnet.reload.connected_subnets.count).to eq(0)
-        expect(page.title).to eq "Ubicloud - dummy-ps-1"
+        expect(page.title).to eq "LayerRail - dummy-ps-1"
         expect(page).to have_flash_error "Subnet to be connected not found"
         expect { select "dummy-ps-2" }.to raise_error(Capybara::ElementNotFound)
       end
@@ -350,7 +350,7 @@ RSpec.describe Clover, "private subnet" do
 
         click_button "Disconnect"
         expect(private_subnet.reload.connected_subnets.count).to eq(1)
-        expect(page.title).to eq "Ubicloud - dummy-ps-1"
+        expect(page.title).to eq "LayerRail - dummy-ps-1"
         expect(page).to have_flash_error "Subnet to be disconnected not found"
         expect(page).to have_no_content "Disconnect"
       end
@@ -368,7 +368,7 @@ RSpec.describe Clover, "private subnet" do
         AccessControlEntry.create(project_id: project.id, subject_id: user.id, action_id: ActionType::NAME_MAP["PrivateSubnet:connect"], object_id: ps2.id)
         click_button "Connect"
         expect(private_subnet.reload.connected_subnets.count).to eq(0)
-        expect(page.title).to eq "Ubicloud - Forbidden"
+        expect(page.title).to eq "LayerRail - Forbidden"
 
         visit "#{project.path}#{private_subnet.path}/networking"
         expect { click_button "Connect" }.to raise_error(Capybara::ElementNotFound)
@@ -389,7 +389,7 @@ RSpec.describe Clover, "private subnet" do
 
         click_button "Disconnect"
         expect(private_subnet.reload.connected_subnets.count).to eq(1)
-        expect(page.title).to eq "Ubicloud - Forbidden"
+        expect(page.title).to eq "LayerRail - Forbidden"
 
         visit "#{project.path}#{private_subnet.path}/networking"
         expect(page).to have_no_content "Disconnect"
@@ -436,7 +436,7 @@ RSpec.describe Clover, "private subnet" do
         AccessControlEntry.create(project_id: project_wo_permissions.id, subject_id: user.id, action_id: ActionType::NAME_MAP["PrivateSubnet:view"])
 
         visit "#{project_wo_permissions.path}#{ps_wo_permission.path}/settings"
-        expect(page.title).to eq "Ubicloud - dummy-ps-2"
+        expect(page.title).to eq "LayerRail - dummy-ps-2"
 
         expect { find ".delete-btn" }.to raise_error Capybara::ElementNotFound
       end

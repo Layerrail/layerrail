@@ -63,27 +63,23 @@ RSpec.describe Github do
     labels = described_class.runner_labels
     expect(labels["layerrail"]).to eq(labels["layerrail-standard-2-ubuntu-2404"])
     expect(labels["layerrail-standard-8"]).to eq(labels["layerrail-standard-8-ubuntu-2404"])
+    expect(labels["layerrail-standard-8"]["vm_size"]).to eq("standard-8")
     unless Config.compute_provider == "linode"
       expect(labels["layerrail-standard-4-arm"]).to eq(labels["layerrail-standard-4-arm-ubuntu-2404"])
+      expect(labels["layerrail-standard-4-arm"]["vm_size"]).to eq("standard-4")
     end
   end
 
-  it "keeps legacy ubicloud aliases mapped to LayerRail labels" do
-    labels = YAML.load_file("config/github_runner_labels.yml").to_h { [it["name"], it] }
-
-    described_class.add_legacy_runner_aliases(labels)
-
-    expect(labels["ubicloud-standard-2"]).to eq({"name" => "ubicloud-standard-2", "alias_for" => "layerrail-standard-2"})
-    expect(described_class.resolve_runner_label(labels, labels["ubicloud-standard-2"])["name"]).to eq("layerrail-standard-2-ubuntu-2404")
+  it "only exposes LayerRail runner labels" do
+    expect(described_class.runner_labels.keys).to all(start_with("layerrail"))
   end
 
   it "keeps only Linode-backed x64 standard runner sizes for Linode" do
     labels = YAML.load_file("config/github_runner_labels.yml").to_h { [it["name"], it] }
-    described_class.add_legacy_runner_aliases(labels)
 
     filtered = described_class.linode_runner_labels(labels)
 
-    expect(filtered).to include("layerrail-standard-2", "layerrail-standard-16", "ubicloud-standard-2")
+    expect(filtered).to include("layerrail-standard-2", "layerrail-standard-16")
     expect(filtered).not_to include("layerrail-standard-30", "layerrail-premium-2", "layerrail-arm")
   end
 

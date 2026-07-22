@@ -20,7 +20,7 @@ on:
   pull_request:
 
 env:
-  IMAGE_NAME: ubicloud/ubicloud
+  IMAGE_NAME: layerrail/layerrail
   PUSH_IMAGE: ${{ inputs.push_image || github.event_name == 'schedule' }}
 jobs:
   docker:
@@ -30,9 +30,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: ubicloud-standard-8
+          - runner: layerrail-standard-8
             platform: linux/amd64
-          - runner: ubicloud-standard-8-arm
+          - runner: layerrail-standard-8-arm
             platform: linux/arm64
 
     steps:
@@ -68,8 +68,8 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=ubicloud-${{ matrix.runner }}
-          cache-to: type=gha,mode=max,scope=ubicloud-${{ matrix.runner }}
+          cache-from: type=gha,scope=layerrail-${{ matrix.runner }}
+          cache-to: type=gha,mode=max,scope=layerrail-${{ matrix.runner }}
           outputs: type=image,name=${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=${{ env.PUSH_IMAGE }}
 
       - name: Export digest
@@ -89,7 +89,7 @@ jobs:
 
   merge:
     if: ${{ inputs.push_image || github.event_name == 'schedule' }}
-    runs-on: ubicloud
+    runs-on: layerrail
     needs:
       - docker
     steps:

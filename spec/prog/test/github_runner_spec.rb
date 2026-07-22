@@ -43,7 +43,7 @@ RSpec.describe Prog::Test::GithubRunner do
 
     it "assembles labels based on test case names" do
       strand = described_class.assemble([{"name" => "github_runner_ubuntu_2204"}, {"name" => "github_runner_ubuntu_2404"}])
-      expect(strand.stack.first["labels"]).to eq(["ubicloud-standard-2-ubuntu-2204", "ubicloud-standard-2-ubuntu-2404"])
+      expect(strand.stack.first["labels"]).to eq(["layerrail-standard-2-ubuntu-2204", "layerrail-standard-2-ubuntu-2404"])
     end
 
     it "includes arm64 labels for aws provider" do
@@ -55,8 +55,8 @@ RSpec.describe Prog::Test::GithubRunner do
       expect(Config).to receive(:e2e_cache_proxy_download_url).and_return("")
       strand = described_class.assemble([{"name" => "github_runner_ubuntu_2204"}, {"name" => "github_runner_ubuntu_2404"}], provider: "aws")
       expect(strand.stack.first["labels"]).to eq([
-        "ubicloud-standard-2-ubuntu-2204", "ubicloud-standard-2-ubuntu-2404",
-        "ubicloud-standard-2-arm-ubuntu-2204", "ubicloud-standard-2-arm-ubuntu-2404",
+        "layerrail-standard-2-ubuntu-2204", "layerrail-standard-2-ubuntu-2404",
+        "layerrail-standard-2-arm-ubuntu-2204", "layerrail-standard-2-arm-ubuntu-2404",
       ])
     end
   end
@@ -74,7 +74,7 @@ RSpec.describe Prog::Test::GithubRunner do
 
   describe "#create_vm_pool" do
     it "creates pool and hops to wait_vm_pool_to_be_ready" do
-      label_data = Github.runner_labels["ubicloud-standard-2-ubuntu-2204"]
+      label_data = Github.runner_labels["layerrail-standard-2-ubuntu-2204"]
       expect(Prog::Vm::VmPool).to receive(:assemble)
         .with(hash_including(size: 2, vm_size: label_data["vm_size"]))
         .and_return(instance_double(Strand, subject: instance_double(VmPool, id: 12345)))

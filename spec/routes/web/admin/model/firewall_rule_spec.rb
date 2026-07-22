@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "FirewallRule" do
   it "displays the FirewallRule instance page correctly" do
     click_link "FirewallRule"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - FirewallRule"
+    expect(page.title).to eq "LayerRail Admin - FirewallRule"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - FirewallRule #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - FirewallRule #{@instance.ubid}"
   end
 end

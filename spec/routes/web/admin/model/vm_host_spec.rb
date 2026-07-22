@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "VmHost" do
   it "displays the VmHost instance page correctly" do
     click_link "VmHost"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - VmHost - Browse"
+    expect(page.title).to eq "LayerRail Admin - VmHost - Browse"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - VmHost #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmHost #{@instance.ubid}"
   end
 end

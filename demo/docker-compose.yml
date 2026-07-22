@@ -17,7 +17,7 @@ services:
   db-migrator:
     build:
       context: ..
-    image: layerrail/ubicloud:local
+    image: layerrail/layerrail:local
     container_name: layerrail-db-migrator
     depends_on:
       postgres:
@@ -28,7 +28,7 @@ services:
   app:
     build:
       context: ..
-    image: layerrail/ubicloud:local
+    image: layerrail/layerrail:local
     container_name: layerrail-app
     depends_on:
       db-migrator:

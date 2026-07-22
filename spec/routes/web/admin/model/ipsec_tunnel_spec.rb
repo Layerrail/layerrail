@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "IpsecTunnel" do
   it "displays the IpsecTunnel instance page correctly" do
     click_link "IpsecTunnel"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - IpsecTunnel"
+    expect(page.title).to eq "LayerRail Admin - IpsecTunnel"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - IpsecTunnel #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - IpsecTunnel #{@instance.ubid}"
   end
 end

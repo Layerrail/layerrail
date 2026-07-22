@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "Semaphore" do
   it "displays the Semaphore instance page correctly" do
     click_link "Semaphore"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - Semaphore"
+    expect(page.title).to eq "LayerRail Admin - Semaphore"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - Semaphore #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Semaphore #{@instance.ubid}"
   end
 end

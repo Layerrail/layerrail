@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "DnsServer" do
   it "displays the DnsServer instance page correctly" do
     click_link "DnsServer"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - DnsServer"
+    expect(page.title).to eq "LayerRail Admin - DnsServer"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - DnsServer #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - DnsServer #{@instance.ubid}"
   end
 end

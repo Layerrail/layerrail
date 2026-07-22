@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "GcpVpc" do
   it "displays the GcpVpc instance page correctly" do
     click_link "GcpVpc"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - GcpVpc"
+    expect(page.title).to eq "LayerRail Admin - GcpVpc"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - GcpVpc #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - GcpVpc #{@instance.ubid}"
   end
 end

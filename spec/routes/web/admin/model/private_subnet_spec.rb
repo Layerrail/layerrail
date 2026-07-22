@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "PrivateSubnet" do
   it "displays the PrivateSubnet instance page correctly" do
     click_link "PrivateSubnet"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - PrivateSubnet"
+    expect(page.title).to eq "LayerRail Admin - PrivateSubnet"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - PrivateSubnet #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - PrivateSubnet #{@instance.ubid}"
   end
 end

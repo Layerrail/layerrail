@@ -33,41 +33,41 @@ RSpec.describe CloverAdmin do
   end
 
   it "allows searching by ubid and navigating to related objects" do
-    expect(page.title).to eq "Ubicloud Admin"
+    expect(page.title).to eq "LayerRail Admin"
 
     account = create_account
     fill_in "UBID, UUID, or prefix:term", with: account.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Account #{account.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Account #{account.ubid}"
     expect(object_data).to eq(email: "user@example.com", name: "", status_id: "2", suspended_at: "")
 
     project = account.projects.first
     click_link project.name
-    expect(page.title).to eq "Ubicloud Admin - Project #{project.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Project #{project.ubid}"
     expect(object_data).to eq(billable: "true", billing_info_id: "", credit: "0.0", discount: "0", feature_flags: "{}", name: "Default", reputation: "new", visible: "true")
 
     subject_tag = project.subject_tags.first
     click_link subject_tag.name
-    expect(page.title).to eq "Ubicloud Admin - SubjectTag #{subject_tag.ubid}"
+    expect(page.title).to eq "LayerRail Admin - SubjectTag #{subject_tag.ubid}"
     expect(object_data).to eq(name: "Admin", project_id: "Default")
 
     # Column Link
     click_link project.name
-    expect(page.title).to eq "Ubicloud Admin - Project #{project.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Project #{project.ubid}"
   end
 
   it "allows searching by uuid" do
-    expect(page.title).to eq "Ubicloud Admin"
+    expect(page.title).to eq "LayerRail Admin"
 
     account = create_account
     fill_in "UBID, UUID, or prefix:term", with: account.id
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Account #{account.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Account #{account.ubid}"
     expect(object_data).to eq(email: "user@example.com", name: "", status_id: "2", suspended_at: "")
 
     fill_in "UBID, UUID, or prefix:term", with: "fed39539-ffe4-417d-9b8a-9a41ff7d4ad2"
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Search"
+    expect(page.title).to eq "LayerRail Admin - Search"
     expect(page).to have_flash_error(/Use prefix:term syntax to search/)
   end
 
@@ -76,7 +76,7 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: "ac:user@example.com"
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Account #{account.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Account #{account.ubid}"
   end
 
   it "searches by account name with prefix and redirects for single result" do
@@ -85,7 +85,7 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: "ac:UniqueTestName"
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Account #{account.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Account #{account.ubid}"
   end
 
   it "searches by vm name with prefix and redirects for single result" do
@@ -94,7 +94,7 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: "vm:unique-vm-search"
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Vm #{vm.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Vm #{vm.ubid}"
   end
 
   it "searches by postgres resource name with prefix and redirects for single result" do
@@ -110,7 +110,7 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: "pg:unique-pg-search"
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - PostgresResource #{pg.ubid}"
+    expect(page.title).to eq "LayerRail Admin - PostgresResource #{pg.ubid}"
   end
 
   it "searches by github installation name with prefix and redirects for single result" do
@@ -134,7 +134,7 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: "1v:2512-searchtest-01"
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Invoice #{invoice.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Invoice #{invoice.ubid}"
   end
 
   it "searches by billing info stripe_id with prefix and redirects for single result" do
@@ -151,7 +151,7 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: "ac:example.com"
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Search"
+    expect(page.title).to eq "LayerRail Admin - Search"
     expect(page).to have_css("#search-results")
     expect(page).to have_link(account1.admin_label)
     expect(page).to have_link(account2.admin_label)
@@ -163,7 +163,7 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: "ac:alice@example.com,bob@test.com"
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Search"
+    expect(page.title).to eq "LayerRail Admin - Search"
     expect(page).to have_link(account1.admin_label)
     expect(page).to have_link(account2.admin_label)
   end
@@ -173,28 +173,28 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: "g1:trunctest"
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Search"
+    expect(page.title).to eq "LayerRail Admin - Search"
     expect(page).to have_content "Results are truncated"
   end
 
   it "shows error for unknown search prefix" do
     fill_in "UBID, UUID, or prefix:term", with: "xx:something"
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Search"
+    expect(page.title).to eq "LayerRail Admin - Search"
     expect(page).to have_flash_error(/Unknown prefix: xx/)
   end
 
   it "shows error for search without prefix" do
     fill_in "UBID, UUID, or prefix:term", with: "no-prefix-term"
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Search"
+    expect(page.title).to eq "LayerRail Admin - Search"
     expect(page).to have_flash_error(/Use prefix:term syntax to search/)
   end
 
   it "shows no results for unmatched search term with prefix" do
     fill_in "UBID, UUID, or prefix:term", with: "vm:nonexistent-thing-xyz"
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Search"
+    expect(page.title).to eq "LayerRail Admin - Search"
     expect(page).to have_content "No results found"
   end
 
@@ -205,10 +205,10 @@ RSpec.describe CloverAdmin do
     page.refresh
     click_link "Project"
     click_link project.name
-    expect(page.title).to eq "Ubicloud Admin - Project #{project.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Project #{project.ubid}"
 
     click_link account.email
-    expect(page.title).to eq "Ubicloud Admin - Account #{account.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Account #{account.ubid}"
   end
 
   it "allows browsing all classes" do
@@ -216,7 +216,7 @@ RSpec.describe CloverAdmin do
     classes.each do |cls|
       visit "/model/#{cls.name}"
       expect(page.status_code).to eq 200
-      expect(page.title).to eq "Ubicloud Admin - #{cls.name}"
+      expect(page.title).to eq "LayerRail Admin - #{cls.name}"
     end
   end
 
@@ -224,24 +224,24 @@ RSpec.describe CloverAdmin do
     project = Project.create(name: "Default")
     vm = Prog::Vm::Nexus.assemble("dummy key", project.id, name: "my-vm").subject
     click_link "Vm"
-    expect(page.title).to eq "Ubicloud Admin - Vm - Browse"
+    expect(page.title).to eq "LayerRail Admin - Vm - Browse"
     expect(page.all("#autoforme_content td").map(&:text)).to eq ["my-vm", "creating", "Default", "", "hetzner-fsn1", "x64", "ubuntu-jammy", "standard", "2", vm.created_at.to_s]
 
     click_link vm.name
-    expect(page.title).to eq "Ubicloud Admin - Vm #{vm.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Vm #{vm.ubid}"
     path = page.current_path
 
     firewall = vm.firewalls.first
     click_link firewall.name
-    expect(page.title).to eq "Ubicloud Admin - Firewall #{firewall.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Firewall #{firewall.ubid}"
 
     visit path
     within(".associations") { click_link project.name }
-    expect(page.title).to eq "Ubicloud Admin - Project #{project.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Project #{project.ubid}"
 
     visit path
     within(".associations") { click_link "hetzner-fsn1" }
-    expect(page.title).to eq "Ubicloud Admin - Location #{Location::HETZNER_FSN1_UBID}"
+    expect(page.title).to eq "LayerRail Admin - Location #{Location::HETZNER_FSN1_UBID}"
   end
 
   it "allows searching by class when using Autoforme" do
@@ -249,7 +249,7 @@ RSpec.describe CloverAdmin do
     firewall = Firewall.create(name: "fw", project_id: project.id, location_id: Location::HETZNER_FSN1_ID)
     click_link "Firewall"
     click_link "Search"
-    expect(page.title).to eq "Ubicloud Admin - Firewall - Search"
+    expect(page.title).to eq "LayerRail Admin - Firewall - Search"
 
     click_button "Search"
     expect(page.all("#autoforme_content td").map(&:text)).to eq ["fw", "Test", "hetzner-fsn1", "Default firewall"]
@@ -266,18 +266,18 @@ RSpec.describe CloverAdmin do
 
     path = page.current_url
     click_link firewall.name
-    expect(page.title).to eq "Ubicloud Admin - Firewall #{firewall.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Firewall #{firewall.ubid}"
 
     visit path
     click_link project.name
-    expect(page.title).to eq "Ubicloud Admin - Project #{project.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Project #{project.ubid}"
 
     visit path
     click_link "hetzner-fsn1"
-    expect(page.title).to eq "Ubicloud Admin - Location #{Location::HETZNER_FSN1_UBID}"
+    expect(page.title).to eq "LayerRail Admin - Location #{Location::HETZNER_FSN1_UBID}"
 
     vmh = Prog::Vm::HostNexus.assemble("1.1.0.0", location_id: Location::HETZNER_FSN1_ID, family: "standard").subject
-    click_link "Ubicloud Admin"
+    click_link "LayerRail Admin"
     click_link "VmHost"
     click_link "Search"
 
@@ -287,7 +287,7 @@ RSpec.describe CloverAdmin do
     expect(page.all("#autoforme_content td").map(&:text)).to eq [vmh.ubid, "1.1.0.0", "unprepared", "", "hetzner-fsn1", "", "standard", "", "0"]
 
     vm = Prog::Vm::Nexus.assemble("k y", project.id, unix_user: "ubi", name: "vm1", location_id: Location::HETZNER_FSN1_ID, boot_image: "github-ubuntu-2204", size: "standard-2", arch: "x64").subject
-    click_link "Ubicloud Admin"
+    click_link "LayerRail Admin"
     click_link "Vm"
     click_link "Search"
 
@@ -302,7 +302,7 @@ RSpec.describe CloverAdmin do
     ins3 = GithubInstallation.create(name: "ins3", installation_id: 3, type: "User", allocator_preferences: {"family_filter" => ["standard"]})
     runner = Prog::Github::GithubRunnerNexus.assemble(ins2, repository_name: "ubicloud/test", label: "ubicloud").subject
     GithubRunner.create(installation_id: ins2.id, repository_name: "ubicloud/test", label: "ubicloud")
-    click_link "Ubicloud Admin"
+    click_link "LayerRail Admin"
     click_link "GithubInstallation"
     click_link "Search"
     path = page.current_path
@@ -318,7 +318,7 @@ RSpec.describe CloverAdmin do
     click_button "Search"
     expect(page.all("#autoforme_content td").map(&:text)).to eq ["ins3", "3", "User", "true", "false", ins3.created_at.to_s, "{\"family_filter\" => [\"standard\"]}"]
 
-    click_link "Ubicloud Admin"
+    click_link "LayerRail Admin"
     click_link "GithubRunner"
     click_link "Search"
 
@@ -331,7 +331,7 @@ RSpec.describe CloverAdmin do
 
     account = create_account
     AccountIdentity.create(account_id: account.id, provider: "github", uid: "789")
-    click_link "Ubicloud Admin"
+    click_link "LayerRail Admin"
     click_link "Account"
     click_link "Search"
 
@@ -351,14 +351,14 @@ RSpec.describe CloverAdmin do
     click_button "Search"
     expect(page.all("#autoforme_content td").map(&:text)).to eq ["", "user@example.com", "2", "github", account.created_at.to_s, ""]
 
-    click_link "Ubicloud Admin"
+    click_link "LayerRail Admin"
     click_link "Strand"
     click_link "Search"
     fill_in "Prog", with: "Vm::Metal::Nexus"
     click_button "Search"
     expect(page.all("#autoforme_content td").map(&:text)).to eq [vm.ubid, "Vm::Metal::Nexus", "start", vm.strand.schedule.to_s, "0"]
 
-    click_link "Ubicloud Admin"
+    click_link "LayerRail Admin"
     click_link "Project"
     click_link "Search"
 
@@ -376,7 +376,7 @@ RSpec.describe CloverAdmin do
       end_time: "2024-12-01 00:00:00",
     )
 
-    click_link "Ubicloud Admin"
+    click_link "LayerRail Admin"
     click_link "Invoice"
     click_link "Search"
     fill_in "Project", with: project.ubid
@@ -395,26 +395,26 @@ RSpec.describe CloverAdmin do
     runner = Prog::Github::GithubRunnerNexus.assemble(ins, repository_name: "ubicloud/test", label: "ubicloud").subject
 
     visit "/model/GithubInstallation/#{ins.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - GithubInstallation #{ins.ubid}"
+    expect(page.title).to eq "LayerRail Admin - GithubInstallation #{ins.ubid}"
 
     within(".association", text: "runners") { click_link "(table)" }
-    expect(page.title).to eq "Ubicloud Admin - GithubRunner - Search"
+    expect(page.title).to eq "LayerRail Admin - GithubRunner - Search"
     expect(page.all("#autoforme_content td").map(&:text)).to eq [runner.ubid, "ubicloud/test", "ubicloud", "start", runner.created_at.to_s]
 
     repo = runner.repository
     visit "/model/GithubRepository/#{repo.ubid}"
     within(".association", text: "runners") { click_link "(table)" }
-    expect(page.title).to eq "Ubicloud Admin - GithubRunner - Search"
+    expect(page.title).to eq "LayerRail Admin - GithubRunner - Search"
     expect(page.all("#autoforme_content td").map(&:text)).to eq [runner.ubid, "ubicloud/test", "ubicloud", "start", runner.created_at.to_s]
 
     project = Project.create(name: "assoc-table-test")
     vm = Prog::Vm::Nexus.assemble("k y", project.id, name: "assoc-table-vm").subject
 
     visit "/model/Project/#{project.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - Project #{project.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Project #{project.ubid}"
 
     within(".association", text: "vms") { click_link "(table)" }
-    expect(page.title).to eq "Ubicloud Admin - Vm - Search"
+    expect(page.title).to eq "LayerRail Admin - Vm - Search"
     expect(page.all("#autoforme_content td").map(&:text)).to eq ["assoc-table-vm", "creating", "assoc-table-test", "", "hetzner-fsn1", "x64", "ubuntu-jammy", "standard", "2", vm.created_at.to_s]
 
     expect(Config).to receive(:postgres_service_project_id).and_return(project.id).at_least(:once)
@@ -428,7 +428,7 @@ RSpec.describe CloverAdmin do
 
     visit "/model/Project/#{project.ubid}"
     within(".association", text: "postgres_resources") { click_link "(table)" }
-    expect(page.title).to eq "Ubicloud Admin - PostgresResource - Search"
+    expect(page.title).to eq "LayerRail Admin - PostgresResource - Search"
     expect(page.all("#autoforme_content td").map(&:text)).to eq [
       "assoc-table-pg", "assoc-table-test", "hetzner-fsn1", "standard", "standard-2", "64", "none", "17", "", pg.created_at.to_s,
     ]
@@ -436,7 +436,7 @@ RSpec.describe CloverAdmin do
     server = pg.servers.first
     visit "/model/PostgresResource/#{pg.ubid}"
     within(".association", text: "servers") { click_link "(table)" }
-    expect(page.title).to eq "Ubicloud Admin - PostgresServer - Search"
+    expect(page.title).to eq "LayerRail Admin - PostgresServer - Search"
     expect(page.all("#autoforme_content td").map(&:text)).to eq [
       server.ubid, server.vm.ubid, "assoc-table-pg", "push", "ready", "17", "true", server.created_at.to_s,
     ]
@@ -445,7 +445,7 @@ RSpec.describe CloverAdmin do
     boot_image = BootImage.create(name: "ubuntu-jammy", version: "20220202", vm_host_id: vm_host.id, size_gib: 14)
     visit "/model/VmHost/#{vm_host.ubid}"
     within(".association", text: "boot_images") { click_link "(table)" }
-    expect(page.title).to eq "Ubicloud Admin - BootImage - Search"
+    expect(page.title).to eq "LayerRail Admin - BootImage - Search"
     expect(page.all("#autoforme_content td").map(&:text)).to eq [
       "ubuntu-jammy", "20220202", vm_host.ubid, "14", "", boot_image.created_at.to_s,
     ]
@@ -464,7 +464,7 @@ RSpec.describe CloverAdmin do
     expect(keys.map(&:name) - found_keys).to eq []
     key = SshPublicKey.last
     click_link key.name
-    expect(page.title).to eq "Ubicloud Admin - SshPublicKey #{key.ubid}"
+    expect(page.title).to eq "LayerRail Admin - SshPublicKey #{key.ubid}"
   end
 
   it "ignores bogus ubids when paginating" do
@@ -474,13 +474,13 @@ RSpec.describe CloverAdmin do
     click_link "SshPublicKey"
     page.visit "#{page.current_path}?after=foo"
     click_link key.name
-    expect(page.title).to eq "Ubicloud Admin - SshPublicKey #{key.ubid}"
+    expect(page.title).to eq "LayerRail Admin - SshPublicKey #{key.ubid}"
   end
 
   it "shows semaphores set on the object, if any" do
     fill_in "UBID, UUID, or prefix:term", with: vm_pool.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - VmPool #{vm_pool.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmPool #{vm_pool.ubid}"
     expect(page).to have_no_content "Semaphores Set:"
 
     vm_pool.incr_destroy
@@ -492,7 +492,7 @@ RSpec.describe CloverAdmin do
     fill_in "UBID, UUID, or prefix:term", with: vm_pool.ubid
     click_button "Show Object"
     path = page.current_path
-    expect(page.title).to eq "Ubicloud Admin - VmPool #{vm_pool.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmPool #{vm_pool.ubid}"
     expect(page).to have_content "Strand: Vm::VmPool#create_new_vm | schedule: 2"
     expect(page).to have_no_content "| try"
 
@@ -501,7 +501,7 @@ RSpec.describe CloverAdmin do
     expect(page).to have_content "| try: 3"
 
     click_link "Strand"
-    expect(page.title).to eq "Ubicloud Admin - Strand #{vm_pool.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Strand #{vm_pool.ubid}"
 
     vm_pool.strand.destroy
     visit path
@@ -515,7 +515,7 @@ RSpec.describe CloverAdmin do
     billing_info = BillingInfo.create(stripe_id: "cus_test123")
     expect(customers_service).to receive(:retrieve).with("cus_test123").and_return({"name" => "ACME Inc.", "metadata" => {"tax_id" => "123456"}, "address" => {"line1" => "123 Main St", "country" => "US"}}).at_least(:once)
     visit "/model/BillingInfo/#{billing_info.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - BillingInfo #{billing_info.ubid}"
+    expect(page.title).to eq "LayerRail Admin - BillingInfo #{billing_info.ubid}"
     expect(page).to have_content "Stripe Data"
   end
 
@@ -526,7 +526,7 @@ RSpec.describe CloverAdmin do
 
     click_link "BillingInfo"
     click_link "Search"
-    expect(page.title).to eq "Ubicloud Admin - BillingInfo - Search"
+    expect(page.title).to eq "LayerRail Admin - BillingInfo - Search"
 
     fill_in "Project", with: project.ubid
     fill_in "Stripe", with: "cus_billing123"
@@ -535,7 +535,7 @@ RSpec.describe CloverAdmin do
     expect(page.all("#autoforme_content td").map(&:text)).to eq [billing_info.ubid, "cus_billing123", "BillingTest", "", billing_info.created_at.to_s]
 
     click_link billing_info.ubid
-    expect(page.title).to eq "Ubicloud Admin - BillingInfo #{billing_info.ubid}"
+    expect(page.title).to eq "LayerRail Admin - BillingInfo #{billing_info.ubid}"
   end
 
   it "shows stripe data for payment method as extra" do
@@ -546,7 +546,7 @@ RSpec.describe CloverAdmin do
     payment_method = PaymentMethod.create(billing_info_id: billing_info.id, stripe_id: "pm_1234567890")
     expect(payment_methods_service).to receive(:retrieve).with("pm_1234567890").and_return(Stripe::StripeObject.construct_from(id: "pm_1234567890", card: {brand: "Visa", last4: "1234", exp_month: 12, exp_year: 2023, country: "NL", funding: "debit", wallet: {type: "apple_pay"}, checks: {address_line1_check: "pass", cvc_check: "pass"}}))
     visit "/model/PaymentMethod/#{payment_method.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - PaymentMethod #{payment_method.ubid}"
+    expect(page.title).to eq "LayerRail Admin - PaymentMethod #{payment_method.ubid}"
     expect(page).to have_content "Stripe Data"
   end
 
@@ -556,7 +556,7 @@ RSpec.describe CloverAdmin do
 
     click_link "PaymentMethod"
     click_link "Search"
-    expect(page.title).to eq "Ubicloud Admin - PaymentMethod - Search"
+    expect(page.title).to eq "LayerRail Admin - PaymentMethod - Search"
 
     fill_in "Stripe", with: "pm_test456"
     select "True", from: "Fraud"
@@ -565,7 +565,7 @@ RSpec.describe CloverAdmin do
     expect(page.all("#autoforme_content td").map(&:text)).to eq [payment_method.ubid, "pm_test456", billing_info.ubid, "true", payment_method.created_at.to_s]
 
     click_link payment_method.ubid
-    expect(page.title).to eq "Ubicloud Admin - PaymentMethod #{payment_method.ubid}"
+    expect(page.title).to eq "LayerRail Admin - PaymentMethod #{payment_method.ubid}"
   end
 
   it "allows browsing and searching PostgresResource" do
@@ -580,15 +580,15 @@ RSpec.describe CloverAdmin do
     ).subject
 
     click_link "PostgresResource"
-    expect(page.title).to eq "Ubicloud Admin - PostgresResource - Browse"
+    expect(page.title).to eq "LayerRail Admin - PostgresResource - Browse"
     expect(page.all("#autoforme_content td").map(&:text)).to eq [
       "test-pg", "PgTest", "hetzner-fsn1", "standard", "standard-2", "64", "none", "17", "", pg.created_at.to_s,
     ]
 
     click_link pg.name
-    expect(page.title).to eq "Ubicloud Admin - PostgresResource #{pg.ubid}"
+    expect(page.title).to eq "LayerRail Admin - PostgresResource #{pg.ubid}"
 
-    click_link "Ubicloud Admin"
+    click_link "LayerRail Admin"
     click_link "PostgresResource"
     click_link "Search"
     fill_in "Project", with: project.ubid
@@ -629,15 +629,15 @@ RSpec.describe CloverAdmin do
     server = pg.servers.first
 
     click_link "PostgresServer"
-    expect(page.title).to eq "Ubicloud Admin - PostgresServer - Browse"
+    expect(page.title).to eq "LayerRail Admin - PostgresServer - Browse"
     expect(page.all("#autoforme_content td").map(&:text)).to eq [
       server.ubid, server.vm.ubid, "test-pg", "push", "ready", "17", "true", server.created_at.to_s,
     ]
 
     click_link server.ubid, match: :first
-    expect(page.title).to eq "Ubicloud Admin - PostgresServer #{server.ubid}"
+    expect(page.title).to eq "LayerRail Admin - PostgresServer #{server.ubid}"
 
-    click_link "Ubicloud Admin"
+    click_link "LayerRail Admin"
     click_link "PostgresServer"
     click_link "Search"
     fill_in "resource", with: pg.ubid
@@ -649,7 +649,7 @@ RSpec.describe CloverAdmin do
     ]
 
     click_link "test-pg"
-    expect(page.title).to eq "Ubicloud Admin - PostgresResource #{pg.ubid}"
+    expect(page.title).to eq "LayerRail Admin - PostgresResource #{pg.ubid}"
   end
 
   it "renders PostgresServer detail page when resource is nil" do
@@ -660,7 +660,7 @@ RSpec.describe CloverAdmin do
     server = PostgresServer.create(resource_id:, timeline: create_postgres_timeline(location_id: Location::HETZNER_FSN1_ID), version: PostgresResource::DEFAULT_VERSION)
 
     visit "/model/PostgresServer/#{server.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - PostgresServer #{server.ubid}"
+    expect(page.title).to eq "LayerRail Admin - PostgresServer #{server.ubid}"
   end
 
   it "supports downloading invoice PDF" do
@@ -673,7 +673,7 @@ RSpec.describe CloverAdmin do
     )
 
     visit "/model/Invoice/#{invoice.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - Invoice #{invoice.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Invoice #{invoice.ubid}"
     expect(page).to have_link "Download PDF"
 
     # Redirects to presigned URL when download link is available
@@ -696,7 +696,7 @@ RSpec.describe CloverAdmin do
     create_vm(project_id: project.id, vcpus: 16)
 
     visit "/model/Project/#{project.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - Project #{project.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Project #{project.ubid}"
     find("summary", text: "Quotas").click
     expect(page.all(".project-quota-table tbody tr").map { it.all("td").map(&:text) }).to eq [
       ["VmVCpu", "32", "16"],
@@ -720,7 +720,7 @@ RSpec.describe CloverAdmin do
     )
 
     visit "/model/Project/#{project.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - Project #{project.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Project #{project.ubid}"
     find("summary", text: /Current Usage \(subtotal: \$[\d.]+, cost: \$[\d.]+\)/).click
     expect(page.all(".project-usage-table tbody tr").count).to eq 1
     expect(page.all(".project-usage-table tbody tr").first.all("td").map(&:text)).to eq ["test-vm", "VmVCpu", "standard", "61 minutes", "$0.047"]
@@ -731,17 +731,17 @@ RSpec.describe CloverAdmin do
     fill_in "UBID, UUID, or prefix:term", with: p.ubid
     click_button "Show Object"
 
-    expect(page.title).to eq "Ubicloud Admin - Page #{p.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Page #{p.ubid}"
 
     click_link vm_pool.ubid
-    expect(page.title).to eq "Ubicloud Admin - VmPool #{vm_pool.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmPool #{vm_pool.ubid}"
   end
 
   it "shows sshable information for object, if any" do
     vm_host = Prog::Vm::HostNexus.assemble("1.2.3.4").subject
     fill_in "UBID, UUID, or prefix:term", with: vm_host.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - VmHost #{vm_host.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmHost #{vm_host.ubid}"
     expect(page).to have_content "SSH Command: ssh root@1.2.3.4"
 
     visit "/"
@@ -760,7 +760,7 @@ RSpec.describe CloverAdmin do
       ["", "some problem", "[]", "{}"],
     ]
     click_link page1.summary
-    expect(page.title).to eq "Ubicloud Admin - Page #{page1.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Page #{page1.ubid}"
 
     Prog::PageNexus.assemble("another problem", %w[b], vm_pool.ubid).subject
     visit "/"
@@ -769,7 +769,7 @@ RSpec.describe CloverAdmin do
       ["another problem", "[\"#{vm_pool.ubid}\"]", "{}"],
     ]
     click_link vm_pool.ubid
-    expect(page.title).to eq "Ubicloud Admin - VmPool #{vm_pool.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmPool #{vm_pool.ubid}"
 
     vmh = Prog::Vm::HostNexus.assemble("1.2.3.4").subject
     pj = Project.create(name: "test")
@@ -784,17 +784,17 @@ RSpec.describe CloverAdmin do
     ]
 
     click_link vmh.ubid
-    expect(page.title).to eq "Ubicloud Admin - VmHost #{vmh.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmHost #{vmh.ubid}"
 
     visit "/"
     click_link vm.ubid
-    expect(page.title).to eq "Ubicloud Admin - Vm #{vm.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Vm #{vm.ubid}"
   end
 
   it "handles request for invalid ubid" do
     fill_in "UBID, UUID, or prefix:term", with: "foo"
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Search"
+    expect(page.title).to eq "LayerRail Admin - Search"
     expect(page).to have_content("Use prefix:term syntax to search")
 
     visit "/"
@@ -817,7 +817,7 @@ RSpec.describe CloverAdmin do
   it "shows 404 page if DONT_RAISE_ADMIN_ERRORS environment variable is set" do
     ENV["DONT_RAISE_ADMIN_ERRORS"] = "1"
     visit "/invalid-page"
-    expect(page.title).to eq "Ubicloud Admin - File Not Found"
+    expect(page.title).to eq "LayerRail Admin - File Not Found"
   ensure
     ENV.delete("DONT_RAISE_ADMIN_ERRORS")
   end
@@ -843,7 +843,7 @@ RSpec.describe CloverAdmin do
     ENV["DONT_RAISE_ADMIN_ERRORS"] = "1"
     expect(Clog).to receive(:emit).with("admin route exception", instance_of(Hash)).and_call_original
     visit "/error"
-    expect(page.title).to eq "Ubicloud Admin - Internal Server Error"
+    expect(page.title).to eq "LayerRail Admin - Internal Server Error"
   ensure
     ENV.delete("DONT_RAISE_ADMIN_ERRORS")
   end
@@ -856,7 +856,7 @@ RSpec.describe CloverAdmin do
 
     find("#action-list input[name=_csrf]", visible: false).set("")
     click_button "Nudge Strand"
-    expect(page.title).to eq "Ubicloud Admin - Invalid Security Token"
+    expect(page.title).to eq "LayerRail Admin - Invalid Security Token"
     expect(page).to have_flash_error("An invalid security token submitted with this request, please try again")
     expect(st.reload.schedule).not_to be_within(5).of(Time.now)
   end
@@ -872,11 +872,11 @@ RSpec.describe CloverAdmin do
     st = Strand.create(prog: "Test", label: "hop_entry", schedule:)
     fill_in "UBID, UUID, or prefix:term", with: st.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Strand #{st.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Strand #{st.ubid}"
 
     click_button "Nudge Strand"
     expect(page).to have_flash_notice("Strand nudged")
-    expect(page.title).to eq "Ubicloud Admin - Strand #{st.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Strand #{st.ubid}"
     expect(st.reload.schedule).to be_within(5).of(Time.now)
   end
 
@@ -886,7 +886,7 @@ RSpec.describe CloverAdmin do
     Strand.create_with_id(cluster, prog: "Kubernetes::KubernetesClusterNexus", label: "wait", schedule:)
 
     visit "/model/KubernetesCluster/#{cluster.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - KubernetesCluster #{cluster.ubid}"
+    expect(page.title).to eq "LayerRail Admin - KubernetesCluster #{cluster.ubid}"
 
     click_button "Nudge Strand"
     expect(page).to have_flash_notice("Strand nudged")
@@ -903,20 +903,20 @@ RSpec.describe CloverAdmin do
     st = Strand.create(prog: "Test", label: "hop_entry", schedule:)
     fill_in "UBID, UUID, or prefix:term", with: st.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Strand #{st.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Strand #{st.ubid}"
 
     click_link "Extend Schedule"
     fill_in "minutes", with: "5"
     click_button "Extend Schedule"
     expect(page).to have_flash_notice("Extended schedule")
-    expect(page.title).to eq "Ubicloud Admin - Strand #{st.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Strand #{st.ubid}"
     expect(st.reload.schedule).to be_within(5).of(schedule + 300)
   end
 
   it "shows empty semaphore list for strand without semaphore_names" do
     st = Strand.create(prog: "Test", label: "test")
     visit "/model/Strand/#{st.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - Strand #{st.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Strand #{st.ubid}"
 
     click_link "Increment Semaphore"
     expect(page).to have_select("name", options: [""])
@@ -932,7 +932,7 @@ RSpec.describe CloverAdmin do
     )
     st = Strand.create_with_id(vp, prog: "Vm::VmPool", label: "wait")
     visit "/model/Strand/#{st.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - Strand #{st.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Strand #{st.ubid}"
 
     click_link "Increment Semaphore"
     select "destroy", from: "name"
@@ -945,7 +945,7 @@ RSpec.describe CloverAdmin do
     select "destroy", from: "name_confirmation"
     click_button "Increment Semaphore"
     expect(page).to have_flash_notice("Incremented semaphore")
-    expect(page.title).to eq "Ubicloud Admin - Strand #{st.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Strand #{st.ubid}"
     expect(st.reload.semaphores.map(&:name)).to include("destroy")
 
     Semaphore.incr(st.id, "destroying")
@@ -961,7 +961,7 @@ RSpec.describe CloverAdmin do
     select "destroy", from: "name_confirmation"
     click_button "Decrement Semaphore"
     expect(page).to have_flash_notice("Decremented semaphore")
-    expect(page.title).to eq "Ubicloud Admin - Strand #{st.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Strand #{st.ubid}"
     expect(st.reload.semaphores.map(&:name)).not_to include("destroy")
   end
 
@@ -970,15 +970,15 @@ RSpec.describe CloverAdmin do
     boot_image = BootImage.create(name: "ubuntu-jammy", version: "20220202", vm_host_id: vm_host.id, size_gib: 14)
 
     click_link "BootImage"
-    expect(page.title).to eq "Ubicloud Admin - BootImage - Browse"
+    expect(page.title).to eq "LayerRail Admin - BootImage - Browse"
     expect(page.all("#autoforme_content td").map(&:text)).to eq [
       "ubuntu-jammy", "20220202", vm_host.ubid, "14", "", boot_image.created_at.to_s,
     ]
 
     click_link "ubuntu-jammy"
-    expect(page.title).to eq "Ubicloud Admin - BootImage #{boot_image.ubid}"
+    expect(page.title).to eq "LayerRail Admin - BootImage #{boot_image.ubid}"
 
-    click_link "Ubicloud Admin"
+    click_link "LayerRail Admin"
     click_link "BootImage"
     click_link "Search"
     fill_in "Vm host", with: vm_host.ubid
@@ -1008,12 +1008,12 @@ RSpec.describe CloverAdmin do
     boot_image = BootImage.create(name: "ubuntu-jammy", version: "20220202", vm_host_id: vm_host.id, size_gib: 14)
 
     visit "/model/BootImage/#{boot_image.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - BootImage #{boot_image.ubid}"
+    expect(page.title).to eq "LayerRail Admin - BootImage #{boot_image.ubid}"
 
     click_link "Remove Boot Image"
     click_button "Remove Boot Image"
     expect(page).to have_flash_notice("Boot image removal scheduled")
-    expect(page.title).to eq "Ubicloud Admin - BootImage #{boot_image.ubid}"
+    expect(page.title).to eq "LayerRail Admin - BootImage #{boot_image.ubid}"
     expect(Strand.where(prog: "RemoveBootImage", label: "start").count).to eq 1
   end
 
@@ -1022,13 +1022,13 @@ RSpec.describe CloverAdmin do
     boot_image = BootImage.create(name: "ubuntu-jammy", version: "20220202", vm_host_id: vm_host.id, size_gib: 14)
 
     visit "/model/BootImage/#{boot_image.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - BootImage #{boot_image.ubid}"
+    expect(page.title).to eq "LayerRail Admin - BootImage #{boot_image.ubid}"
 
     expect(boot_image.activated_at).to be_nil
     click_link "Activate Boot Image"
     click_button "Activate Boot Image"
     expect(page).to have_flash_notice("Boot image activated")
-    expect(page.title).to eq "Ubicloud Admin - BootImage #{boot_image.ubid}"
+    expect(page.title).to eq "LayerRail Admin - BootImage #{boot_image.ubid}"
     expect(boot_image.reload.activated_at).not_to be_nil
   end
 
@@ -1037,13 +1037,13 @@ RSpec.describe CloverAdmin do
     boot_image = BootImage.create(name: "ubuntu-jammy", version: "20220202", vm_host_id: vm_host.id, size_gib: 14, activated_at: Time.now)
 
     visit "/model/BootImage/#{boot_image.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - BootImage #{boot_image.ubid}"
+    expect(page.title).to eq "LayerRail Admin - BootImage #{boot_image.ubid}"
 
     expect(boot_image.activated_at).not_to be_nil
     click_link "Disable Boot Image"
     click_button "Disable Boot Image"
     expect(page).to have_flash_notice("Boot image disabled")
-    expect(page.title).to eq "Ubicloud Admin - BootImage #{boot_image.ubid}"
+    expect(page.title).to eq "LayerRail Admin - BootImage #{boot_image.ubid}"
     expect(boot_image.reload.activated_at).to be_nil
   end
 
@@ -1051,13 +1051,13 @@ RSpec.describe CloverAdmin do
     vm = Prog::Vm::Nexus.assemble("dummy-public key", Project.create(name: "Default").id, name: "dummy-vm-1").subject
     fill_in "UBID, UUID, or prefix:term", with: vm.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Vm #{vm.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Vm #{vm.ubid}"
 
     expect(vm.semaphores_dataset.select_map(:name)).to eq []
     click_link "Restart"
     click_button "Restart"
     expect(page).to have_flash_notice("Restart scheduled for Vm")
-    expect(page.title).to eq "Ubicloud Admin - Vm #{vm.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Vm #{vm.ubid}"
     expect(vm.semaphores_dataset.select_map(:name)).to eq ["restart"]
   end
 
@@ -1065,13 +1065,13 @@ RSpec.describe CloverAdmin do
     vm = Prog::Vm::Nexus.assemble("dummy-public key", Project.create(name: "Default").id, name: "dummy-vm-1").subject
     fill_in "UBID, UUID, or prefix:term", with: vm.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Vm #{vm.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Vm #{vm.ubid}"
 
     expect(vm.semaphores_dataset.select_map(:name)).to eq []
     click_link "Stop"
     click_button "Stop"
     expect(page).to have_flash_notice("Stop scheduled for Vm")
-    expect(page.title).to eq "Ubicloud Admin - Vm #{vm.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Vm #{vm.ubid}"
     expect(vm.semaphores_dataset.select_order_map(:name)).to eq ["admin_stop", "stop"]
   end
 
@@ -1087,13 +1087,13 @@ RSpec.describe CloverAdmin do
     ).subject
     fill_in "UBID, UUID, or prefix:term", with: pg.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - PostgresResource #{pg.ubid}"
+    expect(page.title).to eq "LayerRail Admin - PostgresResource #{pg.ubid}"
 
     expect(Semaphore.where(strand_id: pg.servers_dataset.select_map(:id)).select_map(:name)).to eq []
     click_link "Restart"
     click_button "Restart"
     expect(page).to have_flash_notice("Restart scheduled for PostgresResource")
-    expect(page.title).to eq "Ubicloud Admin - PostgresResource #{pg.ubid}"
+    expect(page.title).to eq "LayerRail Admin - PostgresResource #{pg.ubid}"
     expect(Semaphore.where(strand_id: pg.servers_dataset.select_map(:id)).select_map(:name)).to eq ["restart"]
   end
 
@@ -1101,19 +1101,19 @@ RSpec.describe CloverAdmin do
     vmh = Prog::Vm::HostNexus.assemble("127.0.0.2").subject
     fill_in "UBID, UUID, or prefix:term", with: vmh.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - VmHost #{vmh.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmHost #{vmh.ubid}"
     expect(vmh.allocation_state).to eq "unprepared"
 
     click_link "Move to Draining"
     click_button "Move to Draining"
     expect(page).to have_flash_notice("Host allocation state changed to draining")
-    expect(page.title).to eq "Ubicloud Admin - VmHost #{vmh.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmHost #{vmh.ubid}"
     expect(vmh.reload.allocation_state).to eq "draining"
 
     click_link "Move to Accepting"
     click_button "Move to Accepting"
     expect(page).to have_flash_notice("Host allocation state changed to accepting")
-    expect(page.title).to eq "Ubicloud Admin - VmHost #{vmh.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmHost #{vmh.ubid}"
     expect(vmh.reload.allocation_state).to eq "accepting"
   end
 
@@ -1121,13 +1121,13 @@ RSpec.describe CloverAdmin do
     vmh = Prog::Vm::HostNexus.assemble("127.0.0.2").subject
     fill_in "UBID, UUID, or prefix:term", with: vmh.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - VmHost #{vmh.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmHost #{vmh.ubid}"
 
     expect(vmh.semaphores_dataset.select_map(:name)).to eq []
     click_link "Reboot"
     click_button "Reboot"
     expect(page).to have_flash_notice("Reboot scheduled for VmHost")
-    expect(page.title).to eq "Ubicloud Admin - VmHost #{vmh.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmHost #{vmh.ubid}"
     expect(vmh.semaphores_dataset.select_map(:name)).to eq ["reboot"]
   end
 
@@ -1135,13 +1135,13 @@ RSpec.describe CloverAdmin do
     vmh = Prog::Vm::HostNexus.assemble("127.0.0.2").subject
     fill_in "UBID, UUID, or prefix:term", with: vmh.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - VmHost #{vmh.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmHost #{vmh.ubid}"
 
     expect(vmh.semaphores_dataset.select_map(:name)).to eq []
     click_link "Hardware Reset"
     click_button "Hardware Reset"
     expect(page).to have_flash_notice("Hardware reset scheduled for VmHost")
-    expect(page.title).to eq "Ubicloud Admin - VmHost #{vmh.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmHost #{vmh.ubid}"
     expect(vmh.semaphores_dataset.select_map(:name)).to eq ["hardware_reset"]
   end
 
@@ -1188,7 +1188,7 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: vmh.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - VmHost #{vmh.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmHost #{vmh.ubid}"
 
     click_link "Force Create VM"
     fill_in "project_id", with: project.ubid
@@ -1198,7 +1198,7 @@ RSpec.describe CloverAdmin do
     select "ubuntu-jammy", from: "boot_image"
     click_button "Force Create VM"
     expect(page).to have_flash_notice("VM creation scheduled")
-    expect(page.title).to eq "Ubicloud Admin - VmHost #{vmh.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmHost #{vmh.ubid}"
 
     vm = Vm[name: "forced-vm"]
     expect(vm).not_to be_nil
@@ -1254,12 +1254,12 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: ghr.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - GithubRunner #{ghr.ubid}"
+    expect(page.title).to eq "LayerRail Admin - GithubRunner #{ghr.ubid}"
 
     expect(GithubRunner.count).to eq 1
     click_button "Provision Spare Runner"
     expect(page).to have_flash_notice("Spare runner provisioned")
-    expect(page.title).to eq "Ubicloud Admin - GithubRunner #{ghr.ubid}"
+    expect(page.title).to eq "LayerRail Admin - GithubRunner #{ghr.ubid}"
     expect(GithubRunner.count).to eq 2
     expect(GithubRunner.select_map([:repository_name, :label, :installation_id])).to eq([["test-repo", "ubicloud", ins.id]] * 2)
   end
@@ -1269,7 +1269,7 @@ RSpec.describe CloverAdmin do
     installation_id = GithubInstallation.create(installation_id: 123, name: "ubicloud", type: "User").id
     runner = GithubRunner.create(repository_name: "ubicloud/ubicloud", label: "ubicloud-standard-2", installation_id:, workflow_job:)
     visit "/model/GithubRunner/#{runner.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - GithubRunner #{runner.ubid}"
+    expect(page.title).to eq "LayerRail Admin - GithubRunner #{runner.ubid}"
     expect(page.all(".workflow-job-table td").map(&:text))
       .to eq ["id", "60587328050", "name", "ubicloud-standard-2", "status", "in_progress"]
   end
@@ -1279,13 +1279,13 @@ RSpec.describe CloverAdmin do
     repo = GithubRepository.create(name: "test-org/test-repo", installation_id: ins.id)
 
     click_link "GithubRepository"
-    expect(page.title).to eq "Ubicloud Admin - GithubRepository - Browse"
+    expect(page.title).to eq "LayerRail Admin - GithubRepository - Browse"
     expect(page.all("#autoforme_content td").map(&:text)).to eq ["test-org/test-repo", repo.created_at.to_s, repo.last_job_at.to_s]
 
     click_link repo.name
-    expect(page.title).to eq "Ubicloud Admin - GithubRepository #{repo.ubid}"
+    expect(page.title).to eq "LayerRail Admin - GithubRepository #{repo.ubid}"
 
-    click_link "Ubicloud Admin"
+    click_link "LayerRail Admin"
     click_link "GithubRepository"
     click_link "Search"
     fill_in "Installation", with: ins.ubid
@@ -1297,7 +1297,7 @@ RSpec.describe CloverAdmin do
   it "links to GitHub page for GithubInstallation" do
     ins = GithubInstallation.create(installation_id: 123, name: "test-org", type: "Organization")
     visit "/model/GithubInstallation/#{ins.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - GithubInstallation #{ins.ubid}"
+    expect(page.title).to eq "LayerRail Admin - GithubInstallation #{ins.ubid}"
     expect(page).to have_link "GitHub Page"
 
     page.driver.get "/model/GithubInstallation/#{ins.ubid}/github_page"
@@ -1309,7 +1309,7 @@ RSpec.describe CloverAdmin do
     ins = GithubInstallation.create(installation_id: 123, name: "test-org", type: "Organization")
     repo = GithubRepository.create(name: "test-org/test-repo", installation_id: ins.id)
     visit "/model/GithubRepository/#{repo.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - GithubRepository #{repo.ubid}"
+    expect(page.title).to eq "LayerRail Admin - GithubRepository #{repo.ubid}"
     expect(page).to have_link "GitHub Page"
 
     page.driver.get "/model/GithubRepository/#{repo.ubid}/github_page"
@@ -1322,10 +1322,10 @@ RSpec.describe CloverAdmin do
     repo = GithubRepository.create(name: "test-org/test-repo", installation_id: ins.id)
 
     visit "/model/GithubRepository/#{repo.ubid}"
-    expect(page.title).to eq "Ubicloud Admin - GithubRepository #{repo.ubid}"
+    expect(page.title).to eq "LayerRail Admin - GithubRepository #{repo.ubid}"
 
     click_link "Show Job Log"
-    expect(page.title).to eq "Ubicloud Admin - GithubRepository #{repo.ubid}"
+    expect(page.title).to eq "LayerRail Admin - GithubRepository #{repo.ubid}"
 
     client = double
     expect(Github).to receive(:installation_client).and_return(client)
@@ -1360,19 +1360,19 @@ RSpec.describe CloverAdmin do
     account = create_account(with_project: false)
     fill_in "UBID, UUID, or prefix:term", with: account.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Account #{account.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Account #{account.ubid}"
 
     expect(account.suspended_at).to be_nil
     click_link "Suspend"
     click_button "Suspend"
     expect(page).to have_flash_notice("Account suspended")
-    expect(page.title).to eq "Ubicloud Admin - Account #{account.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Account #{account.ubid}"
     expect(account.reload.suspended_at).not_to be_nil
 
     click_link "Unsuspend"
     click_button "Unsuspend"
     expect(page).to have_flash_notice("Account unsuspended")
-    expect(page.title).to eq "Ubicloud Admin - Account #{account.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Account #{account.ubid}"
     expect(account.reload.suspended_at).to be_nil
   end
 
@@ -1381,13 +1381,13 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: p.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Page #{p.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Page #{p.ubid}"
 
     expect(p.semaphores_dataset.select_map(:name)).to eq []
     click_link "Resolve"
     click_button "Resolve"
     expect(page).to have_flash_notice("Resolve scheduled for Page")
-    expect(page.title).to eq "Ubicloud Admin - Page #{p.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Page #{p.ubid}"
     expect(p.semaphores_dataset.select_map(:name)).to eq ["resolve"]
   end
 
@@ -1396,13 +1396,13 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: p.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Page #{p.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Page #{p.ubid}"
 
     expect(p.semaphores_dataset.select_map(:name)).to eq []
     click_link "Retrigger"
     click_button "Retrigger"
     expect(page).to have_flash_notice("Retrigger scheduled for Page")
-    expect(page.title).to eq "Ubicloud Admin - Page #{p.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Page #{p.ubid}"
     expect(p.semaphores_dataset.select_map(:name)).to eq ["retrigger"]
   end
 
@@ -1411,14 +1411,14 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: p.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Project #{p.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Project #{p.ubid}"
 
     click_link "Add credit"
     fill_in "credit", with: "50.0"
     expect { click_button "Add credit" }.to change { p.reload.credit }.from(2).to(52)
 
     expect(page).to have_flash_notice("Added credit")
-    expect(page.title).to eq "Ubicloud Admin - Project #{p.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Project #{p.ubid}"
   end
 
   it "supports setting feature flags of Project" do
@@ -1426,7 +1426,7 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: p.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Project #{p.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Project #{p.ubid}"
 
     click_link "Set Feature Flag"
     path = page.current_path
@@ -1444,7 +1444,7 @@ RSpec.describe CloverAdmin do
       click_button "Set Feature Flag"
       expect(p.reload.send("get_ff_#{name}")).to eq(expected_value)
       expect(page).to have_flash_notice("Set feature flag")
-      expect(page.title).to eq "Ubicloud Admin - Project #{p.ubid}"
+      expect(page.title).to eq "LayerRail Admin - Project #{p.ubid}"
     end
 
     ENV["DONT_RAISE_ADMIN_ERRORS"] = "1"
@@ -1471,7 +1471,7 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: op.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - OidcProvider #{op.ubid}"
+    expect(page.title).to eq "LayerRail Admin - OidcProvider #{op.ubid}"
     expect(page.all("#allowed-domains li").map(&:text)).to eq []
 
     click_link "Add Allowed Domain"
@@ -1501,7 +1501,7 @@ RSpec.describe CloverAdmin do
 
     fill_in "UBID, UUID, or prefix:term", with: p.ubid
     click_button "Show Object"
-    expect(page.title).to eq "Ubicloud Admin - Project #{p.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Project #{p.ubid}"
 
     click_link "Set Quota"
     path = page.current_path
@@ -1511,7 +1511,7 @@ RSpec.describe CloverAdmin do
     fill_in "value", with: 512
     click_button "Set Quota"
     expect(page).to have_flash_notice("Set quota")
-    expect(page.title).to eq "Ubicloud Admin - Project #{p.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Project #{p.ubid}"
     expect(p.effective_quota_value("VmVCpu")).to eq(512)
 
     # Update existing quota
@@ -1608,7 +1608,7 @@ RSpec.describe CloverAdmin do
     end
 
     it "shows strand status" do
-      expect(page.title).to eq "Ubicloud Admin - Manage Rollouts"
+      expect(page.title).to eq "LayerRail Admin - Manage Rollouts"
       expect(page).to have_content("No data available for Active Rollouts")
 
       rollouts_path = page.current_path
@@ -1616,7 +1616,7 @@ RSpec.describe CloverAdmin do
       page.refresh
       expect(page.all(".rollouts-table td").map(&:text)).to eq ["RolloutRhizome", "start", "0", strand.ubid, "{}", "", "", ""]
       click_link strand.ubid
-      expect(page.title).to eq "Ubicloud Admin - Strand #{strand.ubid}"
+      expect(page.title).to eq "LayerRail Admin - Strand #{strand.ubid}"
 
       strand.run
       visit rollouts_path
@@ -1693,7 +1693,7 @@ RSpec.describe CloverAdmin do
     end
 
     it "shows strand status" do
-      expect(page.title).to eq "Ubicloud Admin - Manage Local E2E"
+      expect(page.title).to eq "LayerRail Admin - Manage Local E2E"
       expect(page).to have_content("No data available for Active Local E2E Strands")
 
       local_e2e_path = page.current_path
@@ -1701,14 +1701,14 @@ RSpec.describe CloverAdmin do
       page.refresh
       expect(page.all(".local-e2e-table td").map(&:text)).to eq ["Test::PostgresResource", "start", "0", strand.ubid, '{"provider" => "metal"}', "", ""]
       click_link strand.ubid
-      expect(page.title).to eq "Ubicloud Admin - Strand #{strand.ubid}"
+      expect(page.title).to eq "LayerRail Admin - Strand #{strand.ubid}"
 
       strand.run
       pg_ubid = UBID.to_ubid(strand.stack[0]["postgres_resource_id"])
       visit local_e2e_path
       expect(page.all(".local-e2e-table td").map(&:text)).to eq ["Test::PostgresResource", "wait_postgres_resource", "0", strand.ubid, "{\"provider\" => \"metal\", \"postgres_resource\" => \"#{pg_ubid}\"}", "", ""]
       click_link pg_ubid
-      expect(page.title).to eq "Ubicloud Admin - PostgresResource #{pg_ubid}"
+      expect(page.title).to eq "LayerRail Admin - PostgresResource #{pg_ubid}"
     end
 
     it "allows creation of strands" do
@@ -1821,7 +1821,7 @@ RSpec.describe CloverAdmin do
 
   it "shows admin list" do
     click_link "View Admin List"
-    expect(page.title).to eq "Ubicloud Admin - Admin List"
+    expect(page.title).to eq "LayerRail Admin - Admin List"
     expect(page.all("#admin-list li").map(&:text)).to eq ["admin"]
     DB[:admin_account].insert(login: "foo")
     page.refresh
@@ -1847,7 +1847,7 @@ RSpec.describe CloverAdmin do
     create_vm(arch: "arm64", boot_image: Config.github_ubuntu_2404_arm64_aws_ami_version, vcpus: 16)
 
     click_link "GitHub Runner VM Usage"
-    expect(page.title).to eq "Ubicloud Admin - GitHub Runner x64 VM Usage"
+    expect(page.title).to eq "LayerRail Admin - GitHub Runner x64 VM Usage"
     expect(page).to have_link "Show arm64"
     expect(page).to have_css("p", exact_text: "standard: vcpu 25.0%, hugepage 4.27%, spilled vcpus 12 - premium: vcpu 50.0%, hugepage 4.27%")
     expect(page.all("#content td").map(&:text)).to eq [
@@ -1866,7 +1866,7 @@ RSpec.describe CloverAdmin do
     ]
 
     click_link "test-installation"
-    expect(page.title).to eq "Ubicloud Admin - GithubInstallation #{installation.ubid}"
+    expect(page.title).to eq "LayerRail Admin - GithubInstallation #{installation.ubid}"
   end
 
   it "shows GitHub runner arm64 VM usage" do
@@ -1882,7 +1882,7 @@ RSpec.describe CloverAdmin do
 
     click_link "Show arm64"
 
-    expect(page.title).to eq "Ubicloud Admin - GitHub Runner arm64 VM Usage"
+    expect(page.title).to eq "LayerRail Admin - GitHub Runner arm64 VM Usage"
     expect(page).to have_link "Show x64"
     expect(page).to have_css("p", exact_text: "standard: vcpu 25.0%, hugepage 4.27%, spilled vcpus 8")
     expect(page.all("#content td").map(&:text)).to eq [
@@ -1909,9 +1909,9 @@ RSpec.describe CloverAdmin do
     visit "/"
     click_link "Show Unavailable VMs"
     click_link vm.ubid
-    expect(page.title).to eq "Ubicloud Admin - Strand #{vm.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Strand #{vm.ubid}"
     click_link "Subject"
-    expect(page.title).to eq "Ubicloud Admin - Vm #{vm.ubid}"
+    expect(page.title).to eq "LayerRail Admin - Vm #{vm.ubid}"
   end
 
   it "shows footer with the commit hash" do
@@ -2099,7 +2099,7 @@ RSpec.describe CloverAdmin do
       visit "/"
       click_link "View Audit Logs"
 
-      expect(page.title).to eq("Ubicloud Admin - Audit Log")
+      expect(page.title).to eq("LayerRail Admin - Audit Log")
       expect(audit_log_content).to eq [project.ubid, "vm/create", user.ubid, ""]
     end
 
@@ -2119,7 +2119,7 @@ RSpec.describe CloverAdmin do
       expect(audit_log_content).to eq [project2.ubid, "vm/destroy", user.ubid, ""]
 
       click_link project2.ubid
-      expect(page.title).to eq("Ubicloud Admin - Project #{project2.ubid}")
+      expect(page.title).to eq("LayerRail Admin - Project #{project2.ubid}")
 
       click_link "View Audit Log"
       expect(audit_log_content).to eq [project2.ubid, "vm/destroy", user.ubid, ""]
@@ -2213,10 +2213,10 @@ RSpec.describe CloverAdmin do
       expect(audit_log_content).to eq [project.ubid, "vm/create", user.ubid, other_account_ubid.to_s]
 
       click_link user.ubid
-      expect(page.title).to eq("Ubicloud Admin - Account #{user.ubid}")
+      expect(page.title).to eq("LayerRail Admin - Account #{user.ubid}")
 
       click_link "View Audit Log"
-      expect(page.title).to eq("Ubicloud Admin - Audit Log")
+      expect(page.title).to eq("LayerRail Admin - Audit Log")
       expect(audit_log_content).to eq [project.ubid, "vm/create", user.ubid, other_account_ubid.to_s]
 
       fill_in "Account", with: "NoMatch"
@@ -2236,7 +2236,7 @@ RSpec.describe CloverAdmin do
       expect(audit_log_content).to eq [project.ubid, "vm/create", user.ubid, vm.ubid]
 
       click_link vm.ubid
-      expect(page.title).to eq("Ubicloud Admin - Vm #{vm.ubid}")
+      expect(page.title).to eq("LayerRail Admin - Vm #{vm.ubid}")
 
       click_link "View Audit Log"
       expect(audit_log_content).to eq [project.ubid, "vm/create", user.ubid, vm.ubid]
@@ -2364,7 +2364,7 @@ RSpec.describe CloverAdmin do
 
       click_link "View Authentication Audit Logs"
 
-      expect(page.title).to eq("Ubicloud Admin - Authentication Audit Log")
+      expect(page.title).to eq("LayerRail Admin - Authentication Audit Log")
       expect(audit_log_content).to eq ["login", user.ubid, "ip: 1.2.3.4"]
     end
 
@@ -2418,7 +2418,7 @@ RSpec.describe CloverAdmin do
       ]
 
       click_link user.ubid
-      expect(page.title).to eq("Ubicloud Admin - Account #{user.ubid}")
+      expect(page.title).to eq("LayerRail Admin - Account #{user.ubid}")
       click_link "View Authentication Audit Log"
       expect(audit_log_content).to eq ["login", user.ubid, "ip: 127.0.0.1"]
 
@@ -2463,7 +2463,7 @@ RSpec.describe CloverAdmin do
 
       click_link "View Admin Authentication Audit Logs"
 
-      expect(page.title).to eq("Ubicloud Admin - Admin Authentication Audit Log")
+      expect(page.title).to eq("LayerRail Admin - Admin Authentication Audit Log")
       expect(audit_log_content).to eq ["login", "admin", "ip: 127.0.0.1"]
     end
 

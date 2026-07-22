@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "VmStorageVolume" do
   it "displays the VmStorageVolume instance page correctly" do
     click_link "VmStorageVolume"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - VmStorageVolume"
+    expect(page.title).to eq "LayerRail Admin - VmStorageVolume"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - VmStorageVolume #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmStorageVolume #{@instance.ubid}"
   end
 end

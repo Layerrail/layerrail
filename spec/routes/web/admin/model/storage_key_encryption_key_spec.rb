@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "StorageKeyEncryptionKey" do
   it "displays the StorageKeyEncryptionKey instance page correctly" do
     click_link "StorageKeyEncryptionKey"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - StorageKeyEncryptionKey"
+    expect(page.title).to eq "LayerRail Admin - StorageKeyEncryptionKey"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - StorageKeyEncryptionKey #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - StorageKeyEncryptionKey #{@instance.ubid}"
   end
 end

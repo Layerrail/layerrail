@@ -23,7 +23,7 @@ RSpec.describe Clover, "github" do
 
     visit "/github/callback?code=123123&installation_id=#{installation.installation_id}"
 
-    expect(page.title).to eq("Ubicloud - Active Runners")
+    expect(page.title).to eq("LayerRail - Active Runners")
     expect(page).to have_flash_notice("GitHub runner integration is already enabled for #{project.name} project.")
   end
 
@@ -35,7 +35,7 @@ RSpec.describe Clover, "github" do
 
     visit "/github/callback?code=123123&installation_id=#{installation.installation_id}"
 
-    expect(page.title).to eq("Ubicloud - Forbidden")
+    expect(page.title).to eq("LayerRail - Forbidden")
     expect(page.status_code).to eq(403)
     expect(page).to have_content "Forbidden"
   end
@@ -45,7 +45,7 @@ RSpec.describe Clover, "github" do
 
     visit "/github/callback?code=123123&installation_id=345"
 
-    expect(page.title).to eq("Ubicloud - Projects")
+    expect(page.title).to eq("LayerRail - Projects")
     expect(page).to have_flash_error("You should initiate the GitHub App installation request from the project's GitHub runner integration page.")
   end
 
@@ -56,7 +56,7 @@ RSpec.describe Clover, "github" do
     AccessControlEntry.dataset.destroy
     visit "/github/callback?code=123123&installation_id=345"
 
-    expect(page.title).to eq("Ubicloud - Forbidden")
+    expect(page.title).to eq("LayerRail - Forbidden")
     expect(page.status_code).to eq(403)
     expect(page).to have_content "Forbidden"
   end
@@ -67,7 +67,7 @@ RSpec.describe Clover, "github" do
     visit "/set_github_installation_project_id/#{project.ubid}"
     visit "/github/callback?code=123123&setup_action=request"
 
-    expect(page.title).to eq("Ubicloud - #{project.name} - Users")
+    expect(page.title).to eq("LayerRail - #{project.name} - Users")
     expect(page).to have_flash_notice(/.*awaiting approval from the GitHub organization's administrator.*/)
   end
 
@@ -77,7 +77,7 @@ RSpec.describe Clover, "github" do
     visit "/set_github_installation_project_id/#{project.ubid}"
     visit "/github/callback?code=invalid"
 
-    expect(page.title).to eq("Ubicloud - GitHub Runners Integration")
+    expect(page.title).to eq("LayerRail - GitHub Runners Integration")
     expect(page).to have_flash_error(/^GitHub App installation failed.*/)
   end
 
@@ -88,7 +88,7 @@ RSpec.describe Clover, "github" do
     visit "/set_github_installation_project_id/#{project.ubid}"
     visit "/github/callback?code=123123"
 
-    expect(page.title).to eq("Ubicloud - GitHub Runners Integration")
+    expect(page.title).to eq("LayerRail - GitHub Runners Integration")
     expect(page).to have_flash_error(/^GitHub App installation failed.*/)
   end
 
@@ -99,7 +99,7 @@ RSpec.describe Clover, "github" do
     visit "/set_github_installation_project_id/#{project.ubid}"
     visit "/github/callback?code=123123"
 
-    expect(page.title).to eq("Ubicloud - GitHub Runners Integration")
+    expect(page.title).to eq("LayerRail - GitHub Runners Integration")
     expect(page).to have_flash_error(/^GitHub App installation failed.*/)
   end
 
@@ -112,7 +112,7 @@ RSpec.describe Clover, "github" do
     project.add_account(suspended_account)
     visit "/github/callback?code=123123&installation_id=345"
 
-    expect(page.title).to eq("Ubicloud - project-1 Dashboard")
+    expect(page.title).to eq("LayerRail - project-1 Dashboard")
     expect(page).to have_flash_error("GitHub runner integration is not allowed for inactive projects")
   end
 
@@ -123,7 +123,7 @@ RSpec.describe Clover, "github" do
     visit "/set_github_installation_project_id/#{project.ubid}"
     visit "/github/callback?code=123123&installation_id=345"
 
-    expect(page.title).to eq("Ubicloud - Active Runners")
+    expect(page.title).to eq("LayerRail - Active Runners")
     expect(page).to have_flash_notice("GitHub runner integration is enabled for #{project.name} project.")
     installation = GithubInstallation[installation_id: 345]
     expect(installation.name).to eq("test-user")

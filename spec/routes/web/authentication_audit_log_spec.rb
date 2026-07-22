@@ -24,7 +24,7 @@ RSpec.describe Clover, "authentication audit log" do
       it "redirects to login" do
         visit "/account/authentication-audit-log"
 
-        expect(page.title).to eq("Ubicloud - Login")
+        expect(page.title).to eq("LayerRail - Login")
       end
     end
 
@@ -39,7 +39,7 @@ RSpec.describe Clover, "authentication audit log" do
 
         visit "/account/authentication-audit-log"
 
-        expect(page.title).to eq("Ubicloud - Authentication Audit Log")
+        expect(page.title).to eq("LayerRail - Authentication Audit Log")
         expect(audit_log_content).to eq(["login", "ip: 1.2.3.4, via: password"])
       end
 
@@ -95,7 +95,7 @@ RSpec.describe Clover, "authentication audit log" do
       it "redirects to login" do
         visit "#{project.path}/audit-log/authentication"
 
-        expect(page.title).to eq("Ubicloud - Login")
+        expect(page.title).to eq("LayerRail - Login")
       end
     end
 
@@ -113,7 +113,7 @@ RSpec.describe Clover, "authentication audit log" do
         expect(page).to have_no_content "View Authentication Audit Logs"
 
         visit "#{project.path}/audit-log/authentication"
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
       end
 
       it "can view project authentication audit log entries" do
@@ -122,7 +122,7 @@ RSpec.describe Clover, "authentication audit log" do
         visit project.path
         click_link "View Authentication Audit Logs"
 
-        expect(page.title).to eq("Ubicloud - project-1 - Authentication Audit Log")
+        expect(page.title).to eq("LayerRail - project-1 - Authentication Audit Log")
         expect(audit_log_content).to eq(["login", user.ubid, "ip: 1.2.3.4"])
       end
 
@@ -209,7 +209,7 @@ RSpec.describe Clover, "authentication audit log" do
 
         visit "#{project_wo_permissions.path}/audit-log/authentication"
 
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
       end
     end
   end

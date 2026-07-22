@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "KubernetesNode" do
   it "displays the KubernetesNode instance page correctly" do
     click_link "KubernetesNode"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - KubernetesNode"
+    expect(page.title).to eq "LayerRail Admin - KubernetesNode"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - KubernetesNode #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - KubernetesNode #{@instance.ubid}"
   end
 end

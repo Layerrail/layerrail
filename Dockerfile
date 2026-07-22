@@ -31,17 +31,17 @@ RUN apk update --no-cache && \
     apk add tzdata curl postgresql-client gcompat libffi --no-cache && \
     gem install foreman
 
-RUN adduser -D ubicloud && \
+RUN adduser -D layerrail && \
     mkdir /app && \
-    chown ubicloud:ubicloud /app
+    chown layerrail:layerrail /app
 # Don't use root to run our app as extra line of defense
-USER ubicloud
+USER layerrail
 WORKDIR /app
 
 # Copy built assets from builders
 COPY --from=bundler /usr/local/bundle/ /usr/local/bundle/
-COPY --chown=ubicloud --from=frontend-builder /app/assets/css/app.css /app/assets/css/app.css
-COPY --chown=ubicloud . /app
+COPY --chown=layerrail --from=frontend-builder /app/assets/css/app.css /app/assets/css/app.css
+COPY --chown=layerrail . /app
 
 ENV RACK_ENV=production
 ENV PORT=3000

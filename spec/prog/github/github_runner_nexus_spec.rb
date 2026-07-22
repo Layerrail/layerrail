@@ -12,10 +12,10 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
   let(:runner) do
     customer_project = Project.create(name: "customer")
     runner_project = Project.create(name: "runner-service")
-    installation_id = GithubInstallation.create(installation_id: 123, project_id: customer_project.id, name: "ubicloud", type: "Organization", created_at: now - 8 * 24 * 60 * 60).id
+    installation_id = GithubInstallation.create(installation_id: 123, project_id: customer_project.id, name: "layerrail", type: "Organization", created_at: now - 8 * 24 * 60 * 60).id
     vm_id = create_vm(location_id: Location::GITHUB_RUNNERS_ID, project_id: runner_project.id, boot_image: "github-ubuntu-2204").id
     Sshable.create_with_id(vm_id)
-    runner = GithubRunner.create(installation_id:, vm_id:, repository_name: "test-repo", label: "ubicloud-standard-4", actual_label: "ubicloud-standard-4", created_at: now, allocated_at: now + 10, ready_at: now + 20, runner_id: 123, workflow_job: {"id" => 123})
+    runner = GithubRunner.create(installation_id:, vm_id:, repository_name: "test-repo", label: "layerrail-standard-4", actual_label: "layerrail-standard-4", created_at: now, allocated_at: now + 10, ready_at: now + 20, runner_id: 123, workflow_job: {"id" => 123})
     Strand.create_with_id(runner, prog: "Github::GithubRunnerNexus", label: "start")
     runner
   end
@@ -33,25 +33,25 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
 
   describe ".assemble" do
     it "creates github runner and vm with sshable" do
-      runner = described_class.assemble(installation, repository_name: "test-repo", label: "ubicloud").subject
+      runner = described_class.assemble(installation, repository_name: "test-repo", label: "layerrail").subject
 
       expect(runner).not_to be_nil
       expect(runner.repository_name).to eq("test-repo")
-      expect(runner.label).to eq("ubicloud")
+      expect(runner.label).to eq("layerrail")
     end
 
     it "creates github runner with custom size" do
-      runner = described_class.assemble(installation, repository_name: "test-repo", label: "ubicloud-standard-8").subject
+      runner = described_class.assemble(installation, repository_name: "test-repo", label: "layerrail-standard-8").subject
 
       expect(runner).not_to be_nil
       expect(runner.repository_name).to eq("test-repo")
-      expect(runner.label).to eq("ubicloud-standard-8")
+      expect(runner.label).to eq("layerrail-standard-8")
     end
 
     it "fails if label is not valid" do
       expect {
-        described_class.assemble(installation, repository_name: "test-repo", label: "ubicloud-standard-1")
-      }.to raise_error RuntimeError, "Invalid GitHub runner label: ubicloud-standard-1"
+        described_class.assemble(installation, repository_name: "test-repo", label: "layerrail-standard-1")
+      }.to raise_error RuntimeError, "Invalid GitHub runner label: layerrail-standard-1"
     end
   end
 
@@ -127,7 +127,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
     end
 
     it "does not use alien vms for large vcpu runners" do
-      runner.update(label: "ubicloud-standard-30")
+      runner.update(label: "layerrail-standard-30")
       project.set_ff_aws_alien_runners_ratio(1.0)
       picked_vm = nx.pick_vm
       expect(picked_vm.family).to eq("standard")
@@ -147,7 +147,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
     end
 
     it "uses alien arm64 vms if spilled over" do
-      runner.update(label: "ubicloud-arm")
+      runner.update(label: "layerrail-arm")
       runner.incr_spill_over
       location = Location.create(name: "eu-central-1", provider: "aws", project_id: vm.project_id, display_name: "aws-eu-central-1", ui_name: "AWS Frankfurt", visible: true)
       LocationCredentialAws.create(access_key: "test-access-key", secret_key: "test-secret-key") { it.id = location.id }
@@ -184,7 +184,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
     end
 
     it "uses separate billing rate for arm64 runners" do
-      runner.update(label: "ubicloud-arm", ready_at: now - 5 * 60)
+      runner.update(label: "layerrail-arm", ready_at: now - 5 * 60)
       expect(BillingRecord).to receive(:create).and_call_original
       nx.update_billing_record
 
@@ -197,7 +197,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
 
     it "uses the premium billing rate for upgraded runners" do
       vm.update(family: "premium")
-      runner.update(label: "ubicloud-standard-2", ready_at: now - 5 * 60)
+      runner.update(label: "layerrail-standard-2", ready_at: now - 5 * 60)
 
       expect(BillingRecord).to receive(:create).and_call_original
       nx.update_billing_record
@@ -211,7 +211,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
 
     it "uses the original billing rate for runners who were upgraded for free based on runner creation time" do
       vm.update(family: "premium")
-      runner.update(label: "ubicloud-standard-2", ready_at: now - 5 * 60, created_at: now - 100)
+      runner.update(label: "layerrail-standard-2", ready_at: now - 5 * 60, created_at: now - 100)
 
       expect(installation).to receive(:free_runner_upgrade_expires_at).and_return(now - 50)
       expect(BillingRecord).to receive(:create).and_call_original
@@ -225,7 +225,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
     end
 
     it "uses standard billing rate for alien runners" do
-      runner.update(label: "ubicloud-standard-2", ready_at: now - 5 * 60)
+      runner.update(label: "layerrail-standard-2", ready_at: now - 5 * 60)
       location = Location.create(name: "eu-central-1", provider: "aws", project_id: vm.project_id, display_name: "aws-eu-central-1", ui_name: "AWS Frankfurt", visible: true)
       vm.update(location_id: location.id, family: "m7a")
       expect(vm.location.aws?).to be(true)
@@ -342,7 +342,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
     end
 
     it "hops to apply_custom_label_quota if there is capacity and the label is a custom label" do
-      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "ubicloud-standard-4", concurrent_runner_count_limit: 10, allocated_runner_count: 0)
+      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "layerrail-standard-4", concurrent_runner_count_limit: 10, allocated_runner_count: 0)
       expect(project).to receive(:quota_available?).with("GithubRunnerVCpu", 0).and_return(true)
       expect(project).to receive(:active?).and_return(true)
       expect(runner).to receive(:actual_label).and_return("custom-label-1")
@@ -376,7 +376,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
     end
 
     it "hops to apply_custom_label_quota when the label is a custom label" do
-      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "ubicloud-standard-4", concurrent_runner_count_limit: 10, allocated_runner_count: 0)
+      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "layerrail-standard-4", concurrent_runner_count_limit: 10, allocated_runner_count: 0)
       expect(project).to receive(:quota_available?).with("GithubRunnerVCpu", 0).and_return(true)
       expect(runner).to receive(:actual_label).and_return("custom-label-1")
 
@@ -431,7 +431,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
       end
 
       it "hops to apply_custom_label_quota if standard utilization is low and the label is a custom label" do
-        GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "ubicloud-standard-4", concurrent_runner_count_limit: 10, allocated_runner_count: 0)
+        GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "layerrail-standard-4", concurrent_runner_count_limit: 10, allocated_runner_count: 0)
         expect(runner).to receive(:actual_label).and_return("custom-label-1")
         expect(project).to receive(:quota_available?).with("GithubRunnerVCpu", 0).and_return(false)
         VmHost[arch: "x64", family: "standard"].update(used_cores: 8)
@@ -463,14 +463,14 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
 
       it "allocates arm64 runners without checking premium utilization" do
         expect(project).to receive(:quota_available?).with("GithubRunnerVCpuArm", 0).and_return(false)
-        runner.update(label: "ubicloud-standard-4-arm")
+        runner.update(label: "layerrail-standard-4-arm")
         VmHost[arch: "arm64"].update(used_cores: 8)
         expect { nx.wait_concurrency_limit }.to hop("allocate_vm")
       end
     end
 
     context "when explicit premium runner" do
-      before { runner.update(label: "ubicloud-premium-4") }
+      before { runner.update(label: "layerrail-premium-4") }
 
       it "waits if premium and standard utilizations are high" do
         expect(project).to receive(:quota_available?).with("GithubRunnerVCpu", 0).and_return(false)
@@ -516,21 +516,21 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
 
   describe "#apply_custom_label_quota" do
     it "hops to allocate_vm if custom label exists and has concurrency limit available" do
-      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "ubicloud-standard-4", concurrent_runner_count_limit: 10, allocated_runner_count: 0)
+      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "layerrail-standard-4", concurrent_runner_count_limit: 10, allocated_runner_count: 0)
       expect(runner).to receive(:actual_label).and_return("custom-label-1").twice
       expect(runner).to receive(:installation_id).and_return(installation.id).twice
       expect { nx.apply_custom_label_quota }.to hop("allocate_vm")
     end
 
     it "hops to allocate_vm if custom label exists and concurrency limit is not set" do
-      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "ubicloud-standard-4")
+      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "layerrail-standard-4")
       expect(runner).to receive(:actual_label).and_return("custom-label-1")
       expect(runner).to receive(:installation_id).and_return(installation.id)
       expect { nx.apply_custom_label_quota }.to hop("allocate_vm")
     end
 
     it "naps if custom label exists and concurrency limit is not available" do
-      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "ubicloud-standard-4", concurrent_runner_count_limit: 10, allocated_runner_count: 10)
+      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "layerrail-standard-4", concurrent_runner_count_limit: 10, allocated_runner_count: 10)
       expect(runner).to receive(:actual_label).and_return("custom-label-1").exactly(3).times
       expect(runner).to receive(:installation_id).and_return(installation.id).exactly(3).times
       expect(Clog).to receive(:emit).with("hit custom label concurrency limit", instance_of(Hash)).and_call_original
@@ -573,13 +573,13 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
       pool = VmPool.create(size: 1, vm_size: "standard-2", location_id: Location::GITHUB_RUNNERS_ID, boot_image: "github-ubuntu-2204", storage_size_gib: 86)
       vm.update(pool_id: pool.id, vm_host_id: vm_host.id)
 
-      expect(nx.setup_info[:detail]).to eq("Name: #{runner.ubid}\nLabel: ubicloud-standard-4\nVM Family: standard\nArch: x64\nImage: github-ubuntu-2204\nVM Host: #{vm_host.ubid}\nVM Pool: #{pool.ubid}\nLocation: hetzner-fsn1\nDatacenter: FSN1-DC8\nProject: #{project.ubid}\nConsole URL: http://localhost:9292/project/#{project.ubid}/github")
+      expect(nx.setup_info[:detail]).to eq("Name: #{runner.ubid}\nLabel: layerrail-standard-4\nVM Family: standard\nArch: x64\nImage: github-ubuntu-2204\nVM Host: #{vm_host.ubid}\nVM Pool: #{pool.ubid}\nLocation: hetzner-fsn1\nDatacenter: FSN1-DC8\nProject: #{project.ubid}\nConsole URL: http://localhost:9292/project/#{project.ubid}/github")
     end
 
     it "returns setup info without vm host" do
       vm.update(vm_host_id: nil)
 
-      expect(nx.setup_info[:detail]).to eq("Name: #{runner.ubid}\nLabel: ubicloud-standard-4\nVM Family: standard\nArch: x64\nImage: github-ubuntu-2204\nVM Host: \nVM Pool: \nLocation: \nDatacenter: \nProject: #{project.ubid}\nConsole URL: http://localhost:9292/project/#{project.ubid}/github")
+      expect(nx.setup_info[:detail]).to eq("Name: #{runner.ubid}\nLabel: layerrail-standard-4\nVM Family: standard\nArch: x64\nImage: github-ubuntu-2204\nVM Host: \nVM Pool: \nLocation: \nDatacenter: \nProject: #{project.ubid}\nConsole URL: http://localhost:9292/project/#{project.ubid}/github")
     end
   end
 
@@ -595,7 +595,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
         set -ueo pipefail
         echo "image version: $ImageVersion"
         sudo usermod -a -G sudo,adm runneradmin
-        jq '. += ['\\{\\"group\\":\\"LayerRail\\ Managed\\ Runner\\",\\"detail\\":\\"Name:\\ #{runner.ubid}\\\\nLabel:\\ ubicloud-standard-4\\\\nVM\\ Family:\\ standard\\\\nArch:\\ x64\\\\nImage:\\ github-ubuntu-2204\\\\nVM\\ Host:\\ #{vm.vm_host.ubid}\\\\nVM\\ Pool:\\ \\\\nLocation:\\ hetzner-fsn1\\\\nDatacenter:\\ FSN1-DC8\\\\nProject:\\ #{project.ubid}\\\\nConsole\\ URL:\\ http://localhost:9292/project/#{project.ubid}/github\\"\\}']' /imagegeneration/imagedata.json | sudo -u runner tee /home/runner/actions-runner/.setup_info > /dev/null
+        jq '. += ['\\{\\"group\\":\\"LayerRail\\ Managed\\ Runner\\",\\"detail\\":\\"Name:\\ #{runner.ubid}\\\\nLabel:\\ layerrail-standard-4\\\\nVM\\ Family:\\ standard\\\\nArch:\\ x64\\\\nImage:\\ github-ubuntu-2204\\\\nVM\\ Host:\\ #{vm.vm_host.ubid}\\\\nVM\\ Pool:\\ \\\\nLocation:\\ hetzner-fsn1\\\\nDatacenter:\\ FSN1-DC8\\\\nProject:\\ #{project.ubid}\\\\nConsole\\ URL:\\ http://localhost:9292/project/#{project.ubid}/github\\"\\}']' /imagegeneration/imagedata.json | sudo -u runner tee /home/runner/actions-runner/.setup_info > /dev/null
         echo "LAYERRAIL_RUNTIME_TOKEN="my_token"
         LAYERRAIL_CACHE_URL="http://localhost:9292"/runtime/github/
         UBICLOUD_RUNTIME_TOKEN="my_token"
@@ -613,7 +613,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
         set -ueo pipefail
         echo "image version: $ImageVersion"
         sudo usermod -a -G sudo,adm runneradmin
-        jq '. += ['\\{\\"group\\":\\"LayerRail\\ Managed\\ Runner\\",\\"detail\\":\\"Name:\\ #{runner.ubid}\\\\nLabel:\\ ubicloud-standard-4\\\\nVM\\ Family:\\ standard\\\\nArch:\\ x64\\\\nImage:\\ github-ubuntu-2204\\\\nVM\\ Host:\\ #{vm.vm_host.ubid}\\\\nVM\\ Pool:\\ \\\\nLocation:\\ hetzner-fsn1\\\\nDatacenter:\\ FSN1-DC8\\\\nProject:\\ #{project.ubid}\\\\nConsole\\ URL:\\ http://localhost:9292/project/#{project.ubid}/github\\"\\}']' /imagegeneration/imagedata.json | sudo -u runner tee /home/runner/actions-runner/.setup_info > /dev/null
+        jq '. += ['\\{\\"group\\":\\"LayerRail\\ Managed\\ Runner\\",\\"detail\\":\\"Name:\\ #{runner.ubid}\\\\nLabel:\\ layerrail-standard-4\\\\nVM\\ Family:\\ standard\\\\nArch:\\ x64\\\\nImage:\\ github-ubuntu-2204\\\\nVM\\ Host:\\ #{vm.vm_host.ubid}\\\\nVM\\ Pool:\\ \\\\nLocation:\\ hetzner-fsn1\\\\nDatacenter:\\ FSN1-DC8\\\\nProject:\\ #{project.ubid}\\\\nConsole\\ URL:\\ http://localhost:9292/project/#{project.ubid}/github\\"\\}']' /imagegeneration/imagedata.json | sudo -u runner tee /home/runner/actions-runner/.setup_info > /dev/null
         echo "LAYERRAIL_RUNTIME_TOKEN="my_token"
         LAYERRAIL_CACHE_URL="http://localhost:9292"/runtime/github/
         UBICLOUD_RUNTIME_TOKEN="my_token"
@@ -632,7 +632,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
         set -ueo pipefail
         echo "image version: $ImageVersion"
         sudo usermod -a -G sudo,adm runneradmin
-        jq '. += ['\\{\\"group\\":\\"LayerRail\\ Managed\\ Runner\\",\\"detail\\":\\"Name:\\ #{runner.ubid}\\\\nLabel:\\ ubicloud-standard-4\\\\nVM\\ Family:\\ standard\\\\nArch:\\ x64\\\\nImage:\\ github-ubuntu-2204\\\\nVM\\ Host:\\ #{vm.vm_host.ubid}\\\\nVM\\ Pool:\\ \\\\nLocation:\\ hetzner-fsn1\\\\nDatacenter:\\ FSN1-DC8\\\\nProject:\\ #{project.ubid}\\\\nConsole\\ URL:\\ http://localhost:9292/project/#{project.ubid}/github\\"\\}']' /imagegeneration/imagedata.json | sudo -u runner tee /home/runner/actions-runner/.setup_info > /dev/null
+        jq '. += ['\\{\\"group\\":\\"LayerRail\\ Managed\\ Runner\\",\\"detail\\":\\"Name:\\ #{runner.ubid}\\\\nLabel:\\ layerrail-standard-4\\\\nVM\\ Family:\\ standard\\\\nArch:\\ x64\\\\nImage:\\ github-ubuntu-2204\\\\nVM\\ Host:\\ #{vm.vm_host.ubid}\\\\nVM\\ Pool:\\ \\\\nLocation:\\ hetzner-fsn1\\\\nDatacenter:\\ FSN1-DC8\\\\nProject:\\ #{project.ubid}\\\\nConsole\\ URL:\\ http://localhost:9292/project/#{project.ubid}/github\\"\\}']' /imagegeneration/imagedata.json | sudo -u runner tee /home/runner/actions-runner/.setup_info > /dev/null
         echo "LAYERRAIL_RUNTIME_TOKEN="my_token"
         LAYERRAIL_CACHE_URL="http://localhost:9292"/runtime/github/
         UBICLOUD_RUNTIME_TOKEN="my_token"
@@ -654,7 +654,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
         set -ueo pipefail
         echo "image version: $ImageVersion"
         sudo usermod -a -G sudo,adm runneradmin
-        jq '. += ['\\{\\"group\\":\\"LayerRail\\ Managed\\ Runner\\",\\"detail\\":\\"Name:\\ #{runner.ubid}\\\\nLabel:\\ ubicloud-standard-4\\\\nVM\\ Family:\\ standard\\\\nArch:\\ x64\\\\nImage:\\ github-ubuntu-2204\\\\nVM\\ Host:\\ #{vm.vm_host.ubid}\\\\nVM\\ Pool:\\ \\\\nLocation:\\ hetzner-fsn1\\\\nDatacenter:\\ FSN1-DC8\\\\nProject:\\ #{project.ubid}\\\\nConsole\\ URL:\\ http://localhost:9292/project/#{project.ubid}/github\\"\\}']' /imagegeneration/imagedata.json | sudo -u runner tee /home/runner/actions-runner/.setup_info > /dev/null
+        jq '. += ['\\{\\"group\\":\\"LayerRail\\ Managed\\ Runner\\",\\"detail\\":\\"Name:\\ #{runner.ubid}\\\\nLabel:\\ layerrail-standard-4\\\\nVM\\ Family:\\ standard\\\\nArch:\\ x64\\\\nImage:\\ github-ubuntu-2204\\\\nVM\\ Host:\\ #{vm.vm_host.ubid}\\\\nVM\\ Pool:\\ \\\\nLocation:\\ hetzner-fsn1\\\\nDatacenter:\\ FSN1-DC8\\\\nProject:\\ #{project.ubid}\\\\nConsole\\ URL:\\ http://localhost:9292/project/#{project.ubid}/github\\"\\}']' /imagegeneration/imagedata.json | sudo -u runner tee /home/runner/actions-runner/.setup_info > /dev/null
         echo "LAYERRAIL_RUNTIME_TOKEN="my_token"
         LAYERRAIL_CACHE_URL="http://localhost:9292"/runtime/github/
         UBICLOUD_RUNTIME_TOKEN="my_token"
@@ -672,7 +672,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
         set -ueo pipefail
         echo "image version: $ImageVersion"
         sudo usermod -a -G sudo,adm runneradmin
-        jq '. += ['\\{\\"group\\":\\"LayerRail\\ Managed\\ Runner\\",\\"detail\\":\\"Name:\\ #{runner.ubid}\\\\nLabel:\\ ubicloud-standard-4\\\\nVM\\ Family:\\ standard\\\\nArch:\\ x64\\\\nImage:\\ github-ubuntu-2204\\\\nVM\\ Host:\\ #{vm.vm_host.ubid}\\\\nVM\\ Pool:\\ \\\\nLocation:\\ hetzner-fsn1\\\\nDatacenter:\\ FSN1-DC8\\\\nProject:\\ #{project.ubid}\\\\nConsole\\ URL:\\ http://localhost:9292/project/#{project.ubid}/github\\"\\}']' /imagegeneration/imagedata.json | sudo -u runner tee /home/runner/actions-runner/.setup_info > /dev/null
+        jq '. += ['\\{\\"group\\":\\"LayerRail\\ Managed\\ Runner\\",\\"detail\\":\\"Name:\\ #{runner.ubid}\\\\nLabel:\\ layerrail-standard-4\\\\nVM\\ Family:\\ standard\\\\nArch:\\ x64\\\\nImage:\\ github-ubuntu-2204\\\\nVM\\ Host:\\ #{vm.vm_host.ubid}\\\\nVM\\ Pool:\\ \\\\nLocation:\\ hetzner-fsn1\\\\nDatacenter:\\ FSN1-DC8\\\\nProject:\\ #{project.ubid}\\\\nConsole\\ URL:\\ http://localhost:9292/project/#{project.ubid}/github\\"\\}']' /imagegeneration/imagedata.json | sudo -u runner tee /home/runner/actions-runner/.setup_info > /dev/null
         echo "LAYERRAIL_RUNTIME_TOKEN="my_token"
         LAYERRAIL_CACHE_URL="http://localhost:9292"/runtime/github/
         UBICLOUD_RUNTIME_TOKEN="my_token"
@@ -966,7 +966,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
         curl -m 10 -s --head -H "Authorization: Bearer $TOKEN" https://registry-1.docker.io/v2/ratelimitpreview/test/manifests/latest | grep ratelimit
       COMMAND
       expect(vm.sshable).to receive(:_cmd).with("sudo cat /var/log/cacheproxy.log", log: false).and_return("Received request - method: GET urlPath: foo\nReserveCache request failed with status code: 409\n")
-      expect(Clog).to receive(:emit).with("Cache proxy error", {cache_proxy_error: {message: "ReserveCache request failed with status code: 409", label: "ubicloud-standard-4", repository_name: "test-repo", conclusion: nil, vm_host_ubid: nil, data_center: nil}})
+      expect(Clog).to receive(:emit).with("Cache proxy error", {cache_proxy_error: {message: "ReserveCache request failed with status code: 409", label: "layerrail-standard-4", repository_name: "test-repo", conclusion: nil, vm_host_ubid: nil, data_center: nil}})
 
       nx.collect_final_telemetry
     end
@@ -980,7 +980,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
         curl -m 10 -s --head -H "Authorization: Bearer $TOKEN" https://registry-1.docker.io/v2/ratelimitpreview/test/manifests/latest | grep ratelimit
       COMMAND
       expect(vm.sshable).to receive(:_cmd).with("sudo cat /var/log/cacheproxy.log", log: false).and_return("Received request - method: GET urlPath: foo\nReserveCache request failed with status code: 409\n")
-      expect(Clog).to receive(:emit).with("Cache proxy error", {cache_proxy_error: {message: "ReserveCache request failed with status code: 409", label: "ubicloud-standard-4", repository_name: "test-repo", conclusion: "failure", vm_host_ubid: vm.vm_host.ubid, data_center: "FSN1-DC8"}})
+      expect(Clog).to receive(:emit).with("Cache proxy error", {cache_proxy_error: {message: "ReserveCache request failed with status code: 409", label: "layerrail-standard-4", repository_name: "test-repo", conclusion: "failure", vm_host_ubid: vm.vm_host.ubid, data_center: "FSN1-DC8"}})
 
       nx.collect_final_telemetry
     end
@@ -995,7 +995,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
       COMMAND
       expect(vm.sshable).to receive(:_cmd).with("sudo cat /var/log/cacheproxy.log", log: false).and_return("Received request - method: GET urlPath: foo\nReserveCache request failed with status code: 409\n")
 
-      expect(Clog).to receive(:emit).with("Cache proxy error", {cache_proxy_error: {message: "ReserveCache request failed with status code: 409", label: "ubicloud-standard-4", repository_name: "test-repo", conclusion: nil, vm_host_ubid: vm.vm_host.ubid, data_center: "FSN1-DC8"}})
+      expect(Clog).to receive(:emit).with("Cache proxy error", {cache_proxy_error: {message: "ReserveCache request failed with status code: 409", label: "layerrail-standard-4", repository_name: "test-repo", conclusion: nil, vm_host_ubid: vm.vm_host.ubid, data_center: "FSN1-DC8"}})
 
       nx.collect_final_telemetry
     end
@@ -1021,9 +1021,9 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
 
       LOG
 
-      expect(Clog).to receive(:emit).with("Cache proxy error", {cache_proxy_error: {message: "ReserveCache request failed with status code: 409", label: "ubicloud-standard-4", repository_name: "test-repo", conclusion: "success", vm_host_ubid: vm.vm_host.ubid, data_center: "FSN1-DC8"}}).twice
-      expect(Clog).to receive(:emit).with("Cache proxy error", {cache_proxy_error: {message: "Error copying response: readfrom tcp 10_163_176_47:51123->10_163_176_47:46162: context canceled", label: "ubicloud-standard-4", repository_name: "test-repo", conclusion: "success", vm_host_ubid: vm.vm_host.ubid, data_center: "FSN1-DC8"}})
-      expect(Clog).to receive(:emit).with("Cache proxy error", {cache_proxy_error: {message: "PUT request failed with status code: 500", label: "ubicloud-standard-4", repository_name: "test-repo", conclusion: "success", vm_host_ubid: vm.vm_host.ubid, data_center: "FSN1-DC8"}})
+      expect(Clog).to receive(:emit).with("Cache proxy error", {cache_proxy_error: {message: "ReserveCache request failed with status code: 409", label: "layerrail-standard-4", repository_name: "test-repo", conclusion: "success", vm_host_ubid: vm.vm_host.ubid, data_center: "FSN1-DC8"}}).twice
+      expect(Clog).to receive(:emit).with("Cache proxy error", {cache_proxy_error: {message: "Error copying response: readfrom tcp 10_163_176_47:51123->10_163_176_47:46162: context canceled", label: "layerrail-standard-4", repository_name: "test-repo", conclusion: "success", vm_host_ubid: vm.vm_host.ubid, data_center: "FSN1-DC8"}})
+      expect(Clog).to receive(:emit).with("Cache proxy error", {cache_proxy_error: {message: "PUT request failed with status code: 500", label: "layerrail-standard-4", repository_name: "test-repo", conclusion: "success", vm_host_ubid: vm.vm_host.ubid, data_center: "FSN1-DC8"}})
 
       nx.collect_final_telemetry
     end
@@ -1049,7 +1049,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
         {"time" => "2026-02-16T16:20:55.730648373Z", "level" => "WARN", "msg" => "Retrying request", "version" => "0.7.0", "error_type" => "r2", "retry_count" => 1, "max_retries" => 3, "error" => "write tcp: connection reset by peer", "status_code" => 0},
         "invalid json line",
       ].each do |message|
-        expect(Clog).to receive(:emit).with("Cache proxy error", {cache_proxy_error: {message:, label: "ubicloud-standard-4", repository_name: "test-repo", conclusion: "success", vm_host_ubid: vm.vm_host.ubid, data_center: "FSN1-DC8"}})
+        expect(Clog).to receive(:emit).with("Cache proxy error", {cache_proxy_error: {message:, label: "layerrail-standard-4", repository_name: "test-repo", conclusion: "success", vm_host_ubid: vm.vm_host.ubid, data_center: "FSN1-DC8"}})
       end
 
       nx.collect_final_telemetry
@@ -1172,7 +1172,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
     end
 
     it "updates custom label allocated runner count" do
-      custom_label = GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "ubicloud-standard-4", concurrent_runner_count_limit: 10, allocated_runner_count: 5)
+      custom_label = GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "layerrail-standard-4", concurrent_runner_count_limit: 10, allocated_runner_count: 5)
       expect(runner).to receive(:skip_deregistration_set?).and_return(true)
       expect(runner).to receive(:actual_label).and_return("custom-label-1").twice
       expect(runner).to receive(:installation_id).and_return(installation.id).twice
@@ -1183,7 +1183,7 @@ RSpec.describe Prog::Github::GithubRunnerNexus do
     end
 
     it "does not decrement custom label allocated runner count when already zero" do
-      custom_label = GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "ubicloud-standard-4", concurrent_runner_count_limit: 10, allocated_runner_count: 0)
+      custom_label = GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "layerrail-standard-4", concurrent_runner_count_limit: 10, allocated_runner_count: 0)
       expect(runner).to receive(:skip_deregistration_set?).and_return(true)
       expect(runner).to receive(:actual_label).and_return("custom-label-1").exactly(3).times
       expect(runner).to receive(:installation_id).and_return(installation.id).exactly(3).times

@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "VmGcpResource" do
   it "displays the VmGcpResource instance page correctly" do
     click_link "VmGcpResource"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - VmGcpResource"
+    expect(page.title).to eq "LayerRail Admin - VmGcpResource"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - VmGcpResource #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmGcpResource #{@instance.ubid}"
   end
 end

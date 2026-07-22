@@ -16,7 +16,7 @@ RSpec.describe Clover, "inference-playground" do
     it "can handle empty list of inference endpoints" do
       visit "#{project.path}/inference-playground"
 
-      expect(page.title).to eq("Ubicloud - Playground")
+      expect(page.title).to eq("LayerRail - Playground")
     end
 
     it "gives choice of inference endpoints" do
@@ -61,7 +61,7 @@ RSpec.describe Clover, "inference-playground" do
       end
       visit "#{project.path}/inference-playground"
 
-      expect(page.title).to eq("Ubicloud - Playground")
+      expect(page.title).to eq("LayerRail - Playground")
       expect(page).to have_content("e5-mistral-7b-it")
       expect(page).to have_no_content("e5-mistral-8b-it")
       expect(page).to have_no_content("llama-guard-3-8b")
@@ -85,7 +85,7 @@ RSpec.describe Clover, "inference-playground" do
 
       visit "#{project.path}/inference-playground"
 
-      expect(page.title).to eq("Ubicloud - Playground")
+      expect(page.title).to eq("LayerRail - Playground")
       expect(page).to have_select("inference_api_key", selected: ApiKey.first.ubid)
     end
   end
@@ -94,7 +94,7 @@ RSpec.describe Clover, "inference-playground" do
     it "inference endpoint page is not accessible" do
       visit "/inference-playground"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
   end
 end

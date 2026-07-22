@@ -34,13 +34,13 @@ RSpec.describe Clover, "postgres" do
     it "cannot list without login" do
       visit "/postgres"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
 
     it "cannot create without login" do
       visit "/postgres/create"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
   end
 
@@ -76,12 +76,12 @@ RSpec.describe Clover, "postgres" do
         project.set_ff_postgres_paradedb(true)
         visit "#{project.path}/postgres"
 
-        expect(page.title).to eq("Ubicloud - PostgreSQL Databases")
+        expect(page.title).to eq("LayerRail - PostgreSQL Databases")
         expect(page).to have_content "Create PostgreSQL Database"
         expect(page).to have_content "Create ParadeDB PostgreSQL Database"
 
         click_link "Create PostgreSQL Database"
-        expect(page.title).to eq("Ubicloud - Create PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create PostgreSQL Database")
       end
 
       it "can list only the postgres databases which has permissions to" do
@@ -89,7 +89,7 @@ RSpec.describe Clover, "postgres" do
         pg_wo_permission
         visit "#{project.path}/postgres"
 
-        expect(page.title).to eq("Ubicloud - PostgreSQL Databases")
+        expect(page.title).to eq("LayerRail - PostgreSQL Databases")
         expect(page).to have_content pg.name
         expect(page).to have_no_content pg_wo_permission.name
       end
@@ -107,7 +107,7 @@ RSpec.describe Clover, "postgres" do
       it "can create new PostgreSQL database" do
         visit "#{project.path}/postgres/create?flavor=#{PostgresResource::Flavor::STANDARD}"
 
-        expect(page.title).to eq("Ubicloud - Create PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create PostgreSQL Database")
         name = "new-pg-db"
         fill_in "Name", with: name
         choose option: Location::HETZNER_FSN1_UBID
@@ -116,7 +116,7 @@ RSpec.describe Clover, "postgres" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
         expect(PostgresResource.count).to eq(1)
         expect(PostgresResource.first.project_id).to eq(project.id)
@@ -138,7 +138,7 @@ RSpec.describe Clover, "postgres" do
 
         visit "#{project.path}/postgres/create?flavor=#{PostgresResource::Flavor::STANDARD}"
 
-        expect(page.title).to eq("Ubicloud - Create PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create PostgreSQL Database")
         name = "new-pg-db"
         fill_in "Name", with: name
         choose option: private_location.ubid
@@ -148,7 +148,7 @@ RSpec.describe Clover, "postgres" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
         expect(PostgresResource.count).to eq(1)
         pg = PostgresResource.first
@@ -160,7 +160,7 @@ RSpec.describe Clover, "postgres" do
         project.set_ff_postgres_init_script(true)
         visit "#{project.path}/postgres/create?flavor=#{PostgresResource::Flavor::STANDARD}"
 
-        expect(page.title).to eq("Ubicloud - Create PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create PostgreSQL Database")
         name = "new-pg-db"
         fill_in "Name", with: name
         choose option: Location::HETZNER_FSN1_UBID
@@ -170,7 +170,7 @@ RSpec.describe Clover, "postgres" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
         expect(PostgresResource.count).to eq(1)
         expect(PostgresResource.first.project_id).to eq(project.id)
@@ -180,7 +180,7 @@ RSpec.describe Clover, "postgres" do
       it "handles errors when creating new PostgreSQL database" do
         visit "#{project.path}/postgres/create?flavor=#{PostgresResource::Flavor::STANDARD}"
 
-        expect(page.title).to eq("Ubicloud - Create PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create PostgreSQL Database")
         name = "new-pg-db"
         fill_in "Name", with: name
         choose option: Location::HETZNER_FSN1_UBID
@@ -189,7 +189,7 @@ RSpec.describe Clover, "postgres" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - Create PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create PostgreSQL Database")
         expect(page).to have_flash_error("Validation failed for following fields: storage_size")
         expect(page).to have_content("Invalid storage size. Available options: 1024, 2048, 4096")
         expect(PostgresResource.count).to eq(0)
@@ -197,7 +197,7 @@ RSpec.describe Clover, "postgres" do
 
       it "cannot create new PostgreSQL database with invalid location" do
         visit "#{project.path}/postgres/create?flavor=#{PostgresResource::Flavor::STANDARD}"
-        expect(page.title).to eq("Ubicloud - Create PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create PostgreSQL Database")
         name = "new-pg-db"
         fill_in "Name", with: name
         choose option: Location::HETZNER_FSN1_UBID
@@ -212,7 +212,7 @@ RSpec.describe Clover, "postgres" do
         Location[loc_id].destroy
 
         click_button "Create"
-        expect(page.title).to eq("Ubicloud - Create PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create PostgreSQL Database")
         expect(page).to have_flash_error("Validation failed for following fields: location")
       end
 
@@ -222,7 +222,7 @@ RSpec.describe Clover, "postgres" do
         expect(Util).to receive(:send_email)
         visit "#{project.path}/postgres/create?flavor=#{PostgresResource::Flavor::PARADEDB}"
 
-        expect(page.title).to eq("Ubicloud - Create ParadeDB PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create ParadeDB PostgreSQL Database")
         name = "new-pg-db"
         fill_in "Name", with: name
         choose option: Location::HETZNER_FSN1_UBID
@@ -232,7 +232,7 @@ RSpec.describe Clover, "postgres" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
         expect(PostgresResource.count).to eq(1)
         expect(PostgresResource.first.project_id).to eq(project.id)
@@ -242,7 +242,7 @@ RSpec.describe Clover, "postgres" do
         project.set_ff_postgres_lantern(true)
         visit "#{project.path}/postgres/create?flavor=#{PostgresResource::Flavor::LANTERN}"
 
-        expect(page.title).to eq("Ubicloud - Create Lantern PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create Lantern PostgreSQL Database")
         name = "new-pg-db"
         fill_in "Name", with: name
         choose option: Location::HETZNER_FSN1_UBID
@@ -251,7 +251,7 @@ RSpec.describe Clover, "postgres" do
         check "Accept Terms of Service and Privacy Policy"
 
         click_button "Create"
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
         expect(PostgresResource.count).to eq(1)
         expect(PostgresResource.first.project_id).to eq(project.id)
@@ -261,7 +261,7 @@ RSpec.describe Clover, "postgres" do
         project.set_ff_postgres_paradedb(true)
         visit "#{project.path}/postgres/create?flavor=#{PostgresResource::Flavor::PARADEDB}"
 
-        expect(page.title).to eq("Ubicloud - Create ParadeDB PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create ParadeDB PostgreSQL Database")
         name = "new-pg-db"
         fill_in "Name", with: name
         choose option: Location::HETZNER_FSN1_UBID
@@ -270,7 +270,7 @@ RSpec.describe Clover, "postgres" do
         check "Accept Terms of Service and Privacy Policy"
 
         click_button "Create"
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
         expect(PostgresResource.count).to eq(1)
         expect(PostgresResource.first.project_id).to eq(project.id)
@@ -282,7 +282,7 @@ RSpec.describe Clover, "postgres" do
 
         visit "#{project.path}/postgres/create?flavor=#{PostgresResource::Flavor::PARADEDB}"
 
-        expect(page.title).to eq("Ubicloud - Create ParadeDB PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create ParadeDB PostgreSQL Database")
         expect(page).to have_no_content private_location.name
       end
 
@@ -292,14 +292,14 @@ RSpec.describe Clover, "postgres" do
         Capybara.current_session.driver.header "Referer", url
         visit "#{project.path}/postgres/create?flavor=invalid"
 
-        expect(page.title).to eq("Ubicloud - Create PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create PostgreSQL Database")
         expect(find("input[name=flavor]", visible: false)[:value]).to eq "standard"
       end
 
       it "can not create PostgreSQL database with same name" do
         visit "#{project.path}/postgres/create"
 
-        expect(page.title).to eq("Ubicloud - Create PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create PostgreSQL Database")
 
         fill_in "Name", with: pg.name
         choose option: Location::HETZNER_FSN1_UBID
@@ -308,14 +308,14 @@ RSpec.describe Clover, "postgres" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - Create PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create PostgreSQL Database")
         expect(page).to have_flash_error("project_id and location_id and name is already taken")
       end
 
       it "can not select invisible location" do
         visit "#{project.path}/postgres/create"
 
-        expect(page.title).to eq("Ubicloud - Create PostgreSQL Database")
+        expect(page.title).to eq("LayerRail - Create PostgreSQL Database")
 
         expect { choose option: "github-runners" }.to raise_error Capybara::ElementNotFound
       end
@@ -324,7 +324,7 @@ RSpec.describe Clover, "postgres" do
         project_wo_permissions
         visit "#{project_wo_permissions.path}/postgres/create"
 
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
         expect(page.status_code).to eq(403)
         expect(page).to have_content "Forbidden"
       end
@@ -332,7 +332,7 @@ RSpec.describe Clover, "postgres" do
       it "cannot create when location not exist" do
         visit "#{project.path}/location/not-exist-location/postgres/create"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content "ResourceNotFound"
       end
@@ -343,29 +343,29 @@ RSpec.describe Clover, "postgres" do
         pg
         visit "#{project.path}/postgres"
 
-        expect(page.title).to eq("Ubicloud - PostgreSQL Databases")
+        expect(page.title).to eq("LayerRail - PostgreSQL Databases")
         expect(page).to have_content pg.name
 
         click_link pg.name, href: "#{project.path}#{pg.path}/overview"
 
-        expect(page.title).to eq("Ubicloud - #{pg.name}")
+        expect(page.title).to eq("LayerRail - #{pg.name}")
         expect(page).to have_content pg.name
       end
 
       it "shows up on customer private subnet vms page" do
         visit "#{project.path}/location/#{pg.display_location}/private-subnet/#{pg.private_subnet.ubid}/vms"
-        expect(page.title).to eq "Ubicloud - #{pg.ubid}-subnet"
+        expect(page.title).to eq "LayerRail - #{pg.ubid}-subnet"
         expect(page.all("#private-subnet-nics h3").map(&:text)).to eq ["Attached VMs", "Other Attached Resources"]
         expect(page.all("#private-subnet-nics td").map(&:text)).to eq ["No VM attached", "PostgreSQL Database", pg.name, pg.ubid]
         click_link pg.name
-        expect(page.title).to eq "Ubicloud - #{pg.name}"
+        expect(page.title).to eq "LayerRail - #{pg.name}"
       end
 
       it "can show PostgreSQL database details even when no subpage is specified" do
         pg
         visit "#{project.path}#{pg.path}"
 
-        expect(page.title).to eq("Ubicloud - #{pg.name}")
+        expect(page.title).to eq("LayerRail - #{pg.name}")
         expect(page).to have_content pg.name
       end
 
@@ -451,7 +451,7 @@ RSpec.describe Clover, "postgres" do
         pg.update(parent_id: pg_wo_permission.id)
         visit "#{project.path}#{pg.path}/resize"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
       end
 
@@ -503,7 +503,7 @@ RSpec.describe Clover, "postgres" do
       it "raises forbidden when does not have permissions" do
         visit "#{project_wo_permissions.path}#{pg_wo_permission.path}/overview"
 
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
         expect(page.status_code).to eq(403)
         expect(page).to have_content "Forbidden"
       end
@@ -511,7 +511,7 @@ RSpec.describe Clover, "postgres" do
       it "raises not found when PostgreSQL database not exists" do
         visit "#{project.path}/location/eu-central-h1/postgres/08s56d4kaj94xsmrnf5v5m3mav/overview"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content "ResourceNotFound"
       end
@@ -553,13 +553,13 @@ RSpec.describe Clover, "postgres" do
         expect(page).to have_content "Fork PostgreSQL database"
         fill_in "#{pg.name}-fork", with: "restored-server"
         click_button "Fork"
-        expect(page.title).to eq("Ubicloud - pg-with-permission")
+        expect(page.title).to eq("LayerRail - pg-with-permission")
         expect(page).to have_flash_error("empty string provided for parameter restore_target")
 
         fill_in "Target Time (UTC)", with: restore_target.strftime("%Y-%m-%d %H:%M"), visible: false
         click_button "Fork"
         expect(page.status_code).to eq(200)
-        expect(page.title).to eq("Ubicloud - restored-server")
+        expect(page.title).to eq("LayerRail - restored-server")
         expect(page).to have_flash_notice("'restored-server' will be ready in a few minutes")
       end
 
@@ -580,7 +580,7 @@ RSpec.describe Clover, "postgres" do
         find(".pg-read-replica-create-btn").click
 
         expect(page.status_code).to eq(200)
-        expect(page.title).to eq("Ubicloud - my-read-replica")
+        expect(page.title).to eq("LayerRail - my-read-replica")
 
         visit "#{project.path}#{pg.path}/read-replica"
         expect(page).to have_content("my-read-replica")
@@ -608,7 +608,7 @@ RSpec.describe Clover, "postgres" do
         find(".pg-read-replica-create-btn").click
 
         expect(page.status_code).to eq(200)
-        expect(page.title).to eq("Ubicloud - my-read-replica")
+        expect(page.title).to eq("LayerRail - my-read-replica")
 
         visit "#{project.path}#{pg.read_replicas.first.path}/settings"
         find(".promote-btn").click
@@ -625,7 +625,7 @@ RSpec.describe Clover, "postgres" do
         find(".pg-read-replica-create-btn").click
 
         expect(page.status_code).to eq(200)
-        expect(page.title).to eq("Ubicloud - my-read-replica")
+        expect(page.title).to eq("LayerRail - my-read-replica")
 
         pg_read_replica = PostgresResource[name: "my-read-replica"]
         visit "#{project.path}#{pg_read_replica.path}/settings"
@@ -724,7 +724,7 @@ RSpec.describe Clover, "postgres" do
 
       it "can reset superuser password of PostgreSQL database" do
         visit "#{project.path}#{pg.path}/settings"
-        expect(page.title).to eq "Ubicloud - pg-with-permission"
+        expect(page.title).to eq "LayerRail - pg-with-permission"
         expect(page).to have_content "Reset superuser password"
         password = pg.superuser_password
 
@@ -800,7 +800,7 @@ RSpec.describe Clover, "postgres" do
         AccessControlEntry.create(project_id: project_wo_permissions.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Postgres:delete"])
 
         visit "#{project_wo_permissions.path}#{pg_wo_permission.path}/settings"
-        expect(page.title).to eq "Ubicloud - pg-without-permission"
+        expect(page.title).to eq "LayerRail - pg-without-permission"
 
         expect { find ".restart-btn" }.to raise_error Capybara::ElementNotFound
       end
@@ -827,7 +827,7 @@ RSpec.describe Clover, "postgres" do
         expect(page).to have_no_content "5432"
         expect(page).to have_content "You can manage firewall rules using the firewall for this PostgreSQL database"
         click_link "manage firewall rules using the firewall for this PostgreSQL database"
-        expect(page.title).to eq "Ubicloud - #{pg.ubid}-firewall"
+        expect(page.title).to eq "LayerRail - #{pg.ubid}-firewall"
       end
 
       it "shows link to private subnet networking page if customer firewall was destroyed" do
@@ -841,7 +841,7 @@ RSpec.describe Clover, "postgres" do
         expect(page).to have_no_content "5432"
         expect(page).to have_content "The firewall related to this PostgreSQL database was deleted or detached from the related private subnet"
         click_link "private subnet"
-        expect(page.title).to eq "Ubicloud - #{pg.ubid}-subnet"
+        expect(page.title).to eq "LayerRail - #{pg.ubid}-subnet"
       end
     end
 
@@ -855,7 +855,7 @@ RSpec.describe Clover, "postgres" do
         fill_in "url", with: "https://example.com"
         find(".metric-destination-password").set("password")
         find(".metric-destination-create-button").click
-        expect(page.title).to eq "Ubicloud - pg-with-permission"
+        expect(page.title).to eq "LayerRail - pg-with-permission"
         expect(page).to have_flash_notice "Metric destination is created"
         expect(page).to have_content "https://example.com"
         expect(pg.reload.metric_destinations.count).to eq(1)
@@ -1185,7 +1185,7 @@ RSpec.describe Clover, "postgres" do
         AccessControlEntry.create(project_id: project_wo_permissions.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Postgres:edit"])
 
         visit "#{project_wo_permissions.path}#{pg_wo_permission.path}/settings"
-        expect(page.title).to eq "Ubicloud - pg-without-permission"
+        expect(page.title).to eq "LayerRail - pg-without-permission"
 
         expect { find ".delete-btn" }.to raise_error Capybara::ElementNotFound
       end
@@ -1229,7 +1229,7 @@ RSpec.describe Clover, "postgres" do
         AccessControlEntry.create(project_id: project_wo_permissions.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Postgres:view"])
 
         visit "#{project_wo_permissions.path}#{pg_wo_permission.path}/config"
-        expect(page.title).to eq "Ubicloud - pg-without-permission"
+        expect(page.title).to eq "LayerRail - pg-without-permission"
 
         expect { find ".delete-config-btn" }.to raise_error Capybara::ElementNotFound
         expect { find ".save-config-btn" }.to raise_error Capybara::ElementNotFound
@@ -1379,7 +1379,7 @@ RSpec.describe Clover, "postgres" do
       it "shows correct error page if upgrade validation fails" do
         pg.strand.update(label: "wait")
         visit "#{project.path}#{pg.path}/upgrade"
-        expect(page.title).to eq "Ubicloud - pg-with-permission"
+        expect(page.title).to eq "LayerRail - pg-with-permission"
 
         pg.update(target_version: "18")
         click_button "Start Upgrade"

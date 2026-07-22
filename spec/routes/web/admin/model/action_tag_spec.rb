@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "ActionTag" do
   it "displays the ActionTag instance page correctly" do
     click_link "ActionTag"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - ActionTag"
+    expect(page.title).to eq "LayerRail Admin - ActionTag"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - ActionTag #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - ActionTag #{@instance.ubid}"
   end
 end

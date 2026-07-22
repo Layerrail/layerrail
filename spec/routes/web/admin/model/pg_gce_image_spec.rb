@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "PgGceImage" do
   it "displays the PgGceImage instance page correctly" do
     click_link "PgGceImage"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - PgGceImage"
+    expect(page.title).to eq "LayerRail Admin - PgGceImage"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - PgGceImage #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - PgGceImage #{@instance.ubid}"
   end
 end

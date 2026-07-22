@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "NicAwsResource" do
   it "displays the NicAwsResource instance page correctly" do
     click_link "NicAwsResource"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - NicAwsResource"
+    expect(page.title).to eq "LayerRail Admin - NicAwsResource"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - NicAwsResource #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - NicAwsResource #{@instance.ubid}"
   end
 end

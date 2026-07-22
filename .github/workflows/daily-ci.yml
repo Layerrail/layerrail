@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
     name: Daily CI
-    runs-on: ubicloud-standard-8
+    runs-on: layerrail-standard-8
     timeout-minutes: 35
 
     steps:

@@ -3,12 +3,12 @@
 Gem::Specification.new do |spec|
   spec.name = "ubi-csi"
   spec.version = "0.10.0"
-  spec.authors = ["Ubicloud"]
-  spec.email = ["support@ubicloud.com"]
+  spec.authors = ["LayerRail"]
+  spec.email = ["support@layerrail.com"]
 
   spec.summary = "Ubicloud CSI Driver"
-  spec.description = "Container Storage Interface driver for Ubicloud"
-  spec.homepage = "https://github.com/ubicloud/ubicloud"
+  spec.description = "Container Storage Interface driver for LayerRail"
+  spec.homepage = "https://github.com/Layerrail/layerrail"
   spec.license = "MIT"
   spec.required_ruby_version = "~> 4.0"
 

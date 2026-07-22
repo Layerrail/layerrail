@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "InferenceRouterTarget" do
   it "displays the InferenceRouterTarget instance page correctly" do
     click_link "InferenceRouterTarget"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - InferenceRouterTarget"
+    expect(page.title).to eq "LayerRail Admin - InferenceRouterTarget"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - InferenceRouterTarget #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - InferenceRouterTarget #{@instance.ubid}"
   end
 end

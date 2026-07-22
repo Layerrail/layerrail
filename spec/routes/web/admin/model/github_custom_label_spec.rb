@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "GithubCustomLabel" do
   it "displays the GithubCustomLabel instance page correctly" do
     click_link "GithubCustomLabel"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - GithubCustomLabel"
+    expect(page.title).to eq "LayerRail Admin - GithubCustomLabel"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - GithubCustomLabel #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - GithubCustomLabel #{@instance.ubid}"
   end
 end

@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "AssignedVmAddress" do
   it "displays the AssignedVmAddress instance page correctly" do
     click_link "AssignedVmAddress"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - AssignedVmAddress"
+    expect(page.title).to eq "LayerRail Admin - AssignedVmAddress"
 
     click_link @instance.admin_label.to_s
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - AssignedVmAddress #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - AssignedVmAddress #{@instance.ubid}"
   end
 end

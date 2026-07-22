@@ -8,7 +8,7 @@ RSpec.describe Clover, "github" do
     GithubInstallation.create(installation_id: 123, name: "test-user", type: "User", project_id: prj.id)
   end
 
-  let(:runner) { GithubRunner.create(installation_id: installation.id, label: "ubicloud", repository_name: "my-repo", runner_id: 123, vm_id: "46683a25-acb1-4371-afe9-d39f303e44b4") }
+  let(:runner) { GithubRunner.create(installation_id: installation.id, label: "layerrail", repository_name: "my-repo", runner_id: 123, vm_id: "46683a25-acb1-4371-afe9-d39f303e44b4") }
 
   before do
     allow(Config).to receive(:github_app_webhook_secret).and_return("secret")
@@ -105,11 +105,11 @@ RSpec.describe Clover, "github" do
     end
 
     it "uses custom label if label is an existing custom label" do
-      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "ubicloud-standard-4")
+      GithubCustomLabel.create(installation_id: installation.id, name: "custom-label-1", alias_for: "layerrail-standard-4")
       send_webhook("workflow_job", workflow_job_payload(action: "queued", workflow_job: workflow_job_object(label: "custom-label-1")))
 
       expect(page.status_code).to eq(200)
-      created_runner = GithubRunner.first(installation_id: installation.id, repository_name: "my-repo", label: "ubicloud-standard-4", actual_label: "custom-label-1")
+      created_runner = GithubRunner.first(installation_id: installation.id, repository_name: "my-repo", label: "layerrail-standard-4", actual_label: "custom-label-1")
       expect(created_runner).not_to be_nil
       expect(page.body).to eq({message: "GithubRunner[#{created_runner.ubid}] created"}.to_json)
     end
@@ -118,7 +118,7 @@ RSpec.describe Clover, "github" do
       send_webhook("workflow_job", workflow_job_payload(action: "queued"))
 
       expect(page.status_code).to eq(200)
-      created_runner = GithubRunner.first(installation_id: installation.id, repository_name: "my-repo", label: "ubicloud", actual_label: "ubicloud")
+      created_runner = GithubRunner.first(installation_id: installation.id, repository_name: "my-repo", label: "layerrail", actual_label: "layerrail")
       expect(created_runner).not_to be_nil
       expect(page.body).to eq({message: "GithubRunner[#{created_runner.ubid}] created"}.to_json)
     end
@@ -166,7 +166,7 @@ RSpec.describe Clover, "github" do
     end
   end
 
-  def workflow_job_object(runner_id: 123, label: "ubicloud", completed_at: "2024-04-24T16:13:40Z")
+  def workflow_job_object(runner_id: 123, label: "layerrail", completed_at: "2024-04-24T16:13:40Z")
     {
       id: 232323,
       runner_id:,

@@ -1,6 +1,6 @@
 # Clover
 
-Clover is the codename for Ubicloud's software. It includes a control
+Clover is the codename for LayerRail's software. It includes a control
 plane, a data plane, and a web console for managing virtual machines
 and other applications.
 
@@ -550,7 +550,7 @@ We show cloudifying a host from Hetzner, but the principles should work everywhe
     end
     ```
 
-When the `strand` responsible for the VmHost goes to `wait` state, this means the host is ready to be used for Ubicloud services. Now you can use the web console to create resources, such as VMs.
+When the `strand` responsible for the VmHost goes to `wait` state, this means the host is ready to be used for LayerRail services. Now you can use the web console to create resources, such as VMs.
 
 ### Conclusion
 

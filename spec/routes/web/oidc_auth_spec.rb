@@ -127,7 +127,7 @@ RSpec.describe Clover, "OIDC auth" do
     stub_userinfo_endpoint
     initiate_oidc_login
 
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("Login via TestOIDC is not allowed for the example.com domain.")
     account = Account.first
     expect(account.email).to eq("user@example.com")
@@ -135,7 +135,7 @@ RSpec.describe Clover, "OIDC auth" do
     expect(AccountIdentity.select_map([:account_id, :provider])).to eq([[account.id, oidc_provider.ubid]])
 
     visit "/"
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_current_path "/login", ignore_query: true
   end
 
@@ -144,7 +144,7 @@ RSpec.describe Clover, "OIDC auth" do
     stub_userinfo_endpoint
     initiate_oidc_login
 
-    expect(page.title).to eq("Ubicloud - Default Dashboard")
+    expect(page.title).to eq("LayerRail - Default Dashboard")
     expect(page).to have_flash_notice("You have been logged in")
     account = Account.first
     expect(account.email).to eq("user@example.com")
@@ -154,13 +154,13 @@ RSpec.describe Clover, "OIDC auth" do
   it "handles array aud in id_token (aud.is_a?(String) false branch)" do
     stub_token_endpoint(id_token: {aud: ["client_id_test"]})
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Default Dashboard")
+    expect(page.title).to eq("LayerRail - Default Dashboard")
   end
 
   it "handles email_verified present in id_token" do
     stub_token_endpoint(id_token: {email_verified: true})
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Default Dashboard")
+    expect(page.title).to eq("LayerRail - Default Dashboard")
   end
 
   it "handles non-hash JWT payload (token.is_a?(Hash) false branch)" do
@@ -168,7 +168,7 @@ RSpec.describe Clover, "OIDC auth" do
     stub_userinfo_endpoint(body: {})
 
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
@@ -178,7 +178,7 @@ RSpec.describe Clover, "OIDC auth" do
     it "extracts groups from id_token without calling userinfo endpoint" do
       stub_token_endpoint(id_token: {groups: %w[eng ops]})
       initiate_oidc_login
-      expect(page.title).to eq("Ubicloud - Default Dashboard")
+      expect(page.title).to eq("LayerRail - Default Dashboard")
       visit "/oidc-groups"
       expect(page.body).to eq "org-eng,org-ops"
     end
@@ -187,7 +187,7 @@ RSpec.describe Clover, "OIDC auth" do
       stub_token_endpoint  # generates id_token with sub+email but no groups
       stub_userinfo_endpoint(body: {"sub" => "oidc_sub_123", "email" => "user@example.com", "groups" => %w[foo bar]})
       initiate_oidc_login
-      expect(page.title).to eq("Ubicloud - Default Dashboard")
+      expect(page.title).to eq("LayerRail - Default Dashboard")
       visit "/oidc-groups"
       expect(page.body).to eq "org-foo,org-bar"
     end
@@ -196,7 +196,7 @@ RSpec.describe Clover, "OIDC auth" do
       stub_token_endpoint(id_token: {email_verified: true})
       stub_userinfo_endpoint(body: {"groups" => %w[foo bar]})
       initiate_oidc_login
-      expect(page.title).to eq("Ubicloud - Default Dashboard")
+      expect(page.title).to eq("LayerRail - Default Dashboard")
       visit "/oidc-groups"
       expect(page.body).to eq "org-foo,org-bar"
     end
@@ -205,84 +205,84 @@ RSpec.describe Clover, "OIDC auth" do
   it "handles error param in callback (params['error'] branch, no error_reason)" do
     fake_oidc.callback_mode = :error
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
   it "handles error_reason param with error_description in callback (params['error_reason'] branch)" do
     fake_oidc.callback_mode = :error_reason
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
   it "handles error with error_uri (CallbackError message with all three fields)" do
     fake_oidc.callback_mode = :error_with_uri
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
   it "handles nil session state when callback visited without request_phase" do
     # No request_phase → session has no omniauth.state → expected_state.nil? true
     visit "/auth/#{oidc_provider.ubid}/callback?code=testcode&state=somestate"
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
   it "handles state mismatch in callback (expected_state not nil, params state wrong)" do
     fake_oidc.callback_mode = :wrong_state
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
   it "handles missing code in callback" do
     fake_oidc.callback_mode = :no_code
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
   it "handles non-bearer token type from token endpoint" do
     stub_token_endpoint(token_type: "mac")
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
   it "handles nil token_type in token response (&. nil branch)" do
     stub_token_endpoint(token_type: nil)
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
   it "handles absent id_token in token response" do
     stub_token_endpoint(id_token: nil)
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
   it "handles invalid issuer in id_token (iss mismatch, short-circuits || chain)" do
     stub_token_endpoint(id_token: {iss: "http://evil.example.com"})
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
   it "handles invalid audience in id_token (iss ok, aud mismatch)" do
     stub_token_endpoint(id_token: {aud: "wrong_client_id"})
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
   it "handles invalid nonce in id_token (iss and aud ok, nonce mismatch)" do
     stub_token_endpoint(id_token: {nonce: "wrong_nonce"})
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
@@ -290,42 +290,42 @@ RSpec.describe Clover, "OIDC auth" do
     stub_token_endpoint(id_token: {email: nil})
     stub_userinfo_endpoint
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Default Dashboard")
+    expect(page.title).to eq("LayerRail - Default Dashboard")
   end
 
   it "handles id_token without email, and email not in userinfo" do
     stub_token_endpoint(id_token: {email: nil})
     stub_userinfo_endpoint(body: {})
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("Social login is only allowed if social login provider provides email")
   end
 
   it "handles Excon::Error from token endpoint" do
     stub_request(:post, token_url).to_raise(Excon::Error.new("Connection failed"))
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
   it "handles JWT::DecodeError from malformed id_token" do
     stub_token_endpoint(id_token: "not_a_valid_jwt")
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
   it "handles Errno::ETIMEDOUT from token endpoint" do
     stub_request(:post, token_url).to_raise(Errno::ETIMEDOUT.new("Connection timed out"))
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
   it "handles SocketError from token endpoint" do
     stub_request(:post, token_url).to_raise(SocketError.new("Failed to connect"))
     initiate_oidc_login
-    expect(page.title).to eq("Ubicloud - Login")
+    expect(page.title).to eq("LayerRail - Login")
     expect(page).to have_flash_error("There was an error logging in with the external provider")
   end
 
@@ -345,7 +345,7 @@ RSpec.describe Clover, "OIDC auth" do
     )
 
     expect(Account.count).to eq 1
-    expect(page.title).to eq("Ubicloud - Default Dashboard")
+    expect(page.title).to eq("LayerRail - Default Dashboard")
   end
 
   describe OmniAuth::Strategies::Oidc::CallbackError do

@@ -15,7 +15,7 @@ RSpec.describe Clover, "web shell" do
   end
 
   it "supports running help cli commands" do
-    expect(page.title).to eq "Ubicloud - Web Shell"
+    expect(page.title).to eq "LayerRail - Web Shell"
     fill_in "cli", with: "help -u pg list"
     click_button "Run"
     expect(page.find_by_id("cli-executed").text).to eq "help -u pg list"
@@ -23,7 +23,7 @@ RSpec.describe Clover, "web shell" do
   end
 
   it "ignores ubi prefix for command" do
-    expect(page.title).to eq "Ubicloud - Web Shell"
+    expect(page.title).to eq "LayerRail - Web Shell"
     fill_in "cli", with: " ubi help -u pg list"
     click_button "Run"
     expect(page.find_by_id("cli-executed").text).to eq "help -u pg list"
@@ -45,7 +45,7 @@ RSpec.describe Clover, "web shell" do
     click_button "Run"
     ps = PrivateSubnet.first
     click_link ps.ubid
-    expect(page.title).to eq "Ubicloud - foo"
+    expect(page.title).to eq "LayerRail - foo"
     expect(page).to have_current_path "#{project.path}#{ps.path}/overview", ignore_query: true
   end
 
@@ -148,10 +148,10 @@ RSpec.describe Clover, "web shell" do
   end
 
   it "handles errors in cli" do
-    expect(page.title).to eq "Ubicloud - Web Shell"
+    expect(page.title).to eq "LayerRail - Web Shell"
     fill_in "cli", with: "ps 'list"
     click_button "Run"
-    expect(page.title).to eq "Ubicloud - Web Shell"
+    expect(page.title).to eq "LayerRail - Web Shell"
     expect(page).to have_flash_error "Unable to parse CLI command: Unmatched quote at 3: ...'"
     expect(page.find_by_id("cli").value).to eq "ps 'list"
     expect { page.find_by_id("cli-executed") }.to raise_error(Capybara::ElementNotFound)

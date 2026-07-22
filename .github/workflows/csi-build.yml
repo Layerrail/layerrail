@@ -22,14 +22,14 @@ on:
       - '.github/workflows/csi-build.yml'
 
 env:
-  IMAGE_NAME: ubicloud/ubicsi
+  IMAGE_NAME: layerrail/layerrail-csi
   PUSH_IMAGE: ${{ inputs.push_image || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 jobs:
   version-check:
     name: Verify CSI version bump
     if: github.event_name == 'pull_request'
-    runs-on: ubicloud-standard-2
+    runs-on: layerrail-standard-2
     steps:
       - name: Check out code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -62,7 +62,7 @@ jobs:
 
   docker:
     name: Docker
-    runs-on: ubicloud-standard-8
+    runs-on: layerrail-standard-8
     steps:
       - name: Check out code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2

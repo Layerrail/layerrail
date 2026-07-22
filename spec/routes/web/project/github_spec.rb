@@ -22,7 +22,7 @@ RSpec.describe Clover, "github" do
     within "#desktop-menu" do
       expect { click_link "GitHub Runners" }.to raise_error Capybara::ElementNotFound
     end
-    expect(page.title).to eq("Ubicloud - #{project.name}")
+    expect(page.title).to eq("LayerRail - #{project.name}")
 
     visit "#{project.path}/github"
     expect(page.status_code).to eq(501)
@@ -33,7 +33,7 @@ RSpec.describe Clover, "github" do
     project_wo_permissions
     visit "#{project_wo_permissions.path}/github"
 
-    expect(page.title).to eq("Ubicloud - Forbidden")
+    expect(page.title).to eq("LayerRail - Forbidden")
     expect(page.status_code).to eq(403)
     expect(page).to have_content "Forbidden"
   end
@@ -45,7 +45,7 @@ RSpec.describe Clover, "github" do
 
     expect(page.status_code).to eq(200)
     expect(page).to have_current_path("#{project.path}/github/#{installation.ubid}/runner")
-    expect(page.title).to eq("Ubicloud - Active Runners")
+    expect(page.title).to eq("LayerRail - Active Runners")
   end
 
   describe "setting" do
@@ -64,7 +64,7 @@ RSpec.describe Clover, "github" do
       visit "#{project.path}/github/create"
 
       expect(page.status_code).to eq(400)
-      expect(page.title).to eq("Ubicloud - GitHub Runners Integration")
+      expect(page.title).to eq("LayerRail - GitHub Runners Integration")
       expect(page).to have_flash_error("Project doesn't have valid billing information")
     end
 
@@ -81,7 +81,7 @@ RSpec.describe Clover, "github" do
       click_button "New Billing Information"
 
       expect(page.status_code).to eq(200)
-      expect(page.title).to eq("Ubicloud - Project Billing")
+      expect(page.title).to eq("LayerRail - Project Billing")
     end
 
     it "can switch between installations" do
@@ -94,13 +94,13 @@ RSpec.describe Clover, "github" do
 
       expect(page.status_code).to eq(200)
       expect(page).to have_current_path("#{project.path}/github/#{ins2.ubid}/runner", ignore_query: true)
-      expect(page.title).to eq("Ubicloud - Active Runners")
+      expect(page.title).to eq("LayerRail - Active Runners")
 
       click_link "test-user"
 
       expect(page.status_code).to eq(200)
       expect(page).to have_current_path("#{project.path}/github/#{ins1.ubid}/runner", ignore_query: true)
-      expect(page.title).to eq("Ubicloud - Active Runners")
+      expect(page.title).to eq("LayerRail - Active Runners")
     end
 
     it "toggles premium runners for installation" do
@@ -242,8 +242,8 @@ RSpec.describe Clover, "github" do
     it "can list active runners" do
       now = Time.now
       expect(Time).to receive(:now).and_return(now).at_least(:once)
-      runner_deleted = Prog::Github::GithubRunnerNexus.assemble(installation, label: "ubicloud", repository_name: "my-repo").update(label: "wait_vm_destroy")
-      runner_with_job = Prog::Github::GithubRunnerNexus.assemble(installation, label: "ubicloud-standard-4-ubuntu-2404", repository_name: "my-repo").subject.update(
+      runner_deleted = Prog::Github::GithubRunnerNexus.assemble(installation, label: "layerrail", repository_name: "my-repo").update(label: "wait_vm_destroy")
+      runner_with_job = Prog::Github::GithubRunnerNexus.assemble(installation, label: "layerrail-standard-4-ubuntu-2404", repository_name: "my-repo").subject.update(
         created_at: now + 20,
         ready_at: now - 50,
         runner_id: 2,
@@ -257,13 +257,13 @@ RSpec.describe Clover, "github" do
           "started_at" => (now - 40).iso8601,
         },
       )
-      runner_waiting_job = Prog::Github::GithubRunnerNexus.assemble(installation, label: "ubicloud", repository_name: "my-repo").subject.update(ready_at: now - 400, created_at: now)
-      runner_not_created = Prog::Github::GithubRunnerNexus.assemble(installation, label: "ubicloud-arm", repository_name: "my-repo").subject.update(
+      runner_waiting_job = Prog::Github::GithubRunnerNexus.assemble(installation, label: "layerrail", repository_name: "my-repo").subject.update(ready_at: now - 400, created_at: now)
+      runner_not_created = Prog::Github::GithubRunnerNexus.assemble(installation, label: "layerrail-arm", repository_name: "my-repo").subject.update(
         created_at: now - 38,
         vm_id: Prog::Vm::Nexus.assemble("dummy-public key", project.id, name: "runner-vm-2", size: "standard-4", arch: "arm64", location_id: Location::GITHUB_RUNNERS_ID).id,
       )
-      runner_concurrency_limit = Prog::Github::GithubRunnerNexus.assemble(installation, label: "ubicloud-standard-2", repository_name: "my-repo").update(label: "wait_concurrency_limit").subject.update(created_at: now - 3.68 * 60 * 60)
-      runner_custom_label_quota = Prog::Github::GithubRunnerNexus.assemble(installation, label: "ubicloud-standard-4", repository_name: "my-repo").update(label: "apply_custom_label_quota").subject.update(created_at: now - 120)
+      runner_concurrency_limit = Prog::Github::GithubRunnerNexus.assemble(installation, label: "layerrail-standard-2", repository_name: "my-repo").update(label: "wait_concurrency_limit").subject.update(created_at: now - 3.68 * 60 * 60)
+      runner_custom_label_quota = Prog::Github::GithubRunnerNexus.assemble(installation, label: "layerrail-standard-4", repository_name: "my-repo").update(label: "apply_custom_label_quota").subject.update(created_at: now - 120)
 
       [
         [now, "standard-2", 15],
@@ -282,7 +282,7 @@ RSpec.describe Clover, "github" do
       visit "#{project.path}/github/#{installation.ubid}/runner"
 
       expect(page.status_code).to eq(200)
-      expect(page.title).to eq("Ubicloud - Active Runners")
+      expect(page.title).to eq("LayerRail - Active Runners")
       expect(page).to have_no_content runner_deleted.ubid
       displayed_runner_rows = page.all("table.min-w-full tbody tr").map { |row| row.all("td").map(&:text) }
       expect(displayed_runner_rows).to eq [
@@ -301,7 +301,7 @@ RSpec.describe Clover, "github" do
     end
 
     it "can terminate runner" do
-      runner = Prog::Github::GithubRunnerNexus.assemble(installation, label: "ubicloud", repository_name: "my-repo").subject
+      runner = Prog::Github::GithubRunnerNexus.assemble(installation, label: "layerrail", repository_name: "my-repo").subject
 
       visit "#{project.path}/github/#{installation.ubid}/runner"
 
@@ -313,7 +313,7 @@ RSpec.describe Clover, "github" do
     end
 
     it "raises not found when runner not exists" do
-      runner = Prog::Github::GithubRunnerNexus.assemble(installation, label: "ubicloud", repository_name: "my-repo").subject
+      runner = Prog::Github::GithubRunnerNexus.assemble(installation, label: "layerrail", repository_name: "my-repo").subject
       visit "#{project.path}/github/#{installation.ubid}/runner"
       runner_ubid = runner.ubid
       runner.destroy
@@ -331,13 +331,13 @@ RSpec.describe Clover, "github" do
 
       find("a", text: /^You’re eligible/).click
       expect(page.status_code).to eq(200)
-      expect(page.title).to eq("Ubicloud - GitHub Runner Settings")
+      expect(page.title).to eq("LayerRail - GitHub Runner Settings")
     end
 
     it "shows concurrency warning for limited access accounts" do
       installation.project.update(reputation: "limited")
       Array.new(3).each {
-        runner = GithubRunner.create(installation_id: installation.id, repository_name: repository.name, label: "ubicloud-standard-60")
+        runner = GithubRunner.create(installation_id: installation.id, repository_name: repository.name, label: "layerrail-standard-60")
         Strand.create_with_id(runner, prog: "Github::GithubRunnerNexus", label: "wait")
       }
       visit "#{project.path}/github/#{installation.ubid}/runner"
@@ -381,7 +381,7 @@ RSpec.describe Clover, "github" do
       find("#entry-#{entry.ubid} input[type=checkbox]").check
       click_button "Delete Selected Cache Entries"
 
-      expect(page.title).to eq "Ubicloud - Caches"
+      expect(page.title).to eq "LayerRail - Caches"
       expect(page).to have_flash_notice("1 cache entry deleted")
       expect(entry).not_to exist
     end
@@ -399,7 +399,7 @@ RSpec.describe Clover, "github" do
       find("#entry-#{entry2.ubid} input[type=checkbox]").check
       click_button "Delete Selected Cache Entries"
 
-      expect(page.title).to eq "Ubicloud - Caches"
+      expect(page.title).to eq "LayerRail - Caches"
       expect(page).to have_flash_notice("2 cache entries deleted")
       expect(entry1).not_to exist
       expect(entry2).not_to exist
@@ -413,7 +413,7 @@ RSpec.describe Clover, "github" do
       visit "#{project.path}/github/#{installation.ubid}/cache"
       click_button "Delete Selected Cache Entries"
       expect(page).to have_flash_notice("No cache entries selected for deletion")
-      expect(page.title).to eq "Ubicloud - Caches"
+      expect(page.title).to eq "LayerRail - Caches"
     end
 
     it "can delete all cache entries for a repository" do

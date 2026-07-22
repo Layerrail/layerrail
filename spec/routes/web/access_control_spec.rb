@@ -9,7 +9,7 @@ RSpec.describe Clover, "access control" do
   describe "unauthenticated" do
     it "cannot access without login" do
       visit "#{project.path}/user/access-control"
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
   end
 
@@ -31,7 +31,7 @@ RSpec.describe Clover, "access control" do
       AccessControlEntry.where(project_id:, action_id: Sequel::NOTNULL).destroy
       visit "#{project.path}/user/access-control"
 
-      expect(page.title).to eq("Ubicloud - Default - Access Control")
+      expect(page.title).to eq("LayerRail - Default - Access Control")
 
       expect(displayed_access_control_entries).to eq [
         "Tag: Admin", "All", "All",
@@ -186,7 +186,7 @@ RSpec.describe Clover, "access control" do
 
       AccessControlEntry.create(project_id: project.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Project:viewaccess"])
       page.refresh
-      expect(page.title).to eq "Ubicloud - Default - Access Control"
+      expect(page.title).to eq "LayerRail - Default - Access Control"
       expect(displayed_access_control_entries).to eq [
         "Account: foo", "Project:viewaccess", "All",
       ]
@@ -317,7 +317,7 @@ RSpec.describe Clover, "access control" do
       ace1 = AccessControlEntry.create(project_id: project.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Project:viewaccess"])
       ace2 = AccessControlEntry.create(project_id: project.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Project:editaccess"])
       page.refresh
-      expect(page.title).to eq "Ubicloud - Default - Access Control"
+      expect(page.title).to eq "LayerRail - Default - Access Control"
 
       within("#ace-template .subject") { select "Tname" }
       ace2.destroy
@@ -383,7 +383,7 @@ RSpec.describe Clover, "access control" do
       it "can view #{type} tags" do
         visit "#{project.path}/user/access-control"
         find("##{cap_type.downcase}-tags-link").click
-        expect(page.title).to eq "Ubicloud - Default - #{cap_type} Tags"
+        expect(page.title).to eq "LayerRail - Default - #{cap_type} Tags"
         tds = page.all("table#tag-list td").map(&:text)
 
         if type == "subject"
@@ -418,7 +418,7 @@ RSpec.describe Clover, "access control" do
 
         AccessControlEntry.create(project_id: project.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Project:viewaccess"])
         page.refresh
-        expect(page.title).to eq "Ubicloud - Default - #{cap_type} Tags"
+        expect(page.title).to eq "LayerRail - Default - #{cap_type} Tags"
         expect(page).to have_content("No managable #{type} tags to display")
 
         tag = model.create(project_id: project.id, name: "test-#{type}1")
@@ -453,7 +453,7 @@ RSpec.describe Clover, "access control" do
         ]
 
         click_link "Manage"
-        expect(page.title).to eq "Ubicloud - Default - #{tag.name}"
+        expect(page.title).to eq "LayerRail - Default - #{tag.name}"
       end
 
       it "can create #{type} tag" do
@@ -467,7 +467,7 @@ RSpec.describe Clover, "access control" do
         click_button "Create"
         expect(model[project_id: project.id, name:]).not_to be_nil
         expect(page).to have_flash_notice "#{cap_type} tag created successfully"
-        expect(page.title).to eq "Ubicloud - Default - #{cap_type} Tags"
+        expect(page.title).to eq "LayerRail - Default - #{cap_type} Tags"
         expect(page.html).to include name
       end
 
@@ -479,7 +479,7 @@ RSpec.describe Clover, "access control" do
 
         AccessControlEntry.create(project_id: project.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Project:viewaccess"])
         page.refresh
-        expect(page.title).to eq "Ubicloud - Default - #{cap_type} Tags"
+        expect(page.title).to eq "LayerRail - Default - #{cap_type} Tags"
         expect(page).to have_no_content("Create #{cap_type} Tag")
 
         ace = AccessControlEntry.create(project_id: project.id, subject_id: user.id, action_id: ActionType::NAME_MAP[perm_type])
@@ -500,7 +500,7 @@ RSpec.describe Clover, "access control" do
         visit "#{project.path}/user/access-control/tag/#{type}"
         click_link "#{ubid}-edit"
 
-        expect(page.title).to eq "Ubicloud - Default - #{name}"
+        expect(page.title).to eq "LayerRail - Default - #{name}"
         fill_in "Name", with: "-"
         click_button "Update"
         expect(page).to have_flash_error "name must only include ASCII letters, numbers, and dashes, and must start and end with an ASCII letter or number"
@@ -512,7 +512,7 @@ RSpec.describe Clover, "access control" do
         expect(model[project_id: project.id, name: old_name]).to be_nil
         expect(model[project_id: project.id, name:]).not_to be_nil
         expect(page).to have_flash_notice "#{cap_type} tag name updated successfully"
-        expect(page.title).to eq "Ubicloud - Default - #{name}"
+        expect(page.title).to eq "LayerRail - Default - #{name}"
         expect(page.html).to include name
         expect(page.html).not_to include old_name
       end
@@ -529,7 +529,7 @@ RSpec.describe Clover, "access control" do
         AccessControlEntry.create(project_id: project.id, subject_id: user.id, action_id: ActionType::NAME_MAP["#{cap_type}Tag:view"], object_id: (type == "object") ? tag.metatag_uuid : tag.id)
 
         page.refresh
-        expect(page.title).to eq "Ubicloud - Default - #{name}"
+        expect(page.title).to eq "LayerRail - Default - #{name}"
 
         ace.destroy
         name = "test2-#{type}"
@@ -577,7 +577,7 @@ RSpec.describe Clover, "access control" do
         visit "#{project.path}/user/access-control/tag/#{type}"
         page.find("##{tag1.ubid}-edit").click
 
-        expect(page.title).to eq "Ubicloud - Default - #{tag1.name}"
+        expect(page.title).to eq "LayerRail - Default - #{tag1.name}"
         expect(page.html).not_to include "Current Members of #{cap_type} Tag"
         global_tags = ActionTag.where(project_id: nil).select_order_map(:name)
         action_types = ActionType.map(&:name).sort
@@ -629,7 +629,7 @@ RSpec.describe Clover, "access control" do
 
         AccessControlEntry.create(project_id: project.id, subject_id: user.id, action_id: ActionType::NAME_MAP["#{cap_type}Tag:view"], object_id: (type == "object") ? tag.metatag_uuid : tag.id)
         page.refresh
-        expect(page.title).to eq "Ubicloud - Default - #{name}"
+        expect(page.title).to eq "LayerRail - Default - #{name}"
         expect(page.html).to match(/No current members of\s+#{type}\s+tag\./m)
         expect(page.all("table#tag-membership-add td").map(&:text)).to be_empty
         expect(page.html).not_to include("Add Members")
@@ -692,7 +692,7 @@ RSpec.describe Clover, "access control" do
         find("##{tag2.ubid} input").check
         click_button "Add Members"
         expect(tag1.member_ids).to include tag2.id
-        expect(page.title).to eq "Ubicloud - Default - #{tag1.name}"
+        expect(page.title).to eq "LayerRail - Default - #{tag1.name}"
         expect(page).to have_flash_notice "1 members added to #{type} tag"
       end
 
@@ -705,7 +705,7 @@ RSpec.describe Clover, "access control" do
         find("##{tag2.ubid} input").check
         click_button "Add Members"
         expect(tag1.member_ids).to include tag2.id
-        expect(page.title).to eq "Ubicloud - Default - #{tag1.name}"
+        expect(page.title).to eq "LayerRail - Default - #{tag1.name}"
         expect(page).to have_flash_error "No change in membership: 1 members already in tag"
       end
 
@@ -734,7 +734,7 @@ RSpec.describe Clover, "access control" do
         find("##{tag2.ubid} input").check
         click_button "Remove Members"
         expect(tag1.member_ids).to be_empty
-        expect(page.title).to eq "Ubicloud - Default - #{tag1.name}"
+        expect(page.title).to eq "LayerRail - Default - #{tag1.name}"
         expect(page).to have_flash_notice "1 members removed from #{type} tag"
       end
 
@@ -764,7 +764,7 @@ RSpec.describe Clover, "access control" do
       find("##{member_global_tag.ubid} input").check
       click_button "Add Members"
       expect(tag.member_ids).to include member_global_tag.id
-      expect(page.title).to eq "Ubicloud - Default - test-action"
+      expect(page.title).to eq "LayerRail - Default - test-action"
       expect(page).to have_flash_notice "1 members added to action tag"
     end
 
@@ -876,7 +876,7 @@ RSpec.describe Clover, "access control" do
       2.times do
         click_button "Remove Members"
         expect(page).to have_flash_error "Must keep at least one account in Admin subject tag"
-        expect(page.title).to eq "Ubicloud - Default - Admin"
+        expect(page.title).to eq "LayerRail - Default - Admin"
       end
     end
 
@@ -895,7 +895,7 @@ RSpec.describe Clover, "access control" do
       expect(UBID).to receive(:class_match?).and_return(false)
       click_button "Add Members"
       expect(tag1.member_ids).to include tag2.id
-      expect(page.title).to eq "Ubicloud - Default - #{tag1.name}"
+      expect(page.title).to eq "LayerRail - Default - #{tag1.name}"
       expect(page).to have_flash_notice "1 members added to subject tag"
     end
   end

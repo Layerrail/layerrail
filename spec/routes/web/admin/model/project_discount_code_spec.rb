@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "ProjectDiscountCode" do
   it "displays the ProjectDiscountCode instance page correctly" do
     click_link "ProjectDiscountCode"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - ProjectDiscountCode"
+    expect(page.title).to eq "LayerRail Admin - ProjectDiscountCode"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - ProjectDiscountCode #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - ProjectDiscountCode #{@instance.ubid}"
   end
 end

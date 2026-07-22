@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "MachineImage" do
   it "displays the MachineImage instance page correctly" do
     click_link "MachineImage"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - MachineImage"
+    expect(page.title).to eq "LayerRail Admin - MachineImage"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - MachineImage #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - MachineImage #{@instance.ubid}"
   end
 end

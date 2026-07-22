@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "VmHostSlice" do
   it "displays the VmHostSlice instance page correctly" do
     click_link "VmHostSlice"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - VmHostSlice"
+    expect(page.title).to eq "LayerRail Admin - VmHostSlice"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - VmHostSlice #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmHostSlice #{@instance.ubid}"
   end
 end

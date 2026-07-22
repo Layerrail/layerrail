@@ -27,13 +27,13 @@ RSpec.describe Clover, "load balancer" do
     it "can not list without login" do
       visit "/load-balancer"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
 
     it "can not create without login" do
       visit "/load-balancer/create"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
   end
 
@@ -46,11 +46,11 @@ RSpec.describe Clover, "load balancer" do
       it "can list no load balancers" do
         visit "#{project.path}/load-balancer"
 
-        expect(page.title).to eq("Ubicloud - Load Balancers")
+        expect(page.title).to eq("LayerRail - Load Balancers")
         expect(page).to have_content "No Load Balancers"
 
         click_link "Create Load Balancer"
-        expect(page.title).to eq("Ubicloud - Create Load Balancer")
+        expect(page.title).to eq("LayerRail - Create Load Balancer")
       end
 
       it "can not list load balancers when does not have permissions" do
@@ -58,7 +58,7 @@ RSpec.describe Clover, "load balancer" do
         lb_wo_permission
         visit "#{project.path}/load-balancer"
 
-        expect(page.title).to eq("Ubicloud - Load Balancers")
+        expect(page.title).to eq("LayerRail - Load Balancers")
         expect(page).to have_content lb.name
         expect(page).to have_no_content lb_wo_permission.name
         expect(page).to have_no_content "Waiting for hostname to be ready"
@@ -89,7 +89,7 @@ RSpec.describe Clover, "load balancer" do
         ps = Prog::Vnet::SubnetNexus.assemble(project.id, name: "dummy-ps-1", location_id: Location::HETZNER_FSN1_ID).subject
         visit "#{project.path}/load-balancer/create"
 
-        expect(page.title).to eq("Ubicloud - Create Load Balancer")
+        expect(page.title).to eq("LayerRail - Create Load Balancer")
         name = "dummy-lb-1"
         fill_in "Name", with: name
         fill_in "Load Balancer Port", with: 80
@@ -101,7 +101,7 @@ RSpec.describe Clover, "load balancer" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' is created")
         expect(LoadBalancer.count).to eq(1)
         expect(LoadBalancer.first.project_id).to eq(project.id)
@@ -112,7 +112,7 @@ RSpec.describe Clover, "load balancer" do
         ps = Prog::Vnet::SubnetNexus.assemble(project.id, name: "dummy-ps-1", location_id: Location::HETZNER_FSN1_ID).subject
         visit "#{project.path}/load-balancer/create"
 
-        expect(page.title).to eq("Ubicloud - Create Load Balancer")
+        expect(page.title).to eq("LayerRail - Create Load Balancer")
 
         fill_in "Name", with: "invalid name"
         fill_in "Load Balancer Port", with: 80
@@ -124,7 +124,7 @@ RSpec.describe Clover, "load balancer" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - Create Load Balancer")
+        expect(page.title).to eq("LayerRail - Create Load Balancer")
         expect(page).to have_content "Name must only contain"
         expect((find "input[name=name]")["value"]).to eq("invalid name")
       end
@@ -133,7 +133,7 @@ RSpec.describe Clover, "load balancer" do
         Prog::Vnet::SubnetNexus.assemble(project_wo_permissions.id, name: "dummy-ps-1", location_id: Location::HETZNER_FSN1_ID).subject
         visit "#{project_wo_permissions.path}/load-balancer/create"
 
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
         expect(page.status_code).to eq(403)
         expect(page).to have_content "Forbidden"
       end
@@ -143,7 +143,7 @@ RSpec.describe Clover, "load balancer" do
         ps = Prog::Vnet::SubnetNexus.assemble(project.id, name: "dummy-ps-1", location_id: Location::HETZNER_FSN1_ID).subject
         visit "#{project.path}/load-balancer/create"
 
-        expect(page.title).to eq("Ubicloud - Create Load Balancer")
+        expect(page.title).to eq("LayerRail - Create Load Balancer")
 
         fill_in "Name", with: "dummy-lb-1"
         fill_in "Load Balancer Port", with: 80
@@ -157,7 +157,7 @@ RSpec.describe Clover, "load balancer" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - Create Load Balancer")
+        expect(page.title).to eq("LayerRail - Create Load Balancer")
         expect(page).to have_content "Private subnet not found"
       end
     end
@@ -167,13 +167,13 @@ RSpec.describe Clover, "load balancer" do
         lb.update(health_check_protocol: "http")
         visit "#{project.path}/load-balancer"
 
-        expect(page.title).to eq("Ubicloud - Load Balancers")
+        expect(page.title).to eq("LayerRail - Load Balancers")
         expect(page).to have_content lb.name
         expect(page).to have_content lb.hostname
 
         click_link lb.name, href: "#{project.path}#{lb.path}"
 
-        expect(page.title).to eq("Ubicloud - #{lb.name}")
+        expect(page.title).to eq("LayerRail - #{lb.name}")
         expect(page).to have_content lb.name
         expect(page).to have_content "Round Robin"
         expect(page.all("dt,dd").map(&:text)).to eq [
@@ -195,13 +195,13 @@ RSpec.describe Clover, "load balancer" do
         lb
         visit "#{project.path}/load-balancer"
 
-        expect(page.title).to eq("Ubicloud - Load Balancers")
+        expect(page.title).to eq("LayerRail - Load Balancers")
         expect(page).to have_content lb.name
         expect(page).to have_content lb.hostname
         lb.update(health_check_protocol: "https", cert_enabled: true)
         click_link lb.name, href: "#{project.path}#{lb.path}"
 
-        expect(page.title).to eq("Ubicloud - #{lb.name}")
+        expect(page.title).to eq("LayerRail - #{lb.name}")
         expect(page).to have_content lb.name
         expect(page).to have_content "Round Robin"
         expect(page.all("dt,dd").map(&:text)).to eq [
@@ -223,7 +223,7 @@ RSpec.describe Clover, "load balancer" do
       it "raises forbidden when does not have permissions" do
         visit "#{project_wo_permissions.path}/location/eu-central-h1/load-balancer/#{lb_wo_permission.name}"
 
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
         expect(page.status_code).to eq(403)
         expect(page).to have_content "Forbidden"
       end
@@ -231,7 +231,7 @@ RSpec.describe Clover, "load balancer" do
       it "raises not found when load balancer not exists" do
         visit "#{project.path}/location/eu-central-h1/load-balancer/08s56d4kaj94xsmrnf5v5m3mav"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content "ResourceNotFound"
       end
@@ -241,7 +241,7 @@ RSpec.describe Clover, "load balancer" do
       it "can show" do
         visit "#{project.path}#{lb.path}"
 
-        expect(page.title).to eq("Ubicloud - #{lb.name}")
+        expect(page.title).to eq("LayerRail - #{lb.name}")
         expect(page).to have_content lb.name
         expect(page).to have_content lb.private_subnet.name
         expect(page).to have_content "Round Robin"
@@ -261,7 +261,7 @@ RSpec.describe Clover, "load balancer" do
         select vm.name, from: "vm_id"
         click_button "Attach"
 
-        expect(page.title).to eq("Ubicloud - #{lb.name}")
+        expect(page.title).to eq("LayerRail - #{lb.name}")
         expect(page).to have_flash_notice("VM is attached to the load balancer")
         expect(lb.vms.count).to eq(1)
 
@@ -304,7 +304,7 @@ RSpec.describe Clover, "load balancer" do
 
         within("#load-balancer-submenu") { click_link "Overview" }
         click_link "dummy-ps-1"
-        expect(page.title).to eq("Ubicloud - #{ps.name}")
+        expect(page.title).to eq("LayerRail - #{ps.name}")
       end
 
       it "can not attach vm when it is already attached to another load balancer" do
@@ -323,7 +323,7 @@ RSpec.describe Clover, "load balancer" do
         lb1.add_vm(vm)
         click_button "Attach"
 
-        expect(page.title).to eq("Ubicloud - #{lb2.name}")
+        expect(page.title).to eq("LayerRail - #{lb2.name}")
         expect(page).to have_content "VM is already attached to a load balancer"
         expect(lb2.vms.count).to eq(0)
       end
@@ -339,7 +339,7 @@ RSpec.describe Clover, "load balancer" do
         vm.destroy
         click_button "Attach"
 
-        expect(page.title).to eq("Ubicloud - #{lb.name}")
+        expect(page.title).to eq("LayerRail - #{lb.name}")
         expect(page).to have_content "No matching VM found in eu-central-h1"
         expect(lb.vms.count).to eq(0)
       end
@@ -360,7 +360,7 @@ RSpec.describe Clover, "load balancer" do
         expect(page).to have_content vm.name
         click_button "Detach"
 
-        expect(page.title).to eq("Ubicloud - #{lb.name}")
+        expect(page.title).to eq("LayerRail - #{lb.name}")
         expect(page).to have_flash_notice("VM is detached from the load balancer")
         expect(Strand.where(prog: "Vnet::LoadBalancerHealthProbes").all.count { |st| st.stack[0]["subject_id"] == lb.id && st.stack[0]["vm_id"] == vm.id }).to eq(0)
         expect(lb.update_load_balancer_set?).to be(true)
@@ -380,13 +380,13 @@ RSpec.describe Clover, "load balancer" do
         select "dummy-vm-1", from: "vm_id"
         click_button "Attach"
 
-        expect(page.title).to eq("Ubicloud - #{lb.name}")
+        expect(page.title).to eq("LayerRail - #{lb.name}")
         expect(lb.reload.vms.count).to eq(1)
         vm.nics.first.destroy
         vm.destroy
         click_button "Detach"
 
-        expect(page.title).to eq("Ubicloud - #{lb.name}")
+        expect(page.title).to eq("LayerRail - #{lb.name}")
         expect(page).to have_content "No matching VM found in eu-central-h1"
         expect(lb.reload.vms.count).to eq(0)
       end
@@ -396,7 +396,7 @@ RSpec.describe Clover, "load balancer" do
         AccessControlEntry.create(project_id: project_wo_permissions.id, subject_id: user.id, action_id: ActionType::NAME_MAP["LoadBalancer:view"])
 
         visit "#{project_wo_permissions.path}#{lb_wo_permission.path}/vms"
-        expect(page.title).to eq "Ubicloud - dummy-lb-2"
+        expect(page.title).to eq "LayerRail - dummy-lb-2"
 
         expect(page.body).not_to include "attach-vm"
       end
@@ -423,7 +423,7 @@ RSpec.describe Clover, "load balancer" do
         AccessControlEntry.create(project_id: project_wo_permissions.id, subject_id: user.id, action_id: ActionType::NAME_MAP["LoadBalancer:view"])
         AccessControlEntry.create(project_id: project_wo_permissions.id, subject_id: user.id, action_id: ActionType::NAME_MAP["LoadBalancer:delete"])
         visit "#{project_wo_permissions.path}#{lb_wo_permission.path}/settings"
-        expect(page.title).to eq "Ubicloud - dummy-lb-2"
+        expect(page.title).to eq "LayerRail - dummy-lb-2"
         expect(page).to have_no_content("Rename")
         find ".delete-btn"
       end
@@ -473,7 +473,7 @@ RSpec.describe Clover, "load balancer" do
         # Give permission to view, so we can see the detail page
         AccessControlEntry.create(project_id: project_wo_permissions.id, subject_id: user.id, action_id: ActionType::NAME_MAP["LoadBalancer:view"])
         visit "#{project_wo_permissions.path}#{lb_wo_permission.path}/settings"
-        expect(page.title).to eq "Ubicloud - dummy-lb-2"
+        expect(page.title).to eq "LayerRail - dummy-lb-2"
         expect(page).to have_no_content("Rename")
 
         expect { find ".delete-btn" }.to raise_error Capybara::ElementNotFound

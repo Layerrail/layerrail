@@ -230,17 +230,17 @@ module Config
   override :pry_logger_truncate_limit, 500, int
 
   # LayerRail Images (Minio)
-  override :ubicloud_images_bucket_name, "layerrail-images", string
-  optional :ubicloud_images_blob_storage_endpoint, string
-  optional :ubicloud_images_blob_storage_access_key, string, clear: true
-  optional :ubicloud_images_blob_storage_secret_key, string, clear: true
-  optional :ubicloud_images_blob_storage_certs, string
+  override :layerrail_images_bucket_name, "layerrail-images", string
+  optional :layerrail_images_blob_storage_endpoint, string
+  optional :layerrail_images_blob_storage_access_key, string, clear: true
+  optional :layerrail_images_blob_storage_secret_key, string, clear: true
+  optional :layerrail_images_blob_storage_certs, string
 
   # LayerRail Images (R2)
-  optional :ubicloud_images_r2_bucket_name, string
-  optional :ubicloud_images_r2_endpoint, string
-  optional :ubicloud_images_r2_access_key, string, clear: true
-  optional :ubicloud_images_r2_secret_key, string, clear: true
+  optional :layerrail_images_r2_bucket_name, string
+  optional :layerrail_images_r2_endpoint, string
+  optional :layerrail_images_r2_access_key, string, clear: true
+  optional :layerrail_images_r2_secret_key, string, clear: true
 
   override :github_ubuntu_2204_x64_aws_ami_version, "ami-03a534f7fa3ae9887", string
   override :github_ubuntu_2404_x64_aws_ami_version, "ami-092dab75acd086240", string

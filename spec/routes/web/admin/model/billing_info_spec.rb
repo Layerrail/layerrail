@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "BillingInfo" do
   it "displays the BillingInfo instance page correctly" do
     click_link "BillingInfo"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - BillingInfo - Browse"
+    expect(page.title).to eq "LayerRail Admin - BillingInfo - Browse"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - BillingInfo #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - BillingInfo #{@instance.ubid}"
   end
 end

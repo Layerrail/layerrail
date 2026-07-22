@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "VmInitScript" do
   it "displays the VmInitScript instance page correctly" do
     click_link "VmInitScript"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - VmInitScript"
+    expect(page.title).to eq "LayerRail Admin - VmInitScript"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - VmInitScript #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - VmInitScript #{@instance.ubid}"
   end
 end

@@ -21,13 +21,13 @@ RSpec.describe Clover, "vm" do
     it "can not list without login" do
       visit "/vm"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
 
     it "can not create without login" do
       visit "/vm/create"
 
-      expect(page.title).to eq("Ubicloud - Login")
+      expect(page.title).to eq("LayerRail - Login")
     end
   end
 
@@ -40,11 +40,11 @@ RSpec.describe Clover, "vm" do
       it "can list no virtual machines" do
         visit "#{project.path}/vm"
 
-        expect(page.title).to eq("Ubicloud - Virtual Machines")
+        expect(page.title).to eq("LayerRail - Virtual Machines")
         expect(page).to have_content "No virtual machines"
 
         click_link "Create Virtual Machine"
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
       end
 
       it "can not list virtual machines when does not have permissions" do
@@ -52,7 +52,7 @@ RSpec.describe Clover, "vm" do
         vm_wo_permission
         visit "#{project.path}/vm"
 
-        expect(page.title).to eq("Ubicloud - Virtual Machines")
+        expect(page.title).to eq("LayerRail - Virtual Machines")
         expect(page).to have_content vm.name
         expect(page).to have_no_content vm_wo_permission.name
       end
@@ -80,7 +80,7 @@ RSpec.describe Clover, "vm" do
 
         visit "#{project.path}/vm/create"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
         name = "dummy-vm"
         fill_in "Name", with: name
         fill_in "SSH Public Key", with: "a a"
@@ -95,7 +95,7 @@ RSpec.describe Clover, "vm" do
         choose option: "standard-2"
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
         expect(Vm.count).to eq(1)
         vm = Vm.first
@@ -139,7 +139,7 @@ RSpec.describe Clover, "vm" do
       it "shows vm create page with burstable and location_latitude_fra" do
         project.set_ff_visible_locations ["latitude-fra"]
         visit "#{project.path}/vm/create"
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
       end
 
       it "shows expected information on index page" do
@@ -148,7 +148,7 @@ RSpec.describe Clover, "vm" do
         visit "#{project.path}/vm"
         expect(page).to have_content "Get started by creating a new virtual machine."
         click_link "Create Virtual Machine"
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
 
         click_button "Create"
         address = Address.create(
@@ -213,7 +213,7 @@ RSpec.describe Clover, "vm" do
 
         visit "#{project.path}/vm/create"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
         expect(page).to have_content("Registered SSH Public Key")
         name = "dummy-vm"
         fill_in "Name", with: name
@@ -224,7 +224,7 @@ RSpec.describe Clover, "vm" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
         expect(Vm.count).to eq(1)
         expect(Vm.first.project_id).to eq(project.id)
@@ -235,7 +235,7 @@ RSpec.describe Clover, "vm" do
       it "can create new virtual machine using init script" do
         visit "#{project.path}/vm/create"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
         name = "dummy-vm"
         fill_in "Name", with: name
         fill_in "SSH Public Key", with: "a a"
@@ -246,7 +246,7 @@ RSpec.describe Clover, "vm" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
         expect(Vm.count).to eq(1)
         expect(Vm.first.project_id).to eq(project.id)
@@ -259,7 +259,7 @@ RSpec.describe Clover, "vm" do
 
         visit "#{project.path}/vm/create"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
         expect(page).to have_no_content("Registered SSH Public Key")
         name = "dummy-vm"
         fill_in "Name", with: name
@@ -271,7 +271,7 @@ RSpec.describe Clover, "vm" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
         expect(Vm.count).to eq(1)
         expect(Vm.first.project_id).to eq(project.id)
@@ -284,7 +284,7 @@ RSpec.describe Clover, "vm" do
 
         visit "#{project.path}/vm/create"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
         name = "dummy-vm"
         fill_in "Name", with: name
         fill_in "SSH Public Key", with: "a a"
@@ -302,7 +302,7 @@ RSpec.describe Clover, "vm" do
         fill_in "Private Subnet Name", with: "test-ps-name"
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
         expect(Vm.count).to eq(1)
         expect(Vm.first.project_id).to eq(project.id)
@@ -333,7 +333,7 @@ RSpec.describe Clover, "vm" do
         expect(page).to have_content "Finland"
         expect(page).to have_content "Burstable"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
         name = "dummy-vm"
         fill_in "Name", with: name
         fill_in "SSH Public Key", with: "a a"
@@ -347,7 +347,7 @@ RSpec.describe Clover, "vm" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
         expect(Vm.count).to eq(1)
         expect(Vm.first.project_id).to eq(project.id)
@@ -362,8 +362,8 @@ RSpec.describe Clover, "vm" do
         visit "#{project.path}/vm"
         click_link "Create GPU Virtual Machine"
 
-        expect(page.title).to eq("Ubicloud - Create GPU Virtual Machine")
-        expect(page).to have_content "GPU virtual machines are not enabled for this project. Email support@ubicloud.com to enable GPU VMs."
+        expect(page.title).to eq("LayerRail - Create GPU Virtual Machine")
+        expect(page).to have_content "GPU virtual machines are not enabled for this project. Email support@layerrail.com to enable GPU VMs."
       end
 
       it "handles case where no gpus are available on create gpu virtual machine page by redirecting" do
@@ -372,7 +372,7 @@ RSpec.describe Clover, "vm" do
         visit "#{project.path}/vm"
         click_link "Create GPU Virtual Machine"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
         expect(page).to have_flash_error("Unfortunately, no virtual machines with GPUs are currently available.")
       end
 
@@ -396,7 +396,7 @@ RSpec.describe Clover, "vm" do
         visit "#{project.path}/vm"
         click_link "Create GPU Virtual Machine"
 
-        expect(page.title).to eq("Ubicloud - Create GPU Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create GPU Virtual Machine")
         expect(page).to have_content "GPU"
         expect(page).to have_no_content "Finland"
         expect(page).to have_no_content "Burstable"
@@ -416,7 +416,7 @@ RSpec.describe Clover, "vm" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
         expect(Vm.count).to eq(1)
         expect(Vm.first.project_id).to eq(project.id)
@@ -449,7 +449,7 @@ RSpec.describe Clover, "vm" do
         visit "#{project.path}/vm"
         click_link "Create Virtual Machine"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
         expect(page).to have_no_content "GPU"
         expect(page).to have_content "Finland"
         expect(page).to have_content "Burstable"
@@ -489,7 +489,7 @@ RSpec.describe Clover, "vm" do
         visit "#{project.path}/vm"
         click_link "Create GPU Virtual Machine"
 
-        expect(page.title).to eq("Ubicloud - Create GPU Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create GPU Virtual Machine")
         expect(page).to have_content "GPU"
         expect(page).to have_content "latitude-ai"
       end
@@ -511,7 +511,7 @@ RSpec.describe Clover, "vm" do
 
         visit "#{project.path}/vm/create"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
         name = "dummy-vm"
         fill_in "Name", with: name
         fill_in "SSH Public Key", with: "a a"
@@ -528,7 +528,7 @@ RSpec.describe Clover, "vm" do
         ps = PrivateSubnet[ps_id]
         visit "#{project.path}/vm/create"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
         expect(page).to have_content ps.name
         name = "dummy-vm"
         fill_in "Name", with: name
@@ -540,7 +540,7 @@ RSpec.describe Clover, "vm" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
         expect(Vm.count).to eq(1)
         expect(Vm.first.project_id).to eq(project.id)
@@ -553,7 +553,7 @@ RSpec.describe Clover, "vm" do
         ps = PrivateSubnet[ps_id]
         visit "#{project.path}/vm/create"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
         expect(page).to have_content "Default"
         name = "dummy-vm"
         fill_in "Name", with: name
@@ -565,7 +565,7 @@ RSpec.describe Clover, "vm" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
         expect(Vm.count).to eq(1)
         expect(Vm.first.project_id).to eq(project.id)
@@ -583,7 +583,7 @@ RSpec.describe Clover, "vm" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - dummy-vm-2")
+        expect(page.title).to eq("LayerRail - dummy-vm-2")
         expect(Vm.count).to eq(2)
         expect(Vm.find(name: "dummy-vm-2").private_subnets.first.id).to eq(Vm.find(name: "dummy-vm").private_subnets.first.id)
       end
@@ -592,7 +592,7 @@ RSpec.describe Clover, "vm" do
         project
         visit "#{project.path}/vm/create"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
 
         fill_in "Name", with: "invalid name"
         fill_in "SSH Public Key", with: "a a"
@@ -602,7 +602,7 @@ RSpec.describe Clover, "vm" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
         expect(page).to have_content "Name must only contain"
         expect((find "input[name=name]")["value"]).to eq("invalid name")
       end
@@ -611,7 +611,7 @@ RSpec.describe Clover, "vm" do
         project
         visit "#{project.path}/vm/create"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
 
         fill_in "Name", with: vm.name
         fill_in "SSH Public Key", with: "a a"
@@ -621,7 +621,7 @@ RSpec.describe Clover, "vm" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
         expect(page).to have_flash_error("project_id and location_id and name is already taken")
       end
 
@@ -631,7 +631,7 @@ RSpec.describe Clover, "vm" do
 
         visit "#{project.path}/vm/create"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
         expect(page).to have_content "Project doesn't have valid billing information"
 
         fill_in "Name", with: "dummy-vm"
@@ -641,7 +641,7 @@ RSpec.describe Clover, "vm" do
 
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
         expect(page).to have_content "Project doesn't have valid billing information"
       end
 
@@ -649,7 +649,7 @@ RSpec.describe Clover, "vm" do
         project
         visit "#{project.path}/vm/create"
 
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
 
         expect { choose option: "6b9ef786-b842-8420-8c65-c25e3d4bdf3d" }.to raise_error Capybara::ElementNotFound
       end
@@ -686,7 +686,7 @@ RSpec.describe Clover, "vm" do
 
         Location.where(id: Location::HETZNER_FSN1_ID).update(visible: false, project_id: project.id)
         click_button "Create"
-        expect(page.title).to eq("Ubicloud - #{name}")
+        expect(page.title).to eq("LayerRail - #{name}")
         expect(page).to have_flash_notice("'#{name}' will be ready in a few minutes")
       end
 
@@ -694,14 +694,14 @@ RSpec.describe Clover, "vm" do
         project_wo_permissions
         visit "#{project_wo_permissions.path}/vm/create"
 
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
         expect(page.status_code).to eq(403)
         expect(page).to have_content "Forbidden"
       end
 
       it "cannot create vm when location not exist" do
         visit "#{project.path}/vm/create"
-        expect(page.title).to eq("Ubicloud - Create Virtual Machine")
+        expect(page.title).to eq("LayerRail - Create Virtual Machine")
 
         fill_in "Name", with: "cannotcreate"
         choose option: Location::HETZNER_FSN1_UBID
@@ -711,7 +711,7 @@ RSpec.describe Clover, "vm" do
         Location[Location::HETZNER_FSN1_ID].destroy
         click_button "Create"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content("ResourceNotFound")
       end
@@ -722,19 +722,19 @@ RSpec.describe Clover, "vm" do
         vm
         visit "#{project.path}/vm"
 
-        expect(page.title).to eq("Ubicloud - Virtual Machines")
+        expect(page.title).to eq("LayerRail - Virtual Machines")
         expect(page).to have_content vm.name
 
         click_link vm.name, href: "#{project.path}#{vm.path}"
 
-        expect(page.title).to eq("Ubicloud - #{vm.name}")
+        expect(page.title).to eq("LayerRail - #{vm.name}")
         expect(page).to have_content vm.name
       end
 
       it "raises forbidden when does not have permissions" do
         visit "#{project_wo_permissions.path}#{vm_wo_permission.path}"
 
-        expect(page.title).to eq("Ubicloud - Forbidden")
+        expect(page.title).to eq("LayerRail - Forbidden")
         expect(page.status_code).to eq(403)
         expect(page).to have_content "Forbidden"
       end
@@ -742,7 +742,7 @@ RSpec.describe Clover, "vm" do
       it "raises not found when virtual machine not exists" do
         visit "#{project.path}/location/eu-central-h1/vm/08s56d4kaj94xsmrnf5v5m3mav"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content "ResourceNotFound"
       end
@@ -750,7 +750,7 @@ RSpec.describe Clover, "vm" do
       it "cannot list when location not exist" do
         visit "#{project.path}/location/not-exist-location/vm"
 
-        expect(page.title).to eq("Ubicloud - ResourceNotFound")
+        expect(page.title).to eq("LayerRail - ResourceNotFound")
         expect(page.status_code).to eq(404)
         expect(page).to have_content "ResourceNotFound"
       end
@@ -767,7 +767,7 @@ RSpec.describe Clover, "vm" do
           "default-eu-central-h1-default", "::/0", "UDP 0..65535",
         ]
         page.all("#vm-firewall-rules td a").first.click
-        expect(page.title).to eq "Ubicloud - default-eu-central-h1-default"
+        expect(page.title).to eq "LayerRail - default-eu-central-h1-default"
       end
 
       it "does not link to firewalls that are not viewable" do
@@ -825,7 +825,7 @@ RSpec.describe Clover, "vm" do
         AccessControlEntry.create(project_id: project_wo_permissions.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Vm:view"])
 
         visit "#{project_wo_permissions.path}#{vm_wo_permission.path}/settings"
-        expect(page.title).to eq "Ubicloud - dummy-vm-2"
+        expect(page.title).to eq "LayerRail - dummy-vm-2"
 
         expect { find ".delete-btn" }.to raise_error Capybara::ElementNotFound
       end
@@ -876,7 +876,7 @@ RSpec.describe Clover, "vm" do
           AccessControlEntry.create(project_id: project_wo_permissions.id, subject_id: user.id, action_id: ActionType::NAME_MAP["Vm:view"])
 
           visit "#{project_wo_permissions.path}#{vm_wo_permission.path}/settings"
-          expect(page.title).to eq "Ubicloud - dummy-vm-2"
+          expect(page.title).to eq "LayerRail - dummy-vm-2"
 
           expect(page).to have_no_content action.capitalize
         end

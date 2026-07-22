@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "AccessControlEntry" do
   it "displays the AccessControlEntry instance page correctly" do
     click_link "AccessControlEntry"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - AccessControlEntry"
+    expect(page.title).to eq "LayerRail Admin - AccessControlEntry"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - AccessControlEntry #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - AccessControlEntry #{@instance.ubid}"
   end
 end

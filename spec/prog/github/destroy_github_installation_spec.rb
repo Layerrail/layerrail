@@ -12,7 +12,7 @@ RSpec.describe Prog::Github::DestroyGithubInstallation do
   let(:project) { Project.create(name: "test-github-project") }
   let(:github_installation) {
     GithubInstallation.create(
-      name: "ubicloud",
+      name: "layerrail",
       type: "Organization",
       installation_id: 123,
       project_id: project.id,
@@ -20,7 +20,7 @@ RSpec.describe Prog::Github::DestroyGithubInstallation do
   }
 
   let(:repository) do
-    repo = GithubRepository.create(installation_id: github_installation.id, name: "ubicloud/ubicloud")
+    repo = GithubRepository.create(installation_id: github_installation.id, name: "layerrail/layerrail")
     Strand.create_with_id(repo, prog: "Github::GithubRepositoryNexus", label: "wait")
     repo
   end
@@ -31,7 +31,7 @@ RSpec.describe Prog::Github::DestroyGithubInstallation do
       installation_id: github_installation.id,
       repository_id: repository.id,
       repository_name: repository.name,
-      label: "ubicloud",
+      label: "layerrail",
       vm_id: vm.id,
     )
     Strand.create_with_id(runner, prog: "Github::GithubRunnerNexus", label: "wait")
@@ -106,7 +106,7 @@ RSpec.describe Prog::Github::DestroyGithubInstallation do
     it "deletes resource and pops" do
       # No repositories or runners - installation can be destroyed
       installation_id = github_installation.id
-      GithubCustomLabel.create(installation_id:, name: "custom-label", alias_for: "ubicloud-standard-2")
+      GithubCustomLabel.create(installation_id:, name: "custom-label", alias_for: "layerrail-standard-2")
       expect { dgi.wait_resource_destroy }.to exit({"msg" => "github installation destroyed"})
       expect(GithubInstallation[installation_id]).to be_nil
     end

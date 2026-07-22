@@ -110,7 +110,7 @@ RSpec.describe Clover, "project" do
           name: "test-project",
         }.to_json
 
-        expect(last_response).to have_api_error(400, "Project limit exceeded. You can create up to 10 projects. Contact support@ubicloud.com if you need more.")
+        expect(last_response).to have_api_error(400, "Project limit exceeded. You can create up to 10 projects. Contact support@layerrail.com if you need more.")
         expect(user.projects_dataset.count).to eq(10)
       end
     end

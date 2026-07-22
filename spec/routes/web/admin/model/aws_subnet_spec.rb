@@ -13,10 +13,10 @@ RSpec.describe CloverAdmin, "AwsSubnet" do
   it "displays the AwsSubnet instance page correctly" do
     click_link "AwsSubnet"
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - AwsSubnet"
+    expect(page.title).to eq "LayerRail Admin - AwsSubnet"
 
     click_link @instance.admin_label
     expect(page.status_code).to eq 200
-    expect(page.title).to eq "Ubicloud Admin - AwsSubnet #{@instance.ubid}"
+    expect(page.title).to eq "LayerRail Admin - AwsSubnet #{@instance.ubid}"
   end
 end
