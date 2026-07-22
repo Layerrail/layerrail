@@ -42,6 +42,18 @@ RSpec.describe Clover do
     )
   end
 
+  it "keeps browser visits to AI API URLs inside the console" do
+    visit "/ai"
+
+    expect(page).to have_current_path("/login", ignore_query: true)
+    expect(page.title).to eq("LayerRail - Login")
+
+    visit "/ai/v1/agents/example/messages"
+
+    expect(page).to have_current_path("/login", ignore_query: true)
+    expect(page.title).to eq("LayerRail - Login")
+  end
+
   it "handles sessionless HEAD health probes" do
     page.driver.submit(:head, "/", {})
 

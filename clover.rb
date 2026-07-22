@@ -1302,6 +1302,15 @@ class Clover < Roda
       end
 
       r.on "ai" do
+        # The AI namespace is an API surface, but its base URL is frequently
+        # opened from a browser after being copied from the console.  Keep
+        # browser navigations in the authenticated console flow instead of
+        # exposing an unstyled JSON 404 page.  API operations below are POST
+        # only, so this does not change their request handling.
+        r.get true do
+          r.redirect "/"
+        end
+
         response.json = true
         response.skip_content_security_policy!
 
