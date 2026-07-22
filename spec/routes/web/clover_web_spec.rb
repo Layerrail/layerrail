@@ -54,6 +54,15 @@ RSpec.describe Clover do
     expect(page.title).to eq("LayerRail - Login")
   end
 
+  it "keeps API paths on the console in the browser flow when API_URL is configured" do
+    allow(Config).to receive(:api_url).and_return("https://api.layerrail.test")
+
+    visit "/v1/chat/completions"
+
+    expect(page).to have_current_path("/login", ignore_query: true)
+    expect(page.title).to eq("LayerRail - Login")
+  end
+
   it "handles sessionless HEAD health probes" do
     page.driver.submit(:head, "/", {})
 

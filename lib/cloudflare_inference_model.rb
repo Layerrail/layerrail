@@ -34,7 +34,11 @@ class CloudflareInferenceModel
     end
 
     def health_check_url(path: nil)
-      base_url = "#{Config.base_url.chomp("/")}/ai"
+      base_url = if Config.api_url
+        Config.api_url.chomp("/")
+      else
+        "#{Config.base_url.chomp("/")}/ai"
+      end
       path ? "#{base_url}#{path.start_with?("/") ? path : "/#{path}"}" : base_url
     end
   end

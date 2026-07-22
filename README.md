@@ -261,6 +261,12 @@ real resources.
 LayerRail distinguishes between the console host and generated customer service
 hostnames.
 
+Production should also use a separate API host. Set `BASE_URL` to the console
+URL (for example, `https://console.layerrail.com`), set `API_URL` to the API
+URL (for example, `https://api.console.layerrail.com`), and map both custom domains to
+the application. This keeps browser navigation on the console host and keeps
+machine API paths on the API host.
+
 Example generated endpoint zones include:
 
 - `lb.layerrail.com`

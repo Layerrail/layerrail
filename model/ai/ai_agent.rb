@@ -23,7 +23,11 @@ class AiAgent < Sequel::Model(:ai_agent)
   end
 
   def public_url
-    "#{Config.base_url.chomp("/")}#{endpoint_path}"
+    if Config.api_url
+      "#{Config.api_url.chomp("/")}/v1/agents/#{ubid}/messages"
+    else
+      "#{Config.base_url.chomp("/")}#{endpoint_path}"
+    end
   end
 
   def active?

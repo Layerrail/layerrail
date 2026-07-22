@@ -189,7 +189,8 @@ class Clover < Roda
 
       if request_host.end_with?(".#{Config.edge_service_hostname}") || request_host == Config.edge_service_hostname
         :edge
-      elsif request.path_info.start_with?("/v1/", "/api/") || request_host == configured_api_host || request_host.start_with?("api.")
+      elsif request_host == configured_api_host || request_host.start_with?("api.") ||
+          (configured_api_host.nil? && request.path_info.start_with?("/v1/", "/api/"))
         :api
       elsif request_host == configured_admin_host || request_host.start_with?("admin.")
         :admin
