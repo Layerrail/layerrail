@@ -332,6 +332,7 @@ class Clover < Roda
 
     raise e if Config.test? && e.is_a?(Committee::Error)
 
+    enable_inference_api_cors if api? && request.path_info.start_with?("/v1/")
     response.status = code
     next if code == 204
 
@@ -1185,8 +1186,23 @@ class Clover < Roda
     content_security_policy.add_connect_src(Config.intercom_api_base, "https://via.intercom.io", "https://api.intercom.io", "https://api-iam.intercom.io", "https://api-ping.intercom.io", "https://*.intercom-messenger.com", "wss://*.intercom-messenger.com", "https://nexus-websocket-a.intercom.io", "wss://nexus-websocket-a.intercom.io", "https://nexus-websocket-b.intercom.io", "wss://nexus-websocket-b.intercom.io", "https://uploads.intercomcdn.com", "https://uploads.intercomusercontent.com")
   end
 
+  def enable_inference_api_cors
+    origin = env["HTTP_ORIGIN"].to_s
+    return unless origin == Config.base_url.chomp("/")
+
+    response["access-control-allow-origin"] = origin
+    response["access-control-allow-methods"] = "POST, OPTIONS"
+    response["access-control-allow-headers"] = "Authorization, Content-Type"
+    response["access-control-expose-headers"] = "X-LayerRail-AI-Model, X-LayerRail-AI-Fallback-Model"
+    response["access-control-max-age"] = "86400"
+    response["vary"] = (response["vary"].to_s.split(/\s*,\s*/) + ["Origin"]).reject(&:empty?).uniq.join(", ")
+  end
+
   route do |r|
-    enable_intercom_content_security_policy if request.get? && web? && intercom_messenger_enabled?
+    if request.get? && web?
+      enable_intercom_content_security_policy if intercom_messenger_enabled?
+      content_security_policy.add_connect_src(Config.api_url) if Config.api_url
+    end
 
     if request.get? && (filename = llms_txt_filename)
       next llms_txt_response(filename)
@@ -1217,6 +1233,13 @@ class Clover < Roda
 
       r.get "ready" do
         health_check_response("api", database: true)
+      end
+
+      if request.path_info.start_with?("/v1/")
+        enable_inference_api_cors
+        if request.request_method == "OPTIONS"
+          next 204
+        end
       end
 
       unless /\ABearer:?\s+pat-/i.match?(env["HTTP_AUTHORIZATION"].to_s) || r.path_info.start_with?("/v1/")

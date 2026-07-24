@@ -25,6 +25,17 @@ RSpec.describe Clover do
     expect(page.body).not_to include("dompurify@3.4.0")
   end
 
+  it "allows the console playground to connect to the configured API host" do
+    allow(Config).to receive(:api_url).and_return("https://api.console.layerrail.com")
+
+    visit "/login"
+
+    expect(page.response_headers.fetch("content-security-policy")).to include(
+      "connect-src",
+      "https://api.console.layerrail.com",
+    )
+  end
+
   it "sets universal security headers on assets and redirects" do
     page.driver.get("/brand/layerrail/layerrail-favicon.png")
     expect(page.status_code).to eq(200)
