@@ -241,6 +241,21 @@
     deployment: claude-opus-4-8
     multimodal: true
     pricing: {input: 7.0, output: 35.0}
+- id: azure-anthropic-claude-opus-5
+  model_name: claude-opus-5
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-claude-opus-5-input
+  completion_billing_resource: azure-claude-opus-5-output
+  tags:
+    display_name: Claude Opus 5
+    capability: Text Generation
+    context_length: 1M
+    api: anthropic
+    deployment: claude-opus-5
+    multimodal: true
+    reasoning: true
+    pricing: {input: 7.0, output: 35.0}
 - id: azure-anthropic-claude-fable-5
   model_name: claude-fable-5
   enabled: true
