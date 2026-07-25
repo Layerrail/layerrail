@@ -23,6 +23,20 @@ RSpec.describe GameVps do
     )
   end
 
+  it "builds the Polar catalog update from the plan source of truth" do
+    expect(described_class.polar_product_update_payload("growth")).to eq(
+      name: "LayerRail Game VPS - Growth",
+      description: "Growing roleplay or survival community. 4 vCPU, 16 GB RAM, 128 GB Windows SSD.",
+      prices: [{amount_type: "fixed", price_currency: "usd", price_amount: 1600}],
+      metadata: {
+        layerrail_role: "game_vps_plan",
+        layerrail_plan: "growth",
+        layerrail_amount_cents: 1600,
+        layerrail_provider: "azure"
+      }
+    )
+  end
+
   it "keeps plan resources consistent with monthly price" do
     starter = described_class.plans.fetch("starter")
     community = described_class.plans.fetch("community")

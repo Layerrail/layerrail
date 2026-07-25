@@ -137,7 +137,7 @@ module ThawedMock
   allow_mocking(Minio::Client, :new)
   allow_mocking(Minio::Crypto, :new)
   allow_mocking(MonitorResourceType, :sleep, :raise)
-  allow_mocking(PolarClient, :create_customer, :get_customer_by_external_id)
+  allow_mocking(PolarClient, :create_checkout, :create_customer, :get_customer_by_external_id, :update_product)
   allow_mocking(RunpodClient, :new)
   allow_mocking(Scheduling::Allocator, :allocate)
   allow_mocking(Scheduling::Allocator::Allocation, :best_allocation, :candidate_hosts, :new, :random_score, :update_vm)

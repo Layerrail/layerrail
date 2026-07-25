@@ -194,6 +194,23 @@ class GameVps < Sequel::Model(:game_vps)
     }
   end
 
+  def self.polar_product_update_payload(plan_key)
+    plan_key = plan_key.to_s
+    plan = PLANS.fetch(plan_key)
+    amount_cents = amount_cents(plan)
+    {
+      name: "LayerRail Game VPS - #{plan.fetch(:name)}",
+      description: "#{plan.fetch(:description)}. #{plan.fetch(:cores)} vCPU, #{plan.fetch(:ram_gib)} GB RAM, #{plan.fetch(:disk_gib)} GB Windows SSD.",
+      prices: [{amount_type: "fixed", price_currency: "usd", price_amount: amount_cents}],
+      metadata: {
+        layerrail_role: "game_vps_plan",
+        layerrail_plan: plan_key,
+        layerrail_amount_cents: amount_cents,
+        layerrail_provider: "azure"
+      }
+    }
+  end
+
   def self.polar_product_ids
     raw = Config.polar_game_vps_product_ids.to_s.strip
     return {} if raw.empty?

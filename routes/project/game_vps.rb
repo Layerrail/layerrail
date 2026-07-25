@@ -8,6 +8,7 @@ class Clover
     return start_bachs_game_vps_checkout(game_vps) if Config.game_vps_checkout_provider == "bachs"
 
     product_id = game_vps.polar_product_id
+    PolarClient.update_product(product_id, GameVps.polar_product_update_payload(game_vps.plan))
     checkout = PolarClient.create_checkout(
       {
         products: [product_id],
