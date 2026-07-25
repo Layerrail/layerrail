@@ -4,6 +4,7 @@ require "bigdecimal"
 
 class Clover
   def start_game_vps_checkout(game_vps)
+    game_vps = refresh_pending_game_vps_plan(game_vps)
     return start_bachs_game_vps_checkout(game_vps) if Config.game_vps_checkout_provider == "bachs"
 
     product_id = game_vps.polar_product_id
@@ -50,6 +51,7 @@ class Clover
     product_id = game_vps.bachs_product_id
     BachsClient.update_product(product_id, GameVps.bachs_product_update_payload(game_vps.plan))
     checkout_attempt = game_vps.values[:checkout_id] || "initial"
+    checkout_reference = "layerrail-game-vps-#{game_vps.ubid}-#{checkout_attempt}-#{game_vps.amount_cents}"
     checkout = BachsClient.create_checkout(
       {
         product_cart: [{product_id:, quantity: 1}],
@@ -59,13 +61,31 @@ class Clover
         success_url: "#{Config.base_url}#{@project.path}/game-vps/success/bachs",
         cancel_url: "#{Config.base_url}#{@project.path}/game-vps",
         metadata: {kind: "game_vps_checkout", project_id: @project.ubid, game_vps_id: game_vps.ubid, plan: game_vps.plan, product_id:, amount_cents: game_vps.amount_cents},
-        reference: "layerrail-game-vps-#{game_vps.ubid}-#{checkout_attempt}",
+        reference: checkout_reference,
         expires_in_minutes: 60
       },
-      idempotency_key: "layerrail-game-vps-#{game_vps.ubid}-#{checkout_attempt}"
+      idempotency_key: checkout_reference
     )
     GameVpsCheckout.mark_pending!(game_vps, checkout.fetch("checkout_id"))
     checkout.fetch("checkout_url")
+  end
+
+  def refresh_pending_game_vps_plan(game_vps)
+    return game_vps unless game_vps.status == "pending_payment"
+
+    plan = GameVps.plans.fetch(game_vps.plan)
+    amount_cents = GameVps.amount_cents(plan)
+    current_plan = {
+      cores: plan.fetch(:cores),
+      ram_gib: plan.fetch(:ram_gib),
+      disk_gib: plan.fetch(:disk_gib),
+      monthly_price: BigDecimal(plan.fetch(:monthly_price)),
+      subscription_amount_cents: amount_cents
+    }
+    return game_vps if current_plan.all? { |key, value| game_vps.values[key] == value }
+
+    GameVps.where(id: game_vps.id, status: "pending_payment").update(**current_plan, failure_message: nil, updated_at: Time.now)
+    game_vps.refresh
   end
 
   def cleanup_unstarted_game_vps_checkout(game_vps, exception)

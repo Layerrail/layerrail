@@ -112,5 +112,53 @@ RSpec.describe Clover, "game vps" do
       )
       expect(game_vps.values[:checkout_id]).to eq(checkout_id)
     end
+
+    it "moves an unpaid legacy reservation to the lower price before retrying checkout" do
+      old_checkout_id = "3ecab3e8-f6cc-4cdd-ad50-f6e038e487db"
+      new_checkout_id = "808e9dc2-2af3-4a8b-9fc9-956f34fac3c2"
+      game_vps = GameVps.create(
+        project_id: project.id,
+        name: "legacy-growth",
+        provider: "azure",
+        status: "pending_payment",
+        plan: "growth",
+        location: "azure-eastus",
+        image_alias: "windows-server-2022",
+        rdp_username: "layerrail",
+        rdp_password: "ComplexPass123!",
+        cores: 4,
+        ram_gib: 16,
+        disk_gib: 256,
+        monthly_price: BigDecimal("20.00")
+      )
+      GameVps.where(id: game_vps.id).update(checkout_id: old_checkout_id, subscription_amount_cents: 2000)
+      game_vps.refresh
+      allow(Config).to receive(:game_vps_checkout_provider).and_return("bachs")
+      allow(Config).to receive(:bachs_game_vps_product_ids).and_return(JSON.generate("growth" => "prod_growth"))
+      allow(BachsClient).to receive(:enabled?).and_return(true)
+      expect(BachsClient).to receive(:update_product)
+        .with("prod_growth", GameVps.bachs_product_update_payload("growth"))
+        .ordered
+        .and_return("id" => "prod_growth")
+      expect(BachsClient).to receive(:create_checkout)
+        .with(
+          hash_including(
+            metadata: hash_including(amount_cents: 1600),
+            reference: "layerrail-game-vps-#{game_vps.ubid}-#{old_checkout_id}-1600"
+          ),
+          idempotency_key: "layerrail-game-vps-#{game_vps.ubid}-#{old_checkout_id}-1600"
+        )
+        .ordered
+        .and_return("checkout_id" => new_checkout_id, "checkout_url" => "https://checkout.bachs.io/#{new_checkout_id}")
+
+      visit "#{project.path}#{game_vps.path}/overview"
+      csrf_token = find("form[action='#{project.path}#{game_vps.path}/checkout'] input[name='_csrf']", visible: false).value
+      page.driver.post "#{project.path}#{game_vps.path}/checkout", {_csrf: csrf_token}
+
+      expect(page.status_code).to eq(303)
+      game_vps.refresh
+      expect(game_vps).to have_attributes(disk_gib: 128, monthly_price: BigDecimal("16.00"))
+      expect(game_vps.values).to include(checkout_id: new_checkout_id, subscription_amount_cents: 1600)
+    end
   end
 end
