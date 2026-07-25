@@ -1050,6 +1050,8 @@ class Clover < Roda
       service:,
       checked_at: Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
+    revision = ENV["RENDER_GIT_COMMIT"] || ENV["GITHUB_SHA"] || ENV["SOURCE_VERSION"]
+    payload[:revision] = revision unless revision.to_s.empty?
 
     if database
       DB.get(Sequel.lit("1"))

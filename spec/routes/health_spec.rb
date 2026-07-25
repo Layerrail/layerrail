@@ -17,6 +17,15 @@ RSpec.describe Clover, "health checks" do
     expect(parsed_body.slice("status", "service", "database")).to eq("status" => "ok", "service" => "console", "database" => "ok")
   end
 
+  it "reports the hosting revision when available" do
+    allow(ENV).to receive(:[]).with("RENDER_GIT_COMMIT").and_return("revision-123")
+
+    get "/up"
+
+    expect(last_response.status).to eq(200)
+    expect(parsed_body["revision"]).to eq("revision-123")
+  end
+
   it "returns API liveness and readiness without a personal access token" do
     header "Host", "api.ubicloud.com"
     get "/up"
