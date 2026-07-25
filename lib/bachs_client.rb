@@ -51,6 +51,10 @@ class BachsClient
     request(:post, "/v1/products", body: payload, expected_status: 201, idempotency_key:)
   end
 
+  def self.update_product(id, payload)
+    request(:patch, "/v1/products/#{id}", body: payload)
+  end
+
   def self.archive_product(id)
     request(:post, "/v1/products/#{id}/archive", expected_status: [200, 204])
   end

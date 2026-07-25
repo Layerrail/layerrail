@@ -48,6 +48,7 @@ class Clover
     raise "Bachs checkout is not configured." unless BachsClient.enabled?
 
     product_id = game_vps.bachs_product_id
+    BachsClient.update_product(product_id, GameVps.bachs_product_update_payload(game_vps.plan))
     checkout_attempt = game_vps.values[:checkout_id] || "initial"
     checkout = BachsClient.create_checkout(
       {

@@ -121,7 +121,8 @@ module ThawedMock
   allow_mocking(Prog::Vnet::SubnetNexus, :assemble, :random_private_ipv4, :random_private_ipv6)
 
   # Other Classes
-  allow_mocking(BachsClient, :archive_product, :create_checkout, :create_product, :create_refund, :get_checkout, :get_subscription)
+  allow_mocking(AzureClient, :enabled?, :new)
+  allow_mocking(BachsClient, :archive_product, :create_checkout, :create_product, :create_refund, :enabled?, :get_checkout, :get_subscription, :update_product)
   allow_mocking(BachsBillingVerificationCheckout, :create!, :reconcile!)
   allow_mocking(BachsGameVpsCheckout, :reconcile!)
   allow_mocking(BachsInvoiceCheckout, :reconcile!)
@@ -130,6 +131,7 @@ module ThawedMock
   allow_mocking(CloudflareClient, :new)
   allow_mocking(Clover, :ips_v4, :call, :authorized_project)
   allow_mocking(EmailRenderer, :sendmail)
+  allow_mocking(GameVpsCheckout, :reconcile!)
   allow_mocking(Hosting::Apis, :pull_data_center, :pull_ips, :reimage_server, :hardware_reset_server, :set_server_name)
   allow_mocking(InvoiceGenerator, :new)
   allow_mocking(Minio::Client, :new)

@@ -7,7 +7,7 @@ end
 
 plan_content = lambda do |plan_key|
   plan = GameVps.plans.fetch(plan_key)
-  [plan[:name], plan[:description], GameVps.price_label(plan), "#{plan[:cores]} vCPU / #{plan[:ram_gib]} GB / #{plan[:disk_gib]} GB"]
+  [plan[:name], plan[:description], GameVps.price_label(plan), "#{plan[:cores]} vCPU / #{plan[:ram_gib]} GB RAM / #{plan[:disk_gib]} GB SSD"]
 end
 
 image_content = lambda do |image_key|
@@ -41,7 +41,7 @@ option_tree, option_parents = options.serialize %>
 
 <% if Config.game_vps_provider == "azure" %>
   <div class="mb-6 rounded-lg bg-white p-4 text-sm text-gray-600 shadow ring-1 ring-black ring-opacity-5">
-    Windows Game VPS plans are prepaid monthly subscriptions. You will be sent to Polar to pay first; provisioning starts automatically after payment succeeds, and the receipt is available from billing.
+    Windows Game VPS plans are prepaid monthly subscriptions. Every tier includes the same 128 GB Windows system SSD, while CPU and RAM scale with the plan. Secure checkout happens before provisioning, and the receipt is available from billing.
   </div>
 <% end %>
 

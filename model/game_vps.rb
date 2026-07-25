@@ -31,52 +31,52 @@ class GameVps < Sequel::Model(:game_vps)
       ram_gib: 4,
       disk_gib: 128,
       azure_size: "Standard_D2lds_v7",
-      monthly_price: "4.00",
+      monthly_price: "3.00",
     },
     "community" => {
       name: "Community",
       description: "Entry community server for FiveM or Minecraft",
       cores: 2,
       ram_gib: 8,
-      disk_gib: 160,
+      disk_gib: 128,
       azure_size: "Standard_D2ds_v7",
-      monthly_price: "6.00",
+      monthly_price: "5.00",
     },
     "squad" => {
       name: "Squad",
       description: "More CPU for mods, plugins, and voice",
       cores: 4,
       ram_gib: 8,
-      disk_gib: 160,
+      disk_gib: 128,
       azure_size: "Standard_D4lds_v7",
-      monthly_price: "10.00",
+      monthly_price: "8.00",
     },
     "growth" => {
       name: "Growth",
       description: "Growing roleplay or survival community",
       cores: 4,
       ram_gib: 16,
-      disk_gib: 256,
+      disk_gib: 128,
       azure_size: "Standard_D4ds_v7",
-      monthly_price: "20.00",
+      monthly_price: "16.00",
     },
     "serious" => {
       name: "Serious",
       description: "Busy game community with heavier workloads",
       cores: 8,
       ram_gib: 32,
-      disk_gib: 512,
+      disk_gib: 128,
       azure_size: "Standard_D8ds_v7",
-      monthly_price: "50.00",
+      monthly_price: "40.00",
     },
     "arena" => {
       name: "Arena",
       description: "Large community server with room to scale",
       cores: 16,
       ram_gib: 64,
-      disk_gib: 1024,
+      disk_gib: 128,
       azure_size: "Standard_D16ds_v7",
-      monthly_price: "95.00",
+      monthly_price: "75.00",
     },
   }.freeze
   AZURE_LOCATION_SIZE_OVERRIDES = {
@@ -179,6 +179,19 @@ class GameVps < Sequel::Model(:game_vps)
 
   def self.amount_cents(plan)
     (BigDecimal(plan.fetch(:monthly_price)) * 100).to_i
+  end
+
+  def self.bachs_product_update_payload(plan_key)
+    plan = PLANS.fetch(plan_key.to_s)
+    {
+      name: "LayerRail Game VPS - #{plan.fetch(:name)}",
+      description: "#{plan.fetch(:description)}. #{plan.fetch(:cores)} vCPU, #{plan.fetch(:ram_gib)} GB RAM, #{plan.fetch(:disk_gib)} GB Windows SSD.",
+      price: {
+        price_type: "fixed",
+        currency: "USD",
+        amount: format("%0.2f", plan.fetch(:monthly_price).to_f)
+      }
+    }
   end
 
   def self.polar_product_ids

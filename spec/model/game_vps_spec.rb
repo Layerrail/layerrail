@@ -3,6 +3,26 @@
 require_relative "../spec_helper"
 
 RSpec.describe GameVps do
+  it "uses the reduced price ladder and fixed Windows storage baseline" do
+    expect(described_class.plans.transform_values { it[:monthly_price] }).to eq(
+      "starter" => "3.00",
+      "community" => "5.00",
+      "squad" => "8.00",
+      "growth" => "16.00",
+      "serious" => "40.00",
+      "arena" => "75.00"
+    )
+    expect(described_class.plans.values.map { it[:disk_gib] }.uniq).to eq([128])
+  end
+
+  it "builds the Bachs catalog update from the plan source of truth" do
+    expect(described_class.bachs_product_update_payload("growth")).to eq(
+      name: "LayerRail Game VPS - Growth",
+      description: "Growing roleplay or survival community. 4 vCPU, 16 GB RAM, 128 GB Windows SSD.",
+      price: {price_type: "fixed", currency: "USD", amount: "16.00"}
+    )
+  end
+
   it "keeps plan resources consistent with monthly price" do
     starter = described_class.plans.fetch("starter")
     community = described_class.plans.fetch("community")

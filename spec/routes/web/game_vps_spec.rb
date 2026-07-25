@@ -68,5 +68,49 @@ RSpec.describe Clover, "game vps" do
       expect(page).to have_current_path("#{project.path}/game-vps")
       expect(page).to have_flash_notice("Game VPS payment received. Provisioning started.")
     end
+
+    it "updates the Bachs plan price before starting checkout" do
+      checkout_id = "808e9dc2-2af3-4a8b-9fc9-956f34fac3c2"
+      allow(Config).to receive(:game_vps_provider).and_return("azure")
+      allow(Config).to receive(:game_vps_checkout_provider).and_return("bachs")
+      allow(Config).to receive(:bachs_game_vps_product_ids).and_return(JSON.generate("growth" => "prod_growth"))
+      allow(AzureClient).to receive(:enabled?).and_return(true)
+      allow(BachsClient).to receive(:enabled?).and_return(true)
+      expect(BachsClient).to receive(:update_product)
+        .with("prod_growth", GameVps.bachs_product_update_payload("growth"))
+        .ordered
+        .and_return("id" => "prod_growth")
+      expect(BachsClient).to receive(:create_checkout)
+        .with(
+          hash_including(
+            product_cart: [{product_id: "prod_growth", quantity: 1}],
+            metadata: hash_including(plan: "growth", product_id: "prod_growth", amount_cents: 1600)
+          ),
+          idempotency_key: kind_of(String)
+        )
+        .ordered
+        .and_return("checkout_id" => checkout_id, "checkout_url" => "https://checkout.bachs.io/#{checkout_id}")
+
+      visit "#{project.path}/game-vps/create"
+      csrf_token = find("form[action='#{project.path}/game-vps'] input[name='_csrf']", visible: false).value
+      page.driver.post "#{project.path}/game-vps", {
+        _csrf: csrf_token,
+        name: "growth-server",
+        plan: "growth",
+        location: "azure-eastus",
+        image_alias: "windows-server-2022",
+        rdp_username: "layerrail",
+        rdp_password: "ComplexPass123!"
+      }
+
+      expect(page.status_code).to eq(303)
+      expect(page.response_headers["Location"]).to eq("https://checkout.bachs.io/#{checkout_id}")
+      game_vps = project.game_vpses_dataset.first(name: "growth-server")
+      expect(game_vps).to have_attributes(
+        disk_gib: 128,
+        monthly_price: BigDecimal("16.00")
+      )
+      expect(game_vps.values[:checkout_id]).to eq(checkout_id)
+    end
   end
 end
