@@ -1073,7 +1073,7 @@ class CloverAdmin < Roda
           view("object")
         end
 
-        if (actions = object_actions_for(@obj)).any?
+        if (actions = self.class.object_actions_for(@obj)).any?
           r.is actions.keys do |key|
             action = actions[key]
             action_type = action.type

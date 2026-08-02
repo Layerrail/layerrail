@@ -23,7 +23,7 @@
   <p>Semaphores Set: <%= semaphores.join(", ") %></p>
 <% end %>
 
-<% if actions = OBJECT_ACTIONS[@obj.class.name] %>
+<% if (actions = CloverAdmin.object_actions_for(@obj)).any? %>
   <div id="action-list">Actions:
     <% actions.each do |key, action| %>
       <% if action.type == :form %>
