@@ -63,9 +63,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          MIGRATION_CONTAINER="layerrail-migrate-${{ github.run_id }}"
+          MIGRATION_CONTAINER="layerrail-migrate-${{ github.run_id }}-${{ github.run_attempt }}"
           LOGIN_SERVER="$(az acr show --name "$ACR_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --query loginServer -o tsv)"
           ACR_PASSWORD="$(az acr credential show --name "$ACR_NAME" --resource-group "$AZURE_RESOURCE_GROUP" --query 'passwords[0].value' -o tsv)"
+
+          cleanup_migration_container() {
+            az container delete --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" --yes 2>/dev/null || true
+          }
+          trap cleanup_migration_container EXIT
+          cleanup_migration_container
           
           # Get database URL and other mandatory secrets from web app configuration
           DB_URL="$(az webapp config appsettings list --resource-group "$AZURE_RESOURCE_GROUP" --name "$WEB_APP_NAME" --query '[?name==`CLOVER_DATABASE_URL`].value' -o tsv)"
@@ -111,8 +117,6 @@ jobs:
             sleep 5
           done
           
-          echo "Cleaning up migration container..."
-          az container delete --resource-group "$AZURE_RESOURCE_GROUP" --name "$MIGRATION_CONTAINER" --yes 2>/dev/null || true
 
       - name: Deploy web app to staging slot
         uses: azure/webapps-deploy@v3

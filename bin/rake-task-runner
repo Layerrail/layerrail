@@ -34,22 +34,30 @@ when "db_extensions"
   require_args.call(0..0)
 
   load_db.call
-  DB.loggers << Logger.new($stdout)
+  db_logger = Logger.new($stdout)
+  DB.loggers << db_logger
 
   DB.run("CREATE EXTENSION IF NOT EXISTS citext")
   DB.run("CREATE EXTENSION IF NOT EXISTS btree_gist")
-  ph_user = "#{DB.get(Sequel.lit('current_user'))}_password"
+  ph_user = "#{DB.get(Sequel.lit("current_user"))}_password"
   ph_password = DB.opts[:password]
   ph_user_sql = DB.literal(ph_user.to_sym)
   ph_password_sql = DB.literal(ph_password)
 
+  # Role-management queries contain the database password. Do not emit them
+  # through Sequel's SQL logger, which is captured by public deployment logs.
+  DB.loggers.delete(db_logger)
   begin
-    DB.run("CREATE ROLE #{ph_user_sql} LOGIN PASSWORD #{ph_password_sql}")
-  rescue Sequel::DatabaseError => error
-    raise unless error.message.include?("already exists")
-  end
+    begin
+      DB.run("CREATE ROLE #{ph_user_sql} LOGIN PASSWORD #{ph_password_sql}")
+    rescue Sequel::DatabaseError => error
+      raise unless error.message.include?("already exists")
+    end
 
-  DB.run("ALTER ROLE #{ph_user_sql} LOGIN PASSWORD #{ph_password_sql}")
+    DB.run("ALTER ROLE #{ph_user_sql} LOGIN PASSWORD #{ph_password_sql}")
+  ensure
+    DB.loggers << db_logger
+  end
 
 when "migrate"
   version, ncpu = require_args.call(2..2)
