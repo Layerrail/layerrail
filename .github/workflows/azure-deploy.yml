@@ -131,12 +131,24 @@ jobs:
             exit 1
           fi
 
-          az webapp config appsettings set \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --name "$WEB_APP_NAME" \
-            --slot "$WEB_APP_SLOT_NAME" \
-            --settings CLOVER_DATABASE_URL="$DB_URL" CLOVER_COLUMN_ENCRYPTION_KEY="$ENC_KEY" CLOVER_SESSION_SECRET="$SESSION_SECRET" \
-            --output none
+          for i in {1..60}; do
+            if az webapp config appsettings set \
+              --resource-group "$AZURE_RESOURCE_GROUP" \
+              --name "$WEB_APP_NAME" \
+              --slot "$WEB_APP_SLOT_NAME" \
+              --settings CLOVER_DATABASE_URL="$DB_URL" CLOVER_COLUMN_ENCRYPTION_KEY="$ENC_KEY" CLOVER_SESSION_SECRET="$SESSION_SECRET" \
+              --output none; then
+              break
+            fi
+
+            if [ "$i" -eq 60 ]; then
+              echo "Staging slot settings remained locked"
+              exit 1
+            fi
+
+            echo "Staging slot is busy; retrying settings synchronization ($i/60)"
+            sleep 5
+          done
 
       - name: Deploy web app to staging slot
         uses: azure/webapps-deploy@v3
