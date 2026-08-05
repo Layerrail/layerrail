@@ -330,6 +330,12 @@ RSpec.describe Prog::Kubernetes::KubernetesNodeNexus do
       expect(Semaphore.where(strand_id: kc.id, name: "sync_worker_mesh").count).to eq(1)
     end
 
+    it "exits cleanly if another cleanup already deleted the node" do
+      kd.destroy
+
+      expect { nx.wait_vm_destroyed }.to exit({"msg" => "kubernetes node is deleted"})
+    end
+
     it "does not schedule cluster sync work while the cluster is deleting" do
       kc.incr_destroy
       allow(Vm).to receive(:[]).with(kd.vm_id).and_return(nil)

@@ -329,11 +329,20 @@ RSpec.describe Scheduling::Dispatcher do
     it "emits metrics every 200 queue entries" do
       q = Queue.new
       n = described_class::METRICS_EVERY
-      n.times { q.push 1 }
+      metric = instance_double(Strand::RespirateMetrics, complete?: true)
+      n.times { q.push metric }
       q.push nil
-      expect(di).to receive(:metrics_hash).with([1] * n, instance_of(Float)).and_return({})
+      expect(di).to receive(:metrics_hash).with([metric] * n, instance_of(Float)).and_return({})
       expect(Clog).to receive(:emit).and_call_original
       di.metrics_thread(q)
+    end
+
+    it "ignores incomplete metrics" do
+      q = Queue.new
+      q.push(Strand::RespirateMetrics.new)
+      q.push(nil)
+      expect(di).not_to receive(:metrics_hash)
+      expect(di.metrics_thread(q)).to be_nil
     end
   end
 
@@ -448,6 +457,26 @@ RSpec.describe Scheduling::Dispatcher do
   end
 
   describe "#run_strand" do
+    it "does not enqueue metrics when the lease check did not complete" do
+      st = Strand.create(prog: "Test", label: "wait_exit", schedule: Time.now - 10)
+      st.scan_picked_up!
+      st.worker_started!
+      expect(st).to receive(:run).and_raise(Strand::InternalError, "failed before lease check")
+
+      di.instance_variable_get(:@metrics_queue).push(nil)
+      di.instance_variable_get(:@metrics_thread).join
+      metrics_queue = di.instance_variable_set(:@metrics_queue, Queue.new)
+
+      start_queue = Queue.new
+      finish_queue = Queue.new
+      di.instance_variable_get(:@current_strands)[st.id] = true
+
+      expect(di.run_strand(st, start_queue, finish_queue)).to be_a Strand::InternalError
+      expect(start_queue.pop(true)).to eq st.ubid
+      expect(finish_queue.pop(true)).to be true
+      expect(metrics_queue.pop(timeout: 0)).to be_nil
+    end
+
     it "print exceptions if they are raised" do
       ex = begin
         begin

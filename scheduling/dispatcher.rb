@@ -252,6 +252,8 @@ class Scheduling::Dispatcher
     array = []
     t = Time.now
     while (metric = metrics_queue.pop)
+      next unless metric.complete?
+
       array << metric
       if array.size == METRICS_EVERY
         new_t = Time.now
@@ -540,9 +542,11 @@ class Scheduling::Dispatcher
     finish_queue.push(true)
     @mutex.synchronize { @current_strands.delete(strand.id) }
 
-    # Do not push metrics if a disconnect errors, as the information could
-    # be incomplete.
-    @metrics_queue.push(strand.respirate_metrics) unless disconnect
+    # Do not push metrics if the strand disconnected or failed before all
+    # timing fields were recorded. Incomplete metrics would terminate the
+    # metrics thread when it attempts to calculate delay values.
+    metrics = strand.respirate_metrics
+    @metrics_queue.push(metrics) if !disconnect && metrics.complete?
 
     # If there are any sessions in the thread-local (really fiber-local) ssh
     # cache after the strand run, close them eagerly to close the related
