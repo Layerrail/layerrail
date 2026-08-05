@@ -96,8 +96,8 @@ RSpec.describe Strand do
   it "bulk deletes semaphores when a top-level strand self-reaps" do
     st.label = "hop_exit"
     st.save_changes
-    3.times { Semaphore.incr(st.id, :destroy) }
-    Semaphore.incr(st.id, :destroying)
+    3.times { Semaphore.create(strand_id: st.id, name: "destroy") }
+    Semaphore.create(strand_id: st.id, name: "destroying")
     sql = []
     sql_logger = DB.loggers.first
     original_log_level = sql_logger.level

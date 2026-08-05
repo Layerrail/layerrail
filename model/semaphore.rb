@@ -15,6 +15,18 @@ class Semaphore < Sequel::Model
       raise "invalid name given to Semaphore.incr: #{name.inspect}"
     end
 
+    if name == "destroy"
+      return DB.transaction do
+        strand = DB[:strand].where(id:)
+        next unless strand.for_update.get(:id)
+
+        strand.update(schedule: Sequel::CURRENT_TIMESTAMP)
+        unless where(strand_id: id, name: ["destroy", "destroying"]).any?
+          insert(id: generate_uuid, strand_id: id, name:)
+        end
+      end
+    end
+
     with(:updated_strand,
       Strand
         .where(id:)

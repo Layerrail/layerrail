@@ -15,6 +15,25 @@ RSpec.describe Semaphore do
     expect { described_class.incr(st.id, nil) }.to raise_error(RuntimeError)
   end
 
+  it ".incr coalesces repeated destroy signals" do
+    st.update(schedule: Time.now + 60)
+
+    3.times { described_class.incr(st.id, :destroy) }
+
+    expect(described_class.where(strand_id: st.id, name: "destroy").count).to eq(1)
+    expect(st.reload.schedule).to be < Time.now + 5
+  end
+
+  it ".incr only wakes a strand if destruction is already underway" do
+    described_class.incr(st.id, :destroying)
+    st.update(schedule: Time.now + 60)
+
+    3.times { described_class.incr(st.id, :destroy) }
+
+    expect(described_class.where(strand_id: st.id, name: "destroy")).to be_empty
+    expect(st.reload.schedule).to be < Time.now + 5
+  end
+
   it ".set_at returns the Time the given semaphore id was set at" do
     time = described_class.set_at(described_class.generate_uuid)
     expect(time).to be_within(1).of(Time.now)
