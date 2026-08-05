@@ -93,6 +93,29 @@ RSpec.describe Strand do
     }.to change { [st.label, st.exitval] }.from(["hop_entry", nil]).to(["hop_exit", {msg: "hop finished"}])
   end
 
+  it "bulk deletes semaphores when a top-level strand self-reaps" do
+    st.label = "hop_exit"
+    st.save_changes
+    3.times { Semaphore.incr(st.id, :destroy) }
+    Semaphore.incr(st.id, :destroying)
+    sql = []
+    sql_logger = DB.loggers.first
+    original_log_level = sql_logger.level
+
+    expect(st.semaphores_dataset.count).to eq(4)
+    allow(sql_logger).to receive(:info) { sql << it }
+    begin
+      sql_logger.level = Logger::INFO
+      st.run
+    ensure
+      sql_logger.level = original_log_level
+    end
+
+    expect(sql.grep(/DELETE FROM "semaphore"/).length).to eq(1)
+    expect(Semaphore.where(strand_id: st.id)).to be_empty
+    expect(st).not_to exist
+  end
+
   it "nap handler preserves signal schedule when concurrent incr detected" do
     st.update(label: "napper")
 

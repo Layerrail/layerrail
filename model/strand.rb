@@ -271,7 +271,9 @@ SQL
         @exited = true
       else
         # No parent Strand to reap here, so self-reap.
-        semaphores_dataset.destroy
+        # Semaphore has no archival or destroy hooks, so delete all pending
+        # signals in one statement instead of one statement per row.
+        semaphores_dataset.delete(force: true)
         destroy
         @deleted = true
       end
