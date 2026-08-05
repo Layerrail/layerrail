@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 Sequel.migration do
-  up do
-    run <<~SQL
-      LOCK TABLE strand, semaphore IN ACCESS EXCLUSIVE MODE;
+  no_transaction
 
+  up do
+    repair_sql = <<~SQL
       -- Prefer an active copy so an exited duplicate cannot discard unfinished
       -- work, then keep the copy that was most recently leased or scheduled.
       -- ctid is only a deterministic final tie-breaker while the table is locked.
@@ -153,6 +153,25 @@ Sequel.migration do
       END
       $$;
     SQL
+
+    lock_attempt = 0
+
+    begin
+      transaction do
+        run "LOCK TABLE strand, semaphore IN ACCESS EXCLUSIVE MODE NOWAIT"
+        run repair_sql
+      end
+    rescue Sequel::DatabaseLockTimeout, Sequel::SerializationFailure => error
+      lock_attempt += 1
+      raise if lock_attempt >= 300
+
+      if lock_attempt == 1 || (lock_attempt % 20).zero?
+        warn "Strand integrity repair waiting for active workers (attempt #{lock_attempt}/300, #{error.class})"
+      end
+
+      sleep(0.2 + rand * 0.8)
+      retry
+    end
   end
 
   down do
