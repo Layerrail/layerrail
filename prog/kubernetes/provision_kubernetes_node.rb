@@ -10,6 +10,9 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
 
   PROVISIONING_DEADLINE = 20 * 60
   PROVISIONING_DEADLINE_EXTENSION = 24 * 60 * 60
+  # daemonizer2 retains terminal systemd unit state. This new unit escapes the
+  # legacy failed unit; failed v2 runs are explicitly cleaned and retried below.
+  PREPARE_NODE_RUNTIME_UNIT = "prepare_kubernetes_node_v2"
   KUBECONFIG_DIR = "/home/ubi/.kube".freeze
   KUBECONFIG_PATH = "#{KUBECONFIG_DIR}/config".freeze
   LOCAL_KUBECONFIG_REWRITE = <<~'RUBY'.tr("\n", "; ").freeze
@@ -90,6 +93,29 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
 
     Clog.emit(message, {kubernetes_daemonizer_progress: {unit_name:, node_ubid: node.ubid, logs: vm.sshable.d_logs(unit_name)}})
     update_stack(last_logged_at_key => Time.now.to_s)
+  end
+
+  def prepare_node_runtime_script
+    @prepare_node_runtime_script ||= linode_kubernetes_prepare_script
+  end
+
+  def prepare_node_runtime_unit
+    PREPARE_NODE_RUNTIME_UNIT
+  end
+
+  def run_node_runtime_preparation(failure_count: 0)
+    extend_provisioning_deadline("assign_role")
+    update_stack(
+      "prepare_linode_kubernetes_node_started_at" => Time.now.to_s,
+      "prepare_linode_kubernetes_node_last_logged_at" => nil,
+      "prepare_linode_kubernetes_node_failure_count" => failure_count,
+    )
+    vm.sshable.d_run(prepare_node_runtime_unit, "bash", "-s", stdin: prepare_node_runtime_script, log: false)
+  end
+
+  def node_runtime_retry_delay(failure_count)
+    exponent = (failure_count - 1).clamp(0, 4)
+    [30 * (2**exponent), 5 * 60].min
   end
 
   def fetch_join_parameter(cp_sshable, command, pattern: nil, transform: :strip)
@@ -338,26 +364,23 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
 
   label def prepare_node_runtime
     if provider_backed_vm?(vm)
-      state = vm.sshable.d_check("prepare_linode_kubernetes_node")
+      state = vm.sshable.d_check(prepare_node_runtime_unit)
       case state
       when "Succeeded"
         update_stack(
           "prepare_linode_kubernetes_node_started_at" => nil,
           "prepare_linode_kubernetes_node_last_logged_at" => nil,
+          "prepare_linode_kubernetes_node_failure_count" => nil,
         )
+        Page.from_tag_parts("KubernetesNodePrepareLinodeFailed", node.ubid)&.incr_resolve
         configure_kubernetes_node_services
         hop_assign_role
       when "NotStarted"
-        extend_provisioning_deadline("assign_role")
-        update_stack(
-          "prepare_linode_kubernetes_node_started_at" => Time.now.to_s,
-          "prepare_linode_kubernetes_node_last_logged_at" => nil,
-        )
-        vm.sshable.d_run("prepare_linode_kubernetes_node", "bash", "-s", stdin: linode_kubernetes_prepare_script, log: false)
+        run_node_runtime_preparation
         nap 15
       when "InProgress"
         emit_daemonizer_progress_logs(
-          "prepare_linode_kubernetes_node",
+          prepare_node_runtime_unit,
           "prepare_linode_kubernetes_node_started_at",
           "prepare_linode_kubernetes_node_last_logged_at",
           "prepare linode kubernetes node still in progress",
@@ -365,13 +388,16 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
         extend_provisioning_deadline("assign_role")
         nap 10
       when "Failed"
-        Clog.emit("prepare linode kubernetes node failed", {logs: vm.sshable.d_logs("prepare_linode_kubernetes_node")})
+        Clog.emit("prepare linode kubernetes node failed", {logs: vm.sshable.d_logs(prepare_node_runtime_unit)})
         Prog::PageNexus.assemble(
           "prepare linode kubernetes node failed on node #{node.ubid}",
           ["KubernetesNodePrepareLinodeFailed", node.ubid],
           [node.ubid, kubernetes_cluster.ubid],
         )
-        nap 30
+        failure_count = frame["prepare_linode_kubernetes_node_failure_count"].to_i + 1
+        vm.sshable.d_clean(prepare_node_runtime_unit)
+        run_node_runtime_preparation(failure_count:)
+        nap node_runtime_retry_delay(failure_count)
       else
         Clog.emit("got unknown state from daemonizer2 check: #{state}")
         nap 30
@@ -429,8 +455,9 @@ if command -v kubelet >/dev/null && command -v kubeadm >/dev/null && command -v 
   exit 0
 fi
 sudo install -d -m 0755 /etc/apt/keyrings
-sudo apt-get update
-sudo apt-get install -y apt-transport-https ca-certificates curl gpg containerd
+sudo env DEBIAN_FRONTEND=noninteractive dpkg --configure -a
+sudo apt-get -o Acquire::Retries=5 update
+sudo env DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=5 install -y --no-install-recommends apt-transport-https ca-certificates curl gpg containerd
 sudo swapoff -a || true
 sudo sed -i.bak '/[[:space:]]swap[[:space:]]/d' /etc/fstab
 sudo modprobe overlay || true
@@ -450,14 +477,35 @@ net.ipv6.conf.default.forwarding = 1
 EOF
 sudo sysctl --system
 sudo mkdir -p /etc/containerd
-sudo containerd config default | sudo tee /etc/containerd/config.toml >/dev/null
-sudo ruby -0777 -i -pe 'gsub(/SystemdCgroup = false/, "SystemdCgroup = true"); unless include?("SystemdCgroup = true"); sub(/(\\[plugins\\.(?:\\"io\\.containerd\\.grpc\\.v1\\.cri\\"|\\x27io\\.containerd\\.cri\\.v1\\.runtime\\x27)\\.containerd\\.runtimes\\.runc\\.options\\]\\n)/, "\\\\1            SystemdCgroup = true\\n"); end' /etc/containerd/config.toml
-sudo systemctl enable --now containerd
-curl -fsSL https://pkgs.k8s.io/core:/stable:/#{repo_version}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg.tmp
+containerd_config=$(mktemp)
+trap 'rm -f "$containerd_config"' EXIT
+cat > "$containerd_config" <<'EOF'
+# Config schema v2 is the common CRI configuration supported by containerd 1.x and 2.x.
+version = 2
+
+[plugins."io.containerd.grpc.v1.cri".containerd]
+  default_runtime_name = "runc"
+
+  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+    runtime_type = "io.containerd.runc.v2"
+
+    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+      SystemdCgroup = true
+EOF
+sudo containerd --config "$containerd_config" config dump >/dev/null
+sudo install -m 0644 "$containerd_config" /etc/containerd/config.toml.new
+sudo mv /etc/containerd/config.toml.new /etc/containerd/config.toml
+rm -f "$containerd_config"
+trap - EXIT
+sudo systemctl enable containerd
+sudo systemctl restart containerd
+sudo systemctl is-active --quiet containerd
+sudo rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg.tmp
+curl --retry 5 --retry-all-errors --connect-timeout 15 -fsSL https://pkgs.k8s.io/core:/stable:/#{repo_version}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg.tmp
 sudo mv /etc/apt/keyrings/kubernetes-apt-keyring.gpg.tmp /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/#{repo_version}/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list >/dev/null
-sudo apt-get update
-sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-get -o Acquire::Retries=5 update
+sudo env DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=5 install -y --no-install-recommends kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 sudo systemctl enable kubelet
 sudo touch #{marker}

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "open3"
 require_relative "../../model/spec_helper"
 
 RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
@@ -274,20 +275,81 @@ RSpec.describe Prog::Kubernetes::ProvisionKubernetesNode do
       allow(prog.vm.location).to receive(:linode?).and_return(true)
     end
 
+    it "uses a new daemonizer unit to recover nodes failed by the legacy script" do
+      expect(prog.prepare_node_runtime_unit).to eq(described_class::PREPARE_NODE_RUNTIME_UNIT)
+      expect(prog.prepare_node_runtime_unit).not_to eq("prepare_linode_kubernetes_node")
+    end
+
     it "runs the Linode Kubernetes preparation script if it's not started and extends the provisioning deadline" do
-      expect(prog.vm.sshable).to receive(:d_check).with("prepare_linode_kubernetes_node").and_return("NotStarted")
+      unit = prog.prepare_node_runtime_unit
+      expect(prog.vm.sshable).to receive(:d_check).with(unit).and_return("NotStarted")
       expect(prog).to receive(:register_deadline).with("assign_role", 20 * 60, allow_extension: 24 * 60 * 60)
-      expect(prog).to receive(:linode_kubernetes_prepare_script).and_return("prepare script")
-      expect(prog.vm.sshable).to receive(:d_run).with("prepare_linode_kubernetes_node", "bash", "-s", stdin: "prepare script", log: false)
+      expect(prog.vm.sshable).to receive(:d_run).with(unit, "bash", "-s", stdin: prog.prepare_node_runtime_script, log: false)
 
       expect { prog.prepare_node_runtime }.to nap(15)
     end
 
     it "extends the provisioning deadline while Linode Kubernetes preparation is in progress" do
-      expect(prog.vm.sshable).to receive(:d_check).with("prepare_linode_kubernetes_node").and_return("InProgress")
+      expect(prog.vm.sshable).to receive(:d_check).with(prog.prepare_node_runtime_unit).and_return("InProgress")
       expect(prog).to receive(:register_deadline).with("assign_role", 20 * 60, allow_extension: 24 * 60 * 60)
 
       expect { prog.prepare_node_runtime }.to nap(10)
+    end
+
+    it "retries failed idempotent preparation with exponential backoff" do
+      unit = prog.prepare_node_runtime_unit
+      allow(prog).to receive(:frame).and_return({"node_id" => node.id, "prepare_linode_kubernetes_node_failure_count" => 2})
+      expect(prog.vm.sshable).to receive(:d_check).with(unit).and_return("Failed")
+      expect(prog.vm.sshable).to receive(:d_logs).with(unit).and_return("failure logs")
+      expect(prog.vm.sshable).to receive(:d_clean).with(unit)
+      expect(prog).to receive(:register_deadline).with("assign_role", 20 * 60, allow_extension: 24 * 60 * 60)
+      expect(prog.vm.sshable).to receive(:d_run).with(unit, "bash", "-s", stdin: prog.prepare_node_runtime_script, log: false)
+
+      expect { prog.prepare_node_runtime }.to nap(120)
+      expect(Page.from_tag_parts("KubernetesNodePrepareLinodeFailed", node.ubid)).not_to be_nil
+      expect(st.reload.stack.first["prepare_linode_kubernetes_node_failure_count"]).to eq(3)
+    end
+
+    it "caps preparation retry backoff at five minutes" do
+      expect(prog.node_runtime_retry_delay(1)).to eq(30)
+      expect(prog.node_runtime_retry_delay(2)).to eq(60)
+      expect(prog.node_runtime_retry_delay(20)).to eq(5 * 60)
+    end
+
+    it "resolves the preparation failure page after a recovered node succeeds" do
+      page = Prog::PageNexus.assemble(
+        "existing failure",
+        ["KubernetesNodePrepareLinodeFailed", node.ubid],
+        [node.ubid, kubernetes_cluster.ubid],
+      ).subject
+      expect(prog.vm.sshable).to receive(:d_check).with(prog.prepare_node_runtime_unit).and_return("Succeeded")
+      expect(prog).to receive(:configure_kubernetes_node_services)
+
+      expect { prog.prepare_node_runtime }.to hop("assign_role")
+      expect(page.reload.resolve_set?).to be true
+    end
+  end
+
+  describe "#linode_kubernetes_prepare_script" do
+    it "writes and validates a containerd 1.x and 2.x compatible systemd cgroup configuration" do
+      script = prog.linode_kubernetes_prepare_script
+
+      expect(script).to include("version = 2")
+      expect(script).to include('[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]')
+      expect(script).to include("SystemdCgroup = true")
+      expect(script).to include('containerd --config "$containerd_config" config dump')
+      expect(script).to include('install -m 0644 "$containerd_config" /etc/containerd/config.toml.new')
+      expect(script).to include("mv /etc/containerd/config.toml.new /etc/containerd/config.toml")
+      expect(script).to include("systemctl restart containerd")
+      expect(script).not_to include("containerd config default")
+      expect(script).not_to include("ruby -0777")
+    end
+
+    it "produces valid Bash with a closed containerd configuration heredoc" do
+      _, error, status = Open3.capture3("bash", "-n", stdin_data: prog.linode_kubernetes_prepare_script)
+
+      expect(error).to be_empty
+      expect(status).to be_success
     end
   end
 
