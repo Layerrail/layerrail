@@ -28,7 +28,7 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
     File.write(path, "#{lines.join("\n")}\n")
   RUBY
   LINODE_PRIVATE_IPV4_COMMAND = <<~'SH'.tr("\n", " ").freeze
-    ips=$(ip -4 -o addr show scope global | awk '{print $4}' | cut -d/ -f1);
+    ips=$(ip -4 -o addr show dev eth0 scope global | awk '{print $4}' | cut -d/ -f1);
     printf "%s\n" "$ips" | grep -E '^192\.168\.' | head -n1 ||
       printf "%s\n" "$ips" | grep -E '^(10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)' | head -n1
   SH
@@ -162,16 +162,13 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
   end
 
   def finish_node_provisioning(client)
-    client.set_node_addresses(
-      node.name,
-      [
-        {"type" => "InternalIP", "address" => vm.private_ipv4_string},
-        {"type" => "InternalIP", "address" => vm.ip6.to_s},
-        {"type" => "Hostname", "address" => node.name},
-      ],
-    )
+    nodes = (kubernetes_cluster.all_functional_nodes + [node]).uniq(&:id)
+    reconciler = Kubernetes::NetworkReconciler.new(kubernetes_cluster, client:)
+    addresses = nodes.to_h do |candidate|
+      [candidate.id, (candidate.id == node.id) ? node_ipv4.to_s : reconciler.node_ipv4(candidate)]
+    end
+    reconciler.reconcile(nodes:, addresses:)
     node.update(state: "active")
-    sync_azure_pod_routes_on_all_nodes
 
     # Mark VM ports on any associated load balancer as "up" so that they can be used immediately
     # without waiting for the health check cycle.
@@ -181,52 +178,11 @@ class Prog::Kubernetes::ProvisionKubernetesNode < Prog::Base
     end
 
     kubernetes_cluster.incr_sync_internal_dns_config
+    SemSnap.use(kubernetes_cluster.id) { it.incr(:sync_pod_network) unless it.set?(:sync_pod_network) }
     kubernetes_cluster.incr_sync_worker_mesh
     pop({node_id: node.id})
-  end
-
-  def sync_azure_pod_routes_on_all_nodes
-    return unless vm.location.azure?
-
-    route_nodes = kubernetes_cluster.all_functional_nodes.select { it.vm.location.azure? }
-    route_nodes.each do |route_node|
-      install_azure_pod_routes(route_node, route_nodes)
-    rescue => ex
-      Clog.emit("failed to install Azure Kubernetes pod routes", Util.exception_to_hash(ex, into: {
-        node_ubid: route_node.ubid,
-        kubernetes_cluster_ubid: kubernetes_cluster.ubid,
-      }))
-    end
-  end
-
-  def install_azure_pod_routes(route_node, route_nodes)
-    routes = route_nodes.reject { it.id == route_node.id }.map do |peer|
-      "ip route replace #{peer.vm.nics.first.private_ipv4} via #{peer.vm.private_ipv4_string} dev eth0"
-    end
-    return if routes.empty?
-
-    route_script = <<~SH
-      #!/bin/sh
-      set -eu
-      #{routes.join("\n")}
-    SH
-    service = <<~UNIT
-      [Unit]
-      Description=LayerRail Kubernetes pod routes
-      After=network-online.target
-      Wants=network-online.target
-
-      [Service]
-      Type=oneshot
-      ExecStart=/usr/local/sbin/layerrail-k8s-routes
-      RemainAfterExit=yes
-
-      [Install]
-      WantedBy=multi-user.target
-    UNIT
-
-    route_node.sshable.cmd("sudo tee /usr/local/sbin/layerrail-k8s-routes > /dev/null && sudo chmod 755 /usr/local/sbin/layerrail-k8s-routes", stdin: route_script, log: false)
-    route_node.sshable.cmd("sudo tee /etc/systemd/system/layerrail-k8s-routes.service > /dev/null && sudo systemctl daemon-reload && sudo systemctl enable --now layerrail-k8s-routes.service && sudo systemctl restart layerrail-k8s-routes.service", stdin: service, log: false)
+  rescue Sshable::SshError => ex
+    retry_join_parameter_preparation(ex, deadline_target: "install_cni")
   end
 
   def finish_join_or_init

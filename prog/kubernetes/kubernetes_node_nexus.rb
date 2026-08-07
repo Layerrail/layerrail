@@ -73,6 +73,11 @@ class Prog::Kubernetes::KubernetesNodeNexus < Prog::Base
         name: kubernetes_node.name,
       ),
     })
+    last_repair = frame["pod_network_repair_requested_at"]
+    if !last_repair || Time.parse(last_repair) < Time.now - 5 * 60
+      SemSnap.use(cluster.id) { it.incr(:sync_pod_network) unless it.set?(:sync_pod_network) }
+      update_stack("pod_network_repair_requested_at" => Time.now.to_s)
+    end
     register_deadline("wait", 15 * 60)
     nap 15
   end
@@ -158,6 +163,7 @@ class Prog::Kubernetes::KubernetesNodeNexus < Prog::Base
     node.destroy
     if (cluster = KubernetesCluster[node.kubernetes_cluster_id]) && !cluster.destroy_set? && !cluster.destroying_set?
       cluster.incr_sync_internal_dns_config
+      SemSnap.use(cluster.id) { it.incr(:sync_pod_network) unless it.set?(:sync_pod_network) }
       cluster.incr_sync_worker_mesh
     end
     pop "kubernetes node is deleted"

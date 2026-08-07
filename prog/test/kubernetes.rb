@@ -75,7 +75,51 @@ class Prog::Test::Kubernetes < Prog::Test::Base
       update_stack({"fail_message" => "node #{missing_nodes.join(", ")} not found in cluster"})
       hop_destroy_kubernetes
     end
+    hop_test_cross_node_network
+  end
+
+  label def test_cross_node_network
+    workers = nodepool.nodes.first(2)
+    if workers.length < 2
+      update_stack({"fail_message" => "Need at least two worker nodes for the cross-node networking test"})
+      hop_destroy_kubernetes
+    end
+
+    manifest = workers.each_with_index.map do |node, index|
+      <<~YAML
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: layerrail-network-test-#{index}
+          labels:
+            app: layerrail-network-test
+        spec:
+          nodeName: #{node.name}
+          restartPolicy: Never
+          containers:
+          - name: server
+            image: ruby:3.4-alpine
+            command: ["ruby", "-run", "-e", "httpd", "/tmp", "-p", "8080"]
+      YAML
+    end.join("---\n")
+    kubernetes_cluster.sshable.cmd("sudo kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f -", stdin: manifest)
+    hop_wait_cross_node_network
+  end
+
+  label def wait_cross_node_network
+    client = kubernetes_cluster.client
+    pods = JSON.parse(client.kubectl("get pods -l app=layerrail-network-test -ojson")).fetch("items")
+    nap 5 unless pods.length == 2 && pods.all? { it.dig("status", "phase") == "Running" && it.dig("status", "podIP") }
+
+    first, second = pods.sort_by { it.dig("metadata", "name") }
+    command = NetSsh.command("wget -qO- --timeout=3 http://:ip:8080/", ip: second.dig("status", "podIP"))
+    client.kubectl("exec :pod -- sh -c :command", pod: first.dig("metadata", "name"), command:)
+    client.kubectl("exec :pod -- getent hosts kubernetes.default.svc.cluster.local")
+    client.kubectl("delete pods -l app=layerrail-network-test --wait=false")
     hop_test_csi
+  rescue => ex
+    update_stack({"fail_message" => "Cross-node pod networking or cluster DNS failed: #{ex.message}"})
+    hop_destroy_kubernetes
   end
 
   label def test_csi

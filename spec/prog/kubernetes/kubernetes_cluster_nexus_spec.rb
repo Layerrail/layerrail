@@ -150,8 +150,10 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
       if kubernetes_location.linode?
         expected_cp_rules << "192.168.0.0/16:6443...6444"
         expected_cp_rules << "192.168.0.0/16:10250...10251"
+        expected_cp_rules << "192.168.0.0/16:8472...8473"
       end
       expect(internal_firewall.firewall_rules.map { "#{it.cidr}:#{it.port_range.to_range}" }.sort).to eq expected_cp_rules.sort
+      expect(internal_firewall.firewall_rules.find { it.port_range.to_range == (8472...8473) }&.protocol).to eq("udp") if kubernetes_location.linode?
 
       internal_firewall = kc.internal_worker_vm_firewall
       expect(internal_firewall.project_id).to eq Config.kubernetes_service_project_id
@@ -165,8 +167,12 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
         "::/0:80...81",
         "#{kc.private_subnet.net6}:10250...10251",
       ]
-      expected_worker_rules << "192.168.0.0/16:10250...10251" if kubernetes_location.linode?
+      if kubernetes_location.linode?
+        expected_worker_rules << "192.168.0.0/16:10250...10251"
+        expected_worker_rules << "192.168.0.0/16:8472...8473"
+      end
       expect(internal_firewall.firewall_rules.map { "#{it.cidr}:#{it.port_range.to_range}" }.sort).to eq expected_worker_rules.sort
+      expect(internal_firewall.firewall_rules.find { it.port_range.to_range == (8472...8473) }&.protocol).to eq("udp") if kubernetes_location.linode?
     end
 
     it "has defaults for node size, storage size, version and subnet" do
@@ -518,6 +524,11 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
       expect { nx.wait }.to hop("sync_worker_mesh")
     end
 
+    it "hops to sync_pod_network when semaphore is set" do
+      nx.incr_sync_pod_network
+      expect { nx.wait }.to hop("sync_pod_network")
+    end
+
     it "hops to install_csi when semaphore is set" do
       nx.incr_install_csi
       expect { nx.wait }.to hop("install_csi")
@@ -703,6 +714,17 @@ RSpec.describe Prog::Kubernetes::KubernetesClusterNexus do
       expect(kubernetes_cluster.worker_functional_nodes.last.vm.sshable).to receive(:_cmd).with("tee ~/.ssh/authorized_keys > /dev/null && chmod 0600 ~/.ssh/authorized_keys", stdin: second_vm_authorized_keys)
 
       expect { nx.sync_worker_mesh }.to hop("wait")
+    end
+  end
+
+  describe "#sync_pod_network" do
+    it "reconciles CNI and pod routes for existing clusters" do
+      reconciler = instance_double(Kubernetes::NetworkReconciler)
+      expect(Kubernetes::NetworkReconciler).to receive(:new).with(kubernetes_cluster).and_return(reconciler)
+      expect(reconciler).to receive(:reconcile)
+
+      expect { nx.sync_pod_network }.to hop("wait")
+      expect(nx.sync_pod_network_set?).to be false
     end
   end
 

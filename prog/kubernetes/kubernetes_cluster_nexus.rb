@@ -69,7 +69,10 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
   def self.linode_private_kubelet_rules(location)
     return [] unless location.linode?
 
-    [{cidr: LINODE_PRIVATE_IPV4_CIDR, port_range: Sequel.pg_range(10250..10250)}]
+    [
+      {cidr: LINODE_PRIVATE_IPV4_CIDR, port_range: Sequel.pg_range(10250..10250)},
+      {cidr: LINODE_PRIVATE_IPV4_CIDR, port_range: Sequel.pg_range(Kubernetes::NetworkReconciler::VXLAN_PORT..Kubernetes::NetworkReconciler::VXLAN_PORT), protocol: "udp"},
+    ]
   end
 
   def self.linode_private_control_plane_rules(location)
@@ -77,7 +80,8 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
 
     [
       {cidr: LINODE_PRIVATE_IPV4_CIDR, port_range: Sequel.pg_range(6443..6443)},
-      {cidr: LINODE_PRIVATE_IPV4_CIDR, port_range: Sequel.pg_range(10250..10250)}
+      {cidr: LINODE_PRIVATE_IPV4_CIDR, port_range: Sequel.pg_range(10250..10250)},
+      {cidr: LINODE_PRIVATE_IPV4_CIDR, port_range: Sequel.pg_range(Kubernetes::NetworkReconciler::VXLAN_PORT..Kubernetes::NetworkReconciler::VXLAN_PORT), protocol: "udp"},
     ]
   end
 
@@ -274,6 +278,10 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
       hop_install_metrics_server
     end
 
+    when_sync_pod_network_set? do
+      hop_sync_pod_network
+    end
+
     when_sync_worker_mesh_set? do
       hop_sync_worker_mesh
     end
@@ -371,6 +379,12 @@ class Prog::Kubernetes::KubernetesClusterNexus < Prog::Base
       vm.sshable.cmd("tee ~/.ssh/authorized_keys > /dev/null && chmod 0600 ~/.ssh/authorized_keys", stdin: all_keys_str)
     end
 
+    hop_wait
+  end
+
+  label def sync_pod_network
+    decr_sync_pod_network
+    Kubernetes::NetworkReconciler.new(kubernetes_cluster).reconcile
     hop_wait
   end
 
