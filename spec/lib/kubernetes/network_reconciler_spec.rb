@@ -111,18 +111,14 @@ RSpec.describe Kubernetes::NetworkReconciler do
     second_script = reconciler.route_script(second_node, [first_node, second_node], addresses)
 
     expect(first_script).to include(
-      "preserve_underlay_route -4 10.138.2.1 32",
-      "preserve_underlay_route -6 fd40:0:0:1::1 128",
+      "preserve_underlay_route 10.138.2.1",
       'ip route get 10.138.2.1 | grep -Fv "dev layerrail-vxlan" > /dev/null',
-      'ip -6 route get fd40:0:0:1::1 | grep -Fv "dev layerrail-vxlan" > /dev/null',
     )
     expect(second_script).to include(
-      "preserve_underlay_route -4 10.138.1.1 32",
-      "preserve_underlay_route -6 fd40::1 128",
+      "preserve_underlay_route 10.138.1.1",
       'ip route get 10.138.1.1 | grep -Fv "dev layerrail-vxlan" > /dev/null',
-      'ip -6 route get fd40::1 | grep -Fv "dev layerrail-vxlan" > /dev/null',
     )
-    expect(first_script.index("preserve_underlay_route -4 10.138.2.1 32")).to be < first_script.index("ip route replace 10.138.2.0/24")
+    expect(first_script.index("preserve_underlay_route 10.138.2.1")).to be < first_script.index("ip route replace 10.138.2.0/24")
   end
 
   it "uses stable, cluster-scoped tunnel identities" do

@@ -117,7 +117,7 @@ class Kubernetes::NetworkReconciler
         "ip -6 route replace #{cidr} via #{peer_network.fetch(:tunnel_ipv6)} dev #{VXLAN_DEVICE} onlink proto #{ROUTE_PROTOCOL}"
       end
       <<~SH.chomp
-        #{underlay_route_exceptions(node, peer, addresses.fetch(peer.id)).join("\n")}
+        #{underlay_route_exceptions(peer, addresses.fetch(peer.id)).join("\n")}
         bridge fdb append 00:00:00:00:00:00 dev #{VXLAN_DEVICE} dst #{addresses.fetch(peer.id)} self permanent
         bridge fdb append #{peer_network.fetch(:mac)} dev #{VXLAN_DEVICE} dst #{addresses.fetch(peer.id)} self permanent
         ip neigh replace #{peer_network.fetch(:tunnel_ipv4)} lladdr #{peer_network.fetch(:mac)} nud permanent dev #{VXLAN_DEVICE}
@@ -127,7 +127,6 @@ class Kubernetes::NetworkReconciler
         ip route replace #{peer.vm.nics.first.private_ipv4} via #{peer_network.fetch(:tunnel_ipv4)} dev #{VXLAN_DEVICE} onlink proto #{ROUTE_PROTOCOL}
         #{ipv6_routes.join("\n")}
         ip route get #{addresses.fetch(peer.id)} | grep -Fv "dev #{VXLAN_DEVICE}" > /dev/null
-        ip -6 route get #{peer.vm.ip6} | grep -Fv "dev #{VXLAN_DEVICE}" > /dev/null
       SH
     end
     <<~SH
@@ -155,33 +154,25 @@ class Kubernetes::NetworkReconciler
       ip -6 neigh flush dev #{VXLAN_DEVICE} 2>/dev/null || true
       bridge fdb flush dev #{VXLAN_DEVICE} 2>/dev/null || true
       preserve_underlay_route() {
-        family="$1"
-        address="$2"
-        prefix="$3"
-        route="$(ip "$family" route get "$address" | head -n1)"
+        address="$1"
+        route="$(ip -4 route get "$address" | head -n1)"
         device="$(printf '%s\n' "$route" | awk '{for (i = 1; i <= NF; i++) if ($i == "dev") {print $(i + 1); exit}}')"
         gateway="$(printf '%s\n' "$route" | awk '{for (i = 1; i <= NF; i++) if ($i == "via") {print $(i + 1); exit}}')"
         test -n "$device"
         if [ -n "$gateway" ]; then
-          ip "$family" route replace "$address/$prefix" via "$gateway" dev "$device" proto #{ROUTE_PROTOCOL}
+          ip route replace "$address/32" via "$gateway" dev "$device" proto #{ROUTE_PROTOCOL}
         else
-          ip "$family" route replace "$address/$prefix" dev "$device" proto #{ROUTE_PROTOCOL}
+          ip route replace "$address/32" dev "$device" proto #{ROUTE_PROTOCOL}
         fi
       }
       #{peers.join("\n")}
     SH
   end
 
-  def underlay_route_exceptions(node, peer, peer_ipv4)
+  def underlay_route_exceptions(peer, peer_ipv4)
     routes = []
     if IPAddr.new(peer.vm.nics.first.private_ipv4.to_s).include?(peer_ipv4)
-      routes << "preserve_underlay_route -4 #{peer_ipv4} 32"
-    end
-
-    peer_ipv6 = peer.vm.ip6.to_s
-    peer_ipv6_cidrs = [peer.vm.nics.first.private_ipv6, pod_ipv6_subnet(peer)].uniq(&:to_s)
-    if peer_ipv6_cidrs.any? { IPAddr.new(it.to_s).include?(peer_ipv6) }
-      routes << "preserve_underlay_route -6 #{peer_ipv6} 128"
+      routes << "preserve_underlay_route #{peer_ipv4}"
     end
     routes
   end

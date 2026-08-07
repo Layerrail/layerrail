@@ -69,8 +69,6 @@ RSpec.describe Kubernetes::NetworkReconciler, :no_db_transaction do
       run.call("ip netns exec #{right_ns} sh -c #{Shellwords.escape(right_script)}")
       expect(run.call("ip netns exec #{left_ns} ip route get 10.138.2.1")).to include("dev eth0")
       expect(run.call("ip netns exec #{right_ns} ip route get 10.138.1.1")).to include("dev eth0")
-      expect(run.call("ip netns exec #{left_ns} ip -6 route get fd00::1:0:0:1")).to include("dev eth0")
-      expect(run.call("ip netns exec #{right_ns} ip -6 route get fd00::1")).to include("dev eth0")
       run.call("ip netns exec #{left_ns} ping -c 1 -W 1 #{reconciler.vxlan_topology([left, right]).fetch(right.id).fetch(:tunnel_ipv4)}")
       run.call("ip netns exec #{left_ns} ping -c 2 -W 1 10.138.2.2")
       run.call("ip netns exec #{right_ns} ping -c 2 -W 1 10.138.1.2")
