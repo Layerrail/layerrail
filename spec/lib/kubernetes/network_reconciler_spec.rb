@@ -21,7 +21,7 @@ RSpec.describe Kubernetes::NetworkReconciler do
       location: linode_location,
       nics: [first_nic],
       private_ipv4_string: "10.138.1.1",
-      ip6: NetAddr.parse_ip("2600:3c00::1"),
+      ip6: NetAddr.parse_ip("fd40::1"),
     )
   end
   let(:second_vm) do
@@ -30,7 +30,7 @@ RSpec.describe Kubernetes::NetworkReconciler do
       location: azure_location,
       nics: [second_nic],
       private_ipv4_string: "10.138.2.1",
-      ip6: NetAddr.parse_ip("2600:3c00::2"),
+      ip6: NetAddr.parse_ip("fd40:0:0:1::1"),
     )
   end
   let(:first_node) { instance_double(KubernetesNode, id: "first", name: "first-node", vm: first_vm, sshable: first_sshable) }
@@ -102,6 +102,27 @@ RSpec.describe Kubernetes::NetworkReconciler do
       "ip route replace 10.138.1.0/24 via #{topology.fetch(first_node.id).fetch(:tunnel_ipv4)} dev layerrail-vxlan onlink proto 196",
     )
     expect(reconciler.route_script(first_node, [first_node, second_node], addresses)).to include("ip route flush proto 196")
+  end
+
+  it "keeps peer node underlay addresses off overlapping pod CIDR routes" do
+    addresses = {first_node.id => "10.138.1.1", second_node.id => "10.138.2.1"}
+
+    first_script = reconciler.route_script(first_node, [first_node, second_node], addresses)
+    second_script = reconciler.route_script(second_node, [first_node, second_node], addresses)
+
+    expect(first_script).to include(
+      "preserve_underlay_route -4 10.138.2.1 32",
+      "preserve_underlay_route -6 fd40:0:0:1::1 128",
+      'ip route get 10.138.2.1 | grep -Fv "dev layerrail-vxlan" > /dev/null',
+      'ip -6 route get fd40:0:0:1::1 | grep -Fv "dev layerrail-vxlan" > /dev/null',
+    )
+    expect(second_script).to include(
+      "preserve_underlay_route -4 10.138.1.1 32",
+      "preserve_underlay_route -6 fd40::1 128",
+      'ip route get 10.138.1.1 | grep -Fv "dev layerrail-vxlan" > /dev/null',
+      'ip -6 route get fd40::1 | grep -Fv "dev layerrail-vxlan" > /dev/null',
+    )
+    expect(first_script.index("preserve_underlay_route -4 10.138.2.1 32")).to be < first_script.index("ip route replace 10.138.2.0/24")
   end
 
   it "uses stable, cluster-scoped tunnel identities" do
