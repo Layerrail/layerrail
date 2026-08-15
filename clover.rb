@@ -1260,6 +1260,10 @@ class Clover < Roda
       response.json = true
       response.skip_content_security_policy!
 
+      r.get "v1", "models" do
+        handle_inference_models_request
+      end
+
       r.post "v1", "chat", "completions" do
         handle_cloudflare_ai_request("chat/completions", "Text Generation")
       end
@@ -1339,6 +1343,10 @@ class Clover < Roda
 
         response.json = true
         response.skip_content_security_policy!
+
+        r.get "v1", "models" do
+          handle_inference_models_request
+        end
 
         r.post "v1", "chat", "completions" do
           handle_cloudflare_ai_request("chat/completions", "Text Generation")

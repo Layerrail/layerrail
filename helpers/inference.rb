@@ -93,6 +93,34 @@ class Clover
       inference_router_model_ds.eager(inference_router: {load_balancer: :private_subnet}).all
   end
 
+  def inference_models_for_project(project)
+    return catalog_inference_models if cloudflare_inference_provider?
+
+    previous_project = @project
+    @project = project
+    all_inference_models
+  ensure
+    @project = previous_project
+  end
+
+  def handle_inference_models_request
+    no_authorization_needed
+    no_audit_log
+
+    unless Config.ai_inference_enabled && cloudflare_inference_provider?
+      fail CloverError.new(501, "NotEnabled", "Cloudflare AI Inference is not enabled.")
+    end
+
+    api_key = inference_api_key_from_authorization_header
+    fail CloverError.new(401, "InvalidCredentials", "invalid inference API key provided in Authorization header") unless api_key
+    fail CloverError.new(403, "ProjectInactive", "the project for this inference API key is not active") unless api_key.project&.active?
+
+    {
+      "object" => "list",
+      "data" => inference_models_for_project(api_key.project).map { openai_model_entry(it) },
+    }
+  end
+
   def inference_api_key_ds
     dataset = dataset_authorize(@project.api_keys_dataset.where(used_for: "inference_endpoint"), "InferenceApiKey:view")
     dataset = dataset.where(is_valid: true)
@@ -819,5 +847,20 @@ class Clover
       result["description"],
       *Array(body["result"]).map { it.is_a?(Hash) ? [it["label"], it["score"]].compact.join(" ") : nil },
     ].compact.join("\n")
+  end
+
+  def openai_model_entry(model)
+    owned_by = if model.respond_to?(:provider)
+      model.provider
+    else
+      model.tags.fetch("provider", "layerrail")
+    end
+
+    {
+      "id" => model.model_name,
+      "object" => "model",
+      "created" => 1_700_000_000,
+      "owned_by" => owned_by,
+    }
   end
 end
