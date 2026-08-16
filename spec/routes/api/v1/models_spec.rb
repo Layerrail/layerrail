@@ -57,6 +57,6 @@ RSpec.describe Clover, "GET /v1/models" do
     header "Authorization", "Bearer #{api_key.key}"
     get "/v1/models"
 
-    expect(last_response).to have_api_error(501, "Cloudflare AI Inference is not enabled.")
+    expect(last_response).to have_api_error(501, "AI Inference is not enabled.")
   end
 end

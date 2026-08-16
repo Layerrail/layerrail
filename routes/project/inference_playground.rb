@@ -9,7 +9,7 @@ class Clover
     end
 
     r.get web? do
-      content_security_policy.add_connect_src "https://*.#{Config.inference_dns_zone}" unless cloudflare_inference_provider?
+      content_security_policy.add_connect_src "https://*.#{Config.inference_dns_zone}" unless catalog_inference_provider?
 
       DB.ignore_duplicate_queries do
         @inference_models = all_inference_models

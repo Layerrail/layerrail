@@ -47,8 +47,8 @@ class Clover
     "Voice Activity Detection",
   ].freeze
 
-  def cloudflare_inference_provider?
-    Config.ai_inference_provider == "cloudflare"
+  def catalog_inference_provider?
+    %w[cloudflare azure_foundry openrouter].include?(Config.ai_inference_provider)
   end
 
   def cloudflare_inference_models
@@ -87,14 +87,14 @@ class Clover
   end
 
   def all_inference_models
-    return catalog_inference_models if cloudflare_inference_provider?
+    return catalog_inference_models if catalog_inference_provider?
 
     inference_endpoint_ds.eager(:location, load_balancer: :private_subnet).all +
       inference_router_model_ds.eager(inference_router: {load_balancer: :private_subnet}).all
   end
 
   def inference_models_for_project(project)
-    return catalog_inference_models if cloudflare_inference_provider?
+    return catalog_inference_models if catalog_inference_provider?
 
     previous_project = @project
     @project = project
@@ -107,8 +107,8 @@ class Clover
     no_authorization_needed
     no_audit_log
 
-    unless Config.ai_inference_enabled && cloudflare_inference_provider?
-      fail CloverError.new(501, "NotEnabled", "Cloudflare AI Inference is not enabled.")
+    unless Config.ai_inference_enabled && catalog_inference_provider?
+      fail CloverError.new(501, "NotEnabled", "AI Inference is not enabled.")
     end
 
     api_key = inference_api_key_from_authorization_header
@@ -139,8 +139,8 @@ class Clover
     no_authorization_needed
     no_audit_log
 
-    unless Config.ai_inference_enabled && cloudflare_inference_provider?
-      fail CloverError.new(501, "NotEnabled", "Cloudflare AI Inference is not enabled.")
+    unless Config.ai_inference_enabled && catalog_inference_provider?
+      fail CloverError.new(501, "NotEnabled", "AI Inference is not enabled.")
     end
 
     api_key = inference_api_key_from_authorization_header
@@ -288,8 +288,8 @@ class Clover
     no_authorization_needed
     no_audit_log
 
-    unless Config.ai_inference_enabled && cloudflare_inference_provider?
-      fail CloverError.new(501, "NotEnabled", "Cloudflare AI Inference is not enabled.")
+    unless Config.ai_inference_enabled && catalog_inference_provider?
+      fail CloverError.new(501, "NotEnabled", "AI Inference is not enabled.")
     end
 
     api_key = inference_api_key_from_authorization_header
@@ -322,7 +322,7 @@ class Clover
     no_authorization_needed
     no_audit_log
 
-    unless Config.ai_inference_enabled && cloudflare_inference_provider?
+    unless Config.ai_inference_enabled && catalog_inference_provider?
       fail CloverError.new(501, "NotEnabled", "Cloudflare AI Models are not enabled.")
     end
 
