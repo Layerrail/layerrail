@@ -1,5 +1,7 @@
 ﻿# frozen_string_literal: true
 
+require "securerandom"
+
 class Clover
   AI_APP_TEMPLATES = [
     {
@@ -173,6 +175,11 @@ class Clover
   end
 
   def handle_azure_foundry_ai_request(path, capability, api_key, model, payload)
+    # Translate Responses API to Chat Completions for Azure Foundry compatibility
+    if path == "responses" && capability == "Text Generation"
+      return handle_azure_foundry_responses_request(api_key, model, payload)
+    end
+
     fail CloverError.new(400, "InvalidRequest", "Azure AI Foundry currently supports this model through /v1/chat/completions") unless path == "chat/completions" && capability == "Text Generation"
 
     normalize_cloudflare_payload!(payload, path)
@@ -190,6 +197,108 @@ class Clover
     response["X-LayerRail-AI-Fallback-Model"] = served_model.model_name if served_model.model_name != model.model_name
     record_cloudflare_inference_usage(api_key, served_model, body, payload) if status == 200
     body
+  end
+
+  def handle_azure_foundry_responses_request(api_key, model, payload)
+    # Translate Responses API format to Chat Completions format
+    chat_payload = translate_responses_to_chat_completions(payload, model)
+    
+    # Call Azure Foundry with Chat Completions format
+    normalize_cloudflare_payload!(chat_payload, "chat/completions")
+    normalize_azure_foundry_payload!(chat_payload, model)
+    compact_cloudflare_payload!(chat_payload)
+    deployment = model.tags["deployment"] || model.model_name
+    chat_payload["model"] = deployment
+    chat_payload.delete("stream")
+    chat_payload.delete("stream_options")
+    
+    status, body, served_model = azure_foundry_chat_completion_with_fallback(model, deployment, chat_payload)
+    response.status = status
+    response["X-LayerRail-AI-Model"] = served_model.model_name
+    response["X-LayerRail-AI-Fallback-Model"] = served_model.model_name if served_model.model_name != model.model_name
+    record_cloudflare_inference_usage(api_key, served_model, body, chat_payload) if status == 200
+    
+    # Translate Chat Completions response back to Responses API format
+    translate_chat_completions_to_responses(body, payload)
+  end
+
+  def translate_responses_to_chat_completions(payload, model)
+    chat_payload = payload.dup
+    
+    # Convert Responses API input/messages to Chat Completions messages format
+    if chat_payload["input"].is_a?(Array)
+      messages = []
+      
+      # Add system instructions as system message
+      if chat_payload["instructions"]
+        messages << {"role" => "system", "content" => chat_payload["instructions"]}
+      end
+      
+      # Convert input array to messages
+      chat_payload["input"].each do |item|
+        next unless item.is_a?(Hash)
+        
+        role = item["role"] || "user"
+        content = item["content"] || ""
+        messages << {"role" => role, "content" => content}
+      end
+      
+      chat_payload["messages"] = messages
+    elsif chat_payload["input"].is_a?(String)
+      # Single string input becomes user message
+      messages = []
+      if chat_payload["instructions"]
+        messages << {"role" => "system", "content" => chat_payload["instructions"]}
+      end
+      messages << {"role" => "user", "content" => chat_payload["input"]}
+      chat_payload["messages"] = messages
+    end
+    
+    # Map Responses API parameters to Chat Completions
+    chat_payload["max_tokens"] ||= chat_payload.delete("max_output_tokens")
+    chat_payload.delete("input")
+    chat_payload.delete("instructions")
+    chat_payload.delete("response_format")
+    
+    chat_payload
+  end
+
+  def translate_chat_completions_to_responses(body, original_payload)
+    return body if body["error"]
+    
+    # Extract content from Chat Completions response
+    content = ""
+    if body["choices"] && body["choices"].first
+      choice = body["choices"].first
+      if choice["message"]
+        content = choice["message"]["content"] || ""
+      elsif choice["delta"]
+        content = choice["delta"]["content"] || ""
+      end
+    end
+    
+    # Build Responses API format response
+    responses_response = {
+      "id" => body["id"] || "resp_#{SecureRandom.hex(16)}",
+      "status" => "succeeded",
+      "output" => [
+        {
+          "content" => [
+            {"type" => "text", "text" => content}
+          ],
+          "role" => "assistant"
+        }
+      ],
+      "created" => body["created"] || Time.now.to_i,
+      "model" => body["model"] || original_payload["model"],
+      "usage" => {
+        "input_tokens" => body.dig("usage", "prompt_tokens") || 0,
+        "output_tokens" => body.dig("usage", "completion_tokens") || 0,
+        "total_tokens" => body.dig("usage", "total_tokens") || 0
+      }
+    }
+    
+    responses_response
   end
 
   def azure_foundry_chat_completion_with_fallback(model, deployment, payload)
