@@ -282,6 +282,7 @@ module Config
   # AI
   override :ai_inference_enabled, false, bool
   override :ai_inference_provider, "cloudflare", string
+  # AI_INFERENCE_PROVIDER can be comma-separated for multiple providers, e.g., "cloudflare,azure_foundry"
   optional :cloudflare_account_id, string
   optional :cloudflare_api_token, string, clear: true
   optional :azure_foundry_endpoint, string

@@ -50,7 +50,11 @@ class Clover
   ].freeze
 
   def catalog_inference_provider?
-    %w[cloudflare azure_foundry openrouter].include?(Config.ai_inference_provider)
+    ai_inference_providers.any? { |provider| %w[cloudflare azure_foundry openrouter].include?(provider) }
+  end
+
+  def ai_inference_providers
+    Config.ai_inference_provider.to_s.split(",").map(&:strip).reject(&:empty?)
   end
 
   def cloudflare_inference_models
@@ -59,9 +63,15 @@ class Clover
       .map { CloudflareInferenceModel.new(it) }
   end
 
+  def azure_foundry_inference_models
+    Option::AI_MODELS
+      .select { it["provider"] == "azure_foundry" && it.fetch("enabled", true) }
+      .map { CloudflareInferenceModel.new(it) }
+  end
+
   def catalog_inference_models
     Option::AI_MODELS
-      .select { |it| %w[cloudflare azure_foundry openrouter].include?(it["provider"]) && it.fetch("enabled", true) }
+      .select { |it| ai_inference_providers.include?(it["provider"]) && it.fetch("enabled", true) }
       .map { CloudflareInferenceModel.new(it) }
   end
 

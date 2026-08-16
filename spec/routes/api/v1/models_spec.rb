@@ -9,7 +9,7 @@ RSpec.describe Clover, "GET /v1/models" do
 
   before do
     allow(Config).to receive(:ai_inference_enabled).and_return(true)
-    allow(Config).to receive(:ai_inference_provider).and_return("cloudflare")
+    allow(Config).to receive(:ai_inference_provider).and_return("azure_foundry")
   end
 
   it "returns an OpenAI-compatible model list for a valid inference API key" do
@@ -58,5 +58,24 @@ RSpec.describe Clover, "GET /v1/models" do
     get "/v1/models"
 
     expect(last_response).to have_api_error(501, "AI Inference is not enabled.")
+  end
+
+  it "returns models from multiple providers when configured with comma-separated list" do
+    allow(Config).to receive(:ai_inference_provider).and_return("cloudflare,azure_foundry")
+    header "Authorization", "Bearer #{api_key.key}"
+    get "/v1/models"
+
+    expect(last_response.status).to eq(200)
+    body = JSON.parse(last_response.body)
+    expect(body["object"]).to eq("list")
+    expect(body["data"]).to be_an(Array)
+    expect(body["data"]).not_to be_empty
+
+    # Should include models from both providers
+    cloudflare_models = body["data"].select { it["owned_by"] == "cloudflare" }
+    azure_models = body["data"].select { it["owned_by"] == "azure_foundry" }
+    
+    expect(cloudflare_models).not_to be_empty
+    expect(azure_models).not_to be_empty
   end
 end
