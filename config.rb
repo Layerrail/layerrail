@@ -116,6 +116,13 @@ module Config
   optional :azure_client_secret, string, clear: true
   override :azure_arm_base_url, "https://management.azure.com", string
   override :compute_provider, "azure", string
+  # Comma-separated list of additional providers usable alongside compute_provider.
+  override :secondary_compute_providers, "aws", string
+
+  def self.compute_providers
+    [compute_provider, *secondary_compute_providers.to_s.split(",").map(&:strip)].compact.reject(&:empty?).uniq
+  end
+
   override :game_vps_enabled, false, bool
   override :game_vps_provider, "azure", string
   optional :ionos_api_token, string, clear: true

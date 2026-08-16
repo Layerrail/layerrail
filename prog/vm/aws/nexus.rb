@@ -141,7 +141,7 @@ class Prog::Vm::Aws::Nexus < Prog::Base
     end
 
     params = {
-      image_id: vm.boot_image, # AMI ID
+      image_id: aws_image_id,
       instance_type: Option.aws_instance_type_name(vm.family, vm.vcpus),
       block_device_mappings: [
         {
@@ -278,6 +278,16 @@ class Prog::Vm::Aws::Nexus < Prog::Base
       billing_rate_id: BillingRate.from_resource_properties("VmVCpu", vm.family, vm.location.name)["id"],
       amount: vm.vcpus,
     )
+
+    if vm.ip4_enabled && (addr = vm.ip4)
+      BillingRecord.create(
+        project_id: project.id,
+        resource_id: vm.id,
+        resource_name: addr.to_s,
+        billing_rate_id: BillingRate.from_resource_properties("IPAddress", "IPv4", vm.location.name)["id"],
+        amount: 1,
+      )
+    end
 
     hop_wait
   end
@@ -447,6 +457,35 @@ class Prog::Vm::Aws::Nexus < Prog::Base
 
   def usage_limit_requires_network_quarantine?
     is_runner? || vm.vm_storage_volumes_dataset.exclude(boot: true).any?
+  end
+
+  CANONICAL_AMI_OWNER_ID = "099720109477"
+
+  # Postgres servers and GitHub runners pass concrete AMI ids as boot_image.
+  # User VMs use named boot images, which we resolve to the latest official
+  # Canonical AMI for the location's region.
+  def aws_image_id
+    boot_image = vm.boot_image.to_s
+    return boot_image if boot_image.start_with?("ami-")
+
+    arch = (vm.arch == "arm64") ? "arm64" : "amd64"
+    pattern = {
+      "ubuntu-resolute" => "ubuntu/images/hvm-ssd-gp3/ubuntu-resolute-26.04-#{arch}-server-*",
+      "ubuntu-noble" => "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-#{arch}-server-*",
+      "ubuntu-jammy" => "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-#{arch}-server-*"
+    }[boot_image]
+    fail "Boot image #{boot_image} is not supported on AWS" unless pattern
+
+    images = client.describe_images(
+      owners: [CANONICAL_AMI_OWNER_ID],
+      filters: [
+        {name: "name", values: [pattern]},
+        {name: "state", values: ["available"]},
+      ],
+    ).images
+    fail "No #{boot_image} AMI found in #{vm.location.name}" if images.empty?
+
+    images.max_by(&:creation_date).image_id
   end
 
   def iam_client

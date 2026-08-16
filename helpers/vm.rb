@@ -24,8 +24,8 @@ class Clover
     project = @project
     authorize("Vm:create", project)
     fail Validation::ValidationFailed.new({billing_info: "Project doesn't have valid billing information"}) unless project.has_valid_payment_method?
-    if Config.compute_provider && @location.provider != Config.compute_provider
-      fail Validation::ValidationFailed.new({location: "LayerRail compute is configured for #{Config.compute_provider}, but #{@location.ui_name} uses #{@location.provider}."})
+    if Config.compute_provider && !Config.compute_providers.include?(@location.provider)
+      fail Validation::ValidationFailed.new({location: "LayerRail compute is configured for #{Config.compute_providers.join(", ")}, but #{@location.ui_name} uses #{@location.provider}."})
     end
 
     if api?

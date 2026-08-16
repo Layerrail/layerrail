@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Stores platform AWS credentials for the public AWS locations so they can be
+# used as secondary compute locations. Reads the keys from the environment so
+# they never appear in shell history or source control:
+#
+#   AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... bundle exec ruby bin/setup-aws-location
+#
+# Optionally scope to specific regions:
+#
+#   AWS_LOCATIONS=us-east-1,us-west-2 AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... bundle exec ruby bin/setup-aws-location
+
+require_relative "../loader"
+
+access_key = ENV["AWS_ACCESS_KEY_ID"]
+secret_key = ENV["AWS_SECRET_ACCESS_KEY"]
+
+abort "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables are required" if access_key.to_s.empty? || secret_key.to_s.empty?
+
+names = ENV["AWS_LOCATIONS"].to_s.split(",").map(&:strip).reject(&:empty?)
+dataset = Location.where(provider: "aws", project_id: nil)
+dataset = dataset.where(name: names) unless names.empty?
+locations = dataset.all
+
+abort "No public AWS locations found#{" for: #{names.join(", ")}" unless names.empty?}" if locations.empty?
+
+locations.each do |location|
+  DB.transaction do
+    if (credential = LocationCredentialAws[location.id])
+      credential.update(access_key:, secret_key:, assume_role: nil)
+      puts "Updated credentials for #{location.name} (#{location.ubid})"
+    else
+      LocationCredentialAws.create_with_id(location, access_key:, secret_key:)
+      puts "Created credentials for #{location.name} (#{location.ubid})"
+    end
+  end
+
+  begin
+    account_id = location.location_credential_aws.aws_iam_account_id
+    puts "  verified: AWS account #{account_id}"
+  rescue => ex
+    warn "  WARNING: credential verification failed for #{location.name}: #{ex.message}"
+  end
+end

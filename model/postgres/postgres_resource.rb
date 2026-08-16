@@ -602,7 +602,7 @@ class PostgresResource < Sequel::Model
 
   def self.postgres_locations(project)
     if Config.compute_provider
-      Option.locations(feature_flags: project.feature_flags) + project.locations.select { it.provider == Config.compute_provider }
+      Option.locations(feature_flags: project.feature_flags) + project.locations.select { Config.compute_providers.include?(it.provider) }
     else
       Location.postgres_locations(project.get_ff_visible_postgres_locations) + project.locations
     end
