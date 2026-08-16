@@ -2,6 +2,7 @@
 
 require "excon"
 require "json"
+require "securerandom"
 
 class AzureFoundryClient
   EXPECTED_STATUSES = [200, 400, 401, 402, 403, 404, 408, 409, 429, 500, 502, 503].freeze
@@ -106,8 +107,11 @@ class AzureFoundryClient
 
     text = body.fetch("content", []).filter_map { it["text"] }.join
     usage = body["usage"] || {}
+    completion_id = body["id"].to_s.strip
+    completion_id = "chatcmpl-#{SecureRandom.hex(16)}" if completion_id.empty?
+
     {
-      "id" => body["id"],
+      "id" => completion_id,
       "object" => "chat.completion",
       "created" => Time.now.to_i,
       "model" => body["model"] || deployment,

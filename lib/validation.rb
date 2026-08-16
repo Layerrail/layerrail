@@ -380,7 +380,7 @@ module Validation
 
   def self.validate_compute_provider_location(location, resource_name: "This resource")
     return unless Config.production? && Config.compute_provider
-    return if location && Config.compute_providers.include?(location.provider)
+    return if location&.provider == Config.compute_provider
 
     fail ValidationFailed.new({location: "#{resource_name} is only available in supported LayerRail locations."})
   end

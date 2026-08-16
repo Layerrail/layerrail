@@ -4,9 +4,19 @@ class CloudflareInferenceModel
   attr_reader :model_name, :tags, :prompt_billing_resource, :completion_billing_resource
 
   def initialize(config)
-    @id = config.fetch("id")
     @model_name = config.fetch("model_name")
     @provider = config.fetch("provider", "cloudflare")
+    @id = config["id"].to_s.strip
+    if @id.empty?
+      @id = fallback_id
+      Clog.emit("AI model config missing id; using fallback id", {
+        ai_model_config_missing_id: {
+          model_name: @model_name,
+          provider: @provider,
+          fallback_id: @id,
+        }
+      }) if defined?(Clog)
+    end
     @tags = config.fetch("tags", {}).merge("provider" => provider_label)
     @prompt_billing_resource = config.fetch("prompt_billing_resource", "preview-input")
     @completion_billing_resource = config.fetch("completion_billing_resource", "preview-output")
@@ -44,6 +54,10 @@ class CloudflareInferenceModel
   end
 
   private
+
+  def fallback_id
+    "#{@provider}-#{@model_name}".downcase.gsub(/[^a-z0-9]+/, "-").gsub(/\A-|-\z/, "")
+  end
 
   def provider_label
     case @provider

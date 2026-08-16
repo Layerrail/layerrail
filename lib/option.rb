@@ -9,7 +9,7 @@ module Option
   def self.locations(only_visible: true, feature_flags: {})
     locs = Location.where(project_id: nil).all.select { |pl| !only_visible || (pl.visible || feature_flags["visible_locations"]&.include?(pl.name)) }
     if Config.compute_provider
-      locs.select! { |it| Config.compute_providers.include?(it.provider) }
+      locs.select! { |it| it.provider == Config.compute_provider }
     end
     locs
   end
@@ -656,15 +656,11 @@ module Option
   AZURE_POSTGRES_SIZE_NAMES = %w[hobby-2 standard-2 standard-4].freeze
 
   def self.azure_location?(location)
-    return location.azure? if location
-
-    Config.compute_provider == "azure"
+    location&.provider == "azure" || Config.compute_provider == "azure"
   end
 
   def self.linode_location?(location)
-    return location.linode? if location
-
-    Config.compute_provider == "linode"
+    location&.provider == "linode" || Config.compute_provider == "linode"
   end
 
   def self.postgres_family_options(location: nil)

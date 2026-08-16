@@ -159,9 +159,6 @@
 - { id: 4be254b8-1d4e-4a64-aad4-e00655d25cee, resource_type: IPAddress,                   resource_family: IPv4,                       location: ap-southeast-2, unit_price: 0.0000000000, billed_by: duration, active_from: 2023-08-01T00:00:00Z, byoc: false }
 - { id: 56fdd8e6-7062-8d78-96f5-b9c3d5be2ffb, resource_type: IPAddress,                   resource_family: IPv4,                       location: eu-west-1,      unit_price: 0.0000000000, billed_by: duration, active_from: 2023-08-01T00:00:00Z, byoc: false }
 - { id: 0592f072-f144-434c-9346-88a3e5407de8, resource_type: IPAddress,                   resource_family: IPv4,                       location: eu-central-1,   unit_price: 0.0000000000, billed_by: duration, active_from: 2023-08-01T00:00:00Z, byoc: false }
-# Public IPv4 pricing ($3.00/mo), effective 2026-07-05
-- { id: 5db67824-0e6f-40d6-a933-e4af3c6540dd, resource_type: IPAddress,                   resource_family: IPv4,                       location: us-east-1,      unit_price: 0.0000744050, billed_by: duration, active_from: 2026-07-05T00:00:00Z, byoc: false }
-- { id: ac5c5a86-c2b4-4ac5-910c-7eb18e3bc397, resource_type: IPAddress,                   resource_family: IPv4,                       location: us-west-2,      unit_price: 0.0000744050, billed_by: duration, active_from: 2026-07-05T00:00:00Z, byoc: false }
 # Deprecated billing rates
 - { id: 8873692a-24ba-8978-9e67-104fcce774a3, resource_type: VmVCpu,                      resource_family: standard,                   location: us-west-2,      unit_price: 0.0000000000, billed_by: duration, active_from: 2025-06-17T00:00:00Z, byoc: false }
 - { id: 76ead75b-c98a-8978-938b-0117f433dda6, resource_type: VmVCpu,                      resource_family: standard,                   location: us-east-1,      unit_price: 0.0000000000, billed_by: duration, active_from: 2025-06-17T00:00:00Z, byoc: false }
