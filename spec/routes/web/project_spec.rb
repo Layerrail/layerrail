@@ -313,6 +313,26 @@ RSpec.describe Clover, "project" do
         end
       end
 
+      it "shows the core sidebar without retired service links" do
+        visit "#{project.path}/dashboard"
+
+        within "#desktop-menu" do
+          expect(page).to have_content "Project Details"
+          expect(page).to have_no_content "Workspace"
+          expect(page).to have_no_content "Platform"
+          expect(page).to have_no_content "Data"
+          expect(page).to have_no_content "Services"
+
+          %w[Dashboard Compute Networking PostgreSQL Kubernetes].each do |service|
+            expect(page).to have_link service
+          end
+
+          ["Buckets", "Volumes", "Backups", "Domains", "Edge", "Monitoring"].each do |service|
+            expect(page).to have_no_link service
+          end
+        end
+      end
+
       it "shows content when user has permissions" do
         visit "#{project.path}/dashboard"
 

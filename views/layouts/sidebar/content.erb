@@ -29,9 +29,20 @@
               request.path.start_with?("#{@project.path}/load-balancer"),
             icon: "hero-globe-alt",
           },
-        ]) %>
-
-        <%== part("layouts/sidebar/section", title: "Platform", items: [
+          {
+            name: "PostgreSQL",
+            url: "#{@project.path}/postgres",
+            is_active: request.path.start_with?("#{@project.path}/postgres"),
+            icon: "hero-circle-stack",
+            has_permission: Config.postgres_enabled,
+          },
+          {
+            name: "AI Models",
+            url: "#{@project.path}/inference-endpoint",
+            is_active: request.path.start_with?("#{@project.path}/inference") || request.path.start_with?("#{@project.path}/ai-app"),
+            icon: "tabler-robot",
+            has_permission: Config.ai_inference_enabled,
+          },
           {
             name: "Kubernetes",
             url: "#{@project.path}/kubernetes-cluster",
@@ -52,65 +63,6 @@
             is_active: request.path.start_with?("#{@project.path}/deploy"),
             icon: "hero-cloud-arrow-up",
             has_permission: Config.deploy_enabled,
-          },
-        ]) %>
-
-        <%== part("layouts/sidebar/section", title: "Data", items: [
-          {
-            name: "PostgreSQL",
-            url: "#{@project.path}/postgres",
-            is_active: request.path.start_with?("#{@project.path}/postgres"),
-            icon: "hero-circle-stack",
-            has_permission: Config.postgres_enabled,
-          },
-          {
-            name: "Buckets",
-            url: "#{@project.path}/bucket",
-            is_active: request.path.start_with?("#{@project.path}/bucket"),
-            icon: "hero-circle-stack",
-          },
-          {
-            name: "Volumes",
-            url: "#{@project.path}/volume",
-            is_active: request.path.start_with?("#{@project.path}/volume"),
-            icon: "hero-circle-stack",
-          },
-          {
-            name: "Backups",
-            url: "#{@project.path}/backups",
-            is_active: request.path.start_with?("#{@project.path}/backups"),
-            icon: "hero-server-stack",
-          },
-        ]) %>
-
-        <%== part("layouts/sidebar/section", title: "Services", items: [
-          {
-            name: "AI Models",
-            url: "#{@project.path}/inference-endpoint",
-            is_active: request.path.start_with?("#{@project.path}/inference") || request.path.start_with?("#{@project.path}/ai-app"),
-            icon: "tabler-robot",
-            has_permission: Config.ai_inference_enabled,
-          },
-          {
-            name: "Domains",
-            url: "https://cloud.layerrail.online",
-            is_active: false,
-            icon: "hero-map-pin",
-            target: "_blank",
-            rel: "noopener noreferrer",
-            has_permission: Config.domains_enabled,
-          },
-          {
-            name: "Edge",
-            url: "#{@project.path}/edge",
-            is_active: request.path.start_with?("#{@project.path}/edge"),
-            icon: "hero-globe-alt",
-          },
-          {
-            name: "Monitoring",
-            url: "#{@project.path}/monitoring",
-            is_active: request.path.start_with?("#{@project.path}/monitoring"),
-            icon: "hero-chart-pie",
           },
           {
             name: "Web Shell",
@@ -143,7 +95,7 @@
              users_url = "#{@project.path}/user/access-control"
              users_label = "Access Control"
            end %>
-        <%== part("layouts/sidebar/section", title: "Workspace", items: [
+        <%== part("layouts/sidebar/section", title: "Project Details", items: [
           {
             name: users_label,
             url: users_url,
