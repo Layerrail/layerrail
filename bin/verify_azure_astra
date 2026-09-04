@@ -1,0 +1,64 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "yaml"
+require_relative "../lib/clover_error"
+require_relative "../lib/azure_foundry_client"
+
+endpoint = ENV["AZURE_FOUNDRY_ENDPOINT"] || ENV["AZURE_OPENAI_ENDPOINT"]
+api_key = ENV["AZURE_FOUNDRY_API_KEY"] || ENV["AZURE_OPENAI_API_KEY"]
+abort "Set AZURE_FOUNDRY_ENDPOINT and AZURE_FOUNDRY_API_KEY (or AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY) before running this live test." if endpoint.to_s.empty? || api_key.to_s.empty?
+
+model = YAML.load_file(File.expand_path("../config/ai_models.yml", __dir__)).find { it["model_name"] == "gpt-6-astra" }
+abort "GPT-6 Astra must be enabled in config/ai_models.yml." unless model && model["enabled"]
+deployment = model.fetch("tags").fetch("deployment")
+client = AzureFoundryClient.new(endpoint:, api_key:, api_version: ENV.fetch("AZURE_FOUNDRY_API_VERSION", "2025-01-01-preview"))
+
+verify = lambda do |label, path, payload, &valid_response|
+  status, body = client.openai_request(path, payload.merge("model" => deployment))
+  abort "FAIL #{label}: Azure returned HTTP #{status} (#{body.dig("error", "code") || "unknown error"})." unless status == 200 && !body["error"]
+  abort "FAIL #{label}: Azure served #{body["model"].inspect}, not GPT-6 Astra." unless body["model"].to_s.match?(/\Agpt-6-astra(?:-\d{4}-\d{2}-\d{2})?\z/)
+  abort "FAIL #{label}: the expected answer/tool call was not returned." unless valid_response.call(body)
+  usage = body.fetch("usage", {})
+  input = usage["prompt_tokens"] || usage["input_tokens"]
+  output = usage["completion_tokens"] || usage["output_tokens"]
+  abort "FAIL #{label}: Azure did not return token usage." unless input.to_i.positive? && output.to_i.positive?
+
+  puts "PASS #{label}: #{body["model"]}, input=#{input}, output=#{output} tokens"
+end
+
+begin
+  verify.call("chat", "chat/completions", {
+    "messages" => [{"role" => "user", "content" => "Reply with exactly ASTRA_OK."}],
+    "reasoning_effort" => "low",
+    "max_completion_tokens" => 512,
+  }) { it.dig("choices", 0, "message", "content").to_s.strip == "ASTRA_OK" }
+
+  verify.call("responses", "responses", {
+    "input" => "Reply with exactly ASTRA_OK.",
+    "reasoning" => {"effort" => "low"},
+    "max_output_tokens" => 512,
+    "store" => false,
+  }) do |body|
+    text = body.fetch("output", []).flat_map { it.fetch("content", []) }
+      .select { it["type"] == "output_text" }.map { it["text"] }.join.strip
+    text == "ASTRA_OK"
+  end
+
+  verify.call("function calling", "responses", {
+    "input" => "Call astra_smoke_check with ok=true.",
+    "tools" => [{
+      "type" => "function", "name" => "astra_smoke_check", "strict" => true,
+      "parameters" => {"type" => "object", "properties" => {"ok" => {"type" => "boolean"}}, "required" => ["ok"], "additionalProperties" => false},
+    }],
+    "tool_choice" => {"type" => "function", "name" => "astra_smoke_check"},
+    "reasoning" => {"effort" => "low"},
+    "max_output_tokens" => 512,
+    "store" => false,
+  }) do |body|
+    call = body.fetch("output", []).find { it["type"] == "function_call" && it["name"] == "astra_smoke_check" }
+    call && JSON.parse(call.fetch("arguments")) == {"ok" => true}
+  end
+rescue Excon::Error => ex
+  abort "FAIL Azure connection: #{ex.class}. Check the endpoint, network access, and deployment."
+end

@@ -78,6 +78,15 @@ RSpec.describe Clover, "inference-playground" do
       expect(page).to have_select("inference_endpoint", with_options: cloudflare_models)
     end
 
+    it "offers GPT-6 Astra when Azure Foundry is enabled" do
+      allow(Config).to receive(:ai_inference_provider).and_return("azure_foundry")
+
+      visit "#{project.path}/inference-playground"
+
+      expect(page).to have_select("inference_endpoint", with_options: ["gpt-6-astra"])
+      expect(page).to have_css('option[value="gpt-6-astra"][data-display-name="GPT-6 Astra"][data-context-length="1.05M"]', visible: :all)
+    end
+
     it "gives choice of inference api keys" do
       visit "#{project.path}/inference-api-key"
       expect(ApiKey.all).to be_empty

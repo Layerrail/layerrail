@@ -185,20 +185,26 @@ class Clover
   end
 
   def handle_azure_foundry_ai_request(path, capability, api_key, model, payload)
-    # Translate Responses API to Chat Completions for Azure Foundry compatibility
     if path == "responses" && capability == "Text Generation"
+      return handle_azure_foundry_native_responses_request(api_key, model, payload) if model.tags["native_responses"]
+
       return handle_azure_foundry_responses_request(api_key, model, payload)
     end
 
     fail CloverError.new(400, "InvalidRequest", "Azure AI Foundry currently supports this model through /v1/chat/completions") unless path == "chat/completions" && capability == "Text Generation"
 
-    normalize_cloudflare_payload!(payload, path)
+    if model.tags["native_responses"]
+      validate_azure_foundry_synchronous_request!(payload)
+      fail CloverError.new(400, "InvalidRequest", "messages must be an array") unless payload["messages"].is_a?(Array)
+    else
+      normalize_cloudflare_payload!(payload, path)
+    end
     normalize_azure_foundry_payload!(payload, model)
-    compact_cloudflare_payload!(payload)
+    compact_cloudflare_payload!(payload) unless model.tags["native_responses"]
     deployment = model.tags["deployment"] || model.model_name
     payload["model"] = deployment
 
-    # Azure AI Foundry does not support streaming responses.
+    # LayerRail's Azure adapter currently returns synchronous JSON responses.
     payload.delete("stream")
     payload.delete("stream_options")
     status, body, served_model = azure_foundry_chat_completion_with_fallback(model, deployment, payload)
@@ -207,6 +213,31 @@ class Clover
     response["X-LayerRail-AI-Fallback-Model"] = served_model.model_name if served_model.model_name != model.model_name
     record_cloudflare_inference_usage(api_key, served_model, body, payload) if status == 200
     body
+  end
+
+  def handle_azure_foundry_native_responses_request(api_key, model, payload)
+    validate_azure_foundry_synchronous_request!(payload)
+    payload["model"] = model.tags["deployment"] || model.model_name
+    payload["max_output_tokens"] ||= payload.delete("max_completion_tokens") || payload.delete("max_tokens")
+    payload.delete("max_tokens")
+    payload.delete("max_completion_tokens")
+    payload.delete("max_output_tokens") if payload["max_output_tokens"].nil?
+    payload.delete("stream_options")
+    Array(model.tags["unsupported_parameters"]).each { payload.delete(it) }
+
+    # Forward Responses items unchanged, including tool outputs, reasoning,
+    # images, and JSON schemas with empty objects/arrays or false values.
+    status, body = AzureFoundryClient.new.openai_request("responses", payload)
+    response.status = status
+    response["X-LayerRail-AI-Model"] = model.model_name
+    record_cloudflare_inference_usage(api_key, model, body, payload) if status == 200
+    body
+  end
+
+  def validate_azure_foundry_synchronous_request!(payload)
+    return unless payload["stream"] || payload["background"]
+
+    fail CloverError.new(400, "InvalidRequest", "LayerRail's Azure integration currently supports synchronous requests. Set stream and background to false.")
   end
 
   def handle_azure_foundry_responses_request(api_key, model, payload)
@@ -355,6 +386,7 @@ class Clover
 
   def azure_foundry_chat_completion_request(client, model, deployment, payload)
     return client.anthropic_messages(deployment, payload) if azure_foundry_anthropic_model?(model)
+    return client.openai_request("chat/completions", payload) if model.tags["native_responses"]
 
     client.chat_completion(deployment, payload)
   end
@@ -396,10 +428,12 @@ class Clover
 
   def normalize_azure_foundry_payload!(payload, model)
     deployment = (model.tags["deployment"] || model.model_name).to_s
-    if deployment.start_with?("gpt-5") || deployment.start_with?("o")
+    if model.model_name == "gpt-6-astra" || deployment.start_with?("gpt-5", "gpt-6", "o")
       payload["max_completion_tokens"] ||= payload.delete("max_tokens")
       payload.delete("max_tokens")
+      payload.delete("max_completion_tokens") if payload["max_completion_tokens"].nil?
     end
+    Array(model.tags["unsupported_parameters"]).each { payload.delete(it) }
     payload.delete("model")
   end
 

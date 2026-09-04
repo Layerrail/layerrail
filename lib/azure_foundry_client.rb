@@ -40,6 +40,18 @@ class AzureFoundryClient
     [response.status, parse_response_body(response)]
   end
 
+  def openai_request(path, payload)
+    response = @connection.post(
+      path: "/openai/v1/#{path}",
+      query: {},
+      body: payload.to_json,
+      read_timeout: 300,
+      expects: EXPECTED_STATUSES,
+    )
+
+    [response.status, parse_response_body(response)]
+  end
+
   def anthropic_messages(deployment, payload)
     response = @anthropic_connection.post(
       path: "/anthropic/v1/messages",

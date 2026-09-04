@@ -29,6 +29,10 @@ RSpec.describe Clover, "GET /v1/models" do
       "owned_by" => "azure_foundry",
     )
     expect(entry["created"]).to be_a(Integer)
+
+    expect(body["data"]).to include(
+      include("id" => "gpt-6-astra", "object" => "model", "owned_by" => "azure_foundry"),
+    )
   end
 
   it "rejects requests without an inference API key" do
