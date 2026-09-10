@@ -2,7 +2,8 @@
 module.exports = {
   content: [
     "./views/**/*.erb",
-    "./assets/**/*.js",
+    "./assets/js/app.js",
+    "./assets/js/playground/**/*.{js,jsx}",
     "./helpers/web.rb",
   ],
   theme: {

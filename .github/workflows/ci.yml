@@ -29,6 +29,9 @@ jobs:
       with:
         setup-node: true
 
+    - name: Build frontend and test playground
+      run: npm run prod && npm run test:playground
+
     - name: Run erb-formatter
       run: bundle exec rake linter:erb_formatter
 

@@ -1,28 +1,31 @@
 <% @page_title = "Playground" %>
-<%== render("components/free_quota") %>
-<% @enable_marked = true %>
+<% @enable_marked = @enable_playground = true %>
 <%== render("inference/tabbar") %>
 
-<div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
-  <div class="overflow-hidden rounded-lg shadow ring-1 ring-black ring-opacity-5 bg-white divide-y divide-gray-200">
-    <div class="px-4 py-5 sm:p-6 grid gap-6">
-      <% if @inference_api_keys.empty? %>
-        <div class="rounded-md bg-layerrail-50 p-4 text-sm text-layerrail-800">
-          Create an inference API key before sending requests from the playground.
-          <a href="<%= @project.path %>/inference-api-key" class="font-semibold text-layerrail-700">Manage API keys</a>
-        </div>
-      <% end %>
+<section id="inference_playground" class="playground" aria-label="AI playground" data-state="idle">
+  <header class="playground-heading">
+    <div>
+      <div class="playground-eyebrow">LAYERRAIL / INFERENCE</div>
+      <h1>AI playground<span class="playground-title-dot" aria-hidden="true"></span></h1>
+      <p>A little space for your next big idea.</p>
+    </div>
+    <button id="inference_new_chat" type="button" class="playground-secondary"><span aria-hidden="true">+</span>
+      New chat</button>
+  </header>
 
-      <div class="grid sm:grid-cols-2 gap-6 text-gray-900">
-        <%== render(
-          "components/form/select",
-          locals: {
-            name: "inference_endpoint",
-            label: "Inference Endpoint",
-            placeholder: "Pick an endpoint",
+  <% if @inference_api_keys.empty? %>
+    <div class="playground-notice">Create an inference API key to start exploring.
+      <a href="<%= @project.path %>/inference-api-key">Manage API keys &rarr;</a></div>
+  <% end %>
+
+  <div class="playground-workspace">
+    <div class="playground-chat">
+      <div class="playground-toolbar">
+        <div class="playground-model-picker">
+          <%== render("components/form/select", locals: {
+            name: "inference_endpoint", label: "Model", placeholder: "Choose a model",
             options: @inference_models.map { |ie|
-              prompt_price = inference_model_million_token_price(ie, ie.prompt_billing_resource)
-              completion_price = inference_model_million_token_price(ie, ie.completion_billing_resource)
+              prompt_price, completion_price = inference_model_million_token_price(ie)
               [ie.model_name, ie.model_name, nil, {
                 "data-id": ie.ubid,
                 "data-url": ie.load_balancer.health_check_url,
@@ -32,323 +35,150 @@
                 "data-capability": ie.tags["capability"],
                 "data-api": ie.tags.fetch("api", "chat"),
                 "data-context-length": ie.tags.fetch("context_length", "Full"),
-                "data-input-price": prompt_price,
-                "data-output-price": completion_price,
+                "data-input-price": prompt_price, "data-output-price": completion_price,
                 "data-tags": ie.tags.to_json
               }]
-            },
-            selected: @default_inference_model&.model_name,
-          }
-        ) %>
-        <%== render(
-          "components/form/select",
-          locals: {
-            name: "inference_api_key",
-            label: "Inference API Key",
-            placeholder: "Pick a key",
-            options: @inference_api_keys.map { [it.key, it.ubid] },
-            selected: @inference_api_keys.first&.key
-          }
-        ) %>
-      </div>
-      <p id="inference_task_hint" class="text-sm text-gray-500"></p>
-
-      <div class="grid sm:grid-cols-2 gap-6 text-gray-900">
-        <div class="space-y-2">
-          <label for="inference_prompt_template" class="text-sm font-medium leading-6">Prompt template</label>
-          <select
-            id="inference_prompt_template"
-            class="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 shadow-sm ring-1 ring-inset text-sm sm:leading-6 text-gray-900 ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-layerrail-600"
-          >
-            <option value="">Blank chat</option>
-            <option value="summarize">Summarize text</option>
-            <option value="classify">Classify request</option>
-            <option value="json">Return JSON</option>
-            <option value="code">Explain code</option>
-          </select>
+            }, selected: @default_inference_model&.model_name
+          }) %>
         </div>
-        <%== part(
-          "components/form/checkbox",
-          name: "inference_config",
-          options: [["show_advanced", "Show advanced settings", nil, nil]]
-        ) %>
+        <span class="playground-session-count" id="inference_session_message_count">0 messages</span>
       </div>
 
-      <div class="hidden grid gap-6" id="inference_config_advanced_settings">
-        <div class="grid sm:grid-cols-3 gap-6 text-gray-900">
-          <%== render(
-            "components/form/text",
-            locals: {
-              name: "inference_temperature",
-              label: "Temperature",
-              type: "number",
-              attributes: {
-                "placeholder" => 1.0,
-                "min" => 0.0,
-                "max" => 2.0,
-                "step" => 0.1,
-              },
-              extra_class: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            }
-          ) %>
-          <%== render(
-            "components/form/text",
-            locals: {
-              name: "inference_top_p",
-              label: "Top P",
-              type: "number",
-              attributes: {
-                "placeholder" => 1.0,
-                "min" => 0.0,
-                "max" => 1.0,
-                "step" => 0.05,
-              },
-              extra_class: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            }
-          ) %>
-          <%== render(
-            "components/form/text",
-            locals: {
-              name: "inference_max_tokens",
-              label: "Max output tokens",
-              type: "number",
-              attributes: {
-                "placeholder" => "Auto",
-                "min" => 1,
-                "step" => 1,
-              },
-              extra_class: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            }
-          ) %>
-        </div>
-        <div class="grid sm:grid-cols-2 gap-6 text-gray-900">
-          <div class="space-y-2">
-            <label for="inference_response_format" class="text-sm font-medium leading-6">Response format</label>
-            <select
-              id="inference_response_format"
-              class="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 shadow-sm ring-1 ring-inset text-sm sm:leading-6 text-gray-900 ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-layerrail-600"
-            >
-              <option value="">Auto</option>
-              <option value="json_object">JSON object</option>
-            </select>
+      <div class="playground-conversation" id="inference_conversation" role="region" aria-label="Conversation" tabindex="0">
+        <div id="inference_previous_empty" class="playground-empty">
+          <div class="playground-welcome-orb" aria-hidden="true"><div id="inference_welcome_orb" class="playground-orb"></div></div>
+          <span class="playground-eyebrow">ROOM TO EXPERIMENT</span>
+          <h2>Where should we start?</h2>
+          <p>Ask a question, work through an idea, or put a model to the test.</p>
+          <div class="playground-starters" id="inference_starters">
+            <button type="button" data-prompt-template="summarize"><span aria-hidden="true">&equiv;</span>
+              Summarize text
+              <span aria-hidden="true">&nearr;</span></button>
+            <button type="button" data-prompt-template="code"><span aria-hidden="true">&lt;/&gt;</span>
+              Explain code
+              <span aria-hidden="true">&nearr;</span></button>
+            <button type="button" data-prompt-template="json"><span aria-hidden="true">{ }</span>
+              Structure an idea
+              <span aria-hidden="true">&nearr;</span></button>
           </div>
         </div>
-        <div class="grid sm:grid-cols-3 gap-6 text-gray-900">
-          <%== render(
-            "components/form/text",
-            locals: {
-              name: "inference_source_language",
-              label: "Source language",
-              attributes: {
-                "placeholder" => "en",
-              },
-            }
-          ) %>
-          <%== render(
-            "components/form/text",
-            locals: {
-              name: "inference_target_language",
-              label: "Target language",
-              attributes: {
-                "placeholder" => "fr",
-              },
-            }
-          ) %>
-          <%== render(
-            "components/form/text",
-            locals: {
-              name: "inference_top_k",
-              label: "Top K",
-              type: "number",
-              attributes: {
-                "placeholder" => 3,
-                "min" => 1,
-                "step" => 1,
-              },
-              extra_class: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            }
-          ) %>
+        <div id="inference_previous" aria-label="Messages"></div>
+      </div>
+
+      <div class="playground-compose-area">
+        <div id="inference_error" class="playground-error" role="alert" hidden></div>
+        <div id="inference_composer" class="playground-composer">
+          <div id="inference_composer_effect" class="playground-effect-layer" aria-hidden="true"></div>
+          <div class="playground-composer-content">
+            <label for="inference_prompt" class="sr-only">Message</label>
+            <textarea
+              id="inference_prompt"
+              name="inference_prompt"
+              rows="3"
+              placeholder="Ask anything, or try an idea…"
+              aria-describedby="inference_task_hint inference_keyboard_hint"
+            ></textarea>
+            <div id="inference_context_container" class="hidden playground-context"><label for="inference_context">Documents to rank</label><textarea id="inference_context" rows="3" placeholder="Add one document per line."></textarea></div>
+            <div class="playground-compose-actions">
+              <div class="playground-attachment">
+                <button
+                  id="inference_attach"
+                  type="button"
+                  class="playground-icon-button"
+                  aria-label="Attach files"
+                  title="Attach files"
+                ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="m21 11-8.6 8.6a6 6 0 0 1-8.5-8.5L13 2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8L15 5.8"
+                    /></svg></button>
+                <input
+                  id="inference_files"
+                  type="file"
+                  multiple
+                  hidden
+                  aria-label="Upload files"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf,.wav,.mp3,.m4a,.ogg,.webm"
+                >
+                <span id="inference_attachment_summary">Text only</span>
+                <button
+                  id="inference_clear_files"
+                  type="button"
+                  class="playground-text-button"
+                  hidden
+                  aria-label="Remove attached files"
+                >Clear</button>
+              </div>
+              <div class="playground-send-wrap">
+                <div id="inference_send_effect" class="playground-effect-layer" aria-hidden="true"></div>
+                <button id="inference_submit" name="inference_submit" type="button" class="playground-send" aria-label="Send message"><span id="inference_submit_label">Send</span><span id="inference_submit_icon" aria-hidden="true">&uarr;</span></button>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="grid sm:grid-cols-2 gap-6 text-gray-900">
-          <%== render(
-            "components/form/text",
-            locals: {
-              name: "inference_image_width",
-              label: "Image width",
-              type: "number",
-              attributes: {
-                "placeholder" => 1024,
-                "min" => 256,
-                "step" => 64,
-              },
-              extra_class: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            }
-          ) %>
-          <%== render(
-            "components/form/text",
-            locals: {
-              name: "inference_image_height",
-              label: "Image height",
-              type: "number",
-              attributes: {
-                "placeholder" => 1024,
-                "min" => 256,
-                "step" => 64,
-              },
-              extra_class: "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            }
-          ) %>
-        </div>
-        <div>
-          <%== render(
-            "components/form/textarea",
-            locals: {
-              name: "inference_system",
-              label: "System Message",
-              attributes: {
-                "placeholder" => "System message to be submitted to the inference endpoint",
-                "rows" => 3,
-              },
-            }
-          ) %>
-        </div>
+        <div class="playground-composer-footer"><p id="inference_task_hint">Choose a model to start.</p><span id="inference_keyboard_hint"><kbd>Ctrl</kbd>
+            /
+            <kbd>⌘</kbd>
+            +
+            <kbd>Enter</kbd>
+            to send</span></div>
+        <div id="inference_status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
       </div>
     </div>
 
-    <div class="px-4 py-5 sm:p-6 grid gap-6">
-      <div class="flex flex-wrap items-center gap-3">
-        <%== render(
-          "components/button",
-          locals: {
-            text: "Start a new chat",
-            attributes: {
-              "id" => "inference_new_chat",
-              "type" => "button"
-            }
-          }
-        ) %>
-        <div class="text-sm text-gray-500" id="inference_session_message_count">0 messages in this session</div>
-      </div>
-      <div>
-        <div class="block text-sm font-medium leading-6 text-gray-900 mb-2">Previous Messages</div>
-        <div id="inference_previous_empty" class="text-sm text-gray-500">There are no messages yet.</div>
-        <div id="inference_previous">
-        </div>
-      </div>
-      <div>
-        <%== render(
-          "components/form/textarea",
-          locals: {
-            name: "inference_prompt",
-            label: "New Message",
-            attributes: {
-              "autofocus" => true,
-              "placeholder" => "User prompt to be submitted to the inference endpoint",
-              "rows" => 3,
-            },
-          }
-        ) %>
-        <div id="inference_context_container" class="hidden mt-4">
-          <%== render(
-            "components/form/textarea",
-            locals: {
-              name: "inference_context",
-              label: "Documents / extra context",
-              attributes: {
-                "placeholder" => "For rerank tasks, add one document per line.",
-                "rows" => 4,
-              },
-            }
-          ) %>
-        </div>
-        <div class="grid gap-4 pt-4 text-gray-900 sm:grid-cols-2">
-          <div class="flex flex-row items-center">
-            <input
-              type="file"
-              id="inference_files"
-              accept=".jpg,.jpeg,.png,.pdf,.wav,.mp3,.m4a,.ogg,.webm"
-              class="inline-flex items-center text-sm"
-              multiple
-              aria-label="Upload files"
-            >
+    <aside class="playground-sidebar" aria-label="Model settings and usage">
+      <div class="playground-sidebar-section">
+        <div class="playground-section-heading"><h2>Your setup</h2><span class="playground-badge">SESSION</span></div>
+        <%== render("components/form/select", locals: {name: "inference_api_key", label: "API key", placeholder: "Choose a key", options: @inference_api_keys.map { [it.key, it.ubid] }, selected: @inference_api_keys.first&.key}) %>
+        <div class="playground-model-card">
+          <div class="playground-model-card-heading">
+            <span class="playground-model-symbol" aria-hidden="true"><%== part("components/icon", name: "hero-cpu-chip", classes: "h-5 w-5") %></span>
+            <div><h3 id="inference_selected_model_name">No model selected</h3><p id="inference_selected_provider">—</p></div>
           </div>
-          <div class="flex flex-row items-center justify-end">
-            <%== render(
-              "components/button",
-              locals: {
-                text: "Submit",
-                attributes: {
-                  "name" => "inference_submit",
-                  "id" => "inference_submit",
-                  "type" => "button"
-                },
-              }
-            ) %>
-          </div>
+          <dl class="playground-model-facts"><div><dt>Capability</dt><dd id="inference_selected_capability">—</dd></div><div><dt>Context</dt><dd id="inference_selected_context">—</dd></div></dl>
+          <p id="inference_selected_price" class="playground-price">—</p>
+          <details class="playground-endpoint"><summary>Endpoint details</summary><p id="inference_selected_url">—</p></details>
         </div>
       </div>
-    </div>
+
+      <details class="playground-sidebar-section playground-settings" id="inference_settings">
+        <summary><span>Parameters</span><span aria-hidden="true">+</span></summary>
+        <fieldset id="inference_config_advanced_settings">
+          <legend class="sr-only">Generation parameters</legend>
+          <div class="playground-field"><label for="inference_prompt_template">Prompt template</label><select id="inference_prompt_template"><option value="">Custom</option><option value="summarize">Summarize text</option><option value="classify">Classify request</option><option value="json">Return JSON</option><option value="code">Explain code</option></select></div>
+          <div class="playground-field"><label for="inference_system">System instructions</label><textarea id="inference_system" rows="4" placeholder="How should the model respond?"></textarea></div>
+          <div class="playground-parameter-grid">
+            <% [["temperature", "Temperature", "1", "0", "2", "0.1"], ["top_p", "Top P", "1", "0", "1", "0.05"], ["max_tokens", "Max output tokens", "Auto", "1", nil, "1"]].each do |name, label, placeholder, min, max, step| %>
+              <div class="playground-field"><label for="inference_<%= name %>"><%= label %></label><input id="inference_<%= name %>" type="number" placeholder="<%= placeholder %>" min="<%= min %>"
+                <% if max %>max="<%= max %>"<% end %>
+                step="<%= step %>"></div>
+            <% end %>
+          </div>
+          <div class="playground-field"><label for="inference_response_format">Response format</label><select id="inference_response_format"><option value="">Auto</option><option value="json_object">JSON object</option></select></div>
+          <div class="playground-parameter-grid">
+            <% [["source_language", "Source language", "en"], ["target_language", "Target language", "fr"]].each do |name, label, placeholder| %>
+              <div class="playground-field"><label for="inference_<%= name %>"><%= label %></label><input id="inference_<%= name %>" placeholder="<%= placeholder %>"></div>
+            <% end %>
+            <% [["top_k", "Top K", 3, 1, 1], ["image_width", "Image width", 1024, 256, 64], ["image_height", "Image height", 1024, 256, 64]].each do |name, label, placeholder, min, step| %>
+              <div class="playground-field"><label for="inference_<%= name %>"><%= label %></label><input id="inference_<%= name %>" type="number" placeholder="<%= placeholder %>" min="<%= min %>" step="<%= step %>"></div>
+            <% end %>
+          </div>
+        </fieldset>
+      </details>
+
+      <div class="playground-sidebar-section playground-usage">
+        <div class="playground-section-heading"><h2>Session usage</h2><span aria-hidden="true">↗</span></div>
+        <div class="playground-cost" id="inference_session_cost">$0.000000</div><p class="playground-muted">Estimated cost</p>
+        <dl>
+          <div><dt>Total tokens</dt><dd id="inference_session_usage">0 input · 0 output</dd></div>
+          <div><dt>Last request</dt><dd id="inference_last_usage">No usage yet</dd></div>
+          <div><dt>Free tokens remaining</dt><dd><span data-free-quota-value="<%= @remaining_free_quota.to_i %>"><%= @remaining_free_quota.to_i %></span></dd></div>
+        </dl>
+        <p class="playground-quota-note">Free quota refreshes monthly.
+          <a href="<%= billing_path %>"><%= @has_valid_payment_method ? "Manage billing" : "Add a payment method" %>
+            &rarr;</a></p>
+      </div>
+      <div class="playground-sidebar-footnote">Conversations stay in this tab.<br>New chat clears the session.</div>
+    </aside>
   </div>
-
-  <div class="grid gap-4 content-start">
-    <div class="rounded-lg bg-white p-4 shadow ring-1 ring-black ring-opacity-5">
-      <div class="flex items-center gap-2">
-        <%== part("components/icon", name: "hero-cpu-chip", classes: "h-5 w-5 text-layerrail-600") %>
-        <h2 class="text-base font-semibold text-gray-900">Selected model</h2>
-      </div>
-      <dl class="mt-4 grid gap-3 text-sm">
-        <div>
-          <dt class="text-gray-500">Name</dt>
-          <dd class="font-medium text-gray-900" id="inference_selected_model_name">No model selected</dd>
-        </div>
-        <div>
-          <dt class="text-gray-500">Provider</dt>
-          <dd class="font-medium text-gray-900" id="inference_selected_provider">-</dd>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <dt class="text-gray-500">Capability</dt>
-            <dd class="font-medium text-gray-900" id="inference_selected_capability">-</dd>
-          </div>
-          <div>
-            <dt class="text-gray-500">Context</dt>
-            <dd class="font-medium text-gray-900" id="inference_selected_context">-</dd>
-          </div>
-        </div>
-        <div>
-          <dt class="text-gray-500">Pricing</dt>
-          <dd class="font-medium text-gray-900" id="inference_selected_price">-</dd>
-        </div>
-        <div>
-          <dt class="text-gray-500">Endpoint</dt>
-          <dd class="break-all text-gray-700" id="inference_selected_url">-</dd>
-        </div>
-      </dl>
-    </div>
-
-    <div class="rounded-lg bg-white p-4 shadow ring-1 ring-black ring-opacity-5">
-      <div class="flex items-center gap-2">
-        <%== part("components/icon", name: "hero-chart-pie", classes: "h-5 w-5 text-layerrail-600") %>
-        <h2 class="text-base font-semibold text-gray-900">Session usage</h2>
-      </div>
-      <dl class="mt-4 grid gap-3 text-sm">
-        <div>
-          <dt class="text-gray-500">Last request</dt>
-          <dd class="font-medium text-gray-900" id="inference_last_usage">No usage yet</dd>
-        </div>
-        <div>
-          <dt class="text-gray-500">Session total</dt>
-          <dd class="font-medium text-gray-900" id="inference_session_usage">0 input tokens and 0 output tokens</dd>
-        </div>
-        <div>
-          <dt class="text-gray-500">Estimated session cost</dt>
-          <dd class="font-medium text-gray-900" id="inference_session_cost">$0.000000</dd>
-        </div>
-        <div>
-          <dt class="text-gray-500">Free quota remaining</dt>
-          <dd class="font-medium text-gray-900"><span data-free-quota-value="<%= @remaining_free_quota.to_i %>"><%= @remaining_free_quota.to_i %></span> inference tokens</dd>
-        </div>
-      </dl>
-    </div>
-  </div>
-</div>
+</section>

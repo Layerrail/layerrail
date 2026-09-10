@@ -9,6 +9,10 @@ class Clover
     end
 
     r.get web? do
+      # Beam and Metal generate scoped styles for their measured animation surfaces.
+      content_security_policy.add_style_src :unsafe_inline
+      content_security_policy.add_img_src "data:"
+      content_security_policy.add_media_src "data:"
       content_security_policy.add_connect_src "https://*.#{Config.inference_dns_zone}" unless catalog_inference_provider?
 
       DB.ignore_duplicate_queries do

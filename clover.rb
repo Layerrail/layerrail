@@ -61,7 +61,7 @@ class Clover < Roda
   end
 
   plugin :all_verbs
-  plugin :assets, js: "app.js", css: "app.css", css_opts: {style: :compressed, cache: false}, timestamp_paths: true
+  plugin :assets, js: {app: "app.js", playground: "playground.js"}, css: "app.css", group_subdirs: false, css_opts: {style: :compressed, cache: false}, timestamp_paths: true
   plugin :disallow_file_uploads
   plugin :flash
   plugin :forme_route_csrf
@@ -223,7 +223,7 @@ class Clover < Roda
     csp.default_src :none
     style_sources = [:self, "https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css"]
     img_sources = [:self, "data: image/svg+xml", "https://github.com", "https://avatars.githubusercontent.com"]
-    script_sources = [:self, "https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js", "https://cdn.jsdelivr.net/npm/dompurify@3.4.11/dist/purify.min.js", "https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js", "https://challenges.cloudflare.com/turnstile/v0/api.js", "https://cdn.jsdelivr.net/npm/marked@15.0.5/marked.min.js", "https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"]
+    script_sources = [:self, "https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js", "https://cdn.jsdelivr.net/npm/dompurify@3.4.15/dist/purify.min.js", "https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js", "https://challenges.cloudflare.com/turnstile/v0/api.js", "https://cdn.jsdelivr.net/npm/marked@15.0.5/marked.min.js", "https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"]
     frame_sources = [:self, "https://challenges.cloudflare.com", "https://status.layerrail.com"]
     connect_sources = [:self, "https://cdn.jsdelivr.net"]
 

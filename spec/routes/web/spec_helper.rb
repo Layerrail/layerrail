@@ -6,6 +6,10 @@ Warning.ignore(:mismatched_indentations, File.expand_path("coverage/views")) if 
 css_file = File.expand_path("../../../assets/css/app.css", __dir__)
 File.write(css_file, "") unless File.file?(css_file)
 
+# Rack-only view specs do not execute JavaScript. Browser tests build the bundle.
+playground_js_file = File.expand_path("../../../assets/js/playground.js", __dir__)
+File.write(playground_js_file, "") unless File.file?(playground_js_file)
+
 require "capybara"
 require "capybara/rspec"
 

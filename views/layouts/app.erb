@@ -13,8 +13,8 @@
       crossorigin="anonymous"
     ></script>
     <script
-      src="https://cdn.jsdelivr.net/npm/dompurify@3.4.11/dist/purify.min.js"
-      integrity="sha256-26u1sgWjM+xJyMCef8ow72bfBSO7i8D6nqhDhB8RHb0="
+      src="https://cdn.jsdelivr.net/npm/dompurify@3.4.15/dist/purify.min.js"
+      integrity="sha256-8mOwU2ngUPoXXU7LnJNY60JTYC1RApet+zHfSLLxxNU="
       crossorigin="anonymous"
     ></script>
     <% if @enable_datepicker %>
@@ -102,24 +102,19 @@
         <% if Config.managed_service %>
           <div class="text-sm text-gray-500 text-center mt-10 w-full">
             By using LayerRail console you agree to our
-            <a
-              href="https://layerrail.com/terms-of-service"
-              class="font-medium text-layerrail-500 hover:text-layerrail-600"
-            >
+            <a href="https://layerrail.com/terms-of-service" class="font-medium text-layerrail-500 hover:text-layerrail-600">
               terms of service
             </a>
             and
-            <a
-              href="https://layerrail.com/privacy-policy"
-              class="font-medium text-layerrail-500 hover:text-layerrail-600"
-            >
+            <a href="https://layerrail.com/privacy-policy" class="font-medium text-layerrail-500 hover:text-layerrail-600">
               privacy policy
             </a>
           </div>
         <% end %>
       </div>
     <% end %>
-    <%== assets(:js) %>
+    <%== assets([:js, :app]) %>
+    <%== assets([:js, :playground]) if @enable_playground %>
     <%== render("components/intercom_messenger") %>
   </body>
 </html>

@@ -5,6 +5,8 @@
 /var/*
 /tmp/*
 /assets/css/app.css
+/assets/js/playground.js
+/assets/js/playground.js.LEGAL.txt
 /.auto-parallel-tests
 /sdk/ruby/*.gem
 /sql.log
