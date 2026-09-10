@@ -87,6 +87,28 @@ RSpec.describe Clover, "inference-playground" do
       expect(page).to have_css('option[value="gpt-6-astra"][data-display-name="GPT-6 Astra"][data-context-length="1.05M"]', visible: :all)
     end
 
+    it "renders separate input and output billing prices for catalog models" do
+      allow(Config).to receive(:ai_inference_provider).and_return("azure_foundry")
+      allow(BillingRate).to receive(:million_token_price).and_call_original
+      allow(BillingRate).to receive(:million_token_price).with("azure-gpt-6-astra-input").and_return(12.5)
+      allow(BillingRate).to receive(:million_token_price).with("azure-gpt-6-astra-output").and_return(37.5)
+
+      visit "#{project.path}/inference-playground"
+
+      expect(page.status_code).to eq(200)
+      expect(page).to have_css('option[value="gpt-6-astra"][data-input-price="12.5"][data-output-price="37.5"]', visible: :all)
+    end
+
+    it "falls back to catalog input and output prices when billing rates are missing" do
+      allow(Config).to receive(:ai_inference_provider).and_return("azure_foundry")
+      allow(BillingRate).to receive(:million_token_price).and_return(nil)
+
+      visit "#{project.path}/inference-playground"
+
+      expect(page.status_code).to eq(200)
+      expect(page).to have_css('option[value="gpt-6-astra"][data-input-price="10.0"][data-output-price="50.0"]', visible: :all)
+    end
+
     it "gives choice of inference api keys" do
       visit "#{project.path}/inference-api-key"
       expect(ApiKey.all).to be_empty

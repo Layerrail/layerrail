@@ -25,7 +25,8 @@
           <%== render("components/form/select", locals: {
             name: "inference_endpoint", label: "Model", placeholder: "Choose a model",
             options: @inference_models.map { |ie|
-              prompt_price, completion_price = inference_model_million_token_price(ie)
+              prompt_price = inference_model_million_token_price(ie, ie.prompt_billing_resource)
+              completion_price = inference_model_million_token_price(ie, ie.completion_billing_resource)
               [ie.model_name, ie.model_name, nil, {
                 "data-id": ie.ubid,
                 "data-url": ie.load_balancer.health_check_url,
