@@ -9,3 +9,5 @@ webapp_logs.zip
 # Frontend
 node_modules
 assets/css/app.css
+assets/js/playground.js
+assets/js/playground.js.LEGAL.txt

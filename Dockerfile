@@ -3,6 +3,7 @@ WORKDIR /app
 COPY tailwind.config.js package.json package-lock.json ./
 COPY views/ ./views/
 COPY assets/ ./assets/
+COPY scripts/ ./scripts/
 COPY helpers/web.rb ./helpers/web.rb
 RUN npm ci
 RUN npm run prod
@@ -41,7 +42,10 @@ WORKDIR /app
 # Copy built assets from builders
 COPY --from=bundler /usr/local/bundle/ /usr/local/bundle/
 COPY --chown=layerrail --from=frontend-builder /app/assets/css/app.css /app/assets/css/app.css
+COPY --chown=layerrail --from=frontend-builder /app/assets/js/playground.js /app/assets/js/playground.js.LEGAL.txt /app/assets/js/
 COPY --chown=layerrail . /app
+
+RUN test -s assets/css/app.css && test -s assets/js/playground.js
 
 ENV RACK_ENV=production
 ENV PORT=3000

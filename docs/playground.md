@@ -23,7 +23,11 @@ npm run test:playground
 `npm run dev` builds without minification. `npm run watch` watches both Tailwind
 styles and the playground JavaScript. The generated `assets/js/playground.js`
 bundle is ignored by Git and is loaded only on the playground route through Roda's
-timestamped asset URLs. Production deployment already calls `npm run prod` through
+timestamped asset URLs. The Docker frontend stage runs `npm run prod`, then copies
+the generated CSS, JavaScript, and license file into the Ruby runtime image. The
+image build checks that the generated CSS and JavaScript are present and nonempty.
+Local generated files are excluded from the Docker context so they cannot replace
+the assets from the build stage. Non-Docker deployments can use
 `rake assets:precompile`. CI builds the bundle before Ruby view tests and runs the
 frontend tests.
 
