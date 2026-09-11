@@ -1,6 +1,6 @@
 # LayerRail
 
-LayerRail is a grant-ready cloud console and research PaaS/IaaS direction built on top of the Ubicloud open source infrastructure foundation.
+LayerRail is a cloud console and research PaaS/IaaS direction built on top of the Ubicloud open source infrastructure foundation.
 
 The product narrative is:
 
