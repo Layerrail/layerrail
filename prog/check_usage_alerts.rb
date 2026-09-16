@@ -9,14 +9,14 @@ class Prog::CheckUsageAlerts < Prog::Base
     costs = {}
 
     limits.each do |usage_limit|
-      cost = (costs[usage_limit.project_id] ||= usage_limit.project.current_invoice(since: begin_time).content["cost"])
+      cost = (costs[usage_limit.project_id] ||= usage_limit.project.current_usage_cost(since: begin_time))
       usage_limit.reconcile!(cost)
     rescue => ex
       Clog.emit("Failed to reconcile project usage limit", Util.exception_to_hash(ex).merge(usage_limit_id: usage_limit.id, project_id: usage_limit.project_id))
     end
 
     alerts.group_by(&:project).each do |project, project_alerts|
-      cost = (costs[project.id] ||= project.current_invoice(since: begin_time).content["cost"])
+      cost = (costs[project.id] ||= project.current_usage_cost(since: begin_time))
       project_alerts.each do |alert|
         alert.trigger(cost) if cost > alert.limit
       end

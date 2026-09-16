@@ -5,7 +5,7 @@ RSpec.describe AzureFoundryClient do
     described_class.new(
       endpoint: "https://example.services.ai.azure.com",
       api_key: "test-key",
-      api_version: "2025-01-01-preview"
+      api_version: "2025-01-01-preview",
     )
   end
 
@@ -54,7 +54,7 @@ RSpec.describe AzureFoundryClient do
       "id" => "msg_abc123",
       "model" => "claude-sonnet-5",
       "content" => [{"text" => "ok"}],
-      "usage" => {"input_tokens" => 2, "output_tokens" => 3}
+      "usage" => {"input_tokens" => 2, "output_tokens" => 3},
     }, "claude-sonnet-5")
 
     expect(result["id"]).to eq("msg_abc123")
@@ -64,10 +64,25 @@ RSpec.describe AzureFoundryClient do
     result = client.send(:openai_compatible_anthropic_response, {
       "model" => "claude-sonnet-5",
       "content" => [{"text" => "ok"}],
-      "usage" => {"input_tokens" => 2, "output_tokens" => 3}
+      "usage" => {"input_tokens" => 2, "output_tokens" => 3},
     }, "claude-sonnet-5")
 
     expect(result["id"]).to start_with("chatcmpl-")
     expect(result["id"].length).to be > "chatcmpl-".length
+  end
+
+  it "preserves missing Anthropic usage instead of manufacturing zero token counts" do
+    result = client.send(:openai_compatible_anthropic_response, {"content" => [{"text" => "ok"}]}, "claude-sonnet-5")
+    expect(result["usage"]).to eq({})
+  end
+
+  it "keeps incomplete Anthropic usage incomplete so billing rejects it" do
+    result = client.send(:openai_compatible_anthropic_response, {"usage" => {"input_tokens" => 7}}, "claude-sonnet-5")
+    expect(result["usage"]).to eq("prompt_tokens" => 7)
+  end
+
+  it "preserves genuine zero Anthropic usage" do
+    result = client.send(:openai_compatible_anthropic_response, {"usage" => {"input_tokens" => 0, "output_tokens" => 0}}, "claude-sonnet-5")
+    expect(result["usage"]).to eq("prompt_tokens" => 0, "completion_tokens" => 0, "total_tokens" => 0)
   end
 end

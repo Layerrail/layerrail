@@ -6,7 +6,7 @@ require_relative "../../../prog/ai/inference_endpoint_replica_nexus"
 RSpec.describe Prog::Ai::InferenceEndpointReplicaNexus do
   subject(:nx) { described_class.new(st) }
 
-  let(:st) { Strand.create(prog: "Prog::Ai::InferenceEndpointReplicaNexus", label: "start") }
+  let(:st) { Strand.create(prog: "Prog::Ai::InferenceEndpointReplicaNexus", label: "start", stack: [{"paid_inference_initialized" => true}]) }
 
   let(:project) { Project.create(name: "test") }
   let(:private_subnet) { PrivateSubnet.create(project_id: project.id, name: "test", location_id: Location::HETZNER_HEL1_ID, net6: "fe80::/64", net4: "192.168.0.0/24") }
@@ -58,18 +58,10 @@ RSpec.describe Prog::Ai::InferenceEndpointReplicaNexus do
 
   describe ".assemble" do
     it "creates replica and vm with sshable" do
-      user_project = Project.create(name: "default")
-      ie_project = Project.create(name: "default")
-      Firewall.create(name: "inference-endpoint-firewall", location_id: Location::HETZNER_FSN1_ID, project_id: ie_project.id)
-
-      expect(Config).to receive(:inference_endpoint_service_project_id).and_return(ie_project.id).at_least(:once)
-      st_ie = Prog::Ai::InferenceEndpointNexus.assemble_with_model(
-        project_id: user_project.id,
-        location_id: Location::HETZNER_FSN1_ID,
-        name: "ie1",
-        model_id: "8b0b55b3-fb99-415f-8441-3abef2c2a200",
-      )
-      ie = st_ie.subject
+      expect(Config).to receive(:inference_endpoint_service_project_id).and_return(project.id).at_least(:once)
+      ie = inference_endpoint
+      ie.update(location_id: private_subnet.location_id, vm_size: "standard-2", boot_image: Config.default_boot_image_name,
+        storage_volumes: [{"size_gib" => 40}])
       st = described_class.assemble(ie.id)
       replica = InferenceEndpointReplica[st.id]
       expect(replica).not_to be_nil
@@ -319,7 +311,7 @@ RSpec.describe Prog::Ai::InferenceEndpointReplicaNexus do
     it "pings the inference gateway and naps" do
       expect(nx).to receive(:available?).and_return(true)
       expect(nx).to receive(:ping_gateway)
-      expect { nx.wait }.to nap(120)
+      expect { nx.wait }.to nap(30)
     end
 
     it "hops to unavailable if the replica is not available" do
@@ -407,8 +399,35 @@ RSpec.describe Prog::Ai::InferenceEndpointReplicaNexus do
     let(:projects) { [Project.create(name: "p1"), Project.create(name: "p2")] }
 
     before do
+      allow(BachsClient).to receive(:enabled?).and_return(true)
+      projects.each do |project|
+        billing_info = BillingInfo.create(stripe_id: "bachs:#{project.ubid}")
+        project.update(billing_info_id: billing_info.id)
+        PaymentMethod.create(billing_info_id: billing_info.id, stripe_id: "bachs:payment-#{project.ubid}")
+      end
       ApiKey.create_inference_api_key(projects.first)
       ApiKey.create_inference_api_key(projects.last)
+      unverified = Project.create(name: "no-saved-payment", credit: 100, discount: 100)
+      ApiKey.create_inference_api_key(unverified)
+    end
+
+    it "drains historical usage with access disabled before recording paid gateway deltas" do
+      st.update(stack: [{}])
+      sent = []
+      samples = [1000, 7]
+      allow(sshable).to receive(:_cmd) do |_, options|
+        sent << JSON.parse(options[:stdin])
+        tokens = samples.shift
+        {projects: [{ubid: projects.first.ubid, prompt_token_count: tokens, completion_token_count: tokens + 2}]}.to_json
+      end
+      nx.ping_gateway
+      expect(sent.first["projects"]).to be_empty
+      expect(BillingRecord.where(project_id: projects.first.id)).to be_empty
+      expect(st.reload.stack.first["paid_inference_initialized"]).to be(true)
+
+      nx.ping_gateway
+      expect(sent.last["projects"].map { it["ubid"] }).to include(projects.first.ubid)
+      expect(BillingRecord.where(project_id: projects.first.id).order(:amount).select_map(:amount)).to eq([7, 9])
     end
 
     it "for private endpoints" do
@@ -473,6 +492,7 @@ RSpec.describe Prog::Ai::InferenceEndpointReplicaNexus do
       expect(br.resource_id).to eq(inference_endpoint.id)
       expect(br.billing_rate_id).to eq("ba80e171-0c24-4bf9-ac4f-36bdadb259c0")
       expect(br.amount).to eq(10)
+      expect(br.resource_tags.to_h).to include("paid_inference" => true, "unit_price" => br.billing_rate["unit_price"].to_s)
       expect(br2.project_id).to eq(p1.id)
       expect(br2.resource_id).to eq(inference_endpoint.id)
       expect(br2.billing_rate_id).to eq("c8886006-9e15-4046-b46a-163851626f83")
@@ -503,7 +523,7 @@ RSpec.describe Prog::Ai::InferenceEndpointReplicaNexus do
       expect(BillingRecord.count).to eq(0)
     end
 
-    it "updates quota records if price is zero" do
+    it "does not create new paid records for zero-priced resources" do
       expect(BillingRate).to receive(:from_resource_properties).with("InferenceTokens", "#{inference_endpoint.model_name}-input", "global").and_return({"id" => "00000000-0000-0000-0000-000000000001", "unit_price" => 0.0000000000})
       expect(BillingRate).to receive(:from_resource_properties).with("InferenceTokens", "#{inference_endpoint.model_name}-output", "global").and_return({"id" => "00000000-0000-0000-0000-000000000002", "unit_price" => 0.0000000000})
       expect(BillingRecord.count).to eq(0)
@@ -515,7 +535,7 @@ RSpec.describe Prog::Ai::InferenceEndpointReplicaNexus do
         [{"ubid" => p1.ubid, "request_count" => 1, "prompt_token_count" => 2, "completion_token_count" => 3}],
         "output", "completion_token_count",
       )
-      expect(BillingRecord.count).to eq(2)
+      expect(BillingRecord.count).to eq(0)
     end
 
     it "failure in updating single record doesn't impact others" do

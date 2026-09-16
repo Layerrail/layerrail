@@ -75,7 +75,11 @@ module Config
   optional :resend_from_email, string
   optional :resend_webhook_secret, string, clear: true
   # :nocov:
-  override :mail_driver, (resend_api_key ? :resend : (production? ? :smtp : :logger)), symbol
+  override :mail_driver, (if resend_api_key
+                            :resend
+                          else
+                            (production? ? :smtp : :logger)
+                          end), symbol
   override :mail_from, (resend_from_email || (production? ? nil : "dev@example.com")), string
   override :account_verification_enabled, (!development? || mail_driver == :resend), bool
   # :nocov:
@@ -295,11 +299,13 @@ module Config
   optional :inference_router_access_token, string, clear: true
   override :inference_router_release_tag, "v0.1.8", string
   override :premium_ai_metering_enabled, true, bool
-  override :premium_ai_trial_enabled, true, bool
+  override :premium_ai_trial_enabled, false, bool
   override :premium_ai_trial_days, 30, int
   override :premium_ai_polar_event_name, "layerrail_ai_usage", string
-  override :premium_ai_charge_threshold_cents, 500, int
-  override :premium_ai_monthly_spend_cap_cents, 1000, int
+  override :premium_ai_charge_threshold_cents, 1000, int
+  override :premium_ai_monthly_spend_cap_cents, 0, int
+  override :inference_usage_charge_threshold_cents, 1000, int
+  override :inference_usage_minimum_charge_cents, 100, int
   override :premium_ai_rate_limit_fallback_enabled, true, bool
 
   # DNS

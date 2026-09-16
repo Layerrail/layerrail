@@ -8,8 +8,7 @@ RSpec.describe BachsBillingVerificationCheckout do
   let(:product_id) { "prod_verification_1" }
 
   before do
-    allow(Config).to receive(:bachs_verification_product_id).and_return(product_id)
-    allow(Config).to receive(:bachs_verification_amount_cents).and_return(100)
+    allow(Config).to receive_messages(bachs_verification_product_id: product_id, bachs_verification_amount_cents: 100)
   end
 
   it "creates a one-time card checkout for billing verification" do
@@ -19,24 +18,24 @@ RSpec.describe BachsBillingVerificationCheckout do
       hash_including(
         product_cart: [{product_id:, quantity: 1}],
         customer: {name: account.name || account.email, email: account.email},
-        allowed_payment_method_types: ["card"],
+        payment_method_types: ["USD_CARD"],
         success_url: "https://console.layerrail.com/billing/success/bachs",
         metadata: hash_including(
           kind: "project_billing_setup",
           project_id: project.ubid,
           account_id: account.ubid,
-          amount_cents: 100
+          amount_cents: 100,
         ),
-        reference: expected_key
+        reference: expected_key,
       ),
-      idempotency_key: expected_key
+      idempotency_key: expected_key,
     ).and_return("checkout_id" => "checkout-1", "checkout_url" => "https://checkout.bachs.io/c/token")
 
     checkout = described_class.create!(
       project:,
       account:,
       success_url: "https://console.layerrail.com/billing/success/bachs",
-      cancel_url: "https://console.layerrail.com/billing"
+      cancel_url: "https://console.layerrail.com/billing",
     )
 
     expect(checkout.fetch("checkout_url")).to eq("https://checkout.bachs.io/c/token")
@@ -53,7 +52,7 @@ RSpec.describe BachsBillingVerificationCheckout do
       "customer" => {"id" => "cust_bachs_1", "email" => account.email, "name" => account.name},
       "products" => [{"product_id" => product_id}],
       "metadata" => {"kind" => "project_billing_setup", "project_id" => project.ubid, "product_id" => product_id},
-      "charge" => {"payment_id" => "pay_bachs_1", "status" => "succeeded", "is_refundable" => true}
+      "charge" => {"payment_id" => "pay_bachs_1", "status" => "succeeded", "is_refundable" => true},
     }
     allow(BachsClient).to receive(:get_checkout).with(checkout_id).and_return(checkout)
     allow(PolarClient).to receive(:get_customer_by_external_id).with(project.ubid).and_raise(PolarAPIError.new(404, "not found"))
@@ -61,7 +60,7 @@ RSpec.describe BachsBillingVerificationCheckout do
       external_id: project.ubid,
       email: account.email,
       name: account.name,
-      metadata: {project_id: project.ubid, billing_provider: "bachs"}
+      metadata: {project_id: project.ubid, billing_provider: "bachs"},
     ).and_return("id" => "polar_customer_1")
     refund_key = "layerrail-billing-verification-refund-#{checkout_id}"
     expect(BachsClient).to receive(:create_refund).with(
@@ -69,9 +68,9 @@ RSpec.describe BachsBillingVerificationCheckout do
         charge_id: "pay_bachs_1",
         reference: refund_key,
         reason: "Automatic LayerRail billing verification refund",
-        idempotency_key: refund_key
+        idempotency_key: refund_key,
       },
-      idempotency_key: refund_key
+      idempotency_key: refund_key,
     ).and_return("status" => "processing")
 
     result = described_class.reconcile!(checkout_id, project:)
@@ -81,7 +80,7 @@ RSpec.describe BachsBillingVerificationCheckout do
     expect(billing_info.stripe_id).to eq("polar_customer_1")
     expect(billing_info.payment_methods.first).to have_attributes(
       stripe_id: "bachs:payment:pay_bachs_1",
-      card_fingerprint: "bachs:cust_bachs_1"
+      card_fingerprint: "bachs:cust_bachs_1",
     )
   end
 
@@ -93,7 +92,7 @@ RSpec.describe BachsBillingVerificationCheckout do
       "currency" => "USD",
       "customer" => {"email" => account.email},
       "products" => [{"product_id" => product_id}],
-      "metadata" => {"kind" => "project_billing_setup", "project_id" => project.ubid, "product_id" => product_id}
+      "metadata" => {"kind" => "project_billing_setup", "project_id" => project.ubid, "product_id" => product_id},
     )
     expect(PolarClient).not_to receive(:get_customer_by_external_id)
     expect(BachsClient).not_to receive(:create_refund)
@@ -110,12 +109,19 @@ RSpec.describe BachsBillingVerificationCheckout do
       "type" => "collection.succeeded",
       "data" => {
         "checkout_id" => checkout_id,
-        "metadata" => {"kind" => "project_billing_setup", "project_id" => project.ubid}
-      }
+        "metadata" => {"kind" => "project_billing_setup", "project_id" => project.ubid},
+      },
     }
     expect(described_class).to receive(:reconcile!).with(checkout_id, project:).and_return(status: "verified")
 
     expect(described_class.reconcile_event!(event)).to eq(status: "verified")
+  end
+
+  it "lets invoice collection events continue to invoice reconciliation" do
+    event = {"type" => "collection.succeeded", "data" => {"checkout_id" => "chk_invoice_1", "metadata" => {"kind" => "invoice_payment", "invoice" => "invoice-id"}}}
+    expect(described_class).not_to receive(:reconcile!)
+
+    expect(described_class.reconcile_event!(event)).to eq(status: "ignored")
   end
 
   it "does not connect billing when the automatic refund request fails" do
@@ -128,7 +134,7 @@ RSpec.describe BachsBillingVerificationCheckout do
       "customer" => {"id" => "cust_bachs_1", "email" => account.email},
       "products" => [{"product_id" => product_id}],
       "metadata" => {"kind" => "project_billing_setup", "project_id" => project.ubid, "product_id" => product_id},
-      "charge" => {"payment_id" => "pay_bachs_1", "status" => "succeeded"}
+      "charge" => {"payment_id" => "pay_bachs_1", "status" => "succeeded"},
     )
     allow(PolarClient).to receive(:get_customer_by_external_id).and_return("id" => "polar_customer_1")
     allow(BachsClient).to receive(:create_refund).and_raise(BachsAPIError.new(503, "temporarily unavailable"))
@@ -147,13 +153,13 @@ RSpec.describe BachsBillingVerificationCheckout do
       "customer" => {"id" => "cust_bachs_1", "email" => account.email},
       "products" => [{"product_id" => product_id}],
       "metadata" => {"kind" => "project_billing_setup", "project_id" => project.ubid, "product_id" => product_id},
-      "charge" => {"status" => "succeeded"}
+      "charge" => {"status" => "succeeded"},
     )
     allow(PolarClient).to receive(:get_customer_by_external_id).and_return("id" => "polar_customer_1")
 
     expect { described_class.reconcile!(checkout_id, project:) }.to raise_error(
       BachsBillingVerificationCheckout::VerificationError,
-      /refundable charge id/
+      /refundable charge id/,
     )
     expect(project.refresh.billing_info).to be_nil
   end

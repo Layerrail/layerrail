@@ -10,6 +10,7 @@ RSpec.describe Clover, "inference-endpoint" do
 
   describe "feature enabled" do
     before do
+      allow(Config).to receive_messages(ai_inference_enabled: true, ai_inference_provider: "layerrail")
       login(user.email)
     end
 
@@ -146,61 +147,35 @@ RSpec.describe Clover, "inference-endpoint" do
       expect(page).to have_content("meta-llama/Llama-3.2-1B-Instruct")
     end
 
-    it "does not show inference endpoints without permissions" do
-      ps = Prog::Vnet::SubnetNexus.assemble(project.id, name: "dummy-ps-1", location_id: Location::HETZNER_FSN1_ID).subject
-      lb = LoadBalancer.create(private_subnet_id: ps.id, name: "dummy-lb-1", health_check_endpoint: "/up", project_id: project.id)
-      LoadBalancerPort.create(load_balancer_id: lb.id, src_port: 80, dst_port: 80)
-      InferenceEndpoint.create(name: "ie1", model_name: "test-model", project_id: project_wo_permissions.id, is_public: true, visible: true, location_id: Location::HETZNER_FSN1_ID, vm_size: "size", replica_count: 1, boot_image: "image", storage_volumes: [], engine_params: "", engine: "vllm", private_subnet_id: ps.id, load_balancer_id: lb.id)
-      visit "#{project_wo_permissions.path}/inference-endpoint"
+    %w[layerrail cloudflare].each do |provider|
+      it "does not show #{provider} inference endpoints without project permissions" do
+        allow(Config).to receive(:ai_inference_provider).and_return(provider)
+        visit "#{project_wo_permissions.path}/inference-endpoint"
 
-      expect(page.title).to eq("LayerRail - Inference Endpoints")
-      expect(page).to have_no_content("e5-mistral-7b-it")
+        expect(page.title).to eq("LayerRail - Forbidden")
+        expect(page).to have_no_content("AI inference is paid from the first token")
+      end
     end
 
-    it "shows free quota notice with correct free inference tokens" do
-      ps = Prog::Vnet::SubnetNexus.assemble(project.id, name: "dummy-ps-1", location_id: Location::HETZNER_FSN1_ID).subject
-      lb = LoadBalancer.create(private_subnet_id: ps.id, name: "dummy-lb-1", health_check_endpoint: "/up", project_id: project.id)
-      LoadBalancerPort.create(load_balancer_id: lb.id, src_port: 80, dst_port: 80)
-      ie = InferenceEndpoint.create(name: "ie1", model_name: "test-model", project_id: project.id, is_public: true, visible: true, location_id: Location::HETZNER_FSN1_ID, vm_size: "size", replica_count: 1, boot_image: "image", storage_volumes: [], engine_params: "", engine: "vllm", private_subnet_id: ps.id, load_balancer_id: lb.id)
-      free_inference_tokens = FreeQuota.free_quotas["inference-tokens"]["value"]
+    it "shows paid usage information instead of a free token allowance" do
       visit "#{project.path}/inference-api-key"
-      expect(page.text).to include("You have #{free_inference_tokens} free inference tokens available (few-minute delay). Free quota refreshes next month.")
-
-      BillingRecord.create(
-        project_id: project.id,
-        resource_id: ie.id,
-        resource_name: ie.name,
-        span: Sequel::Postgres::PGRange.new(Sequel::CURRENT_TIMESTAMP, nil),
-        billing_rate_id: BillingRate.from_resource_type("InferenceTokens").first["id"],
-        amount: 100000,
-      )
-      visit "#{project.path}/inference-api-key"
-      expect(page.text).to include("You have #{[free_inference_tokens - 100000, 0].max} free inference tokens available (few-minute delay). Free quota refreshes next month.")
-
-      BillingRecord.create(
-        project_id: project.id,
-        resource_id: ie.id,
-        resource_name: ie.name,
-        span: Sequel::Postgres::PGRange.new(Sequel::CURRENT_TIMESTAMP, nil),
-        billing_rate_id: BillingRate.from_resource_type("InferenceTokens").first["id"],
-        amount: 99999999,
-      )
-      visit "#{project.path}/inference-api-key"
-      expect(page.text).to include("You have 0 free inference tokens available (few-minute delay). Free quota refreshes next month.")
+      expect(page.text).to include("AI inference is paid from the first token and billed on separate usage invoices.")
+      expect(page).to have_no_css("[data-free-quota-value]")
+      expect(page.text).not_to include("Free quota")
     end
 
-    it "shows free quota notice with billing valid message" do
-      expect(Config).to receive(:stripe_secret_key).at_least(:once).and_return(nil)
-      expect(project.has_valid_payment_method?).to be true
+    it "shows connected billing when a non-fraudulent payment method exists" do
+      allow(BachsClient).to receive(:enabled?).and_return(true)
+      billing_info = BillingInfo.create(stripe_id: "bachs:#{project.ubid}")
+      project.update(billing_info_id: billing_info.id)
+      PaymentMethod.create(billing_info_id: billing_info.id, stripe_id: "bachs:payment-#{project.ubid}")
       visit "#{project.path}/inference-api-key"
-      expect(page.text).to include("Billing information is valid. Charges start after the free quota.")
+      expect(page.text).to include("Billing is connected. Pay usage invoices to keep inference available.")
     end
 
-    it "shows free quota notice with billing unavailable message" do
-      expect(Config).to receive(:stripe_secret_key).at_least(:once).and_return("test_stripe_secret_key")
-      expect(project.has_valid_payment_method?).to be false
+    it "asks for a payment method before allowing paid inference" do
       visit "#{project.path}/inference-api-key"
-      expect(page.text).to include("To avoid service interruption, please click here to add a valid billing method.")
+      expect(page.text).to include("Before using inference, click here to add a valid billing method.")
     end
   end
 

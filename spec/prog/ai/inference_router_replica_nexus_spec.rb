@@ -6,7 +6,7 @@ require_relative "../../../prog/ai/inference_router_replica_nexus"
 RSpec.describe Prog::Ai::InferenceRouterReplicaNexus do
   subject(:nx) { described_class.new(st) }
 
-  let(:st) { Strand.create(prog: "Prog::Ai::InferenceRouterReplicaNexus", label: "start") }
+  let(:st) { Strand.create(prog: "Prog::Ai::InferenceRouterReplicaNexus", label: "start", stack: [{"paid_inference_initialized" => true}]) }
   let(:project) { Project.create(name: "test") }
   let(:private_subnet) { PrivateSubnet.create(project_id: project.id, name: "test", location_id: Location::LEASEWEB_WDC02_ID, net6: "fe80::/64", net4: "192.168.0.0/24") }
   let(:load_balancer) { Prog::Vnet::LoadBalancerNexus.assemble(private_subnet.id, name: "test", src_port: 443, dst_port: 8443).subject }
@@ -158,7 +158,7 @@ RSpec.describe Prog::Ai::InferenceRouterReplicaNexus do
     it "pings the inference inference_router and naps" do
       expect(nx).to receive(:available?).and_return(true)
       expect(nx).to receive(:ping_inference_router)
-      expect { nx.wait }.to nap(120)
+      expect { nx.wait }.to nap(30)
     end
 
     it "hops to unavailable if the replica is not available" do
@@ -231,9 +231,44 @@ RSpec.describe Prog::Ai::InferenceRouterReplicaNexus do
   describe "#ping_inference_router" do
     let(:projects) { [Project.create(name: "p1"), Project.create(name: "p2")] }
 
+    def connect_inference_billing(project)
+      billing_info = BillingInfo.create(stripe_id: "bachs:#{project.ubid}")
+      project.update(billing_info_id: billing_info.id)
+      PaymentMethod.create(billing_info_id: billing_info.id, stripe_id: "bachs:payment-#{project.ubid}")
+    end
+
+    before do
+      allow(BachsClient).to receive(:enabled?).and_return(true)
+      projects.each { connect_inference_billing(it) }
+    end
+
+    it "drains historical usage with access disabled before recording paid router deltas" do
+      st.update(stack: [{}])
+      ApiKey.create_inference_api_key(projects.first)
+      sent = []
+      allow(sshable).to receive(:_cmd).with("md5sum /ir/workdir/config.json | awk '{ print $1 }'").and_return("old-config")
+      allow(sshable).to receive(:_cmd).with("sudo mkdir -p /ir/workdir && sudo tee /ir/workdir/config.json > /dev/null", anything) do |_, options|
+        sent << JSON.parse(options[:stdin])
+      end
+      allow(sshable).to receive(:_cmd).with("sudo pkill -f -HUP inference-router")
+      samples = [1000, 7].map { |tokens| {usage: [{ubid: projects.first.ubid, model_name: "test-model", prompt_token_count: tokens, completion_token_count: tokens + 2}], health: []}.to_json }
+      allow(sshable).to receive(:_cmd).with("curl -k -m 10 --no-progress-meter https://localhost:8080/stats").and_return(*samples)
+
+      nx.ping_inference_router
+      expect(sent.first.values_at("projects", "routes")).to eq([[], []])
+      expect(BillingRecord.where(project_id: projects.first.id)).to be_empty
+      expect(st.reload.stack.first["paid_inference_initialized"]).to be(true)
+
+      nx.ping_inference_router
+      expect(sent.last["projects"].map { it["ubid"] }).to include(projects.first.ubid)
+      expect(BillingRecord.where(project_id: projects.first.id).order(:amount).select_map(:amount)).to eq([7, 9])
+    end
+
     it "for public routers" do
       ApiKey.create_inference_api_key(projects.first)
       ApiKey.create_inference_api_key(projects.last)
+      unverified = Project.create(name: "no-saved-payment", credit: 100, discount: 100)
+      ApiKey.create_inference_api_key(unverified)
       InferenceRouterTarget.create(
         name: "test-target-a",
         host: "test-host-a",
@@ -389,6 +424,8 @@ RSpec.describe Prog::Ai::InferenceRouterReplicaNexus do
 
       p_allowed = Project.create(name: "allowed")
       p_blocked = Project.create(name: "blocked")
+      connect_inference_billing(p_allowed)
+      connect_inference_billing(p_blocked)
       ApiKey.create_inference_api_key(p_allowed)
       ApiKey.create_inference_api_key(p_blocked)
 
@@ -463,10 +500,18 @@ RSpec.describe Prog::Ai::InferenceRouterReplicaNexus do
     end
 
     it "skips config update when unchanged" do
+      written_config = nil
+      allow(sshable).to receive(:_cmd).with("md5sum /ir/workdir/config.json | awk '{ print $1 }'").and_return("old-config")
+      allow(sshable).to receive(:_cmd).with("sudo mkdir -p /ir/workdir && sudo tee /ir/workdir/config.json > /dev/null", anything) do |_, options|
+        written_config = options[:stdin]
+      end
+      allow(sshable).to receive(:_cmd).with("sudo pkill -f -HUP inference-router")
+      nx.update_config
+
       expect(inference_router).to receive(:ubid).and_return("irubid")
       expect(sshable).to receive(:_cmd).with(
         "md5sum /ir/workdir/config.json | awk '{ print $1 }'",
-      ).and_return("8ffb16694fe5e619b27326450e52124f") # md5sum of the test config.
+      ).and_return(OpenSSL::Digest::MD5.hexdigest(written_config))
       expect(sshable).not_to receive(:_cmd).with(
         "sudo mkdir -p /ir/workdir && sudo tee /ir/workdir/config.json > /dev/null",
         hash_including(stdin: a_string_matching(/"projects":/)),

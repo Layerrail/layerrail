@@ -30,11 +30,11 @@
     <div>
       <dl class="grid grid-cols-2 gap-5 <%= (@project.discount > 0) ? "sm:grid-cols-4" : "sm:grid-cols-3" %>">
         <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-          <dt class="truncate text-sm font-medium text-gray-500">Current Usage</dt>
+          <dt class="truncate text-sm font-medium text-gray-500">Current infrastructure usage</dt>
           <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900"><%= money(@invoices.first.subtotal) %></dd>
         </div>
         <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
-          <dt class="truncate text-sm font-medium text-gray-500">Last Month</dt>
+          <dt class="truncate text-sm font-medium text-gray-500">Latest invoice</dt>
           <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900"><%= (@invoices.count > 1) ? money(@invoices[1].subtotal) : "-" %></dd>
         </div>
         <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
@@ -48,6 +48,20 @@
           </div>
         <% end %>
       </dl>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <h3 class="text-base font-semibold text-gray-900">AI usage billing</h3>
+      <p class="mt-2 text-sm text-gray-600">
+        Unbilled usage: <strong><%= money(InferenceUsageBilling.unbilled_cost(@project).to_f) %></strong>.
+        All available AI models, including Azure models, are billed by usage with no free token allowance.
+        Usage invoices are separate from infrastructure and subscription bills and are issued at
+        <%= money(InferenceUsageBilling.threshold.to_f) %> of unpaid usage after credits, or at month end for balances of at least $1.
+        Smaller balances carry forward. Existing monetary credits apply before payment is due.
+      </p>
+      <p class="mt-2 text-sm text-gray-600">
+        Pay usage invoices through Bachs from this page. Further inference pauses when payment is due
+        and resumes after payment is confirmed.
+      </p>
     </div>
     <!-- Billing Info Update Card -->
     <% billing_data = billing_info.billing_data || {} %>
@@ -341,7 +355,7 @@
   </div>
   <div class="overflow-hidden rounded-lg shadow ring-1 ring-black ring-opacity-5 bg-white divide-y divide-gray-200">
     <div class="px-4 py-5 sm:p-6">
-      <% current_limit_cost = @invoices.first.content["cost"].to_f %>
+      <% current_limit_cost = @project.current_usage_cost.to_f %>
       <% if @usage_limit %>
         <% percentage = @usage_limit.usage_percentage(current_limit_cost) %>
         <% if @usage_limit.suspended? %>

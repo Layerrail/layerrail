@@ -167,7 +167,7 @@ class Prog::Ai::InferenceRouterReplicaNexus < Prog::Base
     hop_unavailable unless available?
     ping_inference_router
 
-    nap 120
+    nap 30
   end
 
   label def destroy
@@ -232,7 +232,7 @@ class Prog::Ai::InferenceRouterReplicaNexus < Prog::Base
     Page.from_tag_parts(PAGE_TYPES[type][:tag], inference_router_replica.ubid)&.incr_resolve
   end
 
-  def update_config
+  def update_config(allow_paid_requests: strand.stack.first["paid_inference_initialized"])
     api_key_ds = DB[:api_key].where(
       owner_table: "project",
       used_for: "inference_endpoint",
@@ -240,18 +240,10 @@ class Prog::Ai::InferenceRouterReplicaNexus < Prog::Base
       owner_id: Sequel[:project][:id],
     ).exists
 
-    free_quota_exhausted_projects_ds = FreeQuota.get_exhausted_projects("inference-tokens")
-    valid_payment_method_ds = DB[:payment_method]
-      .where(fraud: false)
-      .select_group(:billing_info_id)
-      .select_append { Sequel.as(Sequel.lit("1"), :valid_payment_method) }
-
     eligible_projects_ds =
       Project.where(api_key_ds).then do |ds|
         if inference_router.location.visible
           ds
-            .left_outer_join(valid_payment_method_ds, billing_info_id: :billing_info_id)
-            .exclude(valid_payment_method: nil, credit: 0.0, id: free_quota_exhausted_projects_ds)
         else
           ds.where(
             Sequel.pg_jsonb_op(:feature_flags)["visible_locations"]
@@ -261,7 +253,7 @@ class Prog::Ai::InferenceRouterReplicaNexus < Prog::Base
       end.order(:id)
 
     eligible_projects = eligible_projects_ds.all
-      .select(&:active?)
+      .select { it.active? && it.has_valid_inference_payment_method? && !InferenceUsageBilling.payment_required?(it) }
       .map do
         {
           ubid: it.ubid,
@@ -273,7 +265,9 @@ class Prog::Ai::InferenceRouterReplicaNexus < Prog::Base
     end
 
     targets = inference_router.targets.group_by(&:inference_router_model)
-    routes = targets.map do |inference_router_model, targets_for_model|
+    routes = targets.filter_map do |inference_router_model, targets_for_model|
+      next unless PremiumAiUsageMeter.billable_model?(inference_router_model)
+
       {
         model_name: inference_router_model.model_name,
         project_inflight_limit: inference_router_model.project_inflight_limit,
@@ -298,8 +292,8 @@ class Prog::Ai::InferenceRouterReplicaNexus < Prog::Base
         cert: inference_router.load_balancer.active_cert.cert,
         key: OpenSSL::PKey.read(inference_router.load_balancer.active_cert.csr_key).to_pem,
       },
-      projects: eligible_projects,
-      routes:,
+      projects: allow_paid_requests ? eligible_projects : [],
+      routes: allow_paid_requests ? routes : [],
     }
     new_config = new_config.merge(JSON.parse(File.read("config/inference_router_config.json")))
     new_config_json = JSON.generate(new_config)
@@ -316,14 +310,21 @@ class Prog::Ai::InferenceRouterReplicaNexus < Prog::Base
 
   # pushes latest config to inference router and collects billing and health information
   def ping_inference_router
-    update_config
+    initialized = strand.stack.first["paid_inference_initialized"]
+    update_config(allow_paid_requests: initialized)
     stats = vm.sshable.cmd_json("curl -k -m 10 --no-progress-meter https://localhost:8080/stats")
 
     Clog.emit("Successfully pinged inference router", {ping_inference_router: {inference_router: inference_router.ubid, replica: inference_router_replica.ubid, stats:}})
 
     project_usage = stats["usage"]
-    update_billing_records(project_usage, "prompt_billing_resource", "prompt_token_count")
-    update_billing_records(project_usage, "completion_billing_resource", "completion_token_count")
+    if initialized
+      update_billing_records(project_usage, "prompt_billing_resource", "prompt_token_count")
+      update_billing_records(project_usage, "completion_billing_resource", "completion_token_count")
+    else
+      # The gateway reports usage deltas. Drain the pre-cutover sample while
+      # access is disabled so historical free usage never becomes a paid row.
+      update_stack("paid_inference_initialized" => true)
+    end
 
     unhealthy_endpoints = stats["health"].reject { it["healthy"] }.map { it["id"] }
     if unhealthy_endpoints.any?
@@ -335,37 +336,45 @@ class Prog::Ai::InferenceRouterReplicaNexus < Prog::Base
   end
 
   def update_billing_records(project_usage, billing_resource_key, usage_key)
-    begin_time = Date.today.to_time
-    end_time = (Date.today + 1).to_time
+    now = Time.now.utc
+    begin_time = Time.utc(now.year, now.month, now.day)
+    end_time = begin_time + 24 * 60 * 60
 
     project_usage.each do |usage|
       model = InferenceRouterModel.from_model_name(usage["model_name"])
       resource_family = model[billing_resource_key.to_sym]
-      rate = BillingRate.from_resource_properties("InferenceTokens", resource_family, "global")
+      rate = PremiumAiUsageMeter.billable_rate(resource_family)
+      next unless rate
 
       rate_id = rate["id"]
-      tokens = usage[usage_key]
-      next if tokens.zero?
+      tokens = usage[usage_key].to_i
+      next unless tokens.positive?
 
       project = Project[id: UBID.to_uuid(usage["ubid"])]
 
       begin
-        today_record = BillingRecord
-          .where(project_id: project.id, resource_id: inference_router.id, billing_rate_id: rate_id)
-          .where { Sequel.pg_range(it.span).overlaps(Sequel.pg_range(begin_time...end_time)) }
-          .first
+        DB.transaction(savepoint: true) do
+          Project.where(id: project.id).for_update.first
+          today_record = BillingRecord
+            .where(project_id: project.id, resource_id: inference_router.id, billing_rate_id: rate_id)
+            .with_tag("paid_inference", true)
+            .with_tag("unit_price", rate["unit_price"].to_s)
+            .where { Sequel.pg_range(it.span).overlaps(Sequel.pg_range(begin_time...end_time)) }
+            .first
 
-        if today_record
-          today_record.this.update(amount: Sequel[:amount] + tokens)
-        else
-          BillingRecord.create(
-            project_id: project.id,
-            resource_id: inference_router.id,
-            resource_name: "#{resource_family} #{begin_time.strftime("%Y-%m-%d")}",
-            billing_rate_id: rate_id,
-            span: Sequel.pg_range(begin_time...end_time),
-            amount: tokens,
-          )
+          if today_record
+            today_record.this.update(amount: Sequel[:amount] + tokens)
+          else
+            BillingRecord.create(
+              project_id: project.id,
+              resource_id: inference_router.id,
+              resource_name: "#{resource_family} #{begin_time.strftime("%Y-%m-%d")}",
+              billing_rate_id: rate_id,
+              span: Sequel.pg_range(begin_time...end_time),
+              amount: tokens,
+              resource_tags: {paid_inference: true, unit_price: rate["unit_price"].to_s, provider: "layerrail", model: model.model_name, token_kind: (usage_key == "prompt_token_count") ? "input" : "output"},
+            )
+          end
         end
       rescue Sequel::Error => ex
         Clog.emit("Failed to update billing record", {billing_record_update_error: Util.exception_to_hash(ex, into: {project_ubid: project.ubid, replica_ubid: inference_router_replica.ubid, tokens:})})

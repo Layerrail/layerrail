@@ -9,14 +9,14 @@ class Clover
     end
 
     r.get api? do
+      authorize("Project:view", @project)
       {items: Serializers::InferenceEndpoint.serialize(all_inference_models)}
     end
 
     r.get web? do
+      authorize("Project:view", @project)
       @inference_models = all_inference_models
-      @remaining_free_quota = FreeQuota.remaining_free_quota("inference-tokens", @project.id)
-      @free_quota_unit = "inference tokens"
-      @has_valid_payment_method = @project.has_valid_payment_method?
+      @has_valid_payment_method = @project.has_valid_inference_payment_method?
       view "inference/endpoint/index"
     end
   end

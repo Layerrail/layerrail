@@ -16,7 +16,7 @@ class BachsBillingVerificationCheckout
         product_cart: [{product_id:, quantity: 1}],
         customer: {name: account.name || account.email, email: account.email},
         billing_currency: "USD",
-        allowed_payment_method_types: ["card"],
+        payment_method_types: ["USD_CARD"],
         success_url:,
         cancel_url:,
         metadata: {
@@ -24,12 +24,12 @@ class BachsBillingVerificationCheckout
           project_id: project.ubid,
           account_id: account.ubid,
           product_id:,
-          amount_cents: Config.bachs_verification_amount_cents
+          amount_cents: Config.bachs_verification_amount_cents,
         },
         reference: idempotency_key,
-        expires_in_minutes: 60
+        expires_in_minutes: 60,
       },
-      idempotency_key:
+      idempotency_key:,
     )
   end
 
@@ -69,7 +69,7 @@ class BachsBillingVerificationCheckout
         PaymentMethod.create(
           billing_info_id: billing_info.id,
           stripe_id: payment_method_id,
-          card_fingerprint: "bachs:#{customer_id}"
+          card_fingerprint: "bachs:#{customer_id}",
         )
         changed = true
       end
@@ -78,7 +78,7 @@ class BachsBillingVerificationCheckout
     {
       status: changed ? "verified" : "already_verified",
       refund_status:,
-      checkout:
+      checkout:,
     }
   end
 
@@ -87,9 +87,11 @@ class BachsBillingVerificationCheckout
 
     data = event["data"] || event["payload"] || {}
     metadata = data["metadata"].is_a?(Hash) ? data["metadata"] : {}
+    return {status: "ignored"} unless metadata["kind"] == "project_billing_setup"
+
     checkout_id = data["checkout_id"] || data.dig("checkout", "checkout_id")
-    project_id = UBID.to_uuid(metadata["project_id"])
-    return {status: "ignored"} unless metadata["kind"] == "project_billing_setup" && checkout_id && project_id
+    project_id = UBID.to_uuid(metadata["project_id"].to_s)
+    return {status: "ignored"} unless checkout_id && project_id
 
     project = Project[project_id]
     return {status: "project_not_found"} unless project
@@ -108,7 +110,7 @@ class BachsBillingVerificationCheckout
         external_id: project.ubid,
         email: customer.fetch("email"),
         name: customer["name"],
-        metadata: {project_id: project.ubid, billing_provider: "bachs"}
+        metadata: {project_id: project.ubid, billing_provider: "bachs"},
       )
     rescue PolarAPIError => create_ex
       raise unless create_ex.status == 409
@@ -128,9 +130,9 @@ class BachsBillingVerificationCheckout
         charge_id:,
         reference: idempotency_key,
         reason: "Automatic LayerRail billing verification refund",
-        idempotency_key:
+        idempotency_key:,
       },
-      idempotency_key:
+      idempotency_key:,
     )
     refund["status"] || "processing"
   end

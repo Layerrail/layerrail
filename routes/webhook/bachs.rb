@@ -26,8 +26,9 @@ class Clover
       Clog.emit("Bachs webhook reconciliation failed", Util.exception_to_hash(ex, into: {bachs_webhook_reconciliation_failed: {}}))
       {message: "Bachs webhook accepted; reconciliation will be retried"}
     rescue => ex
+      response.status = 503
       Clog.emit("Bachs webhook failed", Util.exception_to_hash(ex, into: {bachs_webhook_failed: {}}))
-      {message: "Bachs webhook accepted; internal error recorded"}
+      {message: "Bachs webhook reconciliation failed; please retry"}
     end
   end
 

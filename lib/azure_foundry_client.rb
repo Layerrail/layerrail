@@ -32,7 +32,7 @@ class AzureFoundryClient
   def chat_completion(deployment, payload)
     response = @connection.post(
       path: "/openai/deployments/#{deployment}/chat/completions",
-      query: { "api-version" => @api_version },
+      query: {"api-version" => @api_version},
       body: payload.to_json,
       expects: EXPECTED_STATUSES,
     )
@@ -69,7 +69,7 @@ class AzureFoundryClient
     base = base.sub(%r{/api/projects/.*\z}, "")
     base = base.sub(%r{/openai(?:/v1)?\z}, "")
     base = base.sub(".openai.azure.com", ".services.ai.azure.com")
-    base.sub(%r{/anthropic\z}, "")
+    base.delete_suffix("/anthropic")
   end
 
   def anthropic_payload(deployment, payload)
@@ -84,7 +84,7 @@ class AzureFoundryClient
       end
 
       messages << {
-        "role" => role == "assistant" ? "assistant" : "user",
+        "role" => (role == "assistant") ? "assistant" : "user",
         "content" => anthropic_content(message["content"]),
       }
     end
@@ -118,7 +118,13 @@ class AzureFoundryClient
     return body if body["error"]
 
     text = body.fetch("content", []).filter_map { it["text"] }.join
-    usage = body["usage"] || {}
+    usage = body["usage"].is_a?(Hash) ? body["usage"] : {}
+    input_tokens = usage["input_tokens"]
+    output_tokens = usage["output_tokens"]
+    normalized_usage = {"prompt_tokens" => input_tokens, "completion_tokens" => output_tokens}.compact
+    if input_tokens.is_a?(Integer) && output_tokens.is_a?(Integer)
+      normalized_usage["total_tokens"] = input_tokens + output_tokens
+    end
     completion_id = body["id"].to_s.strip
     completion_id = "chatcmpl-#{SecureRandom.hex(16)}" if completion_id.empty?
 
@@ -134,11 +140,7 @@ class AzureFoundryClient
           "finish_reason" => body["stop_reason"] || "stop",
         },
       ],
-      "usage" => {
-        "prompt_tokens" => usage["input_tokens"].to_i,
-        "completion_tokens" => usage["output_tokens"].to_i,
-        "total_tokens" => usage["input_tokens"].to_i + usage["output_tokens"].to_i,
-      },
+      "usage" => normalized_usage,
     }
   end
 

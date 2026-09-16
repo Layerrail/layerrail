@@ -3,12 +3,13 @@
 require "time"
 
 class InvoiceGenerator
-  def initialize(begin_time, end_time, save_result: false, project_ids: [], eur_rate: nil)
+  def initialize(begin_time, end_time, save_result: false, project_ids: [], eur_rate: nil, usage_records: nil)
     @begin_time = begin_time
     @end_time = end_time
     @save_result = save_result
     @project_ids = project_ids
     @eur_rate = eur_rate
+    @usage_records = usage_records
     if @save_result && !@eur_rate
       raise ArgumentError, "eur_rate must be provided when save_result is true"
     end
@@ -19,6 +20,10 @@ class InvoiceGenerator
 
     DB.transaction do
       active_billing_records.group_by { |br| br[:project] }.each do |project, project_records|
+        if @save_result
+          project = Project.where(id: project.id).for_update.first
+          next if project.invoices_dataset.where(billing_kind: "standard", begin_time: @begin_time, end_time: @end_time).any?
+        end
         project_content = {}
         project_content[:project_id] = project.id
         project_content[:project_name] = project.name
@@ -85,7 +90,7 @@ class InvoiceGenerator
             {rate: Config.annual_non_dutch_eu_sales_exceed_threshold ? country.vat_rates["standard"] : 21, reversed: false, eur_rate: @eur_rate}
           end
         end
-        resource_discounts = ResourceDiscount
+        resource_discounts = @usage_records ? [] : ResourceDiscount
           .where(project_id: project.id)
           .where { |d| d.active_from < @end_time }
           .where { |d| (d.active_to =~ nil) | (d.active_to > @begin_time) }
@@ -136,7 +141,7 @@ class InvoiceGenerator
         # would be possible to cover total cost with fewer credits.
         project_content[:cost] = project_content[:subtotal]
         project_content[:discount] = 0
-        if project.discount > 0
+        if !@usage_records && project.discount > 0
           project_content[:discount] = (project_content[:cost] * (project.discount / 100.0)).round(3)
           project_content[:cost] -= project_content[:discount]
         end
@@ -157,9 +162,9 @@ class InvoiceGenerator
           project_content[:cost] -= project_content[:github_credit]
         end
 
-        # Each project have some free AI inference tokens every month
-        # Free AI tokens WILL be shown on the portal billing page as a separate credit.
-        free_inference_tokens_remaining = FreeQuota.free_quotas["inference-tokens"]["value"]
+        # Only historical, untagged inference remains in standard invoices.
+        # Preserve its original allowance; new paid usage is settled separately.
+        free_inference_tokens_remaining = @usage_records ? 0 : 100_000
         free_inference_tokens_credit = 0.0
         project_content[:resources]
           .flat_map { it[:line_items] }
@@ -224,7 +229,10 @@ class InvoiceGenerator
   end
 
   def active_billing_records
+    return @usage_records if @usage_records
+
     active_billing_records = BillingRecord.eager(project: [:invoices, billing_info: :payment_methods])
+      .exclude(Sequel.pg_jsonb_op(:resource_tags).contains({"paid_inference" => true}))
       .where { |br| Sequel.pg_range(br.span).overlaps(Sequel.pg_range(@begin_time...@end_time)) }
     active_billing_records = active_billing_records.where(project_id: @project_ids) unless @project_ids.empty?
 

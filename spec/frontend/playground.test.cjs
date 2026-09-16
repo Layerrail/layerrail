@@ -28,7 +28,7 @@ function fixture(t, { api = 'chat', provider = 'cloudflare', capability = 'Text 
     <input id="inference_source_language"><input id="inference_target_language"><input id="inference_top_k"><input id="inference_image_width"><input id="inference_image_height"></fieldset></details>
     ${['model_name', 'provider', 'capability', 'context', 'price', 'url'].map((key) => `<span id="inference_selected_${key}"></span>`).join('')}
     ${['message_count', 'usage', 'cost'].map((key) => `<span id="inference_session_${key}"></span>`).join('')}
-    <span id="inference_last_usage"></span><span data-free-quota-value="1000"></span></section>`, { url: 'https://console.test', runScripts: 'outside-only' });
+    <span id="inference_last_usage"></span></section>`, { url: 'https://console.test', runScripts: 'outside-only' });
   const w = dom.window;
   w.$ = jquery(w);
   w.marked = marked;
@@ -69,12 +69,12 @@ test('reasoning uses the orb, streamed answers render safely, usage counts once'
   assert.equal(f.state(), 'complete');
   assert.equal(f.orbs.size, 0);
   assert.equal(f.$('#inference_session_usage').text(), '10 input · 5 output');
-  assert.equal(f.$('[data-free-quota-value]').text(), '985');
+  assert.equal(f.$('#inference_session_cost').text(), '$0.000040');
   assert.equal(f.$('#inference_endpoint').prop('disabled'), false);
   assert.equal(f.$('#inference_orb_1').prop('hidden'), true);
 });
 
-test('GPT-6 Astra Responses requests preserve zero settings and Azure quota', async (t) => {
+test('GPT-6 Astra Responses requests preserve zero settings and show paid usage', async (t) => {
   let sent;
   const f = fixture(t, { api: 'responses', provider: 'azure_foundry', fetch: async (url, options) => {
     sent = { url, body: JSON.parse(options.body) };
@@ -91,7 +91,8 @@ test('GPT-6 Astra Responses requests preserve zero settings and Azure quota', as
   assert.equal(sent.body.instructions, 'Be concise');
   assert.equal(sent.body.stream, false);
   assert.equal(f.$('#inference_message_1').text().trim(), 'Clear answer');
-  assert.equal(f.$('[data-free-quota-value]').attr('data-free-quota-value'), '1000');
+  assert.equal(f.$('#inference_session_usage').text(), '7 input · 9 output');
+  assert.equal(f.$('#inference_session_cost').text(), '$0.000050');
   assert.equal(f.state(), 'complete');
 });
 

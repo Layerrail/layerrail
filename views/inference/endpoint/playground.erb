@@ -37,6 +37,7 @@
                 "data-api": ie.tags.fetch("api", "chat"),
                 "data-context-length": ie.tags.fetch("context_length", "Full"),
                 "data-input-price": prompt_price, "data-output-price": completion_price,
+                "data-billable": PremiumAiUsageMeter.billable_model?(ie),
                 "data-tags": ie.tags.to_json
               }]
             }, selected: @default_inference_model&.model_name
@@ -173,9 +174,8 @@
         <dl>
           <div><dt>Total tokens</dt><dd id="inference_session_usage">0 input · 0 output</dd></div>
           <div><dt>Last request</dt><dd id="inference_last_usage">No usage yet</dd></div>
-          <div><dt>Free tokens remaining</dt><dd><span data-free-quota-value="<%= @remaining_free_quota.to_i %>"><%= @remaining_free_quota.to_i %></span></dd></div>
         </dl>
-        <p class="playground-quota-note">Free quota refreshes monthly.
+        <p class="playground-quota-note">Usage is billed from the first token on separate usage invoices.
           <a href="<%= billing_path %>"><%= @has_valid_payment_method ? "Manage billing" : "Add a payment method" %>
             &rarr;</a></p>
       </div>

@@ -8,7 +8,7 @@ class Clover
       r.post true do
         handle_validation_failure("project/billing")
         new_limit = typecast_params.pos_int!("usage_limit")
-        current_cost = @project.current_invoice(since: Time.utc(Time.now.year, Time.now.month)).content["cost"]
+        current_cost = @project.current_usage_cost
 
         if (usage_limit = @project.usage_limit_dataset.first)
           usage_limit.adjust!(new_limit, user_id: current_account_id, current_cost:) do
@@ -36,7 +36,7 @@ class Clover
       r.delete true do
         next unless (usage_limit = @project.usage_limit_dataset.first)
 
-        current_cost = @project.current_invoice(since: Time.utc(Time.now.year, Time.now.month)).content["cost"]
+        current_cost = @project.current_usage_cost
         usage_limit.remove!(current_cost:) do
           audit_log(usage_limit, "destroy")
         end

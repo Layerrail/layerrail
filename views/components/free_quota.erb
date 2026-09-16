@@ -7,18 +7,13 @@
     </div>
     <div class="ml-3">
       <h3 class="text-sm font-medium">
-        <span>You have
-          <span data-free-quota-value="<%= @remaining_free_quota.to_i %>"><%= @remaining_free_quota.to_i %></span>
-          free
-          <%= @free_quota_unit %>
-          available (few-minute delay).</span>
-        <span>Free quota refreshes next month.</span>
+        <span>AI inference is paid from the first token and billed on separate usage invoices.</span>
         <br>
         <% if @has_valid_payment_method %>
           <a href="<%= billing_path %>" class="font-bold <%= bold_text_color %>">Billing</a>
-          <span>information is valid. Charges start after the free quota.</span>
+          <span>is connected. Pay usage invoices to keep inference available.</span>
         <% else %>
-          <span>To avoid service interruption, please</span>
+          <span>Before using inference,</span>
           <a href="<%= billing_path %>" class="font-bold <%= bold_text_color %>">click here</a>
           <span>to add a valid billing method.</span>
         <% end %>

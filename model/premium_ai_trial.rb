@@ -14,20 +14,9 @@ class PremiumAiTrial < Sequel::Model
     claude-sonnet-5
   ].freeze
 
-  def self.active_for?(project, model, now: Time.now)
-    return false unless Config.premium_ai_trial_enabled
-    return false unless ELIGIBLE_MODELS.include?(model.model_name)
-
-    trial_for(project, now:).ends_at > now
-  end
-
-  def self.trial_for(project, now: Time.now)
-    where(project_id: project.id).first || create(
-      project_id: project.id,
-      started_at: now,
-      ends_at: now + Config.premium_ai_trial_days.to_i * 24 * 60 * 60,
-    )
-  rescue Sequel::UniqueConstraintViolation
-    where(project_id: project.id).first || raise
+  def self.active_for?(_project, _model, **_)
+    # Retain historical trial records for old invoices. New requests are paid,
+    # including requests from projects whose previous trial has not expired.
+    false
   end
 end

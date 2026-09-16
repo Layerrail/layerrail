@@ -65,10 +65,14 @@ class Invoice < Sequel::Model
   end
 
   def name
+    return "AI usage #{begin_time.utc.strftime("%b %d")}–#{end_time.utc.strftime("%b %d, %Y")}" if billing_kind == "inference_usage"
+
     begin_time.utc.strftime("%B %Y")
   end
 
   def charge
+    return InferenceUsageCollection.collect!(self) if billing_kind == "inference_usage"
+
     reload # Reload to get the latest status to avoid double charging
     if status != "unpaid"
       Clog.emit("Invoice already charged.", {invoice_already_charged: {ubid:, status:}})
@@ -354,6 +358,11 @@ class Invoice < Sequel::Model
       style(column(1), align: :right)
     end
 
+    if billing_kind == "inference_usage"
+      pdf.move_down 10
+      pdf.text "AI usage is billed separately from infrastructure and subscriptions. Fractional cents carried to the next usage invoice: $#{content.fetch("rounding_carry", "0")}.", size: 9
+    end
+
     if data.bank_transfer_info
       pdf.move_down 60
       bank_transfer_info = [
@@ -376,7 +385,7 @@ class Invoice < Sequel::Model
       bucket: Config.invoices_bucket_name,
       key: blob_key,
       body: pdf,
-      content_type: "application/pdf"
+      content_type: "application/pdf",
     }
     payload[:if_none_match] = "*" unless overwrite
     Invoice.blob_storage_client.put_object(payload)
@@ -411,12 +420,12 @@ class Invoice < Sequel::Model
   def draw_invoice_address(pdf, address, city, state, postal_code, country)
     city_state_postal = [
       city,
-      [state, postal_code].select { present_invoice_value?(it) }.join(" ")
+      [state, postal_code].select { present_invoice_value?(it) }.join(" "),
     ].select { present_invoice_value?(it) }.join(", ")
 
     lines = [address, city_state_postal, country].select { present_invoice_value?(it) }
     lines.each_with_index do |line, index|
-      pdf.text(index == lines.length - 1 ? line : "#{line},")
+      pdf.text((index == lines.length - 1) ? line : "#{line},")
     end
   end
 end

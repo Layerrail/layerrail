@@ -63,15 +63,16 @@ requested_project_ids.uniq!
 if ENV["RESET_EXISTING_INVOICES"] == "1"
   abort "RESET_EXISTING_INVOICES requires PROJECT_IDS or PROJECT_UBIDS." if requested_project_ids.empty?
 
-  deleted_count = Invoice.where(begin_time:, end_time:, project_id: requested_project_ids).delete(force: true)
+  deleted_count = Invoice.where(begin_time:, end_time:, project_id: requested_project_ids, billing_kind: "standard").delete(force: true)
   puts "DELETED_EXISTING_INVOICES=#{deleted_count}"
 end
 
 existing_invoice_project_ids = Invoice
-  .where(begin_time:, end_time:)
+  .where(begin_time:, end_time:, billing_kind: "standard")
   .select_map(:project_id)
 
 candidate_project_ids = BillingRecord
+  .exclude(Sequel.pg_jsonb_op(:resource_tags).contains({"paid_inference" => true}))
   .where { |br| Sequel.pg_range(br.span).overlaps(Sequel.pg_range(begin_time...end_time)) }
   .select_map(:project_id)
   .uniq

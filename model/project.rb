@@ -94,11 +94,18 @@ class Project < Sequel::Model
   plugin ResourceMethods
 
   def has_valid_payment_method?
-    return true unless Config.polar_access_token || Config.stripe_secret_key
+    return true unless Config.polar_access_token || Config.stripe_secret_key || BachsClient.enabled?
     return true if discount == 100
     return false if has_outstanding_invoice?
 
     !!billing_info&.payment_methods&.any? || (!!billing_info && credit > 0)
+  end
+
+  def has_valid_inference_payment_method?
+    return false unless BachsClient.invoice_checkout_enabled?
+    return false if has_outstanding_invoice?
+
+    !!billing_info&.payment_methods_dataset&.where(fraud: false)&.any?
   end
 
   def outstanding_invoices_dataset
@@ -202,6 +209,12 @@ class Project < Sequel::Model
     }
 
     Invoice.new(project_id: id, content:, begin_time:, end_time:, created_at: end_time, status: "current")
+  end
+
+  def current_usage_cost(since: nil)
+    now = Time.now.utc
+    since ||= Time.utc(now.year, now.month, 1)
+    current_invoice(since:).cost + InferenceUsageBilling.period_cost(self, since, now)
   end
 
   def current_resource_usage(resource_type)

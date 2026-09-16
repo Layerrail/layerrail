@@ -20,10 +20,8 @@ class Clover
       end
 
       @inference_api_keys = inference_api_key_ds.all
-      @remaining_free_quota = FreeQuota.remaining_free_quota("inference-tokens", @project.id)
-      @free_quota_unit = "inference tokens"
-      @has_valid_payment_method = @project.has_valid_payment_method?
-      @default_inference_model = @inference_models.find { it.tags["capability"] == "Text Generation" } || @inference_models.first
+      @has_valid_payment_method = @project.has_valid_inference_payment_method?
+      @default_inference_model = @inference_models.find { it.tags["capability"] == "Text Generation" && PremiumAiUsageMeter.billable_model?(it) } || @inference_models.first
       view "inference/endpoint/playground"
     end
   end

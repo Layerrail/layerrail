@@ -114,7 +114,7 @@ class Clover
       show_ai_agent.call(nil, id)
     end
 
-    r.on /([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)/ do |name|
+    r.on(/([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)/) do |name|
       show_ai_agent.call(name, nil)
     end
   end
@@ -125,9 +125,7 @@ class Clover
     @ai_app_templates = AI_APP_TEMPLATES
     @ai_app_text_models = ai_app_text_models
     @inference_api_keys = inference_api_key_ds.all
-    @remaining_free_quota = FreeQuota.remaining_free_quota("inference-tokens", @project.id)
-    @free_quota_unit = "inference tokens"
-    @has_valid_payment_method = @project.has_valid_payment_method?
+    @has_valid_payment_method = @project.has_valid_inference_payment_method?
   end
 
   def ai_app_text_models

@@ -10,6 +10,7 @@ RSpec.describe Clover, "inference-playground" do
 
   describe "feature enabled" do
     before do
+      allow(Config).to receive_messages(ai_inference_enabled: true, ai_inference_provider: "layerrail")
       login(user.email)
     end
 

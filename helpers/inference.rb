@@ -71,7 +71,7 @@ class Clover
 
   def catalog_inference_models
     Option::AI_MODELS
-      .select { |it| ai_inference_providers.include?(it["provider"]) && it.fetch("enabled", true) }
+      .select { |model| ai_inference_providers.include?(model["provider"]) && model.fetch("enabled", true) }
       .map { CloudflareInferenceModel.new(it) }
   end
 
@@ -116,6 +116,7 @@ class Clover
   end
 
   def handle_inference_models_request
+    before_authenticated_hash_branches
     no_authorization_needed
     no_audit_log
 
@@ -148,6 +149,7 @@ class Clover
   end
 
   def handle_cloudflare_ai_request(path, capability)
+    before_authenticated_hash_branches
     no_authorization_needed
     no_audit_log
 
@@ -209,8 +211,8 @@ class Clover
     payload.delete("stream_options")
     status, body, served_model = azure_foundry_chat_completion_with_fallback(model, deployment, payload)
     response.status = status
-    response["X-LayerRail-AI-Model"] = served_model.model_name
-    response["X-LayerRail-AI-Fallback-Model"] = served_model.model_name if served_model.model_name != model.model_name
+    response["x-layerrail-ai-model"] = served_model.model_name
+    response["x-layerrail-ai-fallback-model"] = served_model.model_name if served_model.model_name != model.model_name
     record_cloudflare_inference_usage(api_key, served_model, body, payload) if status == 200
     body
   end
@@ -229,7 +231,7 @@ class Clover
     # images, and JSON schemas with empty objects/arrays or false values.
     status, body = AzureFoundryClient.new.openai_request("responses", payload)
     response.status = status
-    response["X-LayerRail-AI-Model"] = model.model_name
+    response["x-layerrail-ai-model"] = model.model_name
     record_cloudflare_inference_usage(api_key, model, body, payload) if status == 200
     body
   end
@@ -243,7 +245,7 @@ class Clover
   def handle_azure_foundry_responses_request(api_key, model, payload)
     # Translate Responses API format to Chat Completions format
     chat_payload = translate_responses_to_chat_completions(payload, model)
-    
+
     # Call Azure Foundry with Chat Completions format
     normalize_cloudflare_payload!(chat_payload, "chat/completions")
     normalize_azure_foundry_payload!(chat_payload, model)
@@ -252,38 +254,38 @@ class Clover
     chat_payload["model"] = deployment
     chat_payload.delete("stream")
     chat_payload.delete("stream_options")
-    
+
     status, body, served_model = azure_foundry_chat_completion_with_fallback(model, deployment, chat_payload)
     response.status = status
-    response["X-LayerRail-AI-Model"] = served_model.model_name
-    response["X-LayerRail-AI-Fallback-Model"] = served_model.model_name if served_model.model_name != model.model_name
+    response["x-layerrail-ai-model"] = served_model.model_name
+    response["x-layerrail-ai-fallback-model"] = served_model.model_name if served_model.model_name != model.model_name
     record_cloudflare_inference_usage(api_key, served_model, body, chat_payload) if status == 200
-    
+
     # Translate Chat Completions response back to Responses API format
     translate_chat_completions_to_responses(body, payload)
   end
 
   def translate_responses_to_chat_completions(payload, model)
     chat_payload = payload.dup
-    
+
     # Convert Responses API input/messages to Chat Completions messages format
     if chat_payload["input"].is_a?(Array)
       messages = []
-      
+
       # Add system instructions as system message
       if chat_payload["instructions"]
         messages << {"role" => "system", "content" => chat_payload["instructions"]}
       end
-      
+
       # Convert input array to messages
       chat_payload["input"].each do |item|
         next unless item.is_a?(Hash)
-        
+
         role = item["role"] || "user"
         content = item["content"] || ""
         messages << {"role" => role, "content" => content}
       end
-      
+
       chat_payload["messages"] = messages
     elsif chat_payload["input"].is_a?(String)
       # Single string input becomes user message
@@ -294,22 +296,22 @@ class Clover
       messages << {"role" => "user", "content" => chat_payload["input"]}
       chat_payload["messages"] = messages
     end
-    
+
     # Map Responses API parameters to Chat Completions
     chat_payload["max_tokens"] ||= chat_payload.delete("max_output_tokens")
     chat_payload.delete("input")
     chat_payload.delete("instructions")
     chat_payload.delete("response_format")
-    
+
     chat_payload
   end
 
   def translate_chat_completions_to_responses(body, original_payload)
     return body if body["error"]
-    
+
     # Extract content from Chat Completions response
     content = ""
-    if body["choices"] && body["choices"].first
+    if body["choices"]&.first
       choice = body["choices"].first
       if choice["message"]
         content = choice["message"]["content"] || ""
@@ -317,29 +319,28 @@ class Clover
         content = choice["delta"]["content"] || ""
       end
     end
-    
+
     # Build Responses API format response
-    responses_response = {
+    {
       "id" => body["id"] || "resp_#{SecureRandom.hex(16)}",
       "status" => "succeeded",
       "output" => [
         {
           "content" => [
-            {"type" => "text", "text" => content}
+            {"type" => "text", "text" => content},
           ],
-          "role" => "assistant"
-        }
+          "role" => "assistant",
+        },
       ],
       "created" => body["created"] || Time.now.to_i,
       "model" => body["model"] || original_payload["model"],
       "usage" => {
         "input_tokens" => body.dig("usage", "prompt_tokens") || 0,
         "output_tokens" => body.dig("usage", "completion_tokens") || 0,
-        "total_tokens" => body.dig("usage", "total_tokens") || 0
-      }
+        "total_tokens" => body.dig("usage", "total_tokens") || 0,
+      },
     }
-    
-    responses_response
+
   end
 
   def azure_foundry_chat_completion_with_fallback(model, deployment, payload)
@@ -352,8 +353,8 @@ class Clover
         model: model.model_name,
         deployment:,
         provider: model.provider,
-        error: azure_foundry_error_message(body)
-      }
+        error: azure_foundry_error_message(body),
+      },
     })
 
     fallback_models = azure_foundry_rate_limit_fallback_models(model)
@@ -369,8 +370,8 @@ class Clover
         azure_foundry_fallback_model_rate_limited: {
           model: fallback_model.model_name,
           deployment: fallback_deployment,
-          error: azure_foundry_error_message(body)
-        }
+          error: azure_foundry_error_message(body),
+        },
       })
     end
 
@@ -379,8 +380,8 @@ class Clover
         "code" => "PremiumAIRateLimited",
         "message" => "Premium AI capacity is temporarily rate limited. Please retry shortly or choose another premium model.",
         "model" => model.model_name,
-        "provider" => "azure_foundry"
-      }
+        "provider" => "azure_foundry",
+      },
     }, model]
   end
 
@@ -400,12 +401,13 @@ class Clover
 
     catalog_inference_models
       .select { it.provider == "azure_foundry" && it.tags["capability"] == model.tags["capability"] && it.model_name != model.model_name }
+      .select { PremiumAiUsageMeter.billable_model?(it) }
       .sort_by { |candidate|
         [
           candidate.tags["reasoning"] ? 1 : 0,
           candidate.tags["pricing"]&.[]("output").to_f,
           candidate.tags["pricing"]&.[]("input").to_f,
-          candidate.model_name
+          candidate.model_name,
         ]
       }
   end
@@ -422,7 +424,7 @@ class Clover
       body.dig("error", "message"),
       body.dig("error", "code"),
       body["message"],
-      body.to_json
+      body.to_json,
     ].compact.first.to_s
   end
 
@@ -438,6 +440,7 @@ class Clover
   end
 
   def handle_cloudflare_ai_run_request
+    before_authenticated_hash_branches
     no_authorization_needed
     no_audit_log
 
@@ -472,6 +475,7 @@ class Clover
   end
 
   def handle_ai_agent_message_request(agent_ref)
+    before_authenticated_hash_branches
     no_authorization_needed
     no_audit_log
 
@@ -672,7 +676,7 @@ class Clover
 
   def record_ai_agent_event(agent, api_key, model, body, payload, latency_ms:, status:)
     prompt_tokens = estimate_inference_tokens(cloudflare_request_text(body, payload))
-    completion_tokens = status == "ok" ? estimate_inference_tokens(ai_agent_response_text(body)) : 0
+    completion_tokens = (status == "ok") ? estimate_inference_tokens(ai_agent_response_text(body)) : 0
     AiAgentEvent.create(
       agent_id: agent.id,
       api_key_id: api_key.id,
@@ -681,7 +685,7 @@ class Clover
       completion_tokens:,
       status:,
       latency_ms:,
-      error_message: status == "ok" ? nil : body.to_json[0, 1000],
+      error_message: (status == "ok") ? nil : body.to_json[0, 1000],
     )
   rescue Sequel::Error => ex
     Clog.emit("Failed to record AI agent event", Util.exception_to_hash(ex, into: {agent_id: agent.id, project_id: agent.project_id}))
@@ -794,42 +798,46 @@ class Clover
   end
 
   def stream_cloudflare_ai_request(api_key, model, payload)
+    payload["stream_options"] = (payload["stream_options"].is_a?(Hash) ? payload["stream_options"] : {}).merge("include_usage" => true)
+    usage = {}
+    event_buffer = +"".b
+    body = []
+    # Finish metering before exposing any output so a downstream disconnect cannot
+    # discard the provider's final usage event. SSE framing is preserved, but the
+    # first output is delayed until the complete provider response is available.
+    CloudflareWorkersAiClient.new.openai_stream_request("chat/completions", payload) do |chunk|
+      event_buffer << chunk.b
+      cloudflare_stream_events(event_buffer).each do |event|
+        usage = event["usage"] if event["usage"].is_a?(Hash)
+      end
+      body << chunk
+    end
+    cloudflare_stream_events(event_buffer, final: true).each do |event|
+      usage = event["usage"] if event["usage"].is_a?(Hash)
+    end
+    record_cloudflare_inference_usage(api_key, model, {"usage" => usage}, payload)
+
     response.json = false
     response.status = 200
-    response["Content-Type"] = "text/event-stream"
-    response["Cache-Control"] = "no-cache, no-transform"
-    response["X-Accel-Buffering"] = "no"
-
-    prompt_tokens = estimate_inference_tokens(cloudflare_request_text({}, payload))
-    completion_text = +""
-    usage = {}
-    body = Enumerator.new do |stream|
-      CloudflareWorkersAiClient.new.openai_stream_request("chat/completions", payload) do |chunk|
-        stream << chunk
-        cloudflare_stream_events(chunk).each do |event|
-          usage = event["usage"] if event["usage"].is_a?(Hash)
-          completion_text << event.dig("choices", 0, "delta", "content").to_s
-        end
-      end
-    ensure
-      completion_tokens = (usage["completion_tokens"] || usage["output_tokens"]).to_i
-      completion_tokens = estimate_inference_tokens(completion_text) if completion_tokens.zero?
-      prompt_tokens = (usage["prompt_tokens"] || usage["input_tokens"]).to_i if (usage["prompt_tokens"] || usage["input_tokens"]).to_i.positive?
-      record_inference_tokens(api_key, model, "input", model.prompt_billing_resource, prompt_tokens)
-      record_inference_tokens(api_key, model, "output", model.completion_billing_resource, completion_tokens)
-    end
-
+    response["content-type"] = "text/event-stream"
+    response["cache-control"] = "no-cache, no-transform"
+    response["x-accel-buffering"] = "no"
     request.halt [200, response.headers, body]
   end
 
-  def cloudflare_stream_events(chunk)
-    chunk.to_s.each_line.filter_map do |line|
-      next unless line.start_with?("data:")
+  def cloudflare_stream_events(buffer, final: false)
+    frames = []
+    while (separator = buffer.match(/\r?\n\r?\n/))
+      frames << buffer.slice!(0, separator.end(0))
+    end
+    frames << buffer.slice!(0, buffer.bytesize) if final && !buffer.empty?
 
-      data = line.delete_prefix("data:").strip
+    frames.filter_map do |frame|
+      data = frame.lines.filter_map { |line| line.delete_prefix("data:").strip if line.start_with?("data:") }.join("\n")
       next if data.empty? || data == "[DONE]"
 
-      JSON.parse(data)
+      event = JSON.parse(data.force_encoding(Encoding::UTF_8))
+      event if event.is_a?(Hash)
     rescue JSON::ParserError
       nil
     end
@@ -842,7 +850,7 @@ class Clover
         content = estimate_inference_text(message["content"]).strip
         next if content.empty?
 
-        {"role" => message["role"] == "assistant" ? "model" : "user", "parts" => [{"text" => content}]}
+        {"role" => (message["role"] == "assistant") ? "model" : "user", "parts" => [{"text" => content}]}
       end
       system = estimate_inference_text(payload["system"]).strip
       contents.unshift({"role" => "user", "parts" => [{"text" => system}]}) unless system.empty?
@@ -863,71 +871,75 @@ class Clover
   def record_cloudflare_inference_usage(api_key, model, body, payload)
     result = body["result"].is_a?(Hash) ? body["result"] : {}
     usage = body["usage"] || result["usage"] || {}
-    prompt_tokens = (usage["prompt_tokens"] || usage["input_tokens"]).to_i
-    completion_tokens = (usage["completion_tokens"] || usage["output_tokens"]).to_i
-    total_tokens = usage["total_tokens"].to_i
+    usage = {} unless usage.is_a?(Hash)
+    prompt_tokens = inference_usage_tokens(usage, "prompt_tokens", "input_tokens")
+    completion_tokens = inference_usage_tokens(usage, "completion_tokens", "output_tokens")
+    total_tokens = inference_usage_tokens(usage, "total_tokens")
 
-    prompt_tokens = estimate_inference_tokens(cloudflare_request_text(body, payload)) if prompt_tokens.zero?
-    completion_tokens = [total_tokens - prompt_tokens, 0].max if completion_tokens.zero? && total_tokens.positive?
-    completion_tokens = estimate_inference_tokens(cloudflare_response_text(body)) if completion_tokens.zero? && !["Embeddings", "Text-to-Image", "Text-to-Speech"].include?(model.tags["capability"])
+    prompt_tokens ||= total_tokens if model.tags["capability"] == "Embeddings"
+    completion_tokens ||= [total_tokens - prompt_tokens, 0].max if total_tokens && prompt_tokens
+    completion_tokens ||= 0 if model.tags["capability"] == "Embeddings"
+    if prompt_tokens.nil? || completion_tokens.nil?
+      Clog.emit("Inference provider omitted billable token usage", {inference_usage_missing: {project_id: api_key.project_id, model: model.model_name, provider: model.provider}})
+      fail CloverError.new(502, "InferenceUsageUnavailable", "The inference provider did not report token usage. This request was not charged.")
+    end
 
-    record_inference_tokens(api_key, model, "input", model.prompt_billing_resource, prompt_tokens)
-    record_inference_tokens(api_key, model, "output", model.completion_billing_resource, completion_tokens)
+    DB.transaction do
+      record_inference_tokens(api_key, model, "input", model.prompt_billing_resource, prompt_tokens)
+      record_inference_tokens(api_key, model, "output", model.completion_billing_resource, completion_tokens)
+    end
+  end
+
+  def inference_usage_tokens(usage, *keys)
+    value = keys.filter_map { usage[it] }.first
+    tokens = Integer(value, exception: false)
+    tokens if tokens && tokens >= 0
   end
 
   def validate_premium_ai_access!(api_key, model)
-    return unless Config.premium_ai_metering_enabled
-    return unless PremiumAiUsageMeter.premium_model?(model)
-    return if PremiumAiTrial.active_for?(api_key.project, model)
-
-    fail CloverError.new(402, "BillingRequired", "Premium AI models require billing to be connected before use.") unless api_key.project.billing_info&.polar_external_customer_id || api_key.project.billing_info
-
-    cap = Config.premium_ai_monthly_spend_cap_cents.to_i
-    return unless cap.positive?
-
-    if PremiumAiUsageMeter.current_month_premium_usage_cents(api_key.project) >= cap
-      fail CloverError.new(402, "PremiumAISpendCapExceeded", "Premium AI usage is paused because this project reached its premium AI spend cap.")
-    end
+    PremiumAiUsageMeter.validate_access!(project: api_key.project, model:)
   end
 
   def record_inference_tokens(api_key, model, token_kind, resource_family, tokens)
     return unless tokens.positive?
 
-    rate = BillingRate.from_resource_properties("InferenceTokens", resource_family, "global")
-    trial = PremiumAiTrial.active_for?(api_key.project, model)
-    PremiumAiUsageMeter.record(api_key:, model:, token_kind:, resource_family:, tokens:, billing_rate: rate) unless trial
-    return unless rate
+    rate = PremiumAiUsageMeter.validate_rate!(resource_family)
 
-    begin_time = Time.now.to_date.to_time
+    now = Time.now.utc
+    begin_time = Time.utc(now.year, now.month, now.day)
     end_time = begin_time + 24 * 60 * 60
-    today_record = BillingRecord
-      .where(project_id: api_key.project_id, resource_id: api_key.id, billing_rate_id: rate["id"])
-      .where(Sequel.pg_jsonb_op(:resource_tags).contains({"premium_ai_trial" => trial}))
-      .where { Sequel.pg_range(it.span).overlaps(Sequel.pg_range(begin_time...end_time)) }
-      .first
+    DB.transaction do
+      Project.where(id: api_key.project_id).for_update.first
+      today_record = BillingRecord
+        .where(project_id: api_key.project_id, resource_id: api_key.id, billing_rate_id: rate["id"])
+        .with_tag("paid_inference", true)
+        .with_tag("unit_price", rate["unit_price"].to_s)
+        .where { Sequel.pg_range(it.span).overlaps(Sequel.pg_range(begin_time...end_time)) }
+        .first
 
-    if today_record
-      today_record.amount = Sequel[:amount] + tokens
-      today_record.save_changes(validate: false)
-    else
-      BillingRecord.create(
-        project_id: api_key.project_id,
-        resource_id: api_key.id,
-        resource_name: "#{resource_family} #{begin_time.strftime("%Y-%m-%d")}",
-        billing_rate_id: rate["id"],
-        span: Sequel.pg_range(begin_time...end_time),
-        amount: tokens,
-        resource_tags: {
-          provider: model.provider,
-          model: model.model_name,
-          token_kind:,
-          premium_ai: PremiumAiUsageMeter.premium_model?(model),
-          premium_ai_trial: trial
-        },
-      )
+      if today_record
+        today_record.this.update(amount: Sequel[:amount] + tokens)
+      else
+        BillingRecord.create(
+          project_id: api_key.project_id,
+          resource_id: api_key.id,
+          resource_name: "#{resource_family} #{begin_time.strftime("%Y-%m-%d")}",
+          billing_rate_id: rate["id"],
+          span: Sequel.pg_range(begin_time...end_time),
+          amount: tokens,
+          resource_tags: {
+            provider: model.provider,
+            model: model.model_name,
+            token_kind:,
+            paid_inference: true,
+            unit_price: rate["unit_price"].to_s,
+          },
+        )
+      end
     end
   rescue Sequel::Error => ex
     Clog.emit("Failed to update Cloudflare inference billing record", Util.exception_to_hash(ex, into: {project_id: api_key.project_id, resource_family:, tokens:}))
+    raise
   end
 
   def inference_model_million_token_price(model, resource)

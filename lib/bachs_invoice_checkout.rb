@@ -1,74 +1,129 @@
 # frozen_string_literal: true
 
 require "bigdecimal"
+require "digest"
 require "time"
 require_relative "bachs_client"
 
 class BachsInvoiceCheckout
-  def self.create!(invoice:, project:, account:, success_url:, cancel_url:)
-    existing = invoice.content["bachs_checkout"] || {}
-    return existing if checkout_open?(existing)
+  IDEMPOTENCY_RETENTION_SECONDS = 24 * 60 * 60
 
-    create_checkout!(invoice:, project:, account:, success_url:, cancel_url:, existing:)
+  def self.create!(invoice:, project:, account:, success_url:, cancel_url:)
+    invoice.refresh
+    existing = invoice.content["bachs_checkout"] || {}
+    if existing["checkout_id"] && !checkout_open?(existing)
+      result = reconcile!(invoice:, checkout_id: existing["checkout_id"])
+      raise BachsAPIError.new(409, "Invoice has already been paid") if %w[paid already_paid].include?(result[:status])
+
+      # Local expiry alone does not prove the preceding payment failed. A
+      # payment may await confirmation/action, or its webhook may be delayed.
+      checkout = result.fetch(:checkout)
+      unless %w[expired cancelled canceled].include?(checkout["status"].to_s.downcase) &&
+          ["", "failed", "canceled", "cancelled", "requires_payment_method"].include?(checkout["payment_status"].to_s.downcase)
+        return existing
+      end
+    end
+
+    # Call outside a surrounding transaction so this request commits before
+    # contacting Bachs. A lost response must retry the same body and key.
+    DB.transaction do
+      invoice.lock!
+      raise ArgumentError, "Invoice belongs to another project" unless invoice.project_id == project.id
+      raise BachsAPIError.new(409, "Invoice is not payable") unless invoice.payable?
+
+      existing = invoice.content["bachs_checkout"] || {}
+      return existing if checkout_open?(existing)
+      raise BachsAPIError.new(409, "Invoice checkout needs payment review before another attempt") if existing["status"] == "review_required"
+
+      unless existing["status"] == "creating"
+        state = checkout_request(invoice:, project:, account:, success_url:, cancel_url:, existing:)
+        invoice.update(content: invoice.content.merge("payment_gateway" => "bachs", "bachs_checkout" => state))
+      end
+    end
+
+    result = DB.transaction do
+      invoice.lock!
+      raise BachsAPIError.new(409, "Invoice is not payable") unless invoice.payable?
+
+      existing = invoice.content.fetch("bachs_checkout")
+      return existing if checkout_open?(existing)
+
+      if (reason = request_review_reason(existing))
+        state = existing.merge("status" => "review_required", "reason" => reason)
+        invoice.update(content: invoice.content.merge("bachs_checkout" => state))
+        next state
+      end
+
+      checkout = BachsClient.create_checkout(
+        JSON.parse(existing.fetch("request_body"), symbolize_names: true),
+        idempotency_key: existing.fetch("idempotency_key"),
+      )
+      state = {
+        "checkout_id" => checkout.fetch("checkout_id"),
+        "checkout_url" => checkout.fetch("checkout_url"),
+        "expires_at" => checkout.fetch("expires_at"),
+        "attempt" => existing.fetch("attempt"),
+        "status" => "open",
+      }
+      invoice.update(content: invoice.content.merge("payment_gateway" => "bachs", "bachs_checkout" => state))
+      state
+    end
+    raise BachsAPIError.new(409, "Invoice checkout needs payment review before another attempt") if result["status"] == "review_required"
+
+    result
   end
 
-  def self.create_checkout!(invoice:, project:, account:, success_url:, cancel_url:, existing:)
+  def self.checkout_request(invoice:, project:, account:, success_url:, cancel_url:, existing:)
     amount = BigDecimal(invoice.cost.to_s).round(2)
-    amount_cents = (amount * 100).to_i
-    raise ArgumentError, "Invoice amount is invalid" unless amount_cents.positive?
+    raise ArgumentError, "Bachs invoice checkout requires at least USD 1.00" unless amount.finite? && amount >= 1
 
     attempt = existing["attempt"].to_i + 1
-
-    metadata = {
-      "kind" => "invoice_payment",
-      "invoice" => invoice.ubid,
-      "invoice_number" => invoice.invoice_number,
-      "project" => project.ubid
-    }
-    product = BachsClient.create_product({
-      name: "LayerRail invoice #{invoice.invoice_number}",
-      description: "Exact payment for LayerRail invoice #{invoice.invoice_number}",
-      price: {price_type: "fixed", currency: "USD", amount: format("%.2f", amount)},
-      metadata:
-    }, idempotency_key: "layerrail-invoice-product-#{invoice.ubid}")
-    product_id = product.fetch("id")
-    checkout = BachsClient.create_checkout({
-      product_cart: [{product_id:, quantity: 1}],
-      customer: {email: account.email, name: account.name},
+    payload = {
+      pricing: {price_type: "fixed", currency: "USD", amount: format("%.2f", amount)},
+      customer: {email: account.email, name: account.name || account.email},
       billing_currency: "USD",
       success_url:,
       cancel_url:,
-      metadata:,
+      metadata: {
+        kind: "invoice_payment",
+        invoice: invoice.ubid,
+        invoice_number: invoice.invoice_number,
+        project: project.ubid,
+      },
       reference: "layerrail-invoice-#{invoice.ubid}-#{attempt}",
-      expires_in_minutes: 60
-    }, idempotency_key: "layerrail-invoice-checkout-#{invoice.ubid}-#{attempt}")
-    state = {
-      "checkout_id" => checkout.fetch("checkout_id"),
-      "checkout_url" => checkout.fetch("checkout_url"),
-      "product_id" => product_id,
-      "expires_at" => checkout.fetch("expires_at"),
-      "attempt" => attempt,
-      "status" => "open"
+      expires_in_minutes: 60,
     }
-    invoice.content["payment_gateway"] = "bachs"
-    invoice.content["bachs_checkout"] = state
-    invoice.save(columns: [:content])
-    state
+    {
+      "attempt" => attempt,
+      "status" => "creating",
+      "requested_at" => Time.now.utc.iso8601,
+      "idempotency_scope" => idempotency_scope,
+      "idempotency_key" => "layerrail-invoice-checkout-v2-#{invoice.ubid}-#{attempt}",
+      "request_body" => JSON.generate(payload),
+    }
+  end
+
+  def self.idempotency_scope
+    Digest::SHA256.hexdigest([Config.bachs_api_base_url, Config.bachs_api_key].join("\0"))
+  end
+
+  def self.request_review_reason(state)
+    return "idempotency_scope_changed" unless state["idempotency_scope"] == idempotency_scope
+    return "idempotency_window_expired" unless state["status"] == "creating" && Time.iso8601(state.fetch("requested_at")) + IDEMPOTENCY_RETENTION_SECONDS > Time.now
+
+    nil
+  rescue ArgumentError, KeyError
+    "idempotency_window_expired"
   end
 
   def self.reconcile!(invoice:, checkout_id:)
     checkout = BachsClient.get_checkout(checkout_id)
-    metadata = checkout["metadata"] || {}
-    expected_amount = BigDecimal(invoice.cost.to_s).round(2)
-    paid_amount = BigDecimal((checkout["amount"] || "0").to_s).round(2)
-    paid = checkout["status"].to_s.upcase == "COMPLETED" && checkout["payment_status"].to_s.downcase == "succeeded" && metadata["kind"] == "invoice_payment" &&
-      metadata["invoice"] == invoice.ubid && metadata["project"] == invoice.project.ubid &&
-      checkout["currency"].to_s.upcase == "USD" && paid_amount == expected_amount
-    return {status: "not_paid", checkout:} unless paid
-
     changed = false
     DB.transaction do
-      invoice.reload
+      invoice.lock!
+      return {status: "not_paid", checkout:} unless matching_payment?(invoice, checkout)
+      return {status: "not_paid", checkout:} unless %w[unpaid paid].include?(invoice.status)
+
       if invoice.status == "unpaid"
         content = invoice.content.merge("payment_gateway" => "bachs")
         content["bachs_checkout"] = (content["bachs_checkout"] || {}).merge("checkout_id" => checkout_id, "status" => "paid")
@@ -80,6 +135,17 @@ class BachsInvoiceCheckout
     {status: changed ? "paid" : "already_paid", checkout:}
   end
 
+  def self.matching_payment?(invoice, checkout)
+    metadata = checkout["metadata"] || {}
+    expected_amount = BigDecimal(invoice.cost.to_s).round(2)
+    paid_amount = BigDecimal((checkout["amount"] || "0").to_s)
+    checkout["status"].to_s.downcase == "completed" && checkout["payment_status"].to_s.downcase == "succeeded" &&
+      metadata["kind"] == "invoice_payment" && metadata["invoice"] == invoice.ubid && metadata["project"] == invoice.project.ubid &&
+      checkout["currency"].to_s.upcase == "USD" && paid_amount.finite? && paid_amount == expected_amount
+  rescue ArgumentError
+    false
+  end
+
   def self.reconcile_event!(event)
     payload = event["data"] || event["payload"] || {}
     metadata = payload["metadata"] || {}
@@ -87,7 +153,8 @@ class BachsInvoiceCheckout
     checkout_id = payload["checkout_id"] || payload["checkout_session_id"] || payload.dig("checkout", "checkout_id") || payload.dig("checkout", "id")
     return {status: "ignored"} unless metadata["kind"] == "invoice_payment" && invoice_ubid && checkout_id
 
-    invoice = Invoice.where(ubid: invoice_ubid).first
+    invoice_id = UBID.to_uuid(invoice_ubid.to_s)
+    invoice = Invoice[invoice_id] if invoice_id
     return {status: "invoice_not_found"} unless invoice
 
     reconcile!(invoice:, checkout_id:)

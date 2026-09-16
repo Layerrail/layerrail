@@ -13,9 +13,7 @@ class Clover
         @inference_api_keys = inference_api_key_ds.all
 
         if web?
-          @remaining_free_quota = FreeQuota.remaining_free_quota("inference-tokens", @project.id)
-          @free_quota_unit = "inference tokens"
-          @has_valid_payment_method = @project.has_valid_payment_method?
+          @has_valid_payment_method = @project.has_valid_inference_payment_method?
           view "inference/api_key/index"
         else
           {items: @inference_api_keys.map { {id: it.ubid, key: it.key} }}

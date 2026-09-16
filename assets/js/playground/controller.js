@@ -57,7 +57,6 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     $('#inference_attachment_summary').text(summary).attr('title', summary);
     $('#inference_clear_files').prop('hidden', files.length === 0).prop('disabled', !!activeRequest);
   }
-  let remaining_free_quota = Number($('[data-free-quota-value]').first().attr('data-free-quota-value') || 0);
 
   const prompt_templates = {
     summarize: {
@@ -184,18 +183,10 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     $('#inference_session_cost').text(formatEstimatedCost(session_usage.cost));
   }
 
-  function updateFreeQuotaDisplay() {
-    $('[data-free-quota-value]').each(function () {
-      $(this).attr('data-free-quota-value', remaining_free_quota);
-      $(this).text(formatTokenCount(remaining_free_quota));
-    });
-  }
-
-  function recordUsage(prompt_tokens, completion_tokens, message_id, input_price, output_price, uses_free_quota = true) {
+  function recordUsage(prompt_tokens, completion_tokens, message_id, input_price, output_price) {
     prompt_tokens = Number(prompt_tokens || 0);
     completion_tokens = Number(completion_tokens || 0);
     const cost = estimateCost(prompt_tokens, completion_tokens, input_price, output_price);
-    const total_tokens = prompt_tokens + completion_tokens;
     const summary = `Usage: ${formatTokenCount(prompt_tokens)} input tokens and ${formatTokenCount(completion_tokens)} output tokens. Estimated cost: ${formatEstimatedCost(cost)}.`;
 
     $(`#inference_message_info_${message_id}`).text(summary);
@@ -204,11 +195,7 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     session_usage.prompt_tokens += prompt_tokens;
     session_usage.completion_tokens += completion_tokens;
     session_usage.cost += cost;
-    if (uses_free_quota) {
-      remaining_free_quota = Math.max(remaining_free_quota - total_tokens, 0);
-    }
     updateUsagePanel();
-    updateFreeQuotaDisplay();
   }
 
   function updateSelectedModelDetails() {
@@ -229,7 +216,9 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     $('#inference_selected_provider').text($option.attr('data-provider-label') || $option.attr('data-provider') || "LayerRail");
     $('#inference_selected_capability').text($option.attr('data-capability') || "-");
     $('#inference_selected_context').text($option.attr('data-context-length') || "-");
-    $('#inference_selected_price').text(`${formatPrice(input_price)} input / ${formatPrice(output_price)} output per 1M tokens`);
+    $('#inference_selected_price').text($option.attr('data-billable') === 'false'
+      ? 'Unavailable: usage pricing is not configured.'
+      : `${formatPrice(input_price)} input / ${formatPrice(output_price)} output per 1M tokens`);
     $('#inference_selected_url').text($option.attr('data-url') || "-");
   }
 
@@ -809,7 +798,7 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
       ensureCurrent();
       const prompt_tokens = usage?.prompt_tokens ?? usage?.input_tokens ?? estimateTokenCount(request_payload);
       const completion_tokens = usage?.completion_tokens ?? usage?.output_tokens ?? (['Text-to-Image', 'Text-to-Speech', 'Embeddings'].includes(capability) ? 1 : estimateTokenCount(content));
-      recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price, endpoint_provider !== 'azure_foundry');
+      recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price);
       if (!usage) $(`#inference_message_info_${assistant_message_id}`).prepend('Estimated tokens. ');
       if (!assistant_message.content[0].text) $(`#inference_message_info_${assistant_message_id}`).prepend('The model returned no answer. Try again or raise the output limit. ');
       finalState = 'complete';

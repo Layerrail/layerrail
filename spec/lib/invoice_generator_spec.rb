@@ -390,12 +390,11 @@ RSpec.describe InvoiceGenerator do
   it "handles inference quota when used up" do
     generate_billing_record(p1, ie1, Sequel::Postgres::PGRange.new(begin_time.to_date.to_time + day, begin_time.to_date.to_time + 2 * day), 600000)
     invoice = described_class.new(begin_time, end_time, save_result: true, eur_rate: 1.1).run.first.content
-    free_inference_tokens = FreeQuota.free_quotas["inference-tokens"]["value"]
+    free_inference_tokens = 100_000 # Historical usage keeps the allowance in effect before paid metering.
     billing_rate = BillingRate.from_resource_properties("InferenceTokens", ie1.model_name, "global")["unit_price"]
-    expect(free_inference_tokens).to eq(500000)
     expect(billing_rate).to eq(0.0000000500)
     expect(invoice["free_inference_tokens_credit"]).to eq(free_inference_tokens * billing_rate)
-    expect(invoice["cost"]).to eq((600000 - free_inference_tokens) * billing_rate)
+    expect(invoice["cost"]).to eq(((600000 - free_inference_tokens) * billing_rate).round(3))
   end
 
   it "does not apply free inference quota to premium AI usage" do
@@ -408,7 +407,7 @@ RSpec.describe InvoiceGenerator do
       span: Sequel::Postgres::PGRange.new(begin_time.to_date.to_time, begin_time.to_date.to_time + day),
       billing_rate_id: premium_rate["id"],
       amount: 100000,
-      resource_tags: {premium_ai: true}
+      resource_tags: {premium_ai: true},
     )
 
     invoice = described_class.new(begin_time, end_time, save_result: true, eur_rate: 1.1).run.first.content
@@ -424,7 +423,7 @@ RSpec.describe InvoiceGenerator do
     p1.update(credit: 1, discount: 10)
     after = described_class.new(begin_time, end_time, save_result: true, eur_rate: 1.1).run.first.content
 
-    free_inference_tokens = FreeQuota.free_quotas["inference-tokens"]["value"]
+    free_inference_tokens = 100_000
     billing_rate = BillingRate.from_resource_properties("InferenceTokens", ie1.model_name, "global")["unit_price"]
     expect(before["free_inference_tokens_credit"]).to eq(free_inference_tokens * billing_rate)
     expect(before["discount"]).to eq(0)
@@ -442,7 +441,7 @@ RSpec.describe InvoiceGenerator do
     generate_billing_record(p1, ie1, Sequel::Postgres::PGRange.new(begin_time.to_date.to_time, begin_time.to_date.to_time + day), 100000)
     generate_billing_record(p1, ie2, Sequel::Postgres::PGRange.new(begin_time.to_date.to_time, begin_time.to_date.to_time + day), 800000)
     invoice = described_class.new(begin_time, end_time, save_result: true, eur_rate: 1.1).run.first.content
-    free_inference_tokens = FreeQuota.free_quotas["inference-tokens"]["value"]
+    free_inference_tokens = 100_000
     billing_rate1 = BillingRate.from_resource_properties("InferenceTokens", ie1.model_name, "global")["unit_price"]
     billing_rate2 = BillingRate.from_resource_properties("InferenceTokens", ie2.model_name, "global")["unit_price"]
     expect(billing_rate1).to eq(0.0000000500)
@@ -548,7 +547,7 @@ RSpec.describe InvoiceGenerator do
     generate_billing_record(p1, ie1, Sequel::Postgres::PGRange.new(begin_time.to_date.to_time, begin_time.to_date.to_time + day), 100000)
     generate_billing_record(p1, ie2, Sequel::Postgres::PGRange.new(begin_time.to_date.to_time + 2 * day, begin_time.to_date.to_time + 3 * day), 800000)
     invoice = described_class.new(begin_time, end_time, save_result: true, eur_rate: 1.1).run.first.content
-    free_inference_tokens = FreeQuota.free_quotas["inference-tokens"]["value"]
+    free_inference_tokens = 100_000
     billing_rate1 = BillingRate.from_resource_properties("InferenceTokens", ie1.model_name, "global")["unit_price"]
     billing_rate2 = BillingRate.from_resource_properties("InferenceTokens", ie2.model_name, "global")["unit_price"]
     expect(invoice["free_inference_tokens_credit"]).to eq(100000 * billing_rate1 + (free_inference_tokens - 100000) * billing_rate2)

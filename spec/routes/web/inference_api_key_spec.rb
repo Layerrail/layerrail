@@ -9,6 +9,7 @@ RSpec.describe Clover, "inference-api-key" do
 
   describe "feature enabled" do
     before do
+      allow(Config).to receive(:ai_inference_enabled).and_return(true)
       login(user.email)
       visit "#{project.path}/inference-api-key"
       expect(ApiKey.all).to be_empty
