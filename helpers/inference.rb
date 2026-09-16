@@ -879,6 +879,15 @@ class Clover
   end
 
   def cloudflare_run_text_payload(model, payload)
+    if model.model_name.start_with?("@cf/", "@hf/") && payload["messages"].is_a?(Array) && payload.key?("system")
+      payload = payload.dup
+      system = estimate_inference_text(payload.delete("system")).strip
+      existing_system = payload["messages"].any? { it.is_a?(Hash) && it["role"] == "system" && it["content"] == system }
+      unless system.empty? || existing_system
+        payload["messages"] = [{"role" => "system", "content" => system}, *payload["messages"]]
+      end
+    end
+
     if model.model_name.start_with?("google/")
       messages = payload["messages"] || []
       contents = messages.filter_map do |message|
