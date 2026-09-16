@@ -152,13 +152,14 @@ RSpec.describe Clover, "inference-endpoint" do
       let(:input_price) { 0.0000000297 }
       let(:output_price) { 0.000000003421 }
       let(:cached_input_price) { nil }
+      let(:catalog_prices) { [] }
 
       before do
         allow(Config).to receive(:ai_inference_provider).and_return("cloudflare")
         model_config = {
           "id" => "catalog-price-test", "model_name" => "@cf/catalog-price-test", "provider" => "cloudflare",
           "prompt_billing_resource" => "catalog-test-input", "completion_billing_resource" => "catalog-test-output",
-          "tags" => {"capability" => capability, "pricing" => {"input" => 1, "output" => 2}},
+          "tags" => {"capability" => capability, "pricing" => {"input" => 1, "output" => 2}, "catalog_prices" => catalog_prices},
         }
         model_config["cached_prompt_billing_resource"] = "catalog-test-cached-input" unless cached_input_price.nil?
         stub_const("Option::AI_MODELS", [model_config])
@@ -229,6 +230,60 @@ RSpec.describe Clover, "inference-endpoint" do
           expect(page).to have_content("Input: $1.25 / 1M tokens")
           expect(page).to have_no_content("Output:")
           expect(page).to have_no_content("Pricing unavailable")
+        end
+      end
+
+      context "with catalog quotes for an unavailable model" do
+        let(:output_price) { 0 }
+        let(:catalog_prices) do
+          [
+            {"label" => "Input <=512k (per 1M)", "price" => "0.3300"},
+            {"label" => "Output <=512k (per 1M)", "price" => "1.32"},
+            {"label" => "Input >512k (per 1M)", "price" => "1.3200"},
+            {"label" => "Image (per image)", "price" => "0.00000001"},
+            {"label" => "Audio (per minute)", "price" => nil},
+            {"label" => "Legacy input (per 1M)", "price" => "0"},
+          ]
+        end
+
+        it "shows precise prices and their units while keeping the model unavailable" do
+          visit "#{project.path}/inference-endpoint"
+
+          expect(page).to have_content("Unavailable")
+          expect(page).to have_button("Unavailable", disabled: true)
+          expect(page).to have_no_link("Try in Playground")
+          expect(page).to have_css("details summary", text: "View all 6 prices")
+          within('dl[aria-label="Catalog prices"]', visible: :all) do
+            expect(page).to have_css("dt", text: "Input <=512k (per 1M)", visible: :all)
+            expect(page).to have_css("dd", exact_text: "$0.33", visible: :all)
+            expect(page).to have_css("dt", text: "Image (per image)", visible: :all)
+            expect(page).to have_css("dd", exact_text: "$0.00000001", visible: :all)
+            expect(page).to have_css("dd", exact_text: "Pricing unavailable", count: 2, visible: :all)
+            expect(page).to have_no_css("dd", exact_text: "$0.00", visible: :all)
+          end
+        end
+      end
+
+      context "with catalog quotes for a billable model" do
+        let(:catalog_prices) do
+          [
+            {"label" => "Input tokens (per 1M)", "price" => "1"},
+            {"label" => "Output tokens (per 1M)", "price" => "2"},
+            {"label" => "Priority input tokens (per 1M)", "price" => "0.0594"},
+          ]
+        end
+
+        it "prefers active input and output rates and shows only additional catalog prices" do
+          visit "#{project.path}/inference-endpoint"
+
+          expect(page).to have_content("Input: $0.0297 / 1M tokens")
+          expect(page).to have_content("Output: $0.003421 / 1M tokens")
+          within('dl[aria-label="Catalog prices"]') do
+            expect(page).to have_css("dt", exact_text: "Priority input tokens (per 1M)", count: 1)
+            expect(page).to have_css("dd", exact_text: "$0.0594", count: 1)
+            expect(page).to have_no_css("dd", exact_text: "$1.00")
+          end
+          expect(page).to have_no_content("Unavailable")
         end
       end
     end

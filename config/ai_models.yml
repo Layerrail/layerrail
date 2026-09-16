@@ -467,12 +467,13 @@
   prompt_billing_resource: cf-meta-llama-3-2-3b-instruct-input
   completion_billing_resource: cf-meta-llama-3-2-3b-instruct-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/llama-3.2-3b-instruct.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Llama 3.2 3B Instruct
-    capability: Text Generation
-    context_length: 128K
+    capability: "Text Generation"
+    context_length: "80000"
     api: run
 - id: cf-openai-gpt-oss-20b
   model_name: "@cf/openai/gpt-oss-20b"
@@ -481,12 +482,13 @@
   prompt_billing_resource: cf-openai-gpt-oss-20b-input
   completion_billing_resource: cf-openai-gpt-oss-20b-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/gpt-oss-20b.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: GPT OSS 20B
-    capability: Text Generation
-    context_length: 128K
+    capability: "Text Generation"
+    context_length: "128000"
     api: responses
 - id: cf-openai-gpt-oss-120b
   model_name: "@cf/openai/gpt-oss-120b"
@@ -495,12 +497,13 @@
   prompt_billing_resource: cf-openai-gpt-oss-120b-input
   completion_billing_resource: cf-openai-gpt-oss-120b-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/gpt-oss-120b.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: GPT OSS 120B
-    capability: Text Generation
-    context_length: 128K
+    capability: "Text Generation"
+    context_length: "128000"
     api: responses
 - id: cf-pipecat-smart-turn-v2
   model_name: "@cf/pipecat-ai/smart-turn-v2"
@@ -509,11 +512,12 @@
   prompt_billing_resource: cf-pipecat-smart-turn-v2-input
   completion_billing_resource: cf-pipecat-smart-turn-v2-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/smart-turn-v2.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Smart Turn v2
-    capability: Voice Activity Detection
+    capability: "Voice Activity Detection"
     context_length: Audio
 - id: cf-deepgram-flux
   model_name: "@cf/deepgram/flux"
@@ -522,11 +526,12 @@
   prompt_billing_resource: cf-deepgram-flux-input
   completion_billing_resource: cf-deepgram-flux-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/flux.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Flux
-    capability: Automatic Speech Recognition
+    capability: "Automatic Speech Recognition"
     context_length: Full
 - id: cf-deepgram-nova-3
   model_name: "@cf/deepgram/nova-3"
@@ -535,11 +540,12 @@
   prompt_billing_resource: cf-deepgram-nova-3-input
   completion_billing_resource: cf-deepgram-nova-3-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/nova-3.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: nova-3
-    capability: Automatic Speech Recognition
+    capability: "Automatic Speech Recognition"
     context_length: Full
 - id: cf-openai-whisper
   model_name: "@cf/openai/whisper"
@@ -548,11 +554,12 @@
   prompt_billing_resource: cf-openai-whisper-input
   completion_billing_resource: cf-openai-whisper-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/whisper.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Whisper
-    capability: Automatic Speech Recognition
+    capability: "Automatic Speech Recognition"
     context_length: Audio
 - id: cf-openai-whisper-large-v3-turbo
   model_name: "@cf/openai/whisper-large-v3-turbo"
@@ -561,11 +568,12 @@
   prompt_billing_resource: cf-openai-whisper-large-v3-turbo-input
   completion_billing_resource: cf-openai-whisper-large-v3-turbo-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/whisper-large-v3-turbo.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Whisper Large v3 Turbo
-    capability: Automatic Speech Recognition
+    capability: "Automatic Speech Recognition"
     context_length: Audio
 - id: cf-openai-whisper-tiny-en
   model_name: "@cf/openai/whisper-tiny-en"
@@ -574,11 +582,12 @@
   prompt_billing_resource: cf-openai-whisper-tiny-en-input
   completion_billing_resource: cf-openai-whisper-tiny-en-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/whisper-tiny-en.json"
     billing_status: unavailable
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: whisper-tiny-en
-    capability: Automatic Speech Recognition
+    capability: "Automatic Speech Recognition"
     context_length: Full
 - id: cf-microsoft-resnet-50
   model_name: "@cf/microsoft/resnet-50"
@@ -587,11 +596,12 @@
   prompt_billing_resource: cf-microsoft-resnet-50-input
   completion_billing_resource: cf-microsoft-resnet-50-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/resnet-50.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: ResNet-50
-    capability: Image Classification
+    capability: "Image Classification"
     context_length: Image
 - id: cf-llava-hf-llava-1-5-7b-hf
   model_name: "@cf/llava-hf/llava-1.5-7b-hf"
@@ -600,11 +610,12 @@
   prompt_billing_resource: cf-llava-hf-llava-1-5-7b-hf-input
   completion_billing_resource: cf-llava-hf-llava-1-5-7b-hf-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/llava-1.5-7b-hf.json"
     billing_status: unavailable
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: LLaVA 1.5 7B
-    capability: Image-to-Text
+    capability: "Image-to-Text"
     context_length: Image
 - id: cf-baai-bge-reranker-base
   model_name: "@cf/baai/bge-reranker-base"
@@ -613,11 +624,12 @@
   prompt_billing_resource: cf-baai-bge-reranker-base-input
   completion_billing_resource: cf-baai-bge-reranker-base-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/bge-reranker-base.json"
     billing_status: usage_unverified
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: BGE Reranker Base
-    capability: Text Classification
+    capability: "Text Classification"
     context_length: 512 tokens
 - id: cf-huggingface-distilbert-sst-2-int8
   model_name: "@cf/huggingface/distilbert-sst-2-int8"
@@ -626,11 +638,12 @@
   prompt_billing_resource: cf-huggingface-distilbert-sst-2-int8-input
   completion_billing_resource: cf-huggingface-distilbert-sst-2-int8-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/distilbert-sst-2-int8.json"
     billing_status: usage_unverified
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: DistilBERT SST-2
-    capability: Text Classification
+    capability: "Text Classification"
     context_length: Text
 - id: cf-baai-bge-base-en-v1-5
   model_name: "@cf/baai/bge-base-en-v1.5"
@@ -639,12 +652,13 @@
   prompt_billing_resource: cf-baai-bge-base-en-v1-5-input
   completion_billing_resource: cf-baai-bge-base-en-v1-5-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/bge-base-en-v1.5.json"
     billing_status: usage_unverified
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: BGE Base English v1.5
-    capability: Embeddings
-    context_length: 512 tokens
+    capability: "Embeddings"
+    context_length: "153600"
 - id: cf-baai-bge-large-en-v1-5
   model_name: "@cf/baai/bge-large-en-v1.5"
   enabled: true
@@ -652,11 +666,12 @@
   prompt_billing_resource: cf-baai-bge-large-en-v1-5-input
   completion_billing_resource: cf-baai-bge-large-en-v1-5-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/bge-large-en-v1.5.json"
     billing_status: usage_unverified
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: BGE Large English v1.5
-    capability: Embeddings
+    capability: "Embeddings"
     context_length: 512 tokens
 - id: cf-baai-bge-m3
   model_name: "@cf/baai/bge-m3"
@@ -665,12 +680,13 @@
   prompt_billing_resource: cf-baai-bge-m3-input
   completion_billing_resource: cf-baai-bge-m3-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/bge-m3.json"
     billing_status: usage_unverified
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: BGE M3
-    capability: Embeddings
-    context_length: 8K
+    capability: "Embeddings"
+    context_length: "60000"
 - id: cf-baai-bge-small-en-v1-5
   model_name: "@cf/baai/bge-small-en-v1.5"
   enabled: true
@@ -678,11 +694,12 @@
   prompt_billing_resource: cf-baai-bge-small-en-v1-5-input
   completion_billing_resource: cf-baai-bge-small-en-v1-5-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/bge-small-en-v1.5.json"
     billing_status: usage_unverified
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: BGE Small English v1.5
-    capability: Embeddings
+    capability: "Embeddings"
     context_length: 512 tokens
 - id: cf-google-embeddinggemma-300m
   model_name: "@cf/google/embeddinggemma-300m"
@@ -691,11 +708,12 @@
   prompt_billing_resource: cf-google-embeddinggemma-300m-input
   completion_billing_resource: cf-google-embeddinggemma-300m-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/embeddinggemma-300m.json"
     billing_status: unavailable
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: EmbeddingGemma 300M
-    capability: Embeddings
+    capability: "Embeddings"
     context_length: 2K
 - id: cf-pfnet-plamo-embedding-1b
   model_name: "@cf/pfnet/plamo-embedding-1b"
@@ -704,11 +722,12 @@
   prompt_billing_resource: cf-pfnet-plamo-embedding-1b-input
   completion_billing_resource: cf-pfnet-plamo-embedding-1b-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/plamo-embedding-1b.json"
     billing_status: usage_unverified
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: PLaMo Embedding 1B
-    capability: Embeddings
+    capability: "Embeddings"
     context_length: 8K
 - id: cf-qwen-qwen3-embedding-0-6b
   model_name: "@cf/qwen/qwen3-embedding-0.6b"
@@ -717,12 +736,13 @@
   prompt_billing_resource: cf-qwen-qwen3-embedding-0-6b-input
   completion_billing_resource: cf-qwen-qwen3-embedding-0-6b-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/qwen3-embedding-0.6b.json"
     billing_status: usage_unverified
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Qwen3 Embedding 0.6B
-    capability: Embeddings
-    context_length: 8K
+    capability: "Embeddings"
+    context_length: "8192"
 - id: cf-aisingapore-gemma-sea-lion-v4-27b-it
   model_name: "@cf/aisingapore/gemma-sea-lion-v4-27b-it"
   enabled: true
@@ -730,12 +750,13 @@
   prompt_billing_resource: cf-aisingapore-gemma-sea-lion-v4-27b-it-input
   completion_billing_resource: cf-aisingapore-gemma-sea-lion-v4-27b-it-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/gemma-sea-lion-v4-27b-it.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Gemma SEA-LION v4 27B IT
-    capability: Text Generation
-    context_length: 128K
+    capability: "Text Generation"
+    context_length: "128000"
     api: run
     multimodal: true
 - id: cf-moonshotai-kimi-k2-5
@@ -762,12 +783,13 @@
   prompt_billing_resource: cf-deepseek-ai-deepseek-r1-distill-qwen-32b-input
   completion_billing_resource: cf-deepseek-ai-deepseek-r1-distill-qwen-32b-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/deepseek-r1-distill-qwen-32b.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: DeepSeek R1 Distill Qwen 32B
-    capability: Text Generation
-    context_length: 80K
+    capability: "Text Generation"
+    context_length: "80000"
     api: run
 - id: cf-google-gemma-2b-it-lora
   model_name: "@cf/google/gemma-2b-it-lora"
@@ -776,12 +798,13 @@
   prompt_billing_resource: cf-google-gemma-2b-it-lora-input
   completion_billing_resource: cf-google-gemma-2b-it-lora-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/gemma-2b-it-lora.json"
     billing_status: unavailable
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Gemma 2B IT LoRA
-    capability: Text Generation
-    context_length: 8K
+    capability: "Text Generation"
+    context_length: "8192"
     api: run
 - id: cf-google-gemma-4-26b-a4b-it
   model_name: "@cf/google/gemma-4-26b-a4b-it"
@@ -790,12 +813,13 @@
   prompt_billing_resource: cf-google-gemma-4-26b-a4b-it-input
   completion_billing_resource: cf-google-gemma-4-26b-a4b-it-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/gemma-4-26b-a4b-it.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Gemma 4 26B A4B IT
-    capability: Text Generation
-    context_length: 128K
+    capability: "Text Generation"
+    context_length: "256000"
     api: run
     multimodal: true
 - id: cf-google-gemma-3-12b-it
@@ -821,12 +845,13 @@
   prompt_billing_resource: cf-google-gemma-7b-it-lora-input
   completion_billing_resource: cf-google-gemma-7b-it-lora-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/gemma-7b-it-lora.json"
     billing_status: unavailable
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Gemma 7B IT LoRA
-    capability: Text Generation
-    context_length: 8K
+    capability: "Text Generation"
+    context_length: "3500"
     api: run
 - id: cf-ibm-granite-granite-4-0-h-micro
   model_name: "@cf/ibm-granite/granite-4.0-h-micro"
@@ -835,12 +860,13 @@
   prompt_billing_resource: cf-ibm-granite-granite-4-0-h-micro-input
   completion_billing_resource: cf-ibm-granite-granite-4-0-h-micro-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/granite-4.0-h-micro.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Granite 4.0 H Micro
-    capability: Text Generation
-    context_length: 128K
+    capability: "Text Generation"
+    context_length: "131000"
     api: run
 - id: cf-meta-llama-llama-2-7b-chat-hf-lora
   model_name: "@cf/meta-llama/llama-2-7b-chat-hf-lora"
@@ -849,12 +875,13 @@
   prompt_billing_resource: cf-meta-llama-llama-2-7b-chat-hf-lora-input
   completion_billing_resource: cf-meta-llama-llama-2-7b-chat-hf-lora-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/llama-2-7b-chat-hf-lora.json"
     billing_status: unavailable
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: llama-2-7b-chat-hf-lora
-    capability: Text Generation
-    context_length: Full
+    capability: "Text Generation"
+    context_length: "8192"
     api: run
 - id: cf-meta-llama-2-7b-chat-fp16
   model_name: "@cf/meta/llama-2-7b-chat-fp16"
@@ -967,12 +994,13 @@
   prompt_billing_resource: cf-meta-llama-3-1-8b-instruct-fp8-input
   completion_billing_resource: cf-meta-llama-3-1-8b-instruct-fp8-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/llama-3.1-8b-instruct-fp8.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Llama 3.1 8B Instruct FP8
-    capability: Text Generation
-    context_length: 8K
+    capability: "Text Generation"
+    context_length: "32000"
     api: run
 - id: cf-meta-llama-3-1-8b-instruct-fast
   model_name: "@cf/meta/llama-3.1-8b-instruct-fast"
@@ -1010,12 +1038,13 @@
   prompt_billing_resource: cf-meta-llama-3-2-11b-vision-instruct-input
   completion_billing_resource: cf-meta-llama-3-2-11b-vision-instruct-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/llama-3.2-11b-vision-instruct.json"
     billing_status: usage_unverified
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Llama 3.2 11B Vision
-    capability: Text Generation
-    context_length: 128K
+    capability: "Text Generation"
+    context_length: "128000"
     api: run
     multimodal: true
 - id: cf-meta-llama-3-2-1b-instruct
@@ -1025,12 +1054,13 @@
   prompt_billing_resource: cf-meta-llama-3-2-1b-instruct-input
   completion_billing_resource: cf-meta-llama-3-2-1b-instruct-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/llama-3.2-1b-instruct.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Llama 3.2 1B Instruct
-    capability: Text Generation
-    context_length: 128K
+    capability: "Text Generation"
+    context_length: "60000"
     api: run
 - id: cf-meta-llama-3-3-70b-instruct-fp8-fast
   model_name: "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
@@ -1039,12 +1069,13 @@
   prompt_billing_resource: cf-meta-llama-3-3-70b-instruct-fp8-fast-input
   completion_billing_resource: cf-meta-llama-3-3-70b-instruct-fp8-fast-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/llama-3.3-70b-instruct-fp8-fast.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Llama 3.3 70B FP8 Fast
-    capability: Text Generation
-    context_length: 24K
+    capability: "Text Generation"
+    context_length: "24000"
     api: run
 - id: cf-meta-llama-4-scout-17b-16e-instruct
   model_name: "@cf/meta/llama-4-scout-17b-16e-instruct"
@@ -1053,12 +1084,13 @@
   prompt_billing_resource: cf-meta-llama-4-scout-17b-16e-instruct-input
   completion_billing_resource: cf-meta-llama-4-scout-17b-16e-instruct-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/llama-4-scout-17b-16e-instruct.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Llama 4 Scout 17B
-    capability: Text Generation
-    context_length: 128K
+    capability: "Text Generation"
+    context_length: "131000"
     api: run
 - id: cf-meta-llama-guard-3-8b
   model_name: "@cf/meta/llama-guard-3-8b"
@@ -1067,12 +1099,13 @@
   prompt_billing_resource: cf-meta-llama-guard-3-8b-input
   completion_billing_resource: cf-meta-llama-guard-3-8b-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/llama-guard-3-8b.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: llama-guard-3-8b
-    capability: Text Generation
-    context_length: Full
+    capability: "Text Generation"
+    context_length: "131072"
     api: run
 - id: cf-microsoft-phi-2
   model_name: "@cf/microsoft/phi-2"
@@ -1111,12 +1144,13 @@
   prompt_billing_resource: cf-mistral-mistral-7b-instruct-v0-2-lora-input
   completion_billing_resource: cf-mistral-mistral-7b-instruct-v0-2-lora-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/mistral-7b-instruct-v0.2-lora.json"
     billing_status: unavailable
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Mistral 7B Instruct v0.2 LoRA
-    capability: Text Generation
-    context_length: 32K
+    capability: "Text Generation"
+    context_length: "15000"
     api: run
 - id: cf-mistral-mistral-7b-instruct-v0-1
   model_name: "@cf/mistral/mistral-7b-instruct-v0.1"
@@ -1155,12 +1189,13 @@
   prompt_billing_resource: cf-mistralai-mistral-small-3-1-24b-instruct-input
   completion_billing_resource: cf-mistralai-mistral-small-3-1-24b-instruct-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/mistral-small-3.1-24b-instruct.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Mistral Small 3.1 24B
-    capability: Text Generation
-    context_length: 128K
+    capability: "Text Generation"
+    context_length: "128000"
     api: run
 - id: cf-moonshotai-kimi-k2-6
   model_name: "@cf/moonshotai/kimi-k2.6"
@@ -1170,13 +1205,14 @@
   completion_billing_resource: cf-moonshotai-kimi-k2-6-output
   cached_prompt_billing_resource: cf-moonshotai-kimi-k2-6-cached-input
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/kimi-k2.6.json"
     billing_status: ready
     cache_usage_optional: true
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Kimi K2.6
-    capability: Text Generation
-    context_length: 128K
+    capability: "Text Generation"
+    context_length: "262144"
     api: run
 - id: cf-moonshotai-kimi-k2-7-code
   model_name: "@cf/moonshotai/kimi-k2.7-code"
@@ -1186,13 +1222,14 @@
   completion_billing_resource: cf-moonshotai-kimi-k2-7-code-output
   cached_prompt_billing_resource: cf-moonshotai-kimi-k2-7-code-cached-input
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/kimi-k2.7-code.json"
     billing_status: ready
     cache_usage_optional: true
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: kimi-k2.7-code
-    capability: Text Generation
-    context_length: Full
+    capability: "Text Generation"
+    context_length: "262144"
     api: run
 - id: cf-nvidia-nemotron-3-120b-a12b
   model_name: "@cf/nvidia/nemotron-3-120b-a12b"
@@ -1201,12 +1238,13 @@
   prompt_billing_resource: cf-nvidia-nemotron-3-120b-a12b-input
   completion_billing_resource: cf-nvidia-nemotron-3-120b-a12b-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/nemotron-3-120b-a12b.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: NVIDIA Nemotron 3 120B A12B
-    capability: Text Generation
-    context_length: 128K
+    capability: "Text Generation"
+    context_length: "256000"
     api: run
 - id: cf-qwen-qwen2-5-coder-32b-instruct
   model_name: "@cf/qwen/qwen2.5-coder-32b-instruct"
@@ -1215,12 +1253,13 @@
   prompt_billing_resource: cf-qwen-qwen2-5-coder-32b-instruct-input
   completion_billing_resource: cf-qwen-qwen2-5-coder-32b-instruct-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/qwen2.5-coder-32b-instruct.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Qwen2.5 Coder 32B
-    capability: Text Generation
-    context_length: 32K
+    capability: "Text Generation"
+    context_length: "32768"
     api: run
 - id: cf-qwen-qwen3-30b-a3b-fp8
   model_name: "@cf/qwen/qwen3-30b-a3b-fp8"
@@ -1229,12 +1268,13 @@
   prompt_billing_resource: cf-qwen-qwen3-30b-a3b-fp8-input
   completion_billing_resource: cf-qwen-qwen3-30b-a3b-fp8-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/qwen3-30b-a3b-fp8.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Qwen3 30B A3B FP8
-    capability: Text Generation
-    context_length: 32K
+    capability: "Text Generation"
+    context_length: "32768"
     api: run
 - id: cf-qwen-qwq-32b
   model_name: "@cf/qwen/qwq-32b"
@@ -1243,12 +1283,13 @@
   prompt_billing_resource: cf-qwen-qwq-32b-input
   completion_billing_resource: cf-qwen-qwq-32b-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/qwq-32b.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: QwQ 32B Reasoning
-    capability: Text Generation
-    context_length: 32K
+    capability: "Text Generation"
+    context_length: "24000"
     api: run
 - id: cf-zai-org-glm-4-7-flash
   model_name: "@cf/zai-org/glm-4.7-flash"
@@ -1257,12 +1298,13 @@
   prompt_billing_resource: cf-zai-org-glm-4-7-flash-input
   completion_billing_resource: cf-zai-org-glm-4-7-flash-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/glm-4.7-flash.json"
     billing_status: ready
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: GLM 4.7 Flash
-    capability: Text Generation
-    context_length: 128K
+    capability: "Text Generation"
+    context_length: "131072"
     api: run
 - id: cf-zai-org-glm-5-2
   model_name: "@cf/zai-org/glm-5.2"
@@ -1272,13 +1314,14 @@
   completion_billing_resource: cf-zai-org-glm-5-2-output
   cached_prompt_billing_resource: cf-zai-org-glm-5-2-cached-input
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/glm-5.2.json"
     billing_status: ready
     cache_usage_optional: true
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Glm 5.2
-    capability: Text Generation
-    context_length: Full
+    capability: "Text Generation"
+    context_length: "262144"
     api: run
 - id: cf-meta-bart-large-cnn
   model_name: "@cf/meta/bart-large-cnn"
@@ -1328,11 +1371,12 @@
   prompt_billing_resource: cf-black-forest-labs-flux-1-schnell-input
   completion_billing_resource: cf-black-forest-labs-flux-1-schnell-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/flux-1-schnell.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Flux 1 Schnell
-    capability: Text-to-Image
+    capability: "Text-to-Image"
     context_length: Full
 - id: cf-black-forest-labs-flux-2-dev
   model_name: "@cf/black-forest-labs/flux-2-dev"
@@ -1341,11 +1385,12 @@
   prompt_billing_resource: cf-black-forest-labs-flux-2-dev-input
   completion_billing_resource: cf-black-forest-labs-flux-2-dev-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/flux-2-dev.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Flux 2 Dev
-    capability: Text-to-Image
+    capability: "Text-to-Image"
     context_length: Full
 - id: cf-black-forest-labs-flux-2-klein-4b
   model_name: "@cf/black-forest-labs/flux-2-klein-4b"
@@ -1354,11 +1399,12 @@
   prompt_billing_resource: cf-black-forest-labs-flux-2-klein-4b-input
   completion_billing_resource: cf-black-forest-labs-flux-2-klein-4b-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/flux-2-klein-4b.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Flux 2 Klein 4b
-    capability: Text-to-Image
+    capability: "Text-to-Image"
     context_length: Full
 - id: cf-black-forest-labs-flux-2-klein-9b
   model_name: "@cf/black-forest-labs/flux-2-klein-9b"
@@ -1367,11 +1413,12 @@
   prompt_billing_resource: cf-black-forest-labs-flux-2-klein-9b-input
   completion_billing_resource: cf-black-forest-labs-flux-2-klein-9b-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/flux-2-klein-9b.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Flux 2 Klein 9b
-    capability: Text-to-Image
+    capability: "Text-to-Image"
     context_length: Full
 - id: cf-bytedance-stable-diffusion-xl-lightning
   model_name: "@cf/bytedance/stable-diffusion-xl-lightning"
@@ -1380,11 +1427,12 @@
   prompt_billing_resource: cf-bytedance-stable-diffusion-xl-lightning-input
   completion_billing_resource: cf-bytedance-stable-diffusion-xl-lightning-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/stable-diffusion-xl-lightning.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: SDXL Lightning
-    capability: Text-to-Image
+    capability: "Text-to-Image"
     context_length: Prompt
 - id: cf-leonardo-lucid-origin
   model_name: "@cf/leonardo/lucid-origin"
@@ -1393,11 +1441,12 @@
   prompt_billing_resource: cf-leonardo-lucid-origin-input
   completion_billing_resource: cf-leonardo-lucid-origin-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/lucid-origin.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Lucid Origin
-    capability: Text-to-Image
+    capability: "Text-to-Image"
     context_length: Full
 - id: cf-leonardo-phoenix-1-0
   model_name: "@cf/leonardo/phoenix-1.0"
@@ -1406,11 +1455,12 @@
   prompt_billing_resource: cf-leonardo-phoenix-1-0-input
   completion_billing_resource: cf-leonardo-phoenix-1-0-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/phoenix-1.0.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Phoenix 1.0
-    capability: Text-to-Image
+    capability: "Text-to-Image"
     context_length: Full
 - id: cf-lykon-dreamshaper-8-lcm
   model_name: "@cf/lykon/dreamshaper-8-lcm"
@@ -1419,11 +1469,12 @@
   prompt_billing_resource: cf-lykon-dreamshaper-8-lcm-input
   completion_billing_resource: cf-lykon-dreamshaper-8-lcm-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/dreamshaper-8-lcm.json"
     billing_status: unavailable
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: DreamShaper 8 LCM
-    capability: Text-to-Image
+    capability: "Text-to-Image"
     context_length: Prompt
 - id: cf-runwayml-stable-diffusion-v1-5-img2img
   model_name: "@cf/runwayml/stable-diffusion-v1-5-img2img"
@@ -1445,11 +1496,12 @@
   prompt_billing_resource: cf-runwayml-stable-diffusion-v1-5-inpainting-input
   completion_billing_resource: cf-runwayml-stable-diffusion-v1-5-inpainting-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/stable-diffusion-v1-5-inpainting.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Stable Diffusion V1 5 Inpainting
-    capability: Text-to-Image
+    capability: "Text-to-Image"
     context_length: Full
 - id: cf-stabilityai-stable-diffusion-xl-base-1-0
   model_name: "@cf/stabilityai/stable-diffusion-xl-base-1.0"
@@ -1458,11 +1510,12 @@
   prompt_billing_resource: cf-stabilityai-stable-diffusion-xl-base-1-0-input
   completion_billing_resource: cf-stabilityai-stable-diffusion-xl-base-1-0-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/stable-diffusion-xl-base-1.0.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Stable Diffusion XL
-    capability: Text-to-Image
+    capability: "Text-to-Image"
     context_length: Prompt
 - id: cf-deepgram-aura-1
   model_name: "@cf/deepgram/aura-1"
@@ -1471,11 +1524,12 @@
   prompt_billing_resource: cf-deepgram-aura-1-input
   completion_billing_resource: cf-deepgram-aura-1-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/aura-1.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: aura-1
-    capability: Text-to-Speech
+    capability: "Text-to-Speech"
     context_length: Full
 - id: cf-deepgram-aura-2-en
   model_name: "@cf/deepgram/aura-2-en"
@@ -1484,11 +1538,12 @@
   prompt_billing_resource: cf-deepgram-aura-2-en-input
   completion_billing_resource: cf-deepgram-aura-2-en-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/aura-2-en.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Aura 2 En
-    capability: Text-to-Speech
+    capability: "Text-to-Speech"
     context_length: Full
 - id: cf-deepgram-aura-2-es
   model_name: "@cf/deepgram/aura-2-es"
@@ -1497,11 +1552,12 @@
   prompt_billing_resource: cf-deepgram-aura-2-es-input
   completion_billing_resource: cf-deepgram-aura-2-es-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/aura-2-es.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: Aura 2 Es
-    capability: Text-to-Speech
+    capability: "Text-to-Speech"
     context_length: Full
 - id: cf-myshell-ai-melotts
   model_name: "@cf/myshell-ai/melotts"
@@ -1510,11 +1566,12 @@
   prompt_billing_resource: cf-myshell-ai-melotts-input
   completion_billing_resource: cf-myshell-ai-melotts-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/melotts.json"
     billing_status: unsupported_unit
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: MeloTTS
-    capability: Text-to-Speech
+    capability: "Text-to-Speech"
     context_length: Text
 - id: cf-ai4bharat-indictrans2-en-indic-1b
   model_name: "@cf/ai4bharat/indictrans2-en-indic-1B"
@@ -1523,11 +1580,12 @@
   prompt_billing_resource: cf-ai4bharat-indictrans2-en-indic-1b-input
   completion_billing_resource: cf-ai4bharat-indictrans2-en-indic-1b-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/indictrans2-en-indic-1B.json"
     billing_status: usage_unverified
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: indictrans2-en-indic-1B
-    capability: Translation
+    capability: "Translation"
     context_length: Full
 - id: cf-meta-m2m100-1-2b
   model_name: "@cf/meta/m2m100-1.2b"
@@ -1536,11 +1594,12 @@
   prompt_billing_resource: cf-meta-m2m100-1-2b-input
   completion_billing_resource: cf-meta-m2m100-1-2b-output
   tags:
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/m2m100-1.2b.json"
     billing_status: usage_unverified
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
     display_name: M2M100 1.2B
-    capability: Translation
+    capability: "Translation"
     context_length: Text
 - id: 8b0b55b3-fb99-415f-8441-3abef2c2a200
   model_name: test-model
@@ -1571,11 +1630,2213 @@
   completion_billing_resource: cf-minimax-m3-output
   cached_prompt_billing_resource: cf-minimax-m3-cached-input
   tags:
-    display_name: MiniMax M3
-    capability: Text Generation
-    context_length: 1M
+    display_name: "MiniMax M3"
+    capability: "Text Generation"
+    context_length: "1000000"
     api: chat
-    billing_status: awaiting_gateway_credits
+    billing_status: "catalog_only"
     markup_percent: 10
     pricing_verified_at: "2026-09-16"
-    source: https://developers.cloudflare.com/ai/models/minimax/m3/
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/minimax-m3.json"
+- id: cf-deepseek-ai-deepseek-v4-flash-0731
+  model_name: "@cf/deepseek-ai/deepseek-v4-flash-0731"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-deepseek-ai-deepseek-v4-flash-0731-input"
+  completion_billing_resource: "cf-deepseek-ai-deepseek-v4-flash-0731-output"
+  cached_prompt_billing_resource: "cf-deepseek-ai-deepseek-v4-flash-0731-cached-input"
+  tags:
+    display_name: "DeepSeek V4 Flash 0731"
+    capability: "Text Generation"
+    billing_status: "ready"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/deepseek-v4-flash-0731.json"
+    context_length: "1310720"
+    api: "run"
+    cache_usage_optional: true
+- id: cf-deepseek-ai-deepseek-v4-pro-0813
+  model_name: "@cf/deepseek-ai/deepseek-v4-pro-0813"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-deepseek-ai-deepseek-v4-pro-0813-input"
+  completion_billing_resource: "cf-deepseek-ai-deepseek-v4-pro-0813-output"
+  cached_prompt_billing_resource: "cf-deepseek-ai-deepseek-v4-pro-0813-cached-input"
+  tags:
+    display_name: "DeepSeek V4 Pro 0813"
+    capability: "Text Generation"
+    billing_status: "ready"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/deepseek-v4-pro-0813.json"
+    context_length: "1048576"
+    api: "run"
+    cache_usage_optional: true
+- id: cf-moondream-moondream3-1-9b-a2b
+  model_name: "@cf/moondream/moondream3.1-9B-A2B"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-moondream-moondream3-1-9b-a2b-input"
+  completion_billing_resource: "cf-moondream-moondream3-1-9b-a2b-output"
+  tags:
+    display_name: "Moondream 3.1 9B A2B"
+    capability: "Image-to-Text"
+    billing_status: "usage_unverified"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/moondream3.1-9B-A2B.json"
+    api: "run"
+- id: cf-qwen-qwen3-8-27b
+  model_name: "@cf/qwen/qwen3.8-27b"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-qwen-qwen3-8-27b-input"
+  completion_billing_resource: "cf-qwen-qwen3-8-27b-output"
+  cached_prompt_billing_resource: "cf-qwen-qwen3-8-27b-cached-input"
+  tags:
+    display_name: "Qwen3.8 27B"
+    capability: "Text Generation"
+    billing_status: "ready"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/qwen3.8-27b.json"
+    context_length: "262144"
+    api: "run"
+    cache_usage_optional: true
+- id: cf-zai-org-glm-5-3
+  model_name: "@cf/zai-org/glm-5.3"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-zai-org-glm-5-3-input"
+  completion_billing_resource: "cf-zai-org-glm-5-3-output"
+  cached_prompt_billing_resource: "cf-zai-org-glm-5-3-cached-input"
+  tags:
+    display_name: "GLM 5.3"
+    capability: "Text Generation"
+    billing_status: "ready"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/glm-5.3.json"
+    context_length: "1310720"
+    api: "run"
+    cache_usage_optional: true
+- id: cf-zai-org-glm-5-3-flash
+  model_name: "@cf/zai-org/glm-5.3-flash"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-zai-org-glm-5-3-flash-input"
+  completion_billing_resource: "cf-zai-org-glm-5-3-flash-output"
+  cached_prompt_billing_resource: "cf-zai-org-glm-5-3-flash-cached-input"
+  tags:
+    display_name: "GLM 5.3 Flash"
+    capability: "Text Generation"
+    billing_status: "ready"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/glm-5.3-flash.json"
+    context_length: "1310720"
+    api: "run"
+    cache_usage_optional: true
+- id: cf-alibaba-hh1-i2v
+  model_name: "alibaba/hh1-i2v"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-alibaba-hh1-i2v-input"
+  completion_billing_resource: "cf-alibaba-hh1-i2v-output"
+  tags:
+    display_name: "HappyHorse 1.0 I2V"
+    capability: "Image-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/alibaba-hh1-i2v.json"
+- id: cf-alibaba-hh1-t2v
+  model_name: "alibaba/hh1-t2v"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-alibaba-hh1-t2v-input"
+  completion_billing_resource: "cf-alibaba-hh1-t2v-output"
+  tags:
+    display_name: "HappyHorse 1.0 T2V"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/alibaba-hh1-t2v.json"
+- id: cf-alibaba-hh1-1-i2v
+  model_name: "alibaba/hh1.1-i2v"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-alibaba-hh1-1-i2v-input"
+  completion_billing_resource: "cf-alibaba-hh1-1-i2v-output"
+  tags:
+    display_name: "HappyHorse 1.1 I2V"
+    capability: "Image-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/alibaba-hh1.1-i2v.json"
+- id: cf-alibaba-hh1-1-r2v
+  model_name: "alibaba/hh1.1-r2v"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-alibaba-hh1-1-r2v-input"
+  completion_billing_resource: "cf-alibaba-hh1-1-r2v-output"
+  tags:
+    display_name: "HappyHorse 1.1 R2V"
+    capability: "Image-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/alibaba-hh1.1-r2v.json"
+- id: cf-alibaba-hh1-1-t2v
+  model_name: "alibaba/hh1.1-t2v"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-alibaba-hh1-1-t2v-input"
+  completion_billing_resource: "cf-alibaba-hh1-1-t2v-output"
+  tags:
+    display_name: "HappyHorse 1.1 T2V"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/alibaba-hh1.1-t2v.json"
+- id: cf-alibaba-qwen-image-3-0-pro
+  model_name: "alibaba/qwen-image-3.0-pro"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-alibaba-qwen-image-3-0-pro-input"
+  completion_billing_resource: "cf-alibaba-qwen-image-3-0-pro-output"
+  tags:
+    display_name: "Qwen Image 3.0 Pro"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/alibaba-qwen-image-3.0-pro.json"
+- id: cf-alibaba-qwen3-max
+  model_name: "alibaba/qwen3-max"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-alibaba-qwen3-max-input"
+  completion_billing_resource: "cf-alibaba-qwen3-max-output"
+  tags:
+    display_name: "Qwen 3 Max"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/alibaba-qwen3-max.json"
+    api: "chat"
+- id: cf-alibaba-qwen3-5-397b-a17b
+  model_name: "alibaba/qwen3.5-397b-a17b"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-alibaba-qwen3-5-397b-a17b-input"
+  completion_billing_resource: "cf-alibaba-qwen3-5-397b-a17b-output"
+  tags:
+    display_name: "Qwen 3.5 397B A17B"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/alibaba-qwen3.5-397b-a17b.json"
+    api: "chat"
+- id: cf-alibaba-qwen3-7-max
+  model_name: "alibaba/qwen3.7-max"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-alibaba-qwen3-7-max-input"
+  completion_billing_resource: "cf-alibaba-qwen3-7-max-output"
+  tags:
+    display_name: "Qwen 3.7 Max"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/alibaba-qwen3.7-max.json"
+    api: "chat"
+- id: cf-alibaba-qwen3-7-plus
+  model_name: "alibaba/qwen3.7-plus"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-alibaba-qwen3-7-plus-input"
+  completion_billing_resource: "cf-alibaba-qwen3-7-plus-output"
+  tags:
+    display_name: "Qwen 3.7 Plus"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/alibaba-qwen3.7-plus.json"
+    api: "chat"
+- id: cf-alibaba-qwen3-8-max
+  model_name: "alibaba/qwen3.8-max"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-alibaba-qwen3-8-max-input"
+  completion_billing_resource: "cf-alibaba-qwen3-8-max-output"
+  tags:
+    display_name: "Qwen 3.8 Max"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/alibaba-qwen3.8-max.json"
+    api: "chat"
+- id: cf-alibaba-wan-2-6-image
+  model_name: "alibaba/wan-2.6-image"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-alibaba-wan-2-6-image-input"
+  completion_billing_resource: "cf-alibaba-wan-2-6-image-output"
+  tags:
+    display_name: "Wan 2.6 Image"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/alibaba-wan-2.6-image.json"
+- id: cf-alibaba-wan-2-7-i2v
+  model_name: "alibaba/wan-2.7-i2v"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-alibaba-wan-2-7-i2v-input"
+  completion_billing_resource: "cf-alibaba-wan-2-7-i2v-output"
+  tags:
+    display_name: "Wan 2.7 I2V"
+    capability: "Image-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/alibaba-wan-2.7-i2v.json"
+- id: cf-alibaba-wan-3-0
+  model_name: "alibaba/wan-3.0"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-alibaba-wan-3-0-input"
+  completion_billing_resource: "cf-alibaba-wan-3-0-output"
+  tags:
+    display_name: "Wan 3.0 Video"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/alibaba-wan-3.0.json"
+- id: cf-alibaba-wan-3-0-prime
+  model_name: "alibaba/wan-3.0-prime"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-alibaba-wan-3-0-prime-input"
+  completion_billing_resource: "cf-alibaba-wan-3-0-prime-output"
+  tags:
+    display_name: "Wan 3.0 Prime Video"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/alibaba-wan-3.0-prime.json"
+- id: cf-anthropic-claude-fable-5
+  model_name: "anthropic/claude-fable-5"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-anthropic-claude-fable-5-input"
+  completion_billing_resource: "cf-anthropic-claude-fable-5-output"
+  tags:
+    display_name: "Claude Fable 5"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/anthropic-claude-fable-5.json"
+    context_length: "1000000"
+- id: cf-anthropic-claude-fable-5-1
+  model_name: "anthropic/claude-fable-5.1"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-anthropic-claude-fable-5-1-input"
+  completion_billing_resource: "cf-anthropic-claude-fable-5-1-output"
+  tags:
+    display_name: "Claude Fable 5.1"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/anthropic-claude-fable-5.1.json"
+    context_length: "1000000"
+- id: cf-anthropic-claude-haiku-4-5
+  model_name: "anthropic/claude-haiku-4.5"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-anthropic-claude-haiku-4-5-input"
+  completion_billing_resource: "cf-anthropic-claude-haiku-4-5-output"
+  tags:
+    display_name: "Claude Haiku 4.5"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/anthropic-claude-haiku-4.5.json"
+    context_length: "200000"
+- id: cf-anthropic-claude-opus-4-5
+  model_name: "anthropic/claude-opus-4.5"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-anthropic-claude-opus-4-5-input"
+  completion_billing_resource: "cf-anthropic-claude-opus-4-5-output"
+  tags:
+    display_name: "Claude Opus 4.5"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/anthropic-claude-opus-4.5.json"
+    context_length: "200000"
+- id: cf-anthropic-claude-opus-4-6
+  model_name: "anthropic/claude-opus-4.6"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-anthropic-claude-opus-4-6-input"
+  completion_billing_resource: "cf-anthropic-claude-opus-4-6-output"
+  tags:
+    display_name: "Claude Opus 4.6"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/anthropic-claude-opus-4.6.json"
+    context_length: "1000000"
+- id: cf-anthropic-claude-opus-4-7
+  model_name: "anthropic/claude-opus-4.7"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-anthropic-claude-opus-4-7-input"
+  completion_billing_resource: "cf-anthropic-claude-opus-4-7-output"
+  tags:
+    display_name: "Claude Opus 4.7"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/anthropic-claude-opus-4.7.json"
+    context_length: "1000000"
+- id: cf-anthropic-claude-opus-4-8
+  model_name: "anthropic/claude-opus-4.8"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-anthropic-claude-opus-4-8-input"
+  completion_billing_resource: "cf-anthropic-claude-opus-4-8-output"
+  tags:
+    display_name: "Claude Opus 4.8"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/anthropic-claude-opus-4.8.json"
+    context_length: "1000000"
+- id: cf-anthropic-claude-opus-5
+  model_name: "anthropic/claude-opus-5"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-anthropic-claude-opus-5-input"
+  completion_billing_resource: "cf-anthropic-claude-opus-5-output"
+  tags:
+    display_name: "Claude Opus 5"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/anthropic-claude-opus-5.json"
+    context_length: "1000000"
+- id: cf-anthropic-claude-sonnet-4-5
+  model_name: "anthropic/claude-sonnet-4.5"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-anthropic-claude-sonnet-4-5-input"
+  completion_billing_resource: "cf-anthropic-claude-sonnet-4-5-output"
+  tags:
+    display_name: "Claude Sonnet 4.5"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/anthropic-claude-sonnet-4.5.json"
+    context_length: "200000"
+- id: cf-anthropic-claude-sonnet-4-6
+  model_name: "anthropic/claude-sonnet-4.6"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-anthropic-claude-sonnet-4-6-input"
+  completion_billing_resource: "cf-anthropic-claude-sonnet-4-6-output"
+  tags:
+    display_name: "Claude Sonnet 4.6"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/anthropic-claude-sonnet-4.6.json"
+    context_length: "200000"
+- id: cf-anthropic-claude-sonnet-5
+  model_name: "anthropic/claude-sonnet-5"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-anthropic-claude-sonnet-5-input"
+  completion_billing_resource: "cf-anthropic-claude-sonnet-5-output"
+  tags:
+    display_name: "Claude Sonnet 5"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/anthropic-claude-sonnet-5.json"
+    context_length: "1000000"
+- id: cf-assemblyai-universal-3-pro
+  model_name: "assemblyai/universal-3-pro"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-assemblyai-universal-3-pro-input"
+  completion_billing_resource: "cf-assemblyai-universal-3-pro-output"
+  tags:
+    display_name: "AssemblyAI Universal-3 Pro"
+    capability: "Automatic Speech Recognition"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/assemblyai-universal-3-pro.json"
+- id: cf-assemblyai-universal-3-5-pro
+  model_name: "assemblyai/universal-3.5-pro"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-assemblyai-universal-3-5-pro-input"
+  completion_billing_resource: "cf-assemblyai-universal-3-5-pro-output"
+  tags:
+    display_name: "AssemblyAI Universal-3.5 Pro"
+    capability: "Automatic Speech Recognition"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/assemblyai-universal-3.5-pro.json"
+- id: cf-black-forest-labs-flux-1-kontext-max
+  model_name: "black-forest-labs/flux-1-kontext-max"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-black-forest-labs-flux-1-kontext-max-input"
+  completion_billing_resource: "cf-black-forest-labs-flux-1-kontext-max-output"
+  tags:
+    display_name: "FLUX.1 Kontext [max]"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/black-forest-labs-flux-1-kontext-max.json"
+- id: cf-black-forest-labs-flux-1-kontext-pro
+  model_name: "black-forest-labs/flux-1-kontext-pro"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-black-forest-labs-flux-1-kontext-pro-input"
+  completion_billing_resource: "cf-black-forest-labs-flux-1-kontext-pro-output"
+  tags:
+    display_name: "FLUX.1 Kontext [pro]"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/black-forest-labs-flux-1-kontext-pro.json"
+- id: cf-black-forest-labs-flux-2-flex
+  model_name: "black-forest-labs/flux-2-flex"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-black-forest-labs-flux-2-flex-input"
+  completion_billing_resource: "cf-black-forest-labs-flux-2-flex-output"
+  tags:
+    display_name: "FLUX.2 [flex]"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/black-forest-labs-flux-2-flex.json"
+- id: cf-black-forest-labs-flux-2-max
+  model_name: "black-forest-labs/flux-2-max"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-black-forest-labs-flux-2-max-input"
+  completion_billing_resource: "cf-black-forest-labs-flux-2-max-output"
+  tags:
+    display_name: "FLUX.2 [max]"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/black-forest-labs-flux-2-max.json"
+- id: cf-black-forest-labs-flux-2-pro-preview
+  model_name: "black-forest-labs/flux-2-pro-preview"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-black-forest-labs-flux-2-pro-preview-input"
+  completion_billing_resource: "cf-black-forest-labs-flux-2-pro-preview-output"
+  tags:
+    display_name: "FLUX.2 [pro]"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/black-forest-labs-flux-2-pro-preview.json"
+- id: cf-black-forest-labs-flux-3-video
+  model_name: "black-forest-labs/flux-3-video"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-black-forest-labs-flux-3-video-input"
+  completion_billing_resource: "cf-black-forest-labs-flux-3-video-output"
+  tags:
+    display_name: "FLUX 3 Video"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/black-forest-labs-flux-3-video.json"
+- id: cf-black-forest-labs-flux-video-upscale
+  model_name: "black-forest-labs/flux-video-upscale"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-black-forest-labs-flux-video-upscale-input"
+  completion_billing_resource: "cf-black-forest-labs-flux-video-upscale-output"
+  tags:
+    display_name: "FLUX Video Upscale"
+    capability: "video-to-video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/black-forest-labs-flux-video-upscale.json"
+- id: cf-bytedance-seedance-2-0
+  model_name: "bytedance/seedance-2.0"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-bytedance-seedance-2-0-input"
+  completion_billing_resource: "cf-bytedance-seedance-2-0-output"
+  tags:
+    display_name: "Seedance 2.0"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/bytedance-seedance-2.0.json"
+- id: cf-bytedance-seedance-2-0-fast
+  model_name: "bytedance/seedance-2.0-fast"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-bytedance-seedance-2-0-fast-input"
+  completion_billing_resource: "cf-bytedance-seedance-2-0-fast-output"
+  tags:
+    display_name: "Seedance 2.0 Fast"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/bytedance-seedance-2.0-fast.json"
+- id: cf-bytedance-seedance-2-0-mini
+  model_name: "bytedance/seedance-2.0-mini"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-bytedance-seedance-2-0-mini-input"
+  completion_billing_resource: "cf-bytedance-seedance-2-0-mini-output"
+  tags:
+    display_name: "Seedance 2.0 Mini"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/bytedance-seedance-2.0-mini.json"
+- id: cf-bytedance-seedance-2-5
+  model_name: "bytedance/seedance-2.5"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-bytedance-seedance-2-5-input"
+  completion_billing_resource: "cf-bytedance-seedance-2-5-output"
+  tags:
+    display_name: "Seedance 2.5"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/bytedance-seedance-2.5.json"
+- id: cf-bytedance-seedream-4-0
+  model_name: "bytedance/seedream-4.0"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-bytedance-seedream-4-0-input"
+  completion_billing_resource: "cf-bytedance-seedream-4-0-output"
+  tags:
+    display_name: "Seedream 4.0"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/bytedance-seedream-4.0.json"
+- id: cf-bytedance-seedream-4-5
+  model_name: "bytedance/seedream-4.5"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-bytedance-seedream-4-5-input"
+  completion_billing_resource: "cf-bytedance-seedream-4-5-output"
+  tags:
+    display_name: "Seedream 4.5"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/bytedance-seedream-4.5.json"
+- id: cf-bytedance-seedream-5-lite
+  model_name: "bytedance/seedream-5-lite"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-bytedance-seedream-5-lite-input"
+  completion_billing_resource: "cf-bytedance-seedream-5-lite-output"
+  tags:
+    display_name: "Seedream 5 Lite"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/bytedance-seedream-5-lite.json"
+- id: cf-bytedance-seedream-5-pro
+  model_name: "bytedance/seedream-5-pro"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-bytedance-seedream-5-pro-input"
+  completion_billing_resource: "cf-bytedance-seedream-5-pro-output"
+  tags:
+    display_name: "Seedream 5 Pro"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/bytedance-seedream-5-pro.json"
+- id: cf-deepseek-deepseek-v4-pro
+  model_name: "deepseek/deepseek-v4-pro"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-deepseek-deepseek-v4-pro-input"
+  completion_billing_resource: "cf-deepseek-deepseek-v4-pro-output"
+  tags:
+    display_name: "DeepSeek V4 Pro"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/deepseek-deepseek-v4-pro.json"
+    context_length: "131072"
+    api: "chat"
+- id: cf-elevenlabs-eleven-flash-v2-5
+  model_name: "elevenlabs/eleven-flash-v2-5"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-elevenlabs-eleven-flash-v2-5-input"
+  completion_billing_resource: "cf-elevenlabs-eleven-flash-v2-5-output"
+  tags:
+    display_name: "Eleven Flash v2.5"
+    capability: "Text-to-Speech"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/elevenlabs-eleven-flash-v2-5.json"
+- id: cf-elevenlabs-eleven-multilingual-v2
+  model_name: "elevenlabs/eleven-multilingual-v2"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-elevenlabs-eleven-multilingual-v2-input"
+  completion_billing_resource: "cf-elevenlabs-eleven-multilingual-v2-output"
+  tags:
+    display_name: "Eleven Multilingual v2"
+    capability: "Text-to-Speech"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/elevenlabs-eleven-multilingual-v2.json"
+- id: cf-elevenlabs-eleven-turbo-v2-5
+  model_name: "elevenlabs/eleven-turbo-v2-5"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-elevenlabs-eleven-turbo-v2-5-input"
+  completion_billing_resource: "cf-elevenlabs-eleven-turbo-v2-5-output"
+  tags:
+    display_name: "Eleven Turbo v2.5"
+    capability: "Text-to-Speech"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/elevenlabs-eleven-turbo-v2-5.json"
+- id: cf-elevenlabs-eleven-v3
+  model_name: "elevenlabs/eleven-v3"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-elevenlabs-eleven-v3-input"
+  completion_billing_resource: "cf-elevenlabs-eleven-v3-output"
+  tags:
+    display_name: "Eleven v3"
+    capability: "Text-to-Speech"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/elevenlabs-eleven-v3.json"
+- id: cf-elevenlabs-music-v2
+  model_name: "elevenlabs/music-v2"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-elevenlabs-music-v2-input"
+  completion_billing_resource: "cf-elevenlabs-music-v2-output"
+  tags:
+    display_name: "ElevenLabs Music v2"
+    capability: "Music Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/elevenlabs-music-v2.json"
+- id: cf-google-gemini-2-5-flash
+  model_name: "google/gemini-2.5-flash"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-gemini-2-5-flash-input"
+  completion_billing_resource: "cf-google-gemini-2-5-flash-output"
+  tags:
+    display_name: "Gemini 2.5 Flash"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-gemini-2.5-flash.json"
+    context_length: "1000000"
+    api: "chat"
+- id: cf-google-gemini-2-5-flash-lite
+  model_name: "google/gemini-2.5-flash-lite"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-gemini-2-5-flash-lite-input"
+  completion_billing_resource: "cf-google-gemini-2-5-flash-lite-output"
+  tags:
+    display_name: "Gemini 2.5 Flash Lite"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-gemini-2.5-flash-lite.json"
+    context_length: "1000000"
+    api: "chat"
+- id: cf-google-gemini-2-5-pro
+  model_name: "google/gemini-2.5-pro"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-gemini-2-5-pro-input"
+  completion_billing_resource: "cf-google-gemini-2-5-pro-output"
+  tags:
+    display_name: "Gemini 2.5 Pro"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-gemini-2.5-pro.json"
+    context_length: "1000000"
+    api: "chat"
+- id: cf-google-gemini-3-flash
+  model_name: "google/gemini-3-flash"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-gemini-3-flash-input"
+  completion_billing_resource: "cf-google-gemini-3-flash-output"
+  tags:
+    display_name: "Gemini 3 Flash"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-gemini-3-flash.json"
+    context_length: "1000000"
+    api: "chat"
+- id: cf-google-gemini-3-1-flash-lite
+  model_name: "google/gemini-3.1-flash-lite"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-gemini-3-1-flash-lite-input"
+  completion_billing_resource: "cf-google-gemini-3-1-flash-lite-output"
+  tags:
+    display_name: "Gemini 3.1 Flash Lite"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-gemini-3.1-flash-lite.json"
+    context_length: "1000000"
+    api: "chat"
+- id: cf-google-gemini-3-1-flash-tts
+  model_name: "google/gemini-3.1-flash-tts"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-gemini-3-1-flash-tts-input"
+  completion_billing_resource: "cf-google-gemini-3-1-flash-tts-output"
+  tags:
+    display_name: "Gemini 3.1 Flash TTS"
+    capability: "Text-to-Speech"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-gemini-3.1-flash-tts.json"
+- id: cf-google-gemini-3-1-pro
+  model_name: "google/gemini-3.1-pro"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-gemini-3-1-pro-input"
+  completion_billing_resource: "cf-google-gemini-3-1-pro-output"
+  tags:
+    display_name: "Gemini 3.1 Pro"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-gemini-3.1-pro.json"
+    context_length: "1000000"
+    api: "chat"
+- id: cf-google-gemini-3-5-flash
+  model_name: "google/gemini-3.5-flash"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-gemini-3-5-flash-input"
+  completion_billing_resource: "cf-google-gemini-3-5-flash-output"
+  tags:
+    display_name: "Gemini 3.5 Flash"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-gemini-3.5-flash.json"
+    context_length: "1048576"
+    api: "chat"
+- id: cf-google-gemini-3-5-flash-lite
+  model_name: "google/gemini-3.5-flash-lite"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-gemini-3-5-flash-lite-input"
+  completion_billing_resource: "cf-google-gemini-3-5-flash-lite-output"
+  tags:
+    display_name: "Gemini 3.5 Flash-Lite"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-gemini-3.5-flash-lite.json"
+    context_length: "1048576"
+    api: "chat"
+- id: cf-google-gemini-3-6-flash
+  model_name: "google/gemini-3.6-flash"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-gemini-3-6-flash-input"
+  completion_billing_resource: "cf-google-gemini-3-6-flash-output"
+  tags:
+    display_name: "Gemini 3.6 Flash"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-gemini-3.6-flash.json"
+    context_length: "1048576"
+    api: "chat"
+- id: cf-google-gemini-3-7-flash
+  model_name: "google/gemini-3.7-flash"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-gemini-3-7-flash-input"
+  completion_billing_resource: "cf-google-gemini-3-7-flash-output"
+  tags:
+    display_name: "Gemini 3.7 Flash"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-gemini-3.7-flash.json"
+    context_length: "1048576"
+    api: "chat"
+- id: cf-google-gemini-3-8-flash
+  model_name: "google/gemini-3.8-flash"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-gemini-3-8-flash-input"
+  completion_billing_resource: "cf-google-gemini-3-8-flash-output"
+  tags:
+    display_name: "Gemini 3.8 Flash"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-gemini-3.8-flash.json"
+    context_length: "1048576"
+    api: "chat"
+- id: cf-google-gemini-omni-1-1-flash
+  model_name: "google/gemini-omni-1.1-flash"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-gemini-omni-1-1-flash-input"
+  completion_billing_resource: "cf-google-gemini-omni-1-1-flash-output"
+  tags:
+    display_name: "Gemini Omni Flash 1.1"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-gemini-omni-1.1-flash.json"
+- id: cf-google-gemini-omni-flash
+  model_name: "google/gemini-omni-flash"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-gemini-omni-flash-input"
+  completion_billing_resource: "cf-google-gemini-omni-flash-output"
+  tags:
+    display_name: "Gemini Omni Flash"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-gemini-omni-flash.json"
+- id: cf-google-nano-banana
+  model_name: "google/nano-banana"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-nano-banana-input"
+  completion_billing_resource: "cf-google-nano-banana-output"
+  tags:
+    display_name: "Nano Banana"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-nano-banana.json"
+- id: cf-google-nano-banana-2
+  model_name: "google/nano-banana-2"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-nano-banana-2-input"
+  completion_billing_resource: "cf-google-nano-banana-2-output"
+  tags:
+    display_name: "Nano Banana 2"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-nano-banana-2.json"
+- id: cf-google-nano-banana-2-lite
+  model_name: "google/nano-banana-2-lite"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-nano-banana-2-lite-input"
+  completion_billing_resource: "cf-google-nano-banana-2-lite-output"
+  tags:
+    display_name: "Nano Banana 2 Lite"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-nano-banana-2-lite.json"
+    context_length: "65536"
+- id: cf-google-nano-banana-pro
+  model_name: "google/nano-banana-pro"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-nano-banana-pro-input"
+  completion_billing_resource: "cf-google-nano-banana-pro-output"
+  tags:
+    display_name: "Nano Banana Pro"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-nano-banana-pro.json"
+- id: cf-google-veo-3-1
+  model_name: "google/veo-3.1"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-veo-3-1-input"
+  completion_billing_resource: "cf-google-veo-3-1-output"
+  tags:
+    display_name: "Veo 3.1"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-veo-3.1.json"
+- id: cf-google-veo-3-1-fast
+  model_name: "google/veo-3.1-fast"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-google-veo-3-1-fast-input"
+  completion_billing_resource: "cf-google-veo-3-1-fast-output"
+  tags:
+    display_name: "Veo 3.1 Fast"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/google-veo-3.1-fast.json"
+- id: cf-inworld-tts-1-5-max
+  model_name: "inworld/tts-1.5-max"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-inworld-tts-1-5-max-input"
+  completion_billing_resource: "cf-inworld-tts-1-5-max-output"
+  tags:
+    display_name: "Inworld TTS 1.5 Max"
+    capability: "Text-to-Speech"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/inworld-tts-1.5-max.json"
+- id: cf-inworld-tts-1-5-mini
+  model_name: "inworld/tts-1.5-mini"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-inworld-tts-1-5-mini-input"
+  completion_billing_resource: "cf-inworld-tts-1-5-mini-output"
+  tags:
+    display_name: "Inworld TTS 1.5 Mini"
+    capability: "Text-to-Speech"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/inworld-tts-1.5-mini.json"
+- id: cf-inworld-tts-2
+  model_name: "inworld/tts-2"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-inworld-tts-2-input"
+  completion_billing_resource: "cf-inworld-tts-2-output"
+  tags:
+    display_name: "Inworld TTS 2"
+    capability: "Text-to-Speech"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/inworld-tts-2.json"
+- id: cf-krea-krea-2-large
+  model_name: "krea/krea-2-large"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-krea-krea-2-large-input"
+  completion_billing_resource: "cf-krea-krea-2-large-output"
+  tags:
+    display_name: "Krea 2 Large"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/krea-krea-2-large.json"
+- id: cf-krea-krea-2-medium
+  model_name: "krea/krea-2-medium"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-krea-krea-2-medium-input"
+  completion_billing_resource: "cf-krea-krea-2-medium-output"
+  tags:
+    display_name: "Krea 2 Medium"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/krea-krea-2-medium.json"
+- id: cf-krea-krea-2-medium-turbo
+  model_name: "krea/krea-2-medium-turbo"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-krea-krea-2-medium-turbo-input"
+  completion_billing_resource: "cf-krea-krea-2-medium-turbo-output"
+  tags:
+    display_name: "Krea 2 Medium Turbo"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/krea-krea-2-medium-turbo.json"
+- id: cf-lightricks-ltx-2-5-fast
+  model_name: "lightricks/ltx-2-5-fast"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-lightricks-ltx-2-5-fast-input"
+  completion_billing_resource: "cf-lightricks-ltx-2-5-fast-output"
+  tags:
+    display_name: "LTX-2.5 Fast"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/lightricks-ltx-2-5-fast.json"
+- id: cf-minimax-hailuo-2-3
+  model_name: "minimax/hailuo-2.3"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-minimax-hailuo-2-3-input"
+  completion_billing_resource: "cf-minimax-hailuo-2-3-output"
+  tags:
+    display_name: "MiniMax Hailuo 2.3"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/minimax-hailuo-2.3.json"
+- id: cf-minimax-hailuo-2-3-fast
+  model_name: "minimax/hailuo-2.3-fast"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-minimax-hailuo-2-3-fast-input"
+  completion_billing_resource: "cf-minimax-hailuo-2-3-fast-output"
+  tags:
+    display_name: "MiniMax Hailuo 2.3 Fast"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/minimax-hailuo-2.3-fast.json"
+- id: cf-minimax-m2-7
+  model_name: "minimax/m2.7"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-minimax-m2-7-input"
+  completion_billing_resource: "cf-minimax-m2-7-output"
+  tags:
+    display_name: "MiniMax M2.7"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/minimax-m2.7.json"
+    context_length: "128000"
+    api: "chat"
+- id: cf-minimax-music-2-6
+  model_name: "minimax/music-2.6"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-minimax-music-2-6-input"
+  completion_billing_resource: "cf-minimax-music-2-6-output"
+  tags:
+    display_name: "MiniMax Music 2.6"
+    capability: "Music Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/minimax-music-2.6.json"
+- id: cf-minimax-speech-2-8-hd
+  model_name: "minimax/speech-2.8-hd"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-minimax-speech-2-8-hd-input"
+  completion_billing_resource: "cf-minimax-speech-2-8-hd-output"
+  tags:
+    display_name: "MiniMax Speech 2.8 HD"
+    capability: "Text-to-Speech"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/minimax-speech-2.8-hd.json"
+- id: cf-minimax-speech-2-8-turbo
+  model_name: "minimax/speech-2.8-turbo"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-minimax-speech-2-8-turbo-input"
+  completion_billing_resource: "cf-minimax-speech-2-8-turbo-output"
+  tags:
+    display_name: "MiniMax Speech 2.8 Turbo"
+    capability: "Text-to-Speech"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/minimax-speech-2.8-turbo.json"
+- id: cf-moonshotai-kimi-k3
+  model_name: "moonshotai/kimi-k3"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-moonshotai-kimi-k3-input"
+  completion_billing_resource: "cf-moonshotai-kimi-k3-output"
+  tags:
+    display_name: "Kimi K3"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/moonshotai-kimi-k3.json"
+    context_length: "1048576"
+    api: "chat"
+- id: cf-openai-gpt-4-1
+  model_name: "openai/gpt-4.1"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-4-1-input"
+  completion_billing_resource: "cf-openai-gpt-4-1-output"
+  tags:
+    display_name: "GPT-4.1"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-4.1.json"
+    context_length: "1047576"
+    api: "chat"
+- id: cf-openai-gpt-4-1-mini
+  model_name: "openai/gpt-4.1-mini"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-4-1-mini-input"
+  completion_billing_resource: "cf-openai-gpt-4-1-mini-output"
+  tags:
+    display_name: "GPT-4.1 mini"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-4.1-mini.json"
+    context_length: "1047576"
+    api: "chat"
+- id: cf-openai-gpt-4-1-nano
+  model_name: "openai/gpt-4.1-nano"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-4-1-nano-input"
+  completion_billing_resource: "cf-openai-gpt-4-1-nano-output"
+  tags:
+    display_name: "GPT-4.1 nano"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-4.1-nano.json"
+    context_length: "1000000"
+    api: "chat"
+- id: cf-openai-gpt-4o
+  model_name: "openai/gpt-4o"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-4o-input"
+  completion_billing_resource: "cf-openai-gpt-4o-output"
+  tags:
+    display_name: "GPT-4o"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-4o.json"
+    context_length: "128000"
+    api: "chat"
+- id: cf-openai-gpt-4o-mini
+  model_name: "openai/gpt-4o-mini"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-4o-mini-input"
+  completion_billing_resource: "cf-openai-gpt-4o-mini-output"
+  tags:
+    display_name: "GPT-4o mini"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-4o-mini.json"
+    context_length: "128000"
+    api: "chat"
+- id: cf-openai-gpt-4o-transcribe
+  model_name: "openai/gpt-4o-transcribe"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-4o-transcribe-input"
+  completion_billing_resource: "cf-openai-gpt-4o-transcribe-output"
+  tags:
+    display_name: "GPT-4o Transcribe"
+    capability: "Automatic Speech Recognition"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-4o-transcribe.json"
+- id: cf-openai-gpt-5
+  model_name: "openai/gpt-5"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-5-input"
+  completion_billing_resource: "cf-openai-gpt-5-output"
+  tags:
+    display_name: "GPT-5"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-5.json"
+    context_length: "128000"
+    api: "chat"
+- id: cf-openai-gpt-5-mini
+  model_name: "openai/gpt-5-mini"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-5-mini-input"
+  completion_billing_resource: "cf-openai-gpt-5-mini-output"
+  tags:
+    display_name: "GPT-5 mini"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-5-mini.json"
+    context_length: "128000"
+    api: "chat"
+- id: cf-openai-gpt-5-nano
+  model_name: "openai/gpt-5-nano"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-5-nano-input"
+  completion_billing_resource: "cf-openai-gpt-5-nano-output"
+  tags:
+    display_name: "GPT-5 nano"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-5-nano.json"
+    context_length: "128000"
+    api: "chat"
+- id: cf-openai-gpt-5-1
+  model_name: "openai/gpt-5.1"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-5-1-input"
+  completion_billing_resource: "cf-openai-gpt-5-1-output"
+  tags:
+    display_name: "GPT-5.1"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-5.1.json"
+    context_length: "128000"
+    api: "chat"
+- id: cf-openai-gpt-5-4
+  model_name: "openai/gpt-5.4"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-5-4-input"
+  completion_billing_resource: "cf-openai-gpt-5-4-output"
+  tags:
+    display_name: "GPT-5.4"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-5.4.json"
+    context_length: "1000000"
+    api: "chat"
+- id: cf-openai-gpt-5-4-mini
+  model_name: "openai/gpt-5.4-mini"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-5-4-mini-input"
+  completion_billing_resource: "cf-openai-gpt-5-4-mini-output"
+  tags:
+    display_name: "GPT-5.4 mini"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-5.4-mini.json"
+    context_length: "128000"
+    api: "chat"
+- id: cf-openai-gpt-5-4-nano
+  model_name: "openai/gpt-5.4-nano"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-5-4-nano-input"
+  completion_billing_resource: "cf-openai-gpt-5-4-nano-output"
+  tags:
+    display_name: "GPT-5.4 nano"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-5.4-nano.json"
+    context_length: "128000"
+    api: "chat"
+- id: cf-openai-gpt-5-4-pro
+  model_name: "openai/gpt-5.4-pro"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-5-4-pro-input"
+  completion_billing_resource: "cf-openai-gpt-5-4-pro-output"
+  tags:
+    display_name: "GPT-5.4 pro"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-5.4-pro.json"
+    context_length: "1000000"
+    api: "responses"
+- id: cf-openai-gpt-5-5
+  model_name: "openai/gpt-5.5"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-5-5-input"
+  completion_billing_resource: "cf-openai-gpt-5-5-output"
+  tags:
+    display_name: "GPT-5.5"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-5.5.json"
+    context_length: "1000000"
+    api: "chat"
+- id: cf-openai-gpt-5-5-pro
+  model_name: "openai/gpt-5.5-pro"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-5-5-pro-input"
+  completion_billing_resource: "cf-openai-gpt-5-5-pro-output"
+  tags:
+    display_name: "GPT-5.5 pro"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-5.5-pro.json"
+    context_length: "1000000"
+    api: "responses"
+- id: cf-openai-gpt-5-6-luna
+  model_name: "openai/gpt-5.6-luna"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-5-6-luna-input"
+  completion_billing_resource: "cf-openai-gpt-5-6-luna-output"
+  tags:
+    display_name: "GPT-5.6 Luna"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-5.6-luna.json"
+    context_length: "1050000"
+    api: "responses"
+- id: cf-openai-gpt-5-6-sol
+  model_name: "openai/gpt-5.6-sol"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-5-6-sol-input"
+  completion_billing_resource: "cf-openai-gpt-5-6-sol-output"
+  tags:
+    display_name: "GPT-5.6 Sol"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-5.6-sol.json"
+    context_length: "1050000"
+    api: "responses"
+- id: cf-openai-gpt-5-6-terra
+  model_name: "openai/gpt-5.6-terra"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-5-6-terra-input"
+  completion_billing_resource: "cf-openai-gpt-5-6-terra-output"
+  tags:
+    display_name: "GPT-5.6 Terra"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-5.6-terra.json"
+    context_length: "1050000"
+    api: "responses"
+- id: cf-openai-gpt-image-1-5
+  model_name: "openai/gpt-image-1.5"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-image-1-5-input"
+  completion_billing_resource: "cf-openai-gpt-image-1-5-output"
+  tags:
+    display_name: "GPT Image 1.5"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-image-1.5.json"
+- id: cf-openai-gpt-image-2
+  model_name: "openai/gpt-image-2"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-image-2-input"
+  completion_billing_resource: "cf-openai-gpt-image-2-output"
+  tags:
+    display_name: "GPT Image 2"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-image-2.json"
+- id: cf-openai-gpt-image-2-5-flare
+  model_name: "openai/gpt-image-2.5-flare"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-image-2-5-flare-input"
+  completion_billing_resource: "cf-openai-gpt-image-2-5-flare-output"
+  tags:
+    display_name: "GPT Image 2.5 Flare"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-image-2.5-flare.json"
+- id: cf-openai-gpt-image-2-5-sunburst
+  model_name: "openai/gpt-image-2.5-sunburst"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-gpt-image-2-5-sunburst-input"
+  completion_billing_resource: "cf-openai-gpt-image-2-5-sunburst-output"
+  tags:
+    display_name: "GPT Image 2.5 Sunburst"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-gpt-image-2.5-sunburst.json"
+- id: cf-openai-o3
+  model_name: "openai/o3"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-o3-input"
+  completion_billing_resource: "cf-openai-o3-output"
+  tags:
+    display_name: "o3"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-o3.json"
+    context_length: "200000"
+    api: "chat"
+- id: cf-openai-o3-mini
+  model_name: "openai/o3-mini"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-o3-mini-input"
+  completion_billing_resource: "cf-openai-o3-mini-output"
+  tags:
+    display_name: "o3-mini"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-o3-mini.json"
+    context_length: "200000"
+    api: "chat"
+- id: cf-openai-o4-mini
+  model_name: "openai/o4-mini"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-o4-mini-input"
+  completion_billing_resource: "cf-openai-o4-mini-output"
+  tags:
+    display_name: "o4-mini"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-o4-mini.json"
+    context_length: "200000"
+    api: "chat"
+- id: cf-openai-tts-1
+  model_name: "openai/tts-1"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-tts-1-input"
+  completion_billing_resource: "cf-openai-tts-1-output"
+  tags:
+    display_name: "TTS-1"
+    capability: "Text-to-Speech"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-tts-1.json"
+- id: cf-openai-tts-1-hd
+  model_name: "openai/tts-1-hd"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-openai-tts-1-hd-input"
+  completion_billing_resource: "cf-openai-tts-1-hd-output"
+  tags:
+    display_name: "TTS-1 HD"
+    capability: "Text-to-Speech"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/openai-tts-1-hd.json"
+- id: cf-pixverse-v5-6
+  model_name: "pixverse/v5.6"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-pixverse-v5-6-input"
+  completion_billing_resource: "cf-pixverse-v5-6-output"
+  tags:
+    display_name: "Pixverse v5.6"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/pixverse-v5.6.json"
+- id: cf-pixverse-v6
+  model_name: "pixverse/v6"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-pixverse-v6-input"
+  completion_billing_resource: "cf-pixverse-v6-output"
+  tags:
+    display_name: "Pixverse v6"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/pixverse-v6.json"
+- id: cf-pruna-p-image
+  model_name: "pruna/p-image"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-pruna-p-image-input"
+  completion_billing_resource: "cf-pruna-p-image-output"
+  tags:
+    display_name: "P-Image"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/pruna-p-image.json"
+- id: cf-pruna-p-image-edit
+  model_name: "pruna/p-image-edit"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-pruna-p-image-edit-input"
+  completion_billing_resource: "cf-pruna-p-image-edit-output"
+  tags:
+    display_name: "P-Image-Edit"
+    capability: "Image-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/pruna-p-image-edit.json"
+- id: cf-pruna-p-image-try-on
+  model_name: "pruna/p-image-try-on"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-pruna-p-image-try-on-input"
+  completion_billing_resource: "cf-pruna-p-image-try-on-output"
+  tags:
+    display_name: "P-Image Try-On"
+    capability: "Image-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/pruna-p-image-try-on.json"
+- id: cf-pruna-p-image-upscale
+  model_name: "pruna/p-image-upscale"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-pruna-p-image-upscale-input"
+  completion_billing_resource: "cf-pruna-p-image-upscale-output"
+  tags:
+    display_name: "P-Image-Upscale"
+    capability: "Image-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/pruna-p-image-upscale.json"
+- id: cf-pruna-p-video
+  model_name: "pruna/p-video"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-pruna-p-video-input"
+  completion_billing_resource: "cf-pruna-p-video-output"
+  tags:
+    display_name: "P-Video"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/pruna-p-video.json"
+- id: cf-pruna-p-video-animate
+  model_name: "pruna/p-video-animate"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-pruna-p-video-animate-input"
+  completion_billing_resource: "cf-pruna-p-video-animate-output"
+  tags:
+    display_name: "P-Video-Animate"
+    capability: "Image-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/pruna-p-video-animate.json"
+- id: cf-pruna-p-video-avatar
+  model_name: "pruna/p-video-avatar"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-pruna-p-video-avatar-input"
+  completion_billing_resource: "cf-pruna-p-video-avatar-output"
+  tags:
+    display_name: "P-Video-Avatar"
+    capability: "Image-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/pruna-p-video-avatar.json"
+- id: cf-pruna-p-video-replace
+  model_name: "pruna/p-video-replace"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-pruna-p-video-replace-input"
+  completion_billing_resource: "cf-pruna-p-video-replace-output"
+  tags:
+    display_name: "P-Video-Replace"
+    capability: "Image-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/pruna-p-video-replace.json"
+- id: cf-recraft-recraftv3
+  model_name: "recraft/recraftv3"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-recraft-recraftv3-input"
+  completion_billing_resource: "cf-recraft-recraftv3-output"
+  tags:
+    display_name: "Recraft V3"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/recraft-recraftv3.json"
+- id: cf-recraft-recraftv4
+  model_name: "recraft/recraftv4"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-recraft-recraftv4-input"
+  completion_billing_resource: "cf-recraft-recraftv4-output"
+  tags:
+    display_name: "Recraft V4"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/recraft-recraftv4.json"
+- id: cf-recraft-recraftv4-1
+  model_name: "recraft/recraftv4-1"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-recraft-recraftv4-1-input"
+  completion_billing_resource: "cf-recraft-recraftv4-1-output"
+  tags:
+    display_name: "Recraft V4.1"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/recraft-recraftv4-1.json"
+- id: cf-recraft-recraftv4-1-pro
+  model_name: "recraft/recraftv4-1-pro"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-recraft-recraftv4-1-pro-input"
+  completion_billing_resource: "cf-recraft-recraftv4-1-pro-output"
+  tags:
+    display_name: "Recraft V4.1 Pro"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/recraft-recraftv4-1-pro.json"
+- id: cf-recraft-recraftv4-1-pro-vector
+  model_name: "recraft/recraftv4-1-pro-vector"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-recraft-recraftv4-1-pro-vector-input"
+  completion_billing_resource: "cf-recraft-recraftv4-1-pro-vector-output"
+  tags:
+    display_name: "Recraft V4.1 Pro SVG"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/recraft-recraftv4-1-pro-vector.json"
+- id: cf-recraft-recraftv4-1-utility
+  model_name: "recraft/recraftv4-1-utility"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-recraft-recraftv4-1-utility-input"
+  completion_billing_resource: "cf-recraft-recraftv4-1-utility-output"
+  tags:
+    display_name: "Recraft V4.1 Utility"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/recraft-recraftv4-1-utility.json"
+- id: cf-recraft-recraftv4-1-utility-pro
+  model_name: "recraft/recraftv4-1-utility-pro"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-recraft-recraftv4-1-utility-pro-input"
+  completion_billing_resource: "cf-recraft-recraftv4-1-utility-pro-output"
+  tags:
+    display_name: "Recraft V4.1 Utility Pro"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/recraft-recraftv4-1-utility-pro.json"
+- id: cf-recraft-recraftv4-1-utility-pro-vector
+  model_name: "recraft/recraftv4-1-utility-pro-vector"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-recraft-recraftv4-1-utility-pro-vector-input"
+  completion_billing_resource: "cf-recraft-recraftv4-1-utility-pro-vector-output"
+  tags:
+    display_name: "Recraft V4.1 Utility Pro SVG"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/recraft-recraftv4-1-utility-pro-vector.json"
+- id: cf-recraft-recraftv4-1-utility-vector
+  model_name: "recraft/recraftv4-1-utility-vector"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-recraft-recraftv4-1-utility-vector-input"
+  completion_billing_resource: "cf-recraft-recraftv4-1-utility-vector-output"
+  tags:
+    display_name: "Recraft V4.1 Utility SVG"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/recraft-recraftv4-1-utility-vector.json"
+- id: cf-recraft-recraftv4-1-vector
+  model_name: "recraft/recraftv4-1-vector"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-recraft-recraftv4-1-vector-input"
+  completion_billing_resource: "cf-recraft-recraftv4-1-vector-output"
+  tags:
+    display_name: "Recraft V4.1 SVG"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/recraft-recraftv4-1-vector.json"
+- id: cf-recraft-recraftv4-pro
+  model_name: "recraft/recraftv4-pro"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-recraft-recraftv4-pro-input"
+  completion_billing_resource: "cf-recraft-recraftv4-pro-output"
+  tags:
+    display_name: "Recraft V4 Pro"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/recraft-recraftv4-pro.json"
+- id: cf-recraft-recraftv4-pro-vector
+  model_name: "recraft/recraftv4-pro-vector"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-recraft-recraftv4-pro-vector-input"
+  completion_billing_resource: "cf-recraft-recraftv4-pro-vector-output"
+  tags:
+    display_name: "Recraft V4 Pro SVG"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/recraft-recraftv4-pro-vector.json"
+- id: cf-recraft-recraftv4-vector
+  model_name: "recraft/recraftv4-vector"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-recraft-recraftv4-vector-input"
+  completion_billing_resource: "cf-recraft-recraftv4-vector-output"
+  tags:
+    display_name: "Recraft V4 SVG"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/recraft-recraftv4-vector.json"
+- id: cf-runwayml-aleph-2
+  model_name: "runwayml/aleph-2"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-runwayml-aleph-2-input"
+  completion_billing_resource: "cf-runwayml-aleph-2-output"
+  tags:
+    display_name: "RunwayML Aleph 2"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/runwayml-aleph-2.json"
+- id: cf-runwayml-gen-4-5
+  model_name: "runwayml/gen-4.5"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-runwayml-gen-4-5-input"
+  completion_billing_resource: "cf-runwayml-gen-4-5-output"
+  tags:
+    display_name: "RunwayML Gen-4.5"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/runwayml-gen-4.5.json"
+- id: cf-thinkingmachines-inkling
+  model_name: "thinkingmachines/inkling"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-thinkingmachines-inkling-input"
+  completion_billing_resource: "cf-thinkingmachines-inkling-output"
+  tags:
+    display_name: "Inkling"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/thinkingmachines-inkling.json"
+    context_length: "64000"
+- id: cf-thinkingmachines-inkling-256k
+  model_name: "thinkingmachines/inkling-256k"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-thinkingmachines-inkling-256k-input"
+  completion_billing_resource: "cf-thinkingmachines-inkling-256k-output"
+  tags:
+    display_name: "Inkling 256K"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/thinkingmachines-inkling-256k.json"
+    context_length: "262144"
+- id: cf-vidu-q3-pro
+  model_name: "vidu/q3-pro"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-vidu-q3-pro-input"
+  completion_billing_resource: "cf-vidu-q3-pro-output"
+  tags:
+    display_name: "Vidu Q3 Pro"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/vidu-q3-pro.json"
+- id: cf-vidu-q3-turbo
+  model_name: "vidu/q3-turbo"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-vidu-q3-turbo-input"
+  completion_billing_resource: "cf-vidu-q3-turbo-output"
+  tags:
+    display_name: "Vidu Q3 Turbo"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/vidu-q3-turbo.json"
+- id: cf-xai-grok-4-20-0309-non-reasoning
+  model_name: "xai/grok-4.20-0309-non-reasoning"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-xai-grok-4-20-0309-non-reasoning-input"
+  completion_billing_resource: "cf-xai-grok-4-20-0309-non-reasoning-output"
+  tags:
+    display_name: "Grok 4.20 Non-Reasoning"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/xai-grok-4.20-0309-non-reasoning.json"
+    context_length: "2000000"
+    api: "chat"
+- id: cf-xai-grok-4-20-0309-reasoning
+  model_name: "xai/grok-4.20-0309-reasoning"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-xai-grok-4-20-0309-reasoning-input"
+  completion_billing_resource: "cf-xai-grok-4-20-0309-reasoning-output"
+  tags:
+    display_name: "Grok 4.20 Reasoning"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/xai-grok-4.20-0309-reasoning.json"
+    context_length: "2000000"
+    api: "chat"
+- id: cf-xai-grok-4-20-multi-agent-0309
+  model_name: "xai/grok-4.20-multi-agent-0309"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-xai-grok-4-20-multi-agent-0309-input"
+  completion_billing_resource: "cf-xai-grok-4-20-multi-agent-0309-output"
+  tags:
+    display_name: "Grok 4.20 Multi-Agent"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/xai-grok-4.20-multi-agent-0309.json"
+    context_length: "2000000"
+    api: "responses"
+- id: cf-xai-grok-4-3
+  model_name: "xai/grok-4.3"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-xai-grok-4-3-input"
+  completion_billing_resource: "cf-xai-grok-4-3-output"
+  tags:
+    display_name: "Grok 4.3"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/xai-grok-4.3.json"
+    context_length: "1000000"
+    api: "chat"
+- id: cf-xai-grok-4-5
+  model_name: "xai/grok-4.5"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-xai-grok-4-5-input"
+  completion_billing_resource: "cf-xai-grok-4-5-output"
+  tags:
+    display_name: "Grok 4.5"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/xai-grok-4.5.json"
+    context_length: "500000"
+    api: "chat"
+- id: cf-xai-grok-4-6
+  model_name: "xai/grok-4.6"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-xai-grok-4-6-input"
+  completion_billing_resource: "cf-xai-grok-4-6-output"
+  tags:
+    display_name: "Grok 4.6"
+    capability: "Text Generation"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/xai-grok-4.6.json"
+    context_length: "500000"
+    api: "chat"
+- id: cf-xai-grok-imagine-image
+  model_name: "xai/grok-imagine-image"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-xai-grok-imagine-image-input"
+  completion_billing_resource: "cf-xai-grok-imagine-image-output"
+  tags:
+    display_name: "Grok Imagine Image"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/xai-grok-imagine-image.json"
+- id: cf-xai-grok-imagine-image-2-0
+  model_name: "xai/grok-imagine-image-2.0"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-xai-grok-imagine-image-2-0-input"
+  completion_billing_resource: "cf-xai-grok-imagine-image-2-0-output"
+  tags:
+    display_name: "Grok Imagine Image 2.0"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/xai-grok-imagine-image-2.0.json"
+- id: cf-xai-grok-imagine-image-quality
+  model_name: "xai/grok-imagine-image-quality"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-xai-grok-imagine-image-quality-input"
+  completion_billing_resource: "cf-xai-grok-imagine-image-quality-output"
+  tags:
+    display_name: "Grok Imagine Image Quality"
+    capability: "Text-to-Image"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/xai-grok-imagine-image-quality.json"
+- id: cf-xai-grok-imagine-video
+  model_name: "xai/grok-imagine-video"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-xai-grok-imagine-video-input"
+  completion_billing_resource: "cf-xai-grok-imagine-video-output"
+  tags:
+    display_name: "Grok Imagine Video"
+    capability: "Text-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/xai-grok-imagine-video.json"
+- id: cf-xai-grok-imagine-video-1-5-preview
+  model_name: "xai/grok-imagine-video-1.5-preview"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-xai-grok-imagine-video-1-5-preview-input"
+  completion_billing_resource: "cf-xai-grok-imagine-video-1-5-preview-output"
+  tags:
+    display_name: "Grok Imagine Video 1.5 Preview"
+    capability: "Image-to-Video"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/xai-grok-imagine-video-1.5-preview.json"
+- id: cf-xai-grok-stt
+  model_name: "xai/grok-stt"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-xai-grok-stt-input"
+  completion_billing_resource: "cf-xai-grok-stt-output"
+  tags:
+    display_name: "Grok STT"
+    capability: "Automatic Speech Recognition"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/xai-grok-stt.json"
+- id: cf-xai-grok-tts
+  model_name: "xai/grok-tts"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-xai-grok-tts-input"
+  completion_billing_resource: "cf-xai-grok-tts-output"
+  tags:
+    display_name: "Grok TTS"
+    capability: "Text-to-Speech"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/xai-grok-tts.json"
+- id: cf-xai-grok-voice
+  model_name: "xai/grok-voice"
+  enabled: true
+  provider: "cloudflare"
+  prompt_billing_resource: "cf-xai-grok-voice-input"
+  completion_billing_resource: "cf-xai-grok-voice-output"
+  tags:
+    display_name: "Grok Voice"
+    capability: "websocket"
+    billing_status: "catalog_only"
+    markup_percent: 10
+    pricing_verified_at: "2026-09-16"
+    source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/catalog-models/xai-grok-voice.json"

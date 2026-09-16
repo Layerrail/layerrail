@@ -204,3 +204,35 @@
 - { id: a1c5aa3d-a460-4255-ae9c-a0da87959c5a, resource_type: InferenceTokens, resource_family: cf-minimax-m3-input, location: global, unit_price: 0.00000033, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
 - { id: b8891ceb-a54a-4581-94f0-4d8c01bbe66f, resource_type: InferenceTokens, resource_family: cf-minimax-m3-output, location: global, unit_price: 0.00000132, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
 - { id: d1c760e8-05e2-4284-bf0a-6ce60ef297b1, resource_type: InferenceTokens, resource_family: cf-minimax-m3-cached-input, location: global, unit_price: 0.000000066, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# Additional native models from Cloudflare catalog snapshot 63a072c88b9c6927c3263ff01f2a4dc8767691bf.
+# Source: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/deepseek-v4-flash-0731.json
+- { id: fa19bb72-b337-5b9c-af12-1b261cd100a4, resource_type: InferenceTokens, resource_family: cf-deepseek-ai-deepseek-v4-flash-0731-input, location: global, unit_price: 0.000000484, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+# Source: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/deepseek-v4-flash-0731.json
+- { id: d7270c46-6b51-5ee5-bb01-23abbe3bc118, resource_type: InferenceTokens, resource_family: cf-deepseek-ai-deepseek-v4-flash-0731-output, location: global, unit_price: 0.000001452, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+# Source: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/deepseek-v4-flash-0731.json
+- { id: 07cf56b4-f1d8-55b2-a7bd-40331690e178, resource_type: InferenceTokens, resource_family: cf-deepseek-ai-deepseek-v4-flash-0731-cached-input, location: global, unit_price: 0.0000000154, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+# Source: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/deepseek-v4-pro-0813.json
+- { id: 1b2c2849-cdac-52e8-8134-158c22e1ee0a, resource_type: InferenceTokens, resource_family: cf-deepseek-ai-deepseek-v4-pro-0813-input, location: global, unit_price: 0.000001452, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+# Source: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/deepseek-v4-pro-0813.json
+- { id: f404be78-d513-5329-b92d-d0b77db7050b, resource_type: InferenceTokens, resource_family: cf-deepseek-ai-deepseek-v4-pro-0813-output, location: global, unit_price: 0.000004356, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+# Source: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/deepseek-v4-pro-0813.json
+- { id: 67c74d1e-a222-514e-8b16-733fd311afca, resource_type: InferenceTokens, resource_family: cf-deepseek-ai-deepseek-v4-pro-0813-cached-input, location: global, unit_price: 0.0000000484, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+# Source: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/qwen3.8-27b.json
+- { id: 7cb6b3d0-697b-5881-bbd4-f1419e73114d, resource_type: InferenceTokens, resource_family: cf-qwen-qwen3-8-27b-input, location: global, unit_price: 0.000000495, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+# Source: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/qwen3.8-27b.json
+- { id: 09c633d0-01dc-55dc-85a1-6411ffa79598, resource_type: InferenceTokens, resource_family: cf-qwen-qwen3-8-27b-output, location: global, unit_price: 0.00000352, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+# Source: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/qwen3.8-27b.json
+- { id: e79c586c-06b8-54e1-94b9-97cf046244c0, resource_type: InferenceTokens, resource_family: cf-qwen-qwen3-8-27b-cached-input, location: global, unit_price: 0.000000055, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+# Source: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/glm-5.3.json
+- { id: dcb750f9-6d33-5335-b0b3-742f30092857, resource_type: InferenceTokens, resource_family: cf-zai-org-glm-5-3-input, location: global, unit_price: 0.00000154, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+# Source: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/glm-5.3.json
+- { id: 29d6d3dd-043a-567c-805c-89ef000ac1a9, resource_type: InferenceTokens, resource_family: cf-zai-org-glm-5-3-output, location: global, unit_price: 0.00000484, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+# Source: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/glm-5.3.json
+- { id: 55642c17-fd7a-52cf-adfc-4464ba829362, resource_type: InferenceTokens, resource_family: cf-zai-org-glm-5-3-cached-input, location: global, unit_price: 0.000000286, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+# Source: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/glm-5.3-flash.json
+- { id: 053e8b62-4112-5d2c-b7ea-5e95eaaea380, resource_type: InferenceTokens, resource_family: cf-zai-org-glm-5-3-flash-input, location: global, unit_price: 0.000000165, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+# Source: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/glm-5.3-flash.json
+- { id: 057919b5-d251-5b01-8f71-6490c9a4256e, resource_type: InferenceTokens, resource_family: cf-zai-org-glm-5-3-flash-output, location: global, unit_price: 0.00000055, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+# Source: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/glm-5.3-flash.json
+- { id: a7eab786-b096-526a-8736-5c56358a079e, resource_type: InferenceTokens, resource_family: cf-zai-org-glm-5-3-flash-cached-input, location: global, unit_price: 0.000000033, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }

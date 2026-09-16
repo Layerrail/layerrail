@@ -77,7 +77,7 @@ RSpec.describe Clover, "paid inference API" do
     expect(upstream).not_to have_been_requested
   end
 
-  it "keeps MiniMax M3 unavailable while Cloudflare gateway billing is not ready" do
+  it "keeps MiniMax M3 unavailable as a catalog-only model" do
     connect_billing
     upstream = stub_request(:post, "https://api.cloudflare.com/client/v4/accounts/test-account/ai/v1/chat/completions")
     post "/v1/chat/completions", {model: "minimax/m3", messages: [{role: "user", content: "Hello"}]}.to_json

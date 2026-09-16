@@ -11,6 +11,8 @@ class Serializers::InferenceEndpoint < Serializers::Base
       url: ie.load_balancer.health_check_url,
       model_name: ie.model_name,
       available: billable,
+      catalog_prices: ie.tags.fetch("catalog_prices", []),
+      catalog_pricing_source: ie.tags["catalog_pricing_source"],
       tags: ie.tags.slice(
         "api",
         "capability",

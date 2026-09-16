@@ -10,6 +10,10 @@
   capability_options = capability_counts.keys.compact.sort
   first_model_url = @inference_models.first&.load_balancer&.health_check_url
   format_token_price = ->(price) { ("%.8f" % price).sub(/(\.\d{2}.*?)0+\z/, "\\1") }
+  format_catalog_price = ->(price) {
+    whole, fraction = price.split(".", 2)
+    "#{whole}.#{fraction.to_s.sub(/0+\z/, "").ljust(2, "0")}"
+  }
 %>
 
 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-4">
@@ -17,7 +21,7 @@
     <div class="flex items-center gap-3">
       <%== part("components/icon", name: "hero-cpu-chip", classes: "h-7 w-7 text-layerrail-600") %>
       <div>
-        <p class="text-sm text-gray-500">Available models</p>
+        <p class="text-sm text-gray-500">Models in catalog</p>
         <p class="text-2xl font-semibold text-gray-900"><%= @inference_models.length %></p>
       </div>
     </div>
@@ -44,7 +48,7 @@
     <div class="flex items-center gap-3">
       <%== part("components/icon", name: "hero-cpu-chip", classes: "h-7 w-7 text-layerrail-600") %>
       <div>
-        <p class="text-sm text-gray-500">Native AI tasks</p>
+        <p class="text-sm text-gray-500">Other models</p>
         <p class="text-2xl font-semibold text-gray-900"><%= native_task_models %></p>
       </div>
     </div>
@@ -177,7 +181,11 @@ MSG
     completion_price = inference_model_million_token_price(ie, ie.completion_billing_resource)
     cached_prompt_resource = ie.respond_to?(:cached_prompt_billing_resource) ? ie.cached_prompt_billing_resource : nil
     cached_prompt_price = cached_prompt_resource ? inference_model_million_token_price(ie, cached_prompt_resource) : nil
-    context_length = ie.tags.fetch("context_length", "Full")
+    catalog_prices = Array(ie.tags["catalog_prices"]).select { it.is_a?(Hash) && !it["label"].to_s.empty? }
+    if billable
+      catalog_prices = catalog_prices.reject { it["label"].to_s.match?(/\A(?:(?:Input|Output|Cached input)(?: tokens)? \(per 1M(?: tokens)?\)|per M (?:cached )?(?:input|output) tokens)\z/i) }
+    end
+    context_length = ie.tags.fetch("context_length", "Not specified")
     capability = ie.tags["capability"]
     modalities = case capability
       when "Automatic Speech Recognition"
@@ -190,6 +198,18 @@ MSG
         "Text and image"
       when "Text-to-Image"
         "Text to image"
+      when "Text-to-Video"
+        "Text to video"
+      when "Image-to-Video"
+        "Image to video"
+      when "Video-to-Video", "video-to-video"
+        "Video to video"
+      when "Image-to-Image"
+        "Image to image"
+      when "Music Generation"
+        "Text to music"
+      when "websocket"
+        "Realtime audio"
       when "Text-to-Speech"
         "Text to audio"
       else
@@ -241,8 +261,11 @@ curl #{ie.load_balancer.health_check_url(path:)} \\
       </div>
       <div>
         <h3 class="text-sm font-semibold text-gray-900">Price</h3>
-        <p class="text-gray-500">
-          <% if billable %>
+        <% unless billable %>
+          <span class="mt-1 inline-flex rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">Unavailable</span>
+        <% end %>
+        <% if billable %>
+          <p class="text-gray-500">
             Input: $<%= format_token_price.call(prompt_price) %> / 1M tokens
             <% unless capability == "Embeddings" %>
               <br>
@@ -252,10 +275,30 @@ curl #{ie.load_balancer.health_check_url(path:)} \\
               <br>
               Cached input: $<%= format_token_price.call(cached_prompt_price) %> / 1M tokens
             <% end %>
-          <% else %>
-            Pricing unavailable
+          </p>
+        <% elsif catalog_prices.empty? %>
+          <p class="mt-1 text-gray-500">Pricing unavailable</p>
+        <% end %>
+        <% unless catalog_prices.empty? %>
+          <% if catalog_prices.length > 3 %>
+            <details class="mt-2 text-sm text-gray-600">
+              <summary class="cursor-pointer font-medium text-layerrail-600">View all <%= catalog_prices.length %> prices</summary>
           <% end %>
-        </p>
+          <dl aria-label="Catalog prices" class="mt-2 space-y-2 text-sm text-gray-500">
+            <% catalog_prices.each do |quote|
+              quoted_price = quote["price"].to_s
+              positive_price = quoted_price.match?(/\A\d+(?:\.\d+)?\z/) && quoted_price.match?(/[1-9]/)
+            %>
+              <div class="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+                <dt class="break-words"><%= quote["label"] %></dt>
+                <dd class="font-medium text-gray-700"><%= positive_price ? "$#{format_catalog_price.call(quoted_price)}" : "Pricing unavailable" %></dd>
+              </div>
+            <% end %>
+          </dl>
+          <% if catalog_prices.length > 3 %>
+            </details>
+          <% end %>
+        <% end %>
       </div>
       <div>
         <h3 class="text-sm font-semibold text-gray-900">Capability</h3>
@@ -284,22 +327,25 @@ curl #{ie.load_balancer.health_check_url(path:)} \\
         <h3 class="text-sm font-semibold text-gray-900">Model ID</h3>
         <div class="min-w-0 break-all text-gray-500"><%== part("components/copyable_content", content: ie.model_name, message: "Copied model ID") %></div>
       </div>
-      <div class="min-w-0 sm:col-span-2">
-        <h3 class="text-sm font-semibold text-gray-900">
-          CURL usage example
-        </h3>
-        <div class="mt-2 min-w-0 max-w-full">
-          <pre class="max-w-full overflow-x-auto rounded-lg bg-gray-800 p-3 text-xs text-white sm:text-sm"><%== curl_snippet_html %></pre>
+      <% if billable %>
+        <div class="min-w-0 sm:col-span-2">
+          <h3 class="text-sm font-semibold text-gray-900">
+            CURL usage example
+          </h3>
+          <div class="mt-2 min-w-0 max-w-full">
+            <pre class="max-w-full overflow-x-auto rounded-lg bg-gray-800 p-3 text-xs text-white sm:text-sm"><%== curl_snippet_html %></pre>
+          </div>
         </div>
-      </div>
+      <% end %>
       <%== render(
         "components/button",
         locals: {
-          text: "Try in Playground",
-          link: "#{@project.path}/inference-playground##{ie.ubid}",
+          text: billable ? "Try in Playground" : "Unavailable",
+          link: billable ? "#{@project.path}/inference-playground##{ie.ubid}" : nil,
           attributes: {
-            "type" => "button"
-          }
+            "type" => "button",
+            "disabled" => billable ? nil : true,
+          }.compact
         }
       ) %>
     </div>

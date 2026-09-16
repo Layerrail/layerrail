@@ -37,7 +37,7 @@
                 "data-display-name": ie.tags["display_name"] || ie.model_name,
                 "data-capability": ie.tags["capability"],
                 "data-api": ie.tags.fetch("api", "chat"),
-                "data-context-length": ie.tags.fetch("context_length", "Full"),
+                "data-context-length": ie.tags.fetch("context_length", "Not specified"),
                 "data-input-price": prompt_price, "data-output-price": completion_price,
                 "data-cached-input-price": cached_prompt_price,
                 "data-billable": PremiumAiUsageMeter.billable_model?(ie),

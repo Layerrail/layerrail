@@ -1,9 +1,16 @@
 # frozen_string_literal: true
 
 require "yaml"
+require "json"
 
 module Option
   ai_models = YAML.load_file("config/ai_models.yml")
+  cloudflare_pricing = JSON.parse(File.read("config/cloudflare_catalog_pricing.json"))
+  ai_models.each do |model|
+    next unless model["provider"] == "cloudflare"
+
+    model["tags"] = model.fetch("tags", {}).merge(cloudflare_pricing.fetch(model.fetch("model_name")))
+  end
   AI_MODELS = ai_models.select { it["enabled"] }.freeze
 
   def self.locations(only_visible: true, feature_flags: {})
