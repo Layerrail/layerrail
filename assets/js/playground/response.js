@@ -1,8 +1,14 @@
 // Reasoning is represented by an orb, not included in the visible answer or
 // sent back as conversation history. Only a leading <think> section is special;
 // literal tags in an answer (for example a code example) remain untouched.
-export function visibleAnswer(content) {
+// QwQ opts into implicit opening tags because its provider omits the first <think>.
+export function visibleAnswer(content, { implicitThinking = false } = {}) {
   let text = String(content || "");
+  if (implicitThinking && !text.trimStart().startsWith("<think>")) {
+    const end = text.indexOf("</think>");
+    if (end === -1) return { text: "", thinking: true };
+    text = text.slice(end + "</think>".length).trimStart();
+  }
   while (true) {
     const leading = text.trimStart();
     if (leading && "<think>".startsWith(leading)) return { text: "", thinking: true };

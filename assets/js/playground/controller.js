@@ -483,7 +483,7 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     const result = parsed?.result ?? parsed;
     if (capability === "Text Generation") {
       const text = extractTextGenerationResponse(parsed);
-      return { text, html: DOMPurify.sanitize(marked.parse(text || JSON.stringify(result, null, 2))) };
+      return { text, html: DOMPurify.sanitize(marked.parse(text)) };
     }
     if (capability === "Text-to-Image" && typeof result === "string") {
       const image = result.replace(/[^A-Za-z0-9+/=]/g, "");
@@ -531,7 +531,14 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
   function extractTextGenerationResponse(parsed) {
     const result = parsed?.result ?? parsed;
     const contentParts = result?.content || parsed?.content || [];
-    const outputParts = result?.output || parsed?.output || [];
+    const outputParts = result?.output ?? parsed?.output;
+    if (Array.isArray(outputParts)) {
+      return outputParts
+        .filter((item) => item?.type === 'message' && item?.role === 'assistant' && (item.channel == null || item.channel === 'final'))
+        .flatMap((item) => Array.isArray(item.content) ? item.content : [])
+        .filter((part) => part?.type === 'output_text' && typeof part.text === 'string' && (part.channel == null || part.channel === 'final'))
+        .map((part) => part.text).join('\n');
+    }
     return parsed?.choices?.[0]?.message?.content
       || result?.choices?.[0]?.message?.content
       || parsed?.choices?.[0]?.text
@@ -539,7 +546,6 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
       || result?.candidates?.[0]?.content?.parts?.map((part) => part?.text).filter(Boolean).join("\n")
       || parsed?.output_text
       || result?.output_text
-      || outputParts.flatMap((item) => item?.content || []).map((part) => part?.text).filter(Boolean).join("\n")
       || contentParts.map((part) => part?.text).filter(Boolean).join("\n")
       || result?.response
       || result?.text
@@ -659,6 +665,7 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     const embeddings_request = capability === 'Embeddings';
     const endpoint_api = selectedEndpointApi();
     const endpoint_provider = $selected_endpoint.attr('data-provider') || 'layerrail';
+    const answer_options = { implicitThinking: endpoint_provider === 'cloudflare' && endpoint_name === '@cf/qwen/qwq-32b' };
     const streams_response = !native_run && !embeddings_request && endpoint_api === 'chat' && endpoint_provider !== 'azure_foundry';
     const request_input_price = selectedEndpointNumber('data-input-price');
     const request_output_price = selectedEndpointNumber('data-output-price');
@@ -816,7 +823,7 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
         const parsed = await response.json();
         ensureCurrent();
         if (parsed?.error) throw new Error(parsed.error.message || String(parsed.error));
-        content = visibleAnswer(extractTextGenerationResponse(parsed)).text;
+        content = visibleAnswer(extractTextGenerationResponse(parsed), answer_options).text;
         showResponse(content, DOMPurify.sanitize(marked.parse(content)));
         usage = parsed?.usage || parsed?.result?.usage;
       } else {
@@ -827,7 +834,7 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
           const delta = frame?.choices?.[0]?.delta;
           if (!delta) continue;
           content += delta.content || '';
-          const answer = visibleAnswer(content);
+          const answer = visibleAnswer(content, answer_options);
           if (delta.reasoning_content || delta.reasoning || answer.thinking) {
             setActivity('reasoning', request);
           }

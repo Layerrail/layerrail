@@ -205,7 +205,7 @@ test('GPT-6 Astra Responses requests preserve zero settings and show paid usage'
   let sent;
   const f = fixture(t, { api: 'responses', provider: 'azure_foundry', fetch: async (url, options) => {
     sent = { url, body: JSON.parse(options.body) };
-    return jsonResponse({ output: [{ content: [{ text: '<think>Hidden thoughts</think>Clear answer' }] }], usage: { input_tokens: 7, output_tokens: 9 } });
+    return jsonResponse({ output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: '<think>Hidden thoughts</think>Clear answer' }] }], usage: { input_tokens: 7, output_tokens: 9 } });
   } });
   f.$('#inference_temperature, #inference_top_p').val('0');
   f.$('#inference_max_tokens').val('512');
@@ -221,6 +221,85 @@ test('GPT-6 Astra Responses requests preserve zero settings and show paid usage'
   assert.equal(f.$('#inference_session_usage').text(), '7 input · 9 output');
   assert.equal(f.$('#inference_session_cost').text(), '$0.000050');
   assert.equal(f.state(), 'complete');
+});
+
+test('Responses reasoning items never appear in the answer or subsequent conversation history', async (t) => {
+  const requests = [];
+  const f = fixture(t, { api: 'responses', fetch: async (_, options) => {
+    requests.push(JSON.parse(options.body));
+    return jsonResponse({ output: [
+      { type: 'reasoning', content: [{ type: 'reasoning_text', text: 'PRIVATE_REASONING_MARKER' }], summary: [] },
+      { type: 'message', role: 'assistant', status: 'completed', content: [{ type: 'output_text', text: 'OK' }] },
+    ], usage: { input_tokens: 0, output_tokens: 0 } });
+  } });
+  await f.send('Reply only OK');
+  assert.equal(f.$('#inference_message_1').text().trim(), 'OK');
+  assert.ok(!f.$('#inference_playground').text().includes('PRIVATE_REASONING_MARKER'));
+  await f.send('Continue');
+  assert.ok(!JSON.stringify(requests[1]).includes('PRIVATE_REASONING_MARKER'));
+  assert.equal(requests[1].input.find((item) => item.role === 'assistant').content[0].text, 'OK');
+});
+
+test('Responses output includes only final assistant output_text parts', async (t) => {
+  const f = fixture(t, { api: 'responses', fetch: async () => jsonResponse({
+    output_text: 'UNSAFE_AGGREGATE',
+    output: [
+      { type: 'message', role: 'assistant', channel: 'analysis', content: [{ type: 'output_text', text: 'HIDDEN_ANALYSIS' }] },
+      { type: 'message', role: 'assistant', channel: 'reasoning', content: [{ type: 'output_text', text: 'HIDDEN_REASONING' }] },
+      { type: 'message', role: 'user', channel: 'final', content: [{ type: 'output_text', text: 'NOT_ASSISTANT' }] },
+      { type: 'message', role: 'assistant', channel: 'final', content: [
+        { type: 'reasoning_text', text: 'HIDDEN_PART' },
+        { type: 'output_text', channel: 'analysis', text: 'HIDDEN_PART_CHANNEL' },
+        { type: 'output_text', text: 'Final answer' },
+      ] },
+    ],
+  }) });
+  await f.send();
+  assert.equal(f.$('#inference_message_1').text().trim(), 'Final answer');
+  assert.ok(!f.$('#inference_playground').text().includes('HIDDEN_'));
+  assert.ok(!f.$('#inference_playground').text().includes('UNSAFE_AGGREGATE'));
+});
+
+test('Responses containing only reasoning do not fall back to aggregate or raw output', async (t) => {
+  const f = fixture(t, { api: 'responses', fetch: async () => jsonResponse({
+    output_text: 'PRIVATE_AGGREGATE',
+    output: [{ type: 'reasoning', content: [{ type: 'reasoning_text', text: 'PRIVATE_REASONING' }] }],
+  }) });
+  await f.send();
+  assert.equal(f.$('#inference_message_1').text().trim(), '');
+  assert.match(f.$('#inference_message_info_1').text(), /The model returned no answer/);
+  assert.ok(!f.$('#inference_playground').text().includes('PRIVATE_'));
+});
+
+test('QwQ implicit reasoning is hidden in a fresh chat and excluded from later native-run history', async (t) => {
+  const requests = [];
+  const f = fixture(t, { api: 'run', configure(w) { w.$('#inference_endpoint option').val('@cf/qwen/qwq-32b'); }, fetch: async (_, options) => {
+    requests.push(JSON.parse(options.body));
+    return jsonResponse({ result: { response: 'PRIVATE_QWQ_REASONING without an opening tag</think>\n\nOK', usage: { prompt_tokens: 14, completion_tokens: 123 } } });
+  } });
+  await f.send('Reply only OK');
+  assert.equal(f.$('#inference_message_1').text().trim(), 'OK');
+  assert.equal(f.$('#inference_session_usage').text(), '14 input · 123 output');
+  assert.ok(!f.$('#inference_playground').text().includes('PRIVATE_QWQ_REASONING'));
+  await f.send('Continue');
+  assert.equal(requests[1].messages.find((message) => message.role === 'assistant').content, 'OK');
+  assert.ok(!JSON.stringify(requests[1]).includes('PRIVATE_QWQ_REASONING'));
+});
+
+test('QwQ reasoning cut off before its closing tag is not presented as an answer', async (t) => {
+  const f = fixture(t, { api: 'run', configure(w) { w.$('#inference_endpoint option').val('@cf/qwen/qwq-32b'); }, fetch: async () => jsonResponse({
+    result: { response: 'PRIVATE_QWQ_REASONING still unfinished', usage: { prompt_tokens: 14, completion_tokens: 256 } },
+  }) });
+  await f.send();
+  assert.equal(f.$('#inference_message_1').text().trim(), '');
+  assert.match(f.$('#inference_message_info_1').text(), /The model returned no answer/);
+  assert.ok(!f.$('#inference_playground').text().includes('PRIVATE_QWQ_REASONING'));
+});
+
+test('ordinary models retain a literal closing think tag in their answer', async (t) => {
+  const f = fixture(t, { api: 'run', fetch: async () => jsonResponse({ response: 'Use `</think>` as a literal marker.' }) });
+  await f.send();
+  assert.equal(f.$('#inference_message_1').text().trim(), 'Use </think> as a literal marker.');
 });
 
 test('Stop aborts the request and always clears the busy UI', async (t) => {
@@ -362,6 +441,15 @@ test('reasoning tags never leak across split stream chunks or into history', () 
   assert.equal(visibleAnswer('<think>Reasoning</think>Answer').text, 'Answer');
   const literal = 'Example: `<think>content</think>`';
   assert.equal(visibleAnswer(literal).text, literal);
+});
+
+test('implicit reasoning mode waits for a complete closing tag and preserves matched-tag behavior', () => {
+  for (const chunk of ['Reasoning', 'Reasoning</thi', '<thi', '<think>Reasoning']) {
+    assert.deepEqual(visibleAnswer(chunk, { implicitThinking: true }), { text: '', thinking: true });
+  }
+  assert.equal(visibleAnswer('Reasoning</think>Final answer', { implicitThinking: true }).text, 'Final answer');
+  assert.equal(visibleAnswer('<think>Reasoning</think>Final answer', { implicitThinking: true }).text, 'Final answer');
+  assert.equal(visibleAnswer('A literal </think> tag').text, 'A literal </think> tag');
 });
 
 test('SSE handles UTF-8 boundaries, CRLF, multiline data and missing final newline', async () => {

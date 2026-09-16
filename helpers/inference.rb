@@ -661,6 +661,23 @@ class Clover
     "Use this project knowledge when it is relevant. Do not invent details that are not supported by the context.\n\n#{context}"
   end
 
+  def inference_responses_final_text(body)
+    return body["output_text"] unless body["output"].is_a?(Array)
+
+    text = body["output"].filter_map do |item|
+      next unless item.is_a?(Hash) && item["type"] == "message" && item["role"] == "assistant"
+      next unless item["channel"].nil? || item["channel"] == "final"
+
+      Array(item["content"]).filter_map do |part|
+        next unless part.is_a?(Hash) && part["type"] == "output_text"
+        next unless part["channel"].nil? || part["channel"] == "final"
+
+        part["text"] if part["text"].is_a?(String)
+      end
+    end.flatten.join("\n")
+    text unless text.empty?
+  end
+
   def ai_agent_response_text(body)
     result = body["result"].is_a?(Hash) ? body["result"] : {}
     [
@@ -669,13 +686,11 @@ class Clover
       result.dig("choices", 0, "message", "content"),
       result.dig("choices", 0, "text"),
       result.dig("candidates", 0, "content", "parts", 0, "text"),
-      body["output_text"],
-      *Array(body["output"]).flat_map { |item| Array(item["content"]).map { |part| part["text"] if part.is_a?(Hash) } if item.is_a?(Hash) },
+      inference_responses_final_text(body),
       *Array(body["content"]).map { |part| part["text"] if part.is_a?(Hash) },
       result["response"],
       result["text"],
-      result["output_text"],
-      *Array(result["output"]).flat_map { |item| Array(item["content"]).map { |part| part["text"] if part.is_a?(Hash) } if item.is_a?(Hash) },
+      inference_responses_final_text(result),
       *Array(result["content"]).map { |part| part["text"] if part.is_a?(Hash) },
     ].compact.first.to_s
   end
@@ -903,6 +918,12 @@ class Clover
       Clog.emit("Inference provider omitted billable token usage", {inference_usage_missing: {project_id: api_key.project_id, model: model.model_name, provider: model.provider}})
       fail CloverError.new(502, "InferenceUsageUnavailable", "The inference provider did not report token usage. This request was not charged.")
     end
+    if usage.key?("total_tokens") && total_tokens != prompt_tokens + completion_tokens
+      fail CloverError.new(502, "InferenceUsageUnavailable", "The inference provider reported inconsistent token usage. This request was not charged.")
+    end
+    if prompt_tokens.zero? && completion_tokens.zero? && inference_generated_output?(body)
+      fail CloverError.new(502, "InferenceUsageUnavailable", "The inference provider reported zero token usage for generated output. This request was not charged.")
+    end
 
     cached_resource = model.cached_prompt_billing_resource
     cached_tokens = 0
@@ -925,6 +946,32 @@ class Clover
     value = keys.filter_map { usage[it] }.first
     tokens = Integer(value, exception: false)
     tokens if tokens && tokens >= 0 && (!value.is_a?(Numeric) || value == tokens)
+  end
+
+  def inference_generated_output?(body)
+    return true unless cloudflare_response_text(body).strip.empty?
+
+    # Reasoning and tool arguments still consume output tokens even when they
+    # are excluded from the visible answer. Inspect only generated fields.
+    [body, body["result"]].any? do |response_body|
+      next false unless response_body.is_a?(Hash)
+
+      texts = [
+        response_body.dig("choices", 0, "message", "reasoning_content"),
+        response_body.dig("choices", 0, "message", "reasoning"),
+      ]
+      Array(response_body["output"]).each do |item|
+        next unless item.is_a?(Hash)
+
+        texts.push(item["text"], item["arguments"])
+        [item["content"], item["summary"]].each do |parts|
+          Array(parts).each do |part|
+            texts.push(part["text"], part["refusal"]) if part.is_a?(Hash)
+          end
+        end
+      end
+      texts.any? { it.is_a?(String) && !it.empty? }
+    end
   end
 
   def inference_cached_usage_tokens(usage, optional: false)
@@ -1052,13 +1099,11 @@ class Clover
       result.dig("choices", 0, "message", "content"),
       result.dig("choices", 0, "text"),
       result.dig("candidates", 0, "content", "parts", 0, "text"),
-      body["output_text"],
-      *Array(body["output"]).flat_map { |item| Array(item["content"]).map { |part| part["text"] if part.is_a?(Hash) } if item.is_a?(Hash) },
+      inference_responses_final_text(body),
       *Array(body["content"]).map { |part| part["text"] if part.is_a?(Hash) },
       result["response"],
       result["text"],
-      result["output_text"],
-      *Array(result["output"]).flat_map { |item| Array(item["content"]).map { |part| part["text"] if part.is_a?(Hash) } if item.is_a?(Hash) },
+      inference_responses_final_text(result),
       *Array(result["content"]).map { |part| part["text"] if part.is_a?(Hash) },
       result["translated_text"],
       result["summary"],

@@ -3,6 +3,43 @@
 RSpec.describe Clover, "cloudflare responses" do
   let(:inference_app) { described_class.allocate }
 
+  it "extracts only final assistant output text for agents and response text" do
+    response = {
+      "output" => [
+        {"type" => "reasoning", "content" => [{"type" => "reasoning_text", "text" => "Hidden reasoning"}]},
+        {"type" => "message", "role" => "assistant", "channel" => "analysis", "content" => [{"type" => "output_text", "text" => "Hidden analysis"}]},
+        {"type" => "message", "role" => "assistant", "channel" => "final",
+         "content" => [{"type" => "output_text", "text" => "Final answer"},
+           {"type" => "output_text", "channel" => "analysis", "text" => "Hidden part analysis"},
+           {"type" => "output_text", "channel" => "reasoning", "text" => "Hidden part reasoning"},
+           {"type" => "output_text", "channel" => "final", "text" => "More detail"}]},
+        {"type" => "message", "role" => "assistant", "content" => [{"type" => "output_text", "text" => "Last part"}]},
+      ],
+    }
+    [response, {"result" => response}].each do |body|
+      expect(inference_app.ai_agent_response_text(body)).to eq("Final answer\nMore detail\nLast part")
+      expect(inference_app.cloudflare_response_text(body)).to eq("Final answer\nMore detail\nLast part")
+    end
+  end
+
+  it "does not turn reasoning-only output or a generic output_text shortcut into an answer" do
+    response = {
+      "output_text" => "Hidden reasoning copied into a shortcut",
+      "output" => [
+        {"type" => "reasoning", "content" => [{"type" => "reasoning_text", "text" => "Hidden reasoning"}]},
+        {"type" => "message", "role" => "assistant", "channel" => "analysis",
+         "content" => [{"type" => "output_text", "text" => "Hidden analysis"}]},
+      ],
+    }
+    expect(inference_app.ai_agent_response_text(response)).to eq("")
+    expect(inference_app.cloudflare_response_text(response)).to eq("")
+  end
+
+  it "preserves a plain output_text response when no structured output is present" do
+    expect(inference_app.ai_agent_response_text({"output_text" => "OK"})).to eq("OK")
+    expect(inference_app.cloudflare_response_text({"output_text" => "OK"})).to eq("OK")
+  end
+
   it "normalizes the playground text parts Cloudflare rejects at body.input and preserves assistant history" do
     payload = {
       "model" => "@cf/openai/gpt-oss-120b",

@@ -36,13 +36,67 @@ RSpec.describe Clover, "inference billing" do
     expect(records["input"].resource_tags["unit_price"]).to eq(records["input"].billing_rate["unit_price"].to_s)
   end
 
-  it "preserves explicit zero usage instead of charging estimated tokens" do
+  it "preserves explicit zero usage for an empty response without estimating tokens" do
     expect {
       inference_app.record_cloudflare_inference_usage(
-        api_key, model, {"usage" => {"input_tokens" => 0, "output_tokens" => 0}, "output_text" => "not billed"},
+        api_key, model, {"usage" => {"input_tokens" => 0, "output_tokens" => 0}, "output" => []},
         {"input" => "a long input"},
       )
     }.not_to change(BillingRecord, :count)
+  end
+
+  it "rejects zero usage for a generated Responses answer without recording charges" do
+    body = {
+      "usage" => {"input_tokens" => 0, "output_tokens" => 0, "total_tokens" => 0},
+      "output" => [
+        {"type" => "reasoning", "content" => [{"type" => "reasoning_text", "text" => "Reasoning."}]},
+        {"type" => "message", "role" => "assistant", "content" => [{"type" => "output_text", "text" => "OK"}]},
+      ],
+    }
+    expect {
+      inference_app.record_cloudflare_inference_usage(api_key, model, body, {"input" => "Reply only OK."})
+    }.to raise_error(CloverError, /zero token usage for generated output/) { expect(it.code).to eq(502) }
+    expect(BillingRecord.where(project_id: project.id)).to be_empty
+  end
+
+  it "rejects zero usage for hidden reasoning or a generated tool call" do
+    outputs = [
+      {"type" => "reasoning", "content" => [{"type" => "reasoning_text", "text" => "Reasoning."}]},
+      {"type" => "function_call", "name" => "lookup", "arguments" => "{}"},
+    ]
+    outputs.each do |output|
+      expect {
+        inference_app.record_cloudflare_inference_usage(api_key, model,
+          {"usage" => {"input_tokens" => 0, "output_tokens" => 0}, "output" => [output]}, {})
+      }.to raise_error(CloverError, /zero token usage for generated output/)
+    end
+    expect(BillingRecord.where(project_id: project.id)).to be_empty
+  end
+
+  it "does not silently replace top-level zero usage with nested counters" do
+    expect {
+      inference_app.record_cloudflare_inference_usage(api_key, model,
+        {"usage" => {"input_tokens" => 0, "output_tokens" => 0},
+         "result" => {"response" => "OK", "usage" => {"input_tokens" => 68, "output_tokens" => 16}}}, {})
+    }.to raise_error(CloverError, /zero token usage for generated output/)
+    expect(BillingRecord.where(project_id: project.id)).to be_empty
+  end
+
+  [0, 19, 21, -1, nil, "invalid"].each do |total_tokens|
+    it "rejects inconsistent total usage #{total_tokens.inspect} before recording charges" do
+      expect {
+        inference_app.record_cloudflare_inference_usage(api_key, model,
+          {"usage" => {"input_tokens" => 12, "output_tokens" => 8, "total_tokens" => total_tokens}}, {})
+      }.to raise_error(CloverError, /inconsistent token usage/) { expect(it.code).to eq(502) }
+      expect(BillingRecord.where(project_id: project.id)).to be_empty
+    end
+  end
+
+  it "uses a matching total to derive an omitted output count" do
+    inference_app.record_cloudflare_inference_usage(api_key, model,
+      {"usage" => {"input_tokens" => 12, "total_tokens" => 20}}, {})
+    records = BillingRecord.where(project_id: project.id).all.to_h { [it.resource_tags["token_kind"], it.amount] }
+    expect(records).to eq("input" => 12, "output" => 8)
   end
 
   ["prompt_tokens_details", "input_tokens_details"].each do |details_key|

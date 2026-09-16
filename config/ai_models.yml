@@ -504,7 +504,7 @@
     display_name: GPT OSS 120B
     capability: "Text Generation"
     context_length: "128000"
-    api: responses
+    api: run
 - id: cf-pipecat-smart-turn-v2
   model_name: "@cf/pipecat-ai/smart-turn-v2"
   enabled: true

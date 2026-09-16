@@ -86,6 +86,34 @@ RSpec.describe Clover, "paid inference API" do
     expect(upstream).not_to have_been_requested
   end
 
+  it "uses the native GPT OSS 120B route and bills its authoritative provider counters" do
+    connect_billing
+    payload = {model: "@cf/openai/gpt-oss-120b", messages: [{role: "user", content: "Reply only OK."}], max_tokens: 2048, stream: false}
+    upstream = stub_request(:post, "https://api.cloudflare.com/client/v4/accounts/test-account/ai/run/@cf/openai/gpt-oss-120b")
+      .with(body: payload.reject { |key, _| [:model, :stream].include?(key) }.to_json)
+      .to_return(status: 200, body: {success: true, result: {
+        choices: [{message: {role: "assistant", content: "OK", reasoning_content: "Internal analysis"}}],
+        usage: {prompt_tokens: 71, completion_tokens: 34, total_tokens: 105},
+      }}.to_json)
+    post "/v1/run", payload.to_json
+    expect(last_response.status).to eq(200)
+    expect(upstream).to have_been_requested.once
+    records = BillingRecord.where(project_id: project.id).all
+    expect(records.to_h { [it.resource_tags["token_kind"], it.amount] }).to eq("input" => 71, "output" => 34)
+    expect(records.to_h { [it.resource_tags["token_kind"], BigDecimal(it.resource_tags["unit_price"])] })
+      .to eq("input" => BigDecimal("0.000000385"), "output" => BigDecimal("0.000000825"))
+  end
+
+  it "directs GPT OSS 120B Responses callers to the metered native route before a provider call" do
+    connect_billing
+    upstream = stub_request(:post, "https://api.cloudflare.com/client/v4/accounts/test-account/ai/v1/responses")
+    post "/v1/responses", {model: "@cf/openai/gpt-oss-120b", input: "Hello"}.to_json
+    expect(last_response.status).to eq(400)
+    expect(last_response.body).to include("/v1/run")
+    expect(upstream).not_to have_been_requested
+    expect(BillingRecord.where(project_id: project.id)).to be_empty
+  end
+
   it "keeps MiniMax M3 unavailable as a catalog-only model" do
     connect_billing
     upstream = stub_request(:post, "https://api.cloudflare.com/client/v4/accounts/test-account/ai/v1/chat/completions")
