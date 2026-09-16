@@ -7,6 +7,8 @@ RSpec.describe CloudflareInferenceModel do
     expect(names).to all(match(%r{\A(?:@(?:cf|hf)/|minimax/).+}))
     expect(names.uniq).to eq(names)
     expect(models.map { it.fetch("id") }.uniq.length).to eq(models.length)
+    expect(models.map { it.fetch("tags").fetch("billing_status") }).to all(be_a(String))
+    expect(models.count { PremiumAiUsageMeter.billable_model?(described_class.new(it)) }).to eq(21)
   end
 
   it "uses provided id when present" do

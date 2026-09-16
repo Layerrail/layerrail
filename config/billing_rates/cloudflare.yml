@@ -198,8 +198,8 @@
 - { id: e317f181-eb3e-425d-abd5-c945fc416065, resource_type: InferenceTokens, resource_family: cf-meta-m2m100-1-2b-input, location: global, unit_price: 0.0000003762, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
 - { id: af02aedf-2baa-47f6-b7e7-eb46cded8624, resource_type: InferenceTokens, resource_family: cf-meta-m2m100-1-2b-output, location: global, unit_price: 0.0000003762, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
 
-# MiniMax M3 standard context provider rates; Cloudflare documents provider-price passthrough.
-# Source: https://platform.minimax.io/docs/guides/pricing-paygo
+# MiniMax M3 standard-context Cloudflare prices verified in dashboard and public catalog.
+# Source: https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/catalog-models/minimax-m3.json
 # Keep unavailable until gateway credits and the long-context billing boundary are verified.
 - { id: a1c5aa3d-a460-4255-ae9c-a0da87959c5a, resource_type: InferenceTokens, resource_family: cf-minimax-m3-input, location: global, unit_price: 0.00000033, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
 - { id: b8891ceb-a54a-4581-94f0-4d8c01bbe66f, resource_type: InferenceTokens, resource_family: cf-minimax-m3-output, location: global, unit_price: 0.00000132, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }

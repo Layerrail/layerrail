@@ -509,6 +509,9 @@
   prompt_billing_resource: cf-pipecat-smart-turn-v2-input
   completion_billing_resource: cf-pipecat-smart-turn-v2-output
   tags:
+    billing_status: unsupported_unit
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: Smart Turn v2
     capability: Voice Activity Detection
     context_length: Audio
@@ -743,6 +746,9 @@
   completion_billing_resource: cf-moonshotai-kimi-k2-5-output
   cached_prompt_billing_resource: cf-moonshotai-kimi-k2-5-cached-input
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: Kimi K2.5
     capability: Text Generation
     context_length: 256K
@@ -799,6 +805,9 @@
   prompt_billing_resource: cf-google-gemma-3-12b-it-input
   completion_billing_resource: cf-google-gemma-3-12b-it-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: Gemma 3 12B IT
     capability: Text Generation
     context_length: 128K
@@ -854,6 +863,9 @@
   prompt_billing_resource: cf-meta-llama-2-7b-chat-fp16-input
   completion_billing_resource: cf-meta-llama-2-7b-chat-fp16-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: Llama 2 7B Chat FP16
     capability: Text Generation
     context_length: Full
@@ -866,6 +878,9 @@
   prompt_billing_resource: cf-meta-llama-2-7b-chat-int8-input
   completion_billing_resource: cf-meta-llama-2-7b-chat-int8-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: Llama 2 7B Chat INT8
     capability: Text Generation
     context_length: Full
@@ -878,6 +893,9 @@
   prompt_billing_resource: cf-meta-llama-3-8b-instruct-input
   completion_billing_resource: cf-meta-llama-3-8b-instruct-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: Llama 3 8B Instruct
     capability: Text Generation
     context_length: 8K
@@ -889,6 +907,9 @@
   prompt_billing_resource: cf-google-gemma-7b-it-input
   completion_billing_resource: cf-google-gemma-7b-it-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: Gemma 7B IT
     capability: Text Generation
     context_length: 8K
@@ -901,6 +922,9 @@
   prompt_billing_resource: cf-meta-llama-3-8b-instruct-awq-input
   completion_billing_resource: cf-meta-llama-3-8b-instruct-awq-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: Llama 3 8B Instruct AWQ
     capability: Text Generation
     context_length: 8K
@@ -913,6 +937,9 @@
   prompt_billing_resource: cf-meta-llama-3-1-8b-instruct-input
   completion_billing_resource: cf-meta-llama-3-1-8b-instruct-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: Llama 3.1 8B Instruct
     capability: Text Generation
     context_length: 128K
@@ -925,6 +952,9 @@
   prompt_billing_resource: cf-meta-llama-3-1-8b-instruct-awq-input
   completion_billing_resource: cf-meta-llama-3-1-8b-instruct-awq-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: Llama 3.1 8B Instruct AWQ
     capability: Text Generation
     context_length: 128K
@@ -951,6 +981,9 @@
   prompt_billing_resource: cf-meta-llama-3-1-8b-instruct-fast-input
   completion_billing_resource: cf-meta-llama-3-1-8b-instruct-fast-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: Llama 3.1 8B Instruct Fast
     capability: Text Generation
     context_length: 128K
@@ -962,6 +995,9 @@
   prompt_billing_resource: cf-meta-llama-3-1-70b-instruct-input
   completion_billing_resource: cf-meta-llama-3-1-70b-instruct-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: Llama 3.1 70B Instruct
     capability: Text Generation
     context_length: 128K
@@ -1045,6 +1081,9 @@
   prompt_billing_resource: cf-microsoft-phi-2-input
   completion_billing_resource: cf-microsoft-phi-2-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: Phi-2
     capability: Text Generation
     context_length: Full
@@ -1057,6 +1096,9 @@
   prompt_billing_resource: cf-defog-sqlcoder-7b-2-input
   completion_billing_resource: cf-defog-sqlcoder-7b-2-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: SQLCoder 7B 2
     capability: Text Generation
     context_length: Full
@@ -1083,6 +1125,9 @@
   prompt_billing_resource: cf-mistral-mistral-7b-instruct-v0-1-input
   completion_billing_resource: cf-mistral-mistral-7b-instruct-v0-1-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: Mistral 7B Instruct v0.1
     capability: Text Generation
     context_length: 8K
@@ -1095,6 +1140,9 @@
   prompt_billing_resource: cf-nousresearch-hermes-2-pro-mistral-7b-input
   completion_billing_resource: cf-nousresearch-hermes-2-pro-mistral-7b-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: Hermes 2 Pro Mistral 7B
     capability: Text Generation
     context_length: Full
@@ -1239,6 +1287,9 @@
   prompt_billing_resource: cf-meta-bart-large-cnn-input
   completion_billing_resource: cf-meta-bart-large-cnn-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: BART Large CNN
     capability: Summarization
     context_length: Text
@@ -1250,6 +1301,9 @@
   prompt_billing_resource: cf-meta-detr-resnet-50-input
   completion_billing_resource: cf-meta-detr-resnet-50-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: DETR ResNet-50
     capability: Object Detection
     context_length: Image
@@ -1260,6 +1314,9 @@
   prompt_billing_resource: cf-unum-uform-gen2-qwen-500m-input
   completion_billing_resource: cf-unum-uform-gen2-qwen-500m-output
   tags:
+    billing_status: unavailable
+    pricing_verified_at: "2026-09-16"
+    markup_percent: 10
     display_name: UForm Gen2 Qwen 500M
     capability: Image-to-Text
     context_length: Image

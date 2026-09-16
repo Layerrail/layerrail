@@ -91,11 +91,18 @@ A bounded live Responses request for GPT OSS 20B returned input/output usage. GP
 
 ## MiniMax M3
 
-Cloudflare lists `minimax/m3` in its unified catalog with a 1M context window and chat-completions support. The configured model stays unavailable: the production account returned HTTP 402, code 2021, “Insufficient balance; add money to your gateway or use BYOK.” No credits were purchased.
+Cloudflare lists `minimax/m3` in its unified catalog with a 1M context window and chat-completions support. The model stays unavailable at the owner’s explicit request. A production setup check also returned HTTP 402, code 2021, “Insufficient balance; add money to your gateway or use BYOK.” No credits were purchased.
 
-The [MiniMax pay-as-you-go table](https://platform.minimax.io/docs/guides/pricing-paygo) publishes $0.30 input / $1.20 output / $0.06 cached input up to “512k”, doubling above it. Standard-context LayerRail rates are $0.33 / $1.32 / $0.066. Cloudflare [documents provider-price passthrough and a 5% credit purchase fee](https://developers.cloudflare.com/ai-gateway/features/unified-billing/); that account-funding fee is not added to this 10% model markup. Prices have not been verified in the authenticated Cloudflare catalog.
+The authenticated Cloudflare dashboard and [Cloudflare’s published catalog data](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/catalog-models/minimax-m3.json) agree on the following prices. These supersede MiniMax’s direct-provider prices for this integration.
 
-Before enabling M3: fund gateway credits or configure an authorized MiniMax BYOK key, verify the Cloudflare prices and exact long-context input boundary, implement the second input/output/cache tier, and perform a successful usage-reporting inference check. The public “512k” label does not specify an exact integer boundary. The model remains gated rather than charging an assumed tier.
+| Total input context | Cloudflare input / output / cached input | LayerRail input / output / cached input (+10%) |
+|---|---|---|
+| Up to “512k” | $0.30 / $1.20 / $0.06 | $0.33 / $1.32 / $0.066 |
+| Above “512k” | $1.20 / $4.80 / $0.24 | $1.32 / $5.28 / $0.264 |
+
+All amounts are per million tokens. Cloudflare also charges a [5% credit purchase fee](https://developers.cloudflare.com/ai-gateway/features/unified-billing/), which is not added to this 10% model markup.
+
+Before enabling M3: fund gateway credits or configure an authorized MiniMax BYOK key, verify the exact long-context input boundary, implement the second input/output/cache tier, and perform a successful usage-reporting inference check. Cloudflare’s public “512k” label does not specify an exact integer boundary. The model remains gated rather than charging an assumed tier.
 
 ## Non-token models
 
