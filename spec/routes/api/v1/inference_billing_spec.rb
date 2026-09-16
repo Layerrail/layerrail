@@ -12,6 +12,8 @@ RSpec.describe Clover, "paid inference API" do
       ai_inference_enabled: true, ai_inference_provider: "cloudflare,azure_foundry",
       azure_foundry_endpoint: "https://example.services.ai.azure.com",
       azure_foundry_api_key: "test-provider-key",
+      cloudflare_account_id: "test-account",
+      cloudflare_api_token: "test-provider-key",
       premium_ai_rate_limit_fallback_enabled: false,
     )
     allow(BachsClient).to receive(:enabled?).and_return(true)
@@ -36,9 +38,51 @@ RSpec.describe Clover, "paid inference API" do
 
   it "rejects unpriced Cloudflare calls even after billing is connected" do
     connect_billing
-    post "/v1/run", {model: "@cf/meta/llama-3.2-3b-instruct", prompt: "Hello"}.to_json
+    post "/v1/run", {model: "@cf/meta/llama-3.1-8b-instruct-fast", prompt: "Hello"}.to_json
     expect(last_response.status).to eq(503)
     expect(JSON.parse(last_response.body).to_s).to include("pricing is configured")
+    expect(BillingRecord.where(project_id: project.id)).to be_empty
+  end
+
+  it "bills Cloudflare native token usage at the verified price plus ten percent" do
+    connect_billing
+    upstream = stub_request(:post, "https://api.cloudflare.com/client/v4/accounts/test-account/ai/run/@cf/meta/llama-3.2-3b-instruct")
+      .to_return(status: 200, body: {success: true, result: {response: "Hello", usage: {prompt_tokens: 5, completion_tokens: 11, total_tokens: 16}}}.to_json)
+    post "/v1/run", {model: "@cf/meta/llama-3.2-3b-instruct", prompt: "Hello"}.to_json
+    expect(last_response.status).to eq(200)
+    expect(upstream).to have_been_requested.once
+    records = BillingRecord.where(project_id: project.id).all
+    expect(records.to_h { [it.resource_tags["token_kind"], it.amount] }).to eq("input" => 5, "output" => 11)
+    expect(records.to_h { [it.resource_tags["token_kind"], BigDecimal(it.resource_tags["unit_price"])] })
+      .to eq("input" => BigDecimal("0.00000005599"), "output" => BigDecimal("0.0000003685"))
+  end
+
+  it "bills GPT OSS through Cloudflare Responses using provider usage" do
+    connect_billing
+    upstream = stub_request(:post, "https://api.cloudflare.com/client/v4/accounts/test-account/ai/v1/responses")
+      .with(body: hash_including("model" => "@cf/openai/gpt-oss-20b"))
+      .to_return(status: 200, body: {id: "response-cf", output: [], usage: {input_tokens: 68, output_tokens: 16, total_tokens: 84}}.to_json)
+    post "/v1/responses", {model: "@cf/openai/gpt-oss-20b", input: "Hello"}.to_json
+    expect(last_response.status).to eq(200)
+    expect(upstream).to have_been_requested.once
+    expect(BillingRecord.where(project_id: project.id).all.to_h { [it.resource_tags["token_kind"], it.amount] })
+      .to eq("input" => 68, "output" => 16)
+  end
+
+  it "rejects unsupported asynchronous Cloudflare Responses before a provider call" do
+    connect_billing
+    upstream = stub_request(:post, "https://api.cloudflare.com/client/v4/accounts/test-account/ai/v1/responses")
+    post "/v1/responses", {model: "@cf/openai/gpt-oss-20b", input: "Hello", stream: true}.to_json
+    expect(last_response.status).to eq(400)
+    expect(upstream).not_to have_been_requested
+  end
+
+  it "keeps MiniMax M3 unavailable while Cloudflare gateway billing is not ready" do
+    connect_billing
+    upstream = stub_request(:post, "https://api.cloudflare.com/client/v4/accounts/test-account/ai/v1/chat/completions")
+    post "/v1/chat/completions", {model: "minimax/m3", messages: [{role: "user", content: "Hello"}]}.to_json
+    expect(last_response.status).to eq(503)
+    expect(upstream).not_to have_been_requested
     expect(BillingRecord.where(project_id: project.id)).to be_empty
   end
 

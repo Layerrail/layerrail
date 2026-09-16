@@ -74,6 +74,29 @@ RSpec.describe PremiumAiUsageMeter do
     expect { described_class.validate_rate!("preview-output") }.to raise_error(CloverError)
   end
 
+  it "validates a configured cached-input rate before allowing inference" do
+    connect_billing
+    allow(model).to receive(:cached_prompt_billing_resource).and_return("azure-gpt-4o-mini-input")
+    expect { described_class.validate_access!(project:, model:) }.not_to raise_error
+
+    ["missing-cached-input", "preview-input", "", false].each do |resource|
+      allow(model).to receive(:cached_prompt_billing_resource).and_return(resource)
+      expect(described_class.billable_model?(model)).to be(false)
+      expect { described_class.validate_access!(project:, model:) }.to raise_error(CloverError, /pricing is configured/)
+    end
+  end
+
+  it "requires explicit readiness when billing status is configured" do
+    ["usage_unverified", "unsupported_unit", "unavailable", nil].each do |status|
+      model.tags["billing_status"] = status
+      expect(described_class.billable_model?(model)).to be(false)
+    end
+    model.tags["billing_status"] = "ready"
+    expect(described_class.billable_model?(model)).to be(true)
+    model.tags.delete("billing_status")
+    expect(described_class.billable_model?(model)).to be(true)
+  end
+
   it "pauses additional requests once unbilled paid usage reaches the threshold" do
     connect_billing
     rate = BillingRate.from_resource_properties("InferenceTokens", model.prompt_billing_resource, "global")

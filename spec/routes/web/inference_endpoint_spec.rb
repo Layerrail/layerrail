@@ -147,6 +147,92 @@ RSpec.describe Clover, "inference-endpoint" do
       expect(page).to have_content("meta-llama/Llama-3.2-1B-Instruct")
     end
 
+    describe "Cloudflare catalog pricing" do
+      let(:capability) { "Text Generation" }
+      let(:input_price) { 0.0000000297 }
+      let(:output_price) { 0.000000003421 }
+      let(:cached_input_price) { nil }
+
+      before do
+        allow(Config).to receive(:ai_inference_provider).and_return("cloudflare")
+        model_config = {
+          "id" => "catalog-price-test", "model_name" => "@cf/catalog-price-test", "provider" => "cloudflare",
+          "prompt_billing_resource" => "catalog-test-input", "completion_billing_resource" => "catalog-test-output",
+          "tags" => {"capability" => capability, "pricing" => {"input" => 1, "output" => 2}},
+        }
+        model_config["cached_prompt_billing_resource"] = "catalog-test-cached-input" unless cached_input_price.nil?
+        stub_const("Option::AI_MODELS", [model_config])
+        allow(BillingRate).to receive(:from_resource_properties).and_call_original
+        {"input" => input_price, "output" => output_price, "cached-input" => cached_input_price}.each do |kind, unit_price|
+          rate = unit_price.nil? ? nil : {"unit_price" => unit_price}
+          allow(BillingRate).to receive(:from_resource_properties)
+            .with("InferenceTokens", "catalog-test-#{kind}", "global", any_args).and_return(rate)
+        end
+      end
+
+      it "preserves small paid input and output rates" do
+        visit "#{project.path}/inference-endpoint"
+
+        expect(page).to have_content("Input: $0.0297 / 1M tokens")
+        expect(page).to have_content("Output: $0.003421 / 1M tokens")
+        expect(page).to have_no_content("Pricing unavailable")
+        expect(page).to have_no_content("$0.00 / 1M tokens")
+        expect(page).to have_no_content("Cached input:")
+      end
+
+      context "with cached input pricing" do
+        let(:cached_input_price) { 0.000000011 }
+
+        it "shows the configured cached input rate in the catalog and playground" do
+          visit "#{project.path}/inference-endpoint"
+
+          expect(page).to have_content("Cached input: $0.011 / 1M tokens")
+
+          visit "#{project.path}/inference-playground"
+
+          expect(page).to have_css('option[value="@cf/catalog-price-test"][data-cached-input-price="0.011"]', visible: :all)
+        end
+      end
+
+      context "with a zero rate" do
+        let(:output_price) { 0 }
+        let(:cached_input_price) { 0.000000011 }
+
+        it "marks the model unavailable instead of advertising free output" do
+          visit "#{project.path}/inference-endpoint"
+
+          expect(page).to have_content("Pricing unavailable")
+          expect(page).to have_no_content("/ 1M tokens")
+        end
+      end
+
+      context "with missing billing rates" do
+        let(:input_price) { nil }
+        let(:output_price) { nil }
+
+        it "marks the model unavailable even when display-only prices exist" do
+          visit "#{project.path}/inference-endpoint"
+
+          expect(page).to have_content("Pricing unavailable")
+          expect(page).to have_no_content("/ 1M tokens")
+        end
+      end
+
+      context "with input-billed embeddings" do
+        let(:capability) { "Embeddings" }
+        let(:input_price) { 0.00000125 }
+        let(:output_price) { nil }
+
+        it "shows only the paid input rate" do
+          visit "#{project.path}/inference-endpoint"
+
+          expect(page).to have_content("Input: $1.25 / 1M tokens")
+          expect(page).to have_no_content("Output:")
+          expect(page).to have_no_content("Pricing unavailable")
+        end
+      end
+    end
+
     %w[layerrail cloudflare].each do |provider|
       it "does not show #{provider} inference endpoints without project permissions" do
         allow(Config).to receive(:ai_inference_provider).and_return(provider)

@@ -100,14 +100,17 @@ RSpec.describe Clover, "inference-playground" do
       expect(page).to have_css('option[value="gpt-6-astra"][data-input-price="12.5"][data-output-price="37.5"]', visible: :all)
     end
 
-    it "falls back to catalog input and output prices when billing rates are missing" do
+    it "marks models unavailable instead of using display-only prices when billing rates are missing" do
       allow(Config).to receive(:ai_inference_provider).and_return("azure_foundry")
-      allow(BillingRate).to receive(:million_token_price).and_return(nil)
+      allow(BillingRate).to receive(:from_resource_properties).and_return(nil)
 
       visit "#{project.path}/inference-playground"
 
       expect(page.status_code).to eq(200)
-      expect(page).to have_css('option[value="gpt-6-astra"][data-input-price="10.0"][data-output-price="50.0"]', visible: :all)
+      expect(page).to have_css('option[value="gpt-6-astra"][data-billable="false"]', visible: :all)
+      expect(page).to have_no_css('option[value="gpt-6-astra"][data-input-price]', visible: :all)
+      expect(page).to have_no_css('option[value="gpt-6-astra"][data-output-price]', visible: :all)
+      expect(page).to have_no_css('option[value="gpt-6-astra"][data-cached-input-price]', visible: :all)
     end
 
     it "gives choice of inference api keys" do

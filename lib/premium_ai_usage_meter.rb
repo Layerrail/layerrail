@@ -5,12 +5,17 @@
 # provider-specific billing event.
 class PremiumAiUsageMeter
   def self.billable_model?(model)
+    return false if model.tags.key?("billing_status") && model.tags["billing_status"] != "ready"
+
     resources = [model.prompt_billing_resource]
     resources << model.completion_billing_resource unless model.tags["capability"] == "Embeddings"
+    resources << model.cached_prompt_billing_resource if model.respond_to?(:cached_prompt_billing_resource) && !model.cached_prompt_billing_resource.nil?
     resources.all? { billable_rate(it) }
   end
 
   def self.billable_rate(resource_family)
+    return unless resource_family.is_a?(String) && !resource_family.empty?
+
     rate = BillingRate.from_resource_properties("InferenceTokens", resource_family, "global")
     rate if rate && rate["unit_price"].to_f.positive?
   end

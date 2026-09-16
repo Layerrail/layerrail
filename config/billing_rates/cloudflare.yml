@@ -1,0 +1,206 @@
+# Cloudflare published model prices plus the approved 10% LayerRail markup.
+# Verified 2026-09-16. See docs/cloudflare-model-pricing.md for sources and availability.
+# Existing rate IDs are immutable: add new dated rates for future price changes.
+
+# @cf/meta/llama-3.2-3b-instruct
+# Source: https://developers.cloudflare.com/workers-ai/models/llama-3.2-3b-instruct/
+- { id: 536dfede-13f9-409b-80c9-efe2cfaf75c8, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-2-3b-instruct-input, location: global, unit_price: 0.00000005599, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 41abf0b3-6493-4bfa-baa9-7de6b5cfbb16, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-2-3b-instruct-output, location: global, unit_price: 0.0000003685, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/openai/gpt-oss-20b
+# Source: https://developers.cloudflare.com/workers-ai/models/gpt-oss-20b/
+- { id: 050452fb-064b-49ee-b5b6-b0b7089bb0c2, resource_type: InferenceTokens, resource_family: cf-openai-gpt-oss-20b-input, location: global, unit_price: 0.00000022, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 2605383d-f095-40e3-b7ed-ff240824de8e, resource_type: InferenceTokens, resource_family: cf-openai-gpt-oss-20b-output, location: global, unit_price: 0.00000033, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/openai/gpt-oss-120b
+# Source: https://developers.cloudflare.com/workers-ai/models/gpt-oss-120b/
+- { id: 3eb080de-982c-4415-9743-f2b1327372b9, resource_type: InferenceTokens, resource_family: cf-openai-gpt-oss-120b-input, location: global, unit_price: 0.000000385, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 7053f1a1-7156-4cc5-89da-6f1ff47c35bc, resource_type: InferenceTokens, resource_family: cf-openai-gpt-oss-120b-output, location: global, unit_price: 0.000000825, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/baai/bge-reranker-base
+# Source: https://developers.cloudflare.com/workers-ai/models/bge-reranker-base/
+- { id: a779532a-0674-43ad-a728-231750c1523a, resource_type: InferenceTokens, resource_family: cf-baai-bge-reranker-base-input, location: global, unit_price: 0.000000003421, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/huggingface/distilbert-sst-2-int8
+# Source: https://developers.cloudflare.com/workers-ai/models/distilbert-sst-2-int8/
+- { id: 0c5cd490-09e2-4703-9ae6-642e6a9881c6, resource_type: InferenceTokens, resource_family: cf-huggingface-distilbert-sst-2-int8-input, location: global, unit_price: 0.00000002893, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/baai/bge-base-en-v1.5
+# Source: https://developers.cloudflare.com/workers-ai/models/bge-base-en-v1.5/
+- { id: b70f4e7e-eecc-4db9-8440-c8384e4acdf9, resource_type: InferenceTokens, resource_family: cf-baai-bge-base-en-v1-5-input, location: global, unit_price: 0.00000007326, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/baai/bge-large-en-v1.5
+# Source: https://developers.cloudflare.com/workers-ai/models/bge-large-en-v1.5/
+- { id: 63345998-93c6-4fa7-91d3-09f8e1dbac5b, resource_type: InferenceTokens, resource_family: cf-baai-bge-large-en-v1-5-input, location: global, unit_price: 0.0000002244, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/baai/bge-m3
+# Source: https://developers.cloudflare.com/workers-ai/models/bge-m3/
+- { id: c26bc56b-898c-4a2b-9990-eba47df4eb31, resource_type: InferenceTokens, resource_family: cf-baai-bge-m3-input, location: global, unit_price: 0.00000001298, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/baai/bge-small-en-v1.5
+# Source: https://developers.cloudflare.com/workers-ai/models/bge-small-en-v1.5/
+- { id: ad03b462-923a-4148-a47b-35b19fdd60ee, resource_type: InferenceTokens, resource_family: cf-baai-bge-small-en-v1-5-input, location: global, unit_price: 0.00000002222, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/pfnet/plamo-embedding-1b
+# Source: https://developers.cloudflare.com/workers-ai/models/plamo-embedding-1b/
+- { id: 08d239dc-d014-4eb8-9507-e4a4d4ac4cce, resource_type: InferenceTokens, resource_family: cf-pfnet-plamo-embedding-1b-input, location: global, unit_price: 0.00000002046, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/qwen/qwen3-embedding-0.6b
+# Source: https://developers.cloudflare.com/workers-ai/models/qwen3-embedding-0.6b/
+- { id: d485025c-db1b-42a2-b28e-51366c50042e, resource_type: InferenceTokens, resource_family: cf-qwen-qwen3-embedding-0-6b-input, location: global, unit_price: 0.00000001298, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/aisingapore/gemma-sea-lion-v4-27b-it
+# Source: https://developers.cloudflare.com/workers-ai/models/gemma-sea-lion-v4-27b-it/
+- { id: 69a0ba7b-79f8-4b86-9800-f47574d914ad, resource_type: InferenceTokens, resource_family: cf-aisingapore-gemma-sea-lion-v4-27b-it-input, location: global, unit_price: 0.0000003861, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 2a88627b-881e-4e3d-9ce1-65d5261e8244, resource_type: InferenceTokens, resource_family: cf-aisingapore-gemma-sea-lion-v4-27b-it-output, location: global, unit_price: 0.0000006105, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/moonshotai/kimi-k2.5
+# Source: https://developers.cloudflare.com/workers-ai/platform/pricing/
+- { id: aa9a987e-b4fc-4012-9317-4e9ef96e0b02, resource_type: InferenceTokens, resource_family: cf-moonshotai-kimi-k2-5-input, location: global, unit_price: 0.00000066, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: c89bb650-9244-4982-908e-268549ed8c3b, resource_type: InferenceTokens, resource_family: cf-moonshotai-kimi-k2-5-cached-input, location: global, unit_price: 0.00000011, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 6bab6efc-0ec9-41b6-98eb-227cf4f86840, resource_type: InferenceTokens, resource_family: cf-moonshotai-kimi-k2-5-output, location: global, unit_price: 0.0000033, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/deepseek-ai/deepseek-r1-distill-qwen-32b
+# Source: https://developers.cloudflare.com/workers-ai/models/deepseek-r1-distill-qwen-32b/
+- { id: eed75e03-94a8-48d1-ac4b-25526ccb9886, resource_type: InferenceTokens, resource_family: cf-deepseek-ai-deepseek-r1-distill-qwen-32b-input, location: global, unit_price: 0.0000005467, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: e7275e44-45fc-4ff1-9121-9e5d502dc854, resource_type: InferenceTokens, resource_family: cf-deepseek-ai-deepseek-r1-distill-qwen-32b-output, location: global, unit_price: 0.0000053691, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/google/gemma-4-26b-a4b-it
+# Source: https://developers.cloudflare.com/workers-ai/models/gemma-4-26b-a4b-it/
+- { id: fffdefc8-1622-4c5b-9eb2-017bfa33d6ed, resource_type: InferenceTokens, resource_family: cf-google-gemma-4-26b-a4b-it-input, location: global, unit_price: 0.00000011, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 10a1d77a-fb07-49f4-a3c6-07c0abddd02a, resource_type: InferenceTokens, resource_family: cf-google-gemma-4-26b-a4b-it-output, location: global, unit_price: 0.00000033, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/google/gemma-3-12b-it
+# Source: https://developers.cloudflare.com/workers-ai/platform/pricing/
+- { id: f0f1c44d-0882-429d-b4e0-ee900ba85a53, resource_type: InferenceTokens, resource_family: cf-google-gemma-3-12b-it-input, location: global, unit_price: 0.0000003795, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 463f8dd0-2932-42b4-9f1b-8fa115ff8adf, resource_type: InferenceTokens, resource_family: cf-google-gemma-3-12b-it-output, location: global, unit_price: 0.0000006116, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/ibm-granite/granite-4.0-h-micro
+# Source: https://developers.cloudflare.com/workers-ai/models/granite-4.0-h-micro/
+- { id: c9100288-ca30-4bd0-8a71-bce1c77e4926, resource_type: InferenceTokens, resource_family: cf-ibm-granite-granite-4-0-h-micro-input, location: global, unit_price: 0.0000000187, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 736d3281-1817-4a95-985a-677338ff1b00, resource_type: InferenceTokens, resource_family: cf-ibm-granite-granite-4-0-h-micro-output, location: global, unit_price: 0.0000001232, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/meta/llama-2-7b-chat-fp16
+# Source: https://developers.cloudflare.com/workers-ai/platform/pricing/
+- { id: 1bf3f502-accc-4104-931f-76e9588175a7, resource_type: InferenceTokens, resource_family: cf-meta-llama-2-7b-chat-fp16-input, location: global, unit_price: 0.0000006116, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 7fc48ad2-30e5-491e-bbb1-aa936d9960d2, resource_type: InferenceTokens, resource_family: cf-meta-llama-2-7b-chat-fp16-output, location: global, unit_price: 0.0000073337, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/meta/llama-3-8b-instruct
+# Source: https://developers.cloudflare.com/workers-ai/platform/pricing/
+- { id: 867c65c2-8701-4f29-a6f3-a1fbc8ab083a, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-8b-instruct-input, location: global, unit_price: 0.0000003102, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 9c465ce9-bd5f-4883-9054-265371990211, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-8b-instruct-output, location: global, unit_price: 0.0000009097, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/meta/llama-3-8b-instruct-awq
+# Source: https://developers.cloudflare.com/workers-ai/platform/pricing/
+- { id: ff5d6ac0-8983-4f1a-be2f-eee9d9d845f2, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-8b-instruct-awq-input, location: global, unit_price: 0.0000001353, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: cc55d1cd-7c34-41a4-bd13-20b477b4c14d, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-8b-instruct-awq-output, location: global, unit_price: 0.0000002926, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/meta/llama-3.1-8b-instruct
+# Source: https://developers.cloudflare.com/workers-ai/platform/pricing/
+- { id: d179c890-b8cd-4a3f-9440-5c663b7619d1, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-1-8b-instruct-input, location: global, unit_price: 0.0000003102, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 49bd44b5-15c3-4e99-86c0-2e9104894fcb, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-1-8b-instruct-output, location: global, unit_price: 0.0000009097, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/meta/llama-3.1-8b-instruct-awq
+# Source: https://developers.cloudflare.com/workers-ai/platform/pricing/
+- { id: 4f1b9420-1f4d-4056-9cfb-d28c7f3fefd0, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-1-8b-instruct-awq-input, location: global, unit_price: 0.0000001353, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: f59427ad-4a52-40db-a2f5-4428ec89908f, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-1-8b-instruct-awq-output, location: global, unit_price: 0.0000002926, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/meta/llama-3.1-8b-instruct-fp8
+# Source: https://developers.cloudflare.com/workers-ai/models/llama-3.1-8b-instruct-fp8/
+- { id: e4bc42af-1063-4696-a2a2-ba4e548091bb, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-1-8b-instruct-fp8-input, location: global, unit_price: 0.0000001672, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 707c8cfb-7443-4901-b31f-4feb53ef364e, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-1-8b-instruct-fp8-output, location: global, unit_price: 0.0000003157, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/meta/llama-3.2-11b-vision-instruct
+# Source: https://developers.cloudflare.com/workers-ai/models/llama-3.2-11b-vision-instruct/
+- { id: ef5d7141-4318-417d-a27d-e89156b98d8e, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-2-11b-vision-instruct-input, location: global, unit_price: 0.00000005335, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 11721352-3cd9-4212-9c9d-2ec578bfeb86, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-2-11b-vision-instruct-output, location: global, unit_price: 0.0000007436, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/meta/llama-3.2-1b-instruct
+# Source: https://developers.cloudflare.com/workers-ai/models/llama-3.2-1b-instruct/
+- { id: 1a7ce4e1-cde5-4024-b6ad-d5578596ba42, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-2-1b-instruct-input, location: global, unit_price: 0.0000000297, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: a6e39d9f-f364-47f9-8ce0-ba502dca9cf1, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-2-1b-instruct-output, location: global, unit_price: 0.0000002211, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/meta/llama-3.3-70b-instruct-fp8-fast
+# Source: https://developers.cloudflare.com/workers-ai/models/llama-3.3-70b-instruct-fp8-fast/
+- { id: a2d7739b-2e09-4687-9841-b47b76a5d6c9, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-3-70b-instruct-fp8-fast-input, location: global, unit_price: 0.0000003223, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: f953c79e-f622-4ce9-9a4e-bc037d8257e1, resource_type: InferenceTokens, resource_family: cf-meta-llama-3-3-70b-instruct-fp8-fast-output, location: global, unit_price: 0.0000024783, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/meta/llama-4-scout-17b-16e-instruct
+# Source: https://developers.cloudflare.com/workers-ai/models/llama-4-scout-17b-16e-instruct/
+- { id: 22308214-e093-4058-a7e4-9146a153cf82, resource_type: InferenceTokens, resource_family: cf-meta-llama-4-scout-17b-16e-instruct-input, location: global, unit_price: 0.000000297, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 10a5e5ba-79f4-4f95-8cf6-6e4b03f41dbb, resource_type: InferenceTokens, resource_family: cf-meta-llama-4-scout-17b-16e-instruct-output, location: global, unit_price: 0.000000935, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/meta/llama-guard-3-8b
+# Source: https://developers.cloudflare.com/workers-ai/models/llama-guard-3-8b/
+- { id: 545311d0-c296-494d-b428-66dfc8ac4bfa, resource_type: InferenceTokens, resource_family: cf-meta-llama-guard-3-8b-input, location: global, unit_price: 0.0000005324, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 3a5c997a-22cd-4a46-8f1f-c68907f6010f, resource_type: InferenceTokens, resource_family: cf-meta-llama-guard-3-8b-output, location: global, unit_price: 0.000000033, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/mistral/mistral-7b-instruct-v0.1
+# Source: https://developers.cloudflare.com/workers-ai/platform/pricing/
+- { id: 822550b2-c86f-40ef-9fec-956c3b5d6d19, resource_type: InferenceTokens, resource_family: cf-mistral-mistral-7b-instruct-v0-1-input, location: global, unit_price: 0.000000121, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: af7eed6f-8404-4ece-b529-6184bcb40899, resource_type: InferenceTokens, resource_family: cf-mistral-mistral-7b-instruct-v0-1-output, location: global, unit_price: 0.000000209, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/mistralai/mistral-small-3.1-24b-instruct
+# Source: https://developers.cloudflare.com/workers-ai/models/mistral-small-3.1-24b-instruct/
+- { id: 1b6e1fe0-405d-4a47-8015-929726c39c98, resource_type: InferenceTokens, resource_family: cf-mistralai-mistral-small-3-1-24b-instruct-input, location: global, unit_price: 0.0000003861, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: b1801188-f58e-4ff2-9ef1-aae230916005, resource_type: InferenceTokens, resource_family: cf-mistralai-mistral-small-3-1-24b-instruct-output, location: global, unit_price: 0.0000006105, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/moonshotai/kimi-k2.6
+# Source: https://developers.cloudflare.com/workers-ai/models/kimi-k2.6/
+- { id: 5cd262b2-d4ed-42e9-a677-9c06fb90afad, resource_type: InferenceTokens, resource_family: cf-moonshotai-kimi-k2-6-input, location: global, unit_price: 0.000001045, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: c14040b5-7352-439e-81f4-662153f64fb4, resource_type: InferenceTokens, resource_family: cf-moonshotai-kimi-k2-6-output, location: global, unit_price: 0.0000044, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 3cac6449-0165-4684-995a-6e87aa9eca3c, resource_type: InferenceTokens, resource_family: cf-moonshotai-kimi-k2-6-cached-input, location: global, unit_price: 0.000000176, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/moonshotai/kimi-k2.7-code
+# Source: https://developers.cloudflare.com/workers-ai/models/kimi-k2.7-code/
+- { id: 417f7ab2-d0df-4b90-98c2-962626f0aff5, resource_type: InferenceTokens, resource_family: cf-moonshotai-kimi-k2-7-code-input, location: global, unit_price: 0.000001045, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: bdbce408-b826-49f8-9643-6b92e904545b, resource_type: InferenceTokens, resource_family: cf-moonshotai-kimi-k2-7-code-output, location: global, unit_price: 0.0000044, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: e4c47ad9-8b25-4c68-a202-c725838f8a6e, resource_type: InferenceTokens, resource_family: cf-moonshotai-kimi-k2-7-code-cached-input, location: global, unit_price: 0.000000209, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/nvidia/nemotron-3-120b-a12b
+# Source: https://developers.cloudflare.com/workers-ai/models/nemotron-3-120b-a12b/
+- { id: 98b6dc82-4e8f-46a5-849d-678358a383cf, resource_type: InferenceTokens, resource_family: cf-nvidia-nemotron-3-120b-a12b-input, location: global, unit_price: 0.00000055, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: e28a08fc-0143-4926-83d0-4584974711a5, resource_type: InferenceTokens, resource_family: cf-nvidia-nemotron-3-120b-a12b-output, location: global, unit_price: 0.00000165, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/qwen/qwen2.5-coder-32b-instruct
+# Source: https://developers.cloudflare.com/workers-ai/models/qwen2.5-coder-32b-instruct/
+- { id: b15a1027-2eba-4444-ac5a-b2e1242346b8, resource_type: InferenceTokens, resource_family: cf-qwen-qwen2-5-coder-32b-instruct-input, location: global, unit_price: 0.000000726, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: bd540f09-abc7-44bb-8ab9-93b95d1c8b4f, resource_type: InferenceTokens, resource_family: cf-qwen-qwen2-5-coder-32b-instruct-output, location: global, unit_price: 0.0000011, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/qwen/qwen3-30b-a3b-fp8
+# Source: https://developers.cloudflare.com/workers-ai/models/qwen3-30b-a3b-fp8/
+- { id: 5900b52a-df47-4ff4-84b1-fed4d6b65bf4, resource_type: InferenceTokens, resource_family: cf-qwen-qwen3-30b-a3b-fp8-input, location: global, unit_price: 0.00000005599, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: c7a80ba9-6a02-4e3f-977a-11f144574200, resource_type: InferenceTokens, resource_family: cf-qwen-qwen3-30b-a3b-fp8-output, location: global, unit_price: 0.0000003685, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/qwen/qwq-32b
+# Source: https://developers.cloudflare.com/workers-ai/models/qwq-32b/
+- { id: 198899d9-7223-405d-a9d2-f79a4032d73a, resource_type: InferenceTokens, resource_family: cf-qwen-qwq-32b-input, location: global, unit_price: 0.000000726, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 15ab6546-e974-4f13-a6e3-c1807c1baf1c, resource_type: InferenceTokens, resource_family: cf-qwen-qwq-32b-output, location: global, unit_price: 0.0000011, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/zai-org/glm-4.7-flash
+# Source: https://developers.cloudflare.com/workers-ai/models/glm-4.7-flash/
+- { id: f7c8f61b-8e56-4979-ad10-23cacd663b9e, resource_type: InferenceTokens, resource_family: cf-zai-org-glm-4-7-flash-input, location: global, unit_price: 0.00000006655, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 97a47246-7e39-40d5-bab8-4af28a7e1e61, resource_type: InferenceTokens, resource_family: cf-zai-org-glm-4-7-flash-output, location: global, unit_price: 0.00000044, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/zai-org/glm-5.2
+# Source: https://developers.cloudflare.com/workers-ai/models/glm-5.2/
+- { id: 3830675e-dbe0-4dce-8c5e-0b18069aa8be, resource_type: InferenceTokens, resource_family: cf-zai-org-glm-5-2-input, location: global, unit_price: 0.00000154, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 290ad132-744e-4185-b1dd-6dc7f19c490f, resource_type: InferenceTokens, resource_family: cf-zai-org-glm-5-2-output, location: global, unit_price: 0.00000484, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 955c6eeb-7da3-4236-835a-1beec110a338, resource_type: InferenceTokens, resource_family: cf-zai-org-glm-5-2-cached-input, location: global, unit_price: 0.000000286, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/ai4bharat/indictrans2-en-indic-1B
+# Source: https://developers.cloudflare.com/workers-ai/models/indictrans2-en-indic-1B/
+- { id: 01cd6732-544d-46b9-b8be-5f4443974b69, resource_type: InferenceTokens, resource_family: cf-ai4bharat-indictrans2-en-indic-1b-input, location: global, unit_price: 0.0000003762, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: 91aa2018-ba28-44dc-8baa-926a2f1aa892, resource_type: InferenceTokens, resource_family: cf-ai4bharat-indictrans2-en-indic-1b-output, location: global, unit_price: 0.0000003762, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# @cf/meta/m2m100-1.2b
+# Source: https://developers.cloudflare.com/workers-ai/models/m2m100-1.2b/
+- { id: e317f181-eb3e-425d-abd5-c945fc416065, resource_type: InferenceTokens, resource_family: cf-meta-m2m100-1-2b-input, location: global, unit_price: 0.0000003762, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: af02aedf-2baa-47f6-b7e7-eb46cded8624, resource_type: InferenceTokens, resource_family: cf-meta-m2m100-1-2b-output, location: global, unit_price: 0.0000003762, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+
+# MiniMax M3 standard context provider rates; Cloudflare documents provider-price passthrough.
+# Source: https://platform.minimax.io/docs/guides/pricing-paygo
+# Keep unavailable until gateway credits and the long-context billing boundary are verified.
+- { id: a1c5aa3d-a460-4255-ae9c-a0da87959c5a, resource_type: InferenceTokens, resource_family: cf-minimax-m3-input, location: global, unit_price: 0.00000033, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: b8891ceb-a54a-4581-94f0-4d8c01bbe66f, resource_type: InferenceTokens, resource_family: cf-minimax-m3-output, location: global, unit_price: 0.00000132, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }
+- { id: d1c760e8-05e2-4284-bf0a-6ce60ef297b1, resource_type: InferenceTokens, resource_family: cf-minimax-m3-cached-input, location: global, unit_price: 0.000000066, billed_by: amount, active_from: 2026-09-16T00:00:00Z, byoc: false }

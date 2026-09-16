@@ -27,6 +27,8 @@
             options: @inference_models.map { |ie|
               prompt_price = inference_model_million_token_price(ie, ie.prompt_billing_resource)
               completion_price = inference_model_million_token_price(ie, ie.completion_billing_resource)
+              cached_prompt_resource = ie.respond_to?(:cached_prompt_billing_resource) ? ie.cached_prompt_billing_resource : nil
+              cached_prompt_price = cached_prompt_resource ? inference_model_million_token_price(ie, cached_prompt_resource) : nil
               [ie.model_name, ie.model_name, nil, {
                 "data-id": ie.ubid,
                 "data-url": ie.load_balancer.health_check_url,
@@ -37,9 +39,10 @@
                 "data-api": ie.tags.fetch("api", "chat"),
                 "data-context-length": ie.tags.fetch("context_length", "Full"),
                 "data-input-price": prompt_price, "data-output-price": completion_price,
+                "data-cached-input-price": cached_prompt_price,
                 "data-billable": PremiumAiUsageMeter.billable_model?(ie),
                 "data-tags": ie.tags.to_json
-              }]
+              }.compact]
             }, selected: @default_inference_model&.model_name
           }) %>
         </div>

@@ -171,6 +171,10 @@ class Clover
       fail CloverError.new(400, "InvalidRequest", "model uses /v1/#{cloudflare_text_model_path(model)}")
     end
 
+    if path == "responses" && (payload["stream"] || payload["background"])
+      fail CloverError.new(400, "InvalidRequest", "This model currently supports synchronous Responses requests. Set stream and background to false.")
+    end
+
     normalize_cloudflare_payload!(payload, path)
     compact_cloudflare_payload!(payload)
 
@@ -877,15 +881,26 @@ class Clover
     total_tokens = inference_usage_tokens(usage, "total_tokens")
 
     prompt_tokens ||= total_tokens if model.tags["capability"] == "Embeddings"
-    completion_tokens ||= [total_tokens - prompt_tokens, 0].max if total_tokens && prompt_tokens
+    completion_tokens ||= total_tokens - prompt_tokens if total_tokens && prompt_tokens && total_tokens >= prompt_tokens
     completion_tokens ||= 0 if model.tags["capability"] == "Embeddings"
     if prompt_tokens.nil? || completion_tokens.nil?
       Clog.emit("Inference provider omitted billable token usage", {inference_usage_missing: {project_id: api_key.project_id, model: model.model_name, provider: model.provider}})
       fail CloverError.new(502, "InferenceUsageUnavailable", "The inference provider did not report token usage. This request was not charged.")
     end
 
+    cached_resource = model.cached_prompt_billing_resource
+    cached_tokens = 0
+    unless cached_resource.nil?
+      cached_tokens = inference_cached_usage_tokens(usage, optional: model.tags["cache_usage_optional"] == true)
+      if cached_tokens.nil? || cached_tokens > prompt_tokens
+        fail CloverError.new(502, "InferenceUsageUnavailable", "The inference provider did not report valid cached token usage. This request was not charged.")
+      end
+      PremiumAiUsageMeter.validate_rate!(cached_resource)
+    end
+
     DB.transaction do
-      record_inference_tokens(api_key, model, "input", model.prompt_billing_resource, prompt_tokens)
+      record_inference_tokens(api_key, model, "input", model.prompt_billing_resource, prompt_tokens - cached_tokens)
+      record_inference_tokens(api_key, model, "cached_input", cached_resource, cached_tokens)
       record_inference_tokens(api_key, model, "output", model.completion_billing_resource, completion_tokens)
     end
   end
@@ -893,7 +908,27 @@ class Clover
   def inference_usage_tokens(usage, *keys)
     value = keys.filter_map { usage[it] }.first
     tokens = Integer(value, exception: false)
-    tokens if tokens && tokens >= 0
+    tokens if tokens && tokens >= 0 && (!value.is_a?(Numeric) || value == tokens)
+  end
+
+  def inference_cached_usage_tokens(usage, optional: false)
+    # These fields count cache hits within the inclusive prompt/input total.
+    # Anthropic's separate cache-read/cache-write input totals need a different contract.
+    return if usage.key?("cache_read_input_tokens") || usage.key?("cache_creation_input_tokens")
+
+    counts = []
+    ["prompt_tokens_details", "input_tokens_details"].each do |key|
+      next unless usage.key?(key)
+      details = usage[key]
+      return nil unless details.is_a?(Hash)
+      counts << inference_usage_tokens(details, "cached_tokens") if details.key?("cached_tokens")
+    end
+    counts << inference_usage_tokens(usage, "cached_tokens") if usage.key?("cached_tokens")
+    # Only verified API contracts may omit the count for a cold cache miss.
+    return optional ? 0 : nil if counts.empty?
+    return if counts.any?(&:nil?) || counts.uniq.length != 1
+
+    counts.first
   end
 
   def validate_premium_ai_access!(api_key, model)
@@ -943,7 +978,9 @@ class Clover
   end
 
   def inference_model_million_token_price(model, resource)
-    BillingRate.million_token_price(resource) || model.tags["pricing"]&.dig(resource.end_with?("-input") ? "input" : "output")
+    return unless PremiumAiUsageMeter.billable_model?(model) && PremiumAiUsageMeter.billable_rate(resource)
+
+    BillingRate.million_token_price(resource)
   end
 
   def estimate_inference_tokens(value)

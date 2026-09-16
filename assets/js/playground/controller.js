@@ -153,7 +153,7 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
 
   function formatPrice(value) {
     const number = Number(value || 0);
-    return `$${number.toFixed(2)}`;
+    return `$${number.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 })}`;
   }
 
   function formatEstimatedCost(value) {
@@ -216,9 +216,14 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     $('#inference_selected_provider').text($option.attr('data-provider-label') || $option.attr('data-provider') || "LayerRail");
     $('#inference_selected_capability').text($option.attr('data-capability') || "-");
     $('#inference_selected_context').text($option.attr('data-context-length') || "-");
-    $('#inference_selected_price').text($option.attr('data-billable') === 'false'
-      ? 'Unavailable: usage pricing is not configured.'
-      : `${formatPrice(input_price)} input / ${formatPrice(output_price)} output per 1M tokens`);
+    let price = 'Pricing unavailable';
+    if ($option.attr('data-billable') !== 'false') {
+      const output = $option.attr('data-capability') === 'Embeddings' ? '' : ` / ${formatPrice(output_price)} output`;
+      const cached_input_price = selectedEndpointNumber('data-cached-input-price');
+      const cached_input = cached_input_price > 0 ? ` / ${formatPrice(cached_input_price)} cached input` : '';
+      price = `${formatPrice(input_price)} input${output}${cached_input} per 1M tokens`;
+    }
+    $('#inference_selected_price').text(price);
     $('#inference_selected_url').text($option.attr('data-url') || "-");
   }
 

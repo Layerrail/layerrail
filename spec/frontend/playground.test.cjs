@@ -47,6 +47,38 @@ function fixture(t, { api = 'chat', provider = 'cloudflare', capability = 'Text 
   return { w, $: w.$, effects, states, orbs, state: () => w.document.getElementById('inference_playground').dataset.state, send: async (prompt = 'Hello') => { w.$('#inference_prompt').val(prompt); w.$('#inference_submit').trigger('click'); await tick(); } };
 }
 
+test('model pricing preserves small paid rates and normal currency precision', (t) => {
+  const f = fixture(t);
+  assert.equal(f.$('#inference_selected_price').text(), '$2.00 input / $4.00 output per 1M tokens');
+  f.$('#inference_endpoint option').attr({ 'data-input-price': '0.0297', 'data-output-price': '0.003421' });
+  f.$('#inference_endpoint').trigger('change');
+  assert.equal(f.$('#inference_selected_price').text(), '$0.0297 input / $0.003421 output per 1M tokens');
+});
+
+test('unconfigured model pricing is unavailable instead of free', (t) => {
+  const f = fixture(t);
+  f.$('#inference_endpoint option').attr({ 'data-billable': 'false', 'data-input-price': '0', 'data-output-price': '0', 'data-cached-input-price': '0.011' });
+  f.$('#inference_endpoint').trigger('change');
+  assert.equal(f.$('#inference_selected_price').text(), 'Pricing unavailable');
+});
+
+test('cached input pricing appears only when its paid rate is configured', (t) => {
+  const f = fixture(t);
+  f.$('#inference_endpoint option').attr('data-cached-input-price', '0.011');
+  f.$('#inference_endpoint').trigger('change');
+  assert.equal(f.$('#inference_selected_price').text(), '$2.00 input / $4.00 output / $0.011 cached input per 1M tokens');
+  f.$('#inference_endpoint option').attr('data-cached-input-price', '0');
+  f.$('#inference_endpoint').trigger('change');
+  assert.equal(f.$('#inference_selected_price').text(), '$2.00 input / $4.00 output per 1M tokens');
+});
+
+test('embedding pricing shows only its paid input rate', (t) => {
+  const f = fixture(t, { capability: 'Embeddings' });
+  f.$('#inference_endpoint option').attr({ 'data-billable': 'true', 'data-input-price': '0.01375', 'data-output-price': '0' });
+  f.$('#inference_endpoint').trigger('change');
+  assert.equal(f.$('#inference_selected_price').text(), '$0.01375 input per 1M tokens');
+});
+
 test('reasoning uses the orb, streamed answers render safely, usage counts once', async (t) => {
   let stream;
   const f = fixture(t, { fetch: async () => new Response(new ReadableStream({ start(controller) { stream = controller; } })) });

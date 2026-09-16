@@ -9,6 +9,7 @@
   native_task_models = @inference_models.length - text_generation_models - embedding_models
   capability_options = capability_counts.keys.compact.sort
   first_model_url = @inference_models.first&.load_balancer&.health_check_url
+  format_token_price = ->(price) { ("%.8f" % price).sub(/(\.\d{2}.*?)0+\z/, "\\1") }
 %>
 
 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-4">
@@ -171,8 +172,11 @@ MSG
 
     display_name = ie.tags["display_name"] || ie.model_name
     provider = ie.tags["provider"] || (ie.respond_to?(:provider) ? ie.provider : "LayerRail")
-    prompt_price = inference_model_million_token_price(ie, ie.prompt_billing_resource).to_f
-    completion_price = inference_model_million_token_price(ie, ie.completion_billing_resource).to_f
+    billable = PremiumAiUsageMeter.billable_model?(ie)
+    prompt_price = inference_model_million_token_price(ie, ie.prompt_billing_resource)
+    completion_price = inference_model_million_token_price(ie, ie.completion_billing_resource)
+    cached_prompt_resource = ie.respond_to?(:cached_prompt_billing_resource) ? ie.cached_prompt_billing_resource : nil
+    cached_prompt_price = cached_prompt_resource ? inference_model_million_token_price(ie, cached_prompt_resource) : nil
     context_length = ie.tags.fetch("context_length", "Full")
     capability = ie.tags["capability"]
     modalities = case capability
@@ -238,9 +242,19 @@ curl #{ie.load_balancer.health_check_url(path:)} \\
       <div>
         <h3 class="text-sm font-semibold text-gray-900">Price</h3>
         <p class="text-gray-500">
-          Input: $<%= "%0.02f" % prompt_price %> / 1M tokens
-          <br>
-          Output: $<%= "%0.02f" % completion_price %> / 1M tokens
+          <% if billable %>
+            Input: $<%= format_token_price.call(prompt_price) %> / 1M tokens
+            <% unless capability == "Embeddings" %>
+              <br>
+              Output: $<%= format_token_price.call(completion_price) %> / 1M tokens
+            <% end %>
+            <% if cached_prompt_price.to_f.positive? %>
+              <br>
+              Cached input: $<%= format_token_price.call(cached_prompt_price) %> / 1M tokens
+            <% end %>
+          <% else %>
+            Pricing unavailable
+          <% end %>
         </p>
       </div>
       <div>

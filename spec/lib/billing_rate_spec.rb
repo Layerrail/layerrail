@@ -5,6 +5,17 @@ RSpec.describe BillingRate do
     expect(described_class.rates.map { it["id"] }.size).to eq(described_class.rates.map { it["id"] }.uniq.size)
   end
 
+  it "preserves sub-cent prices per million tokens" do
+    expect(described_class.million_token_price("cf-baai-bge-reranker-base-input")).to eq(0.003421)
+    expect(described_class.million_token_price("cf-meta-llama-3-2-3b-instruct-input")).to eq(0.05599)
+  end
+
+  it "uses model-specific Cloudflare prices while retaining historical preview rates" do
+    expect(described_class.million_token_price("preview-input")).to eq(0)
+    expect(described_class.million_token_price("cf-minimax-m3-input")).to eq(0.33)
+    expect(described_class.million_token_price("cf-minimax-m3-cached-input")).to eq(0.066)
+  end
+
   describe "#unit_price_from_resource_properties" do
     it "returns unit price for VmVCpu" do
       expect(described_class.unit_price_from_resource_properties("VmVCpu", "standard", "hetzner-fsn1")).to be_a(Float)
