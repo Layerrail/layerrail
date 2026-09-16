@@ -108,6 +108,8 @@ RSpec.describe Clover, "inference-playground" do
 
       expect(page.status_code).to eq(200)
       expect(page).to have_css('option[value="gpt-6-astra"][data-billable="false"]', visible: :all)
+      expect(page).to have_css('option[value="gpt-6-astra"][disabled]', visible: :all)
+      expect(page).to have_no_css('option[data-billable="false"][selected]', visible: :all)
       expect(page).to have_no_css('option[value="gpt-6-astra"][data-input-price]', visible: :all)
       expect(page).to have_no_css('option[value="gpt-6-astra"][data-output-price]', visible: :all)
       expect(page).to have_no_css('option[value="gpt-6-astra"][data-cached-input-price]', visible: :all)

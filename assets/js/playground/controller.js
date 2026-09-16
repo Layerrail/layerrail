@@ -29,6 +29,7 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     $('#inference_submit_label').text(busy ? 'Stop' : 'Send');
     $('#inference_submit_icon').text(busy ? '■' : '↑');
     $('#inference_submit').attr('aria-label', busy ? 'Stop response' : 'Send message');
+    $('#inference_submit').prop('disabled', !busy && !endpointIsAvailable(selectedEndpointOption()));
     $('#inference_endpoint, #inference_api_key, #inference_config_advanced_settings').prop('disabled', busy);
     $('[data-prompt-template]').prop('disabled', busy);
     effects.busy(busy);
@@ -79,6 +80,10 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
 
   function selectedEndpointOption() {
     return $('#inference_endpoint option:selected');
+  }
+
+  function endpointIsAvailable($option) {
+    return $option.length > 0 && !!$option.val() && !$option.prop('disabled') && $option.attr('data-billable') !== 'false';
   }
 
   function selectedEndpointNumber(name) {
@@ -241,14 +246,18 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
   }
 
   // Initialize the model selector based on the location hash.
+  $('#inference_endpoint option[data-billable="false"]').prop('disabled', true);
   const hash = window.location.hash.slice(1);
   if (hash !== '') {
     const $select = $('#inference_endpoint');
     const $option = $select.find('option').filter(function () {
       return $(this).data('id') === hash;
     });
-    if ($option.length > 0) {
+    if (endpointIsAvailable($option)) {
       $select.val($option.val()).trigger('change');
+    } else if ($option.length > 0) {
+      $select.val('');
+      showError('This model is unavailable. Choose an available model.');
     }
   }
 
@@ -272,6 +281,12 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
   }
 
   function syncSelectedEndpoint() {
+    const $option = selectedEndpointOption();
+    if ($option.val() && !endpointIsAvailable($option)) {
+      $('#inference_endpoint').val('');
+      showError('This model is unavailable. Choose an available model.');
+    }
+    $('#inference_submit').prop('disabled', !activeRequest && !endpointIsAvailable(selectedEndpointOption()));
     const capability = selectedCapability();
     update_file_input_state();
     updateSelectedModelDetails();
@@ -290,6 +305,7 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
   syncSelectedEndpoint();
   $('#inference_endpoint').on('change', () => {
     $('#inference_files').val('');
+    $('#inference_error').prop('hidden', true);
     syncSelectedEndpoint();
   });
 
@@ -598,6 +614,7 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     const system = $('#inference_system').val() || '';
     const prompt = $('#inference_prompt').val() || '';
     const endpoint_name = $('#inference_endpoint').val();
+    const $selected_endpoint = selectedEndpointOption();
     const api_key = $('#inference_api_key').val();
     const numericValue = (id, fallback) => {
       const value = parseFloat($(id).val());
@@ -607,7 +624,7 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     const top_p = numericValue('#inference_top_p', 1);
     const max_tokens = parseInt($('#inference_max_tokens').val(), 10);
     const response_format = $('#inference_response_format').val();
-    if (!endpoint_name) return showError('Choose a model to start.');
+    if (!endpointIsAvailable($selected_endpoint)) return showError('Choose an available model to start.');
     if (!api_key) return showError('Choose an inference API key to start.');
     const invalidField = $('#inference_config_advanced_settings input').toArray().find((field) => !field.checkValidity());
     if (invalidField) {
@@ -615,7 +632,6 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
       invalidField.focus();
       return showError(invalidField.validationMessage);
     }
-    const $selected_endpoint = selectedEndpointOption();
     const endpoint_url = $selected_endpoint.attr('data-url');
     const capability = selectedCapability();
     const fileOnlyTask = ['Automatic Speech Recognition', 'Voice Activity Detection', 'Image Classification', 'Object Detection', 'Image-to-Text', 'Image Text to Text'].includes(capability);

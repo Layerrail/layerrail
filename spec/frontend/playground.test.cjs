@@ -14,7 +14,7 @@ const { visibleAnswer, readEventStream } = responseModule.exports;
 const tick = async () => { for (let i = 0; i < 4; i++) await new Promise(setImmediate); };
 const jsonResponse = (value, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'Content-Type': 'application/json' } });
 
-function fixture(t, { api = 'chat', provider = 'cloudflare', capability = 'Text Generation', fetch } = {}) {
+function fixture(t, { api = 'chat', provider = 'cloudflare', capability = 'Text Generation', fetch, configure } = {}) {
   const dom = new JSDOM(`<!doctype html><section id="inference_playground" data-state="idle">
     <select id="inference_endpoint"><option value="test-model" data-url="https://model.test" data-api="${api}" data-provider="${provider}" data-capability="${capability}" data-tags='{"multimodal":true}' data-display-name="Test model" data-input-price="2" data-output-price="4">test-model</option></select>
     <select id="inference_api_key"><option value="test-key">Test key</option></select>
@@ -35,6 +35,7 @@ function fixture(t, { api = 'chat', provider = 'cloudflare', capability = 'Text 
   w.DOMPurify = purify(w);
   Object.assign(w, { fetch, TextEncoder, TextDecoder, AbortController });
   w.requestAnimationFrame = (fn) => setImmediate(fn);
+  configure?.(w);
   const states = [];
   const orbs = new Map();
   const effects = {
@@ -55,11 +56,51 @@ test('model pricing preserves small paid rates and normal currency precision', (
   assert.equal(f.$('#inference_selected_price').text(), '$0.0297 input / $0.003421 output per 1M tokens');
 });
 
-test('unconfigured model pricing is unavailable instead of free', (t) => {
+test('unconfigured models cannot stay selected or enable Send', (t) => {
   const f = fixture(t);
   f.$('#inference_endpoint option').attr({ 'data-billable': 'false', 'data-input-price': '0', 'data-output-price': '0', 'data-cached-input-price': '0.011' });
   f.$('#inference_endpoint').trigger('change');
-  assert.equal(f.$('#inference_selected_price').text(), 'Pricing unavailable');
+  assert.equal(f.$('#inference_endpoint').val(), null);
+  assert.equal(f.$('#inference_selected_price').text(), '-');
+  assert.equal(f.$('#inference_submit').prop('disabled'), true);
+});
+
+test('an unavailable model hash cannot select or submit it, and choosing a ready model restores Send', async (t) => {
+  let calls = 0;
+  const f = fixture(t, { api: 'responses', fetch: async () => { calls++; return jsonResponse({ output_text: 'Ready' }); }, configure(w) {
+    w.$('#inference_endpoint').append('<option value="unavailable" data-id="blocked-model" data-billable="false">Unavailable model</option>');
+    w.location.hash = '#blocked-model';
+  } });
+  assert.equal(f.$('option[value="unavailable"]').prop('disabled'), true);
+  assert.equal(f.$('#inference_endpoint').val(), null);
+  assert.equal(f.$('#inference_submit').prop('disabled'), true);
+  f.$('#inference_prompt').val('Do not send').trigger(f.$.Event('keydown', { key: 'Enter', ctrlKey: true }));
+  await tick();
+  assert.equal(calls, 0);
+  assert.equal(f.$('.playground-message').length, 0);
+  f.$('#inference_endpoint').val('test-model').trigger('change');
+  assert.equal(f.$('#inference_submit').prop('disabled'), false);
+  await f.send();
+  assert.equal(calls, 1);
+  assert.equal(f.state(), 'complete');
+});
+
+test('submit rejects an unavailable model even if disabled controls are bypassed', async (t) => {
+  let calls = 0;
+  const f = fixture(t, { fetch: async () => { calls++; return jsonResponse({}); } });
+  f.$('#inference_endpoint option').attr('data-billable', 'false').prop('disabled', false);
+  await f.send();
+  assert.equal(calls, 0);
+  assert.equal(f.state(), 'idle');
+  assert.equal(f.$('.playground-message').length, 0);
+  assert.match(f.$('#inference_error').text(), /Choose an available model/);
+});
+
+test('a playground with no available models starts without a selection or enabled Send', (t) => {
+  const f = fixture(t, { configure(w) { w.$('#inference_endpoint option').attr('data-billable', 'false'); } });
+  assert.equal(f.$('#inference_endpoint').val(), null);
+  assert.equal(f.$('#inference_endpoint option').prop('disabled'), true);
+  assert.equal(f.$('#inference_submit').prop('disabled'), true);
 });
 
 test('cached input pricing appears only when its paid rate is configured', (t) => {

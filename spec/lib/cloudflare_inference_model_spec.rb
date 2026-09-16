@@ -9,7 +9,7 @@ RSpec.describe CloudflareInferenceModel do
     expect(models.map { it.fetch("id") }.uniq.length).to eq(models.length)
     expect(models.map { it.fetch("tags").fetch("billing_status") }).to all(be_a(String))
     expect(models.length).to eq(239)
-    expect(models.count { PremiumAiUsageMeter.billable_model?(described_class.new(it)) }).to eq(26)
+    expect(models.count { PremiumAiUsageMeter.billable_model?(described_class.new(it)) }).to eq(19)
   end
 
   it "uses provided id when present" do
@@ -17,7 +17,7 @@ RSpec.describe CloudflareInferenceModel do
       "id" => "azure-openai-gpt-5",
       "model_name" => "gpt-5",
       "provider" => "azure_foundry",
-      "tags" => {}
+      "tags" => {},
     })
 
     expect(model.ubid).to eq("azure-openai-gpt-5")
@@ -27,20 +27,20 @@ RSpec.describe CloudflareInferenceModel do
     model = described_class.new({
       "model_name" => "gpt-5.6-luna",
       "provider" => "azure_foundry",
-      "tags" => {}
+      "tags" => {},
     })
 
     expect(model.ubid).to eq("azure-foundry-gpt-5-6-luna")
   end
 
   it "exposes verified Cloudflare prices and cache discounts in the API catalog" do
-    model = described_class.new(Option::AI_MODELS.find { it["model_name"] == "@cf/moonshotai/kimi-k2.6" })
+    model = described_class.new(Option::AI_MODELS.find { it["model_name"] == "@cf/qwen/qwen3.8-27b" })
     serialized = Serializers::InferenceEndpoint.serialize(model)
     expect(serialized[:available]).to be(true)
     expect(serialized[:price]).to eq(
-      per_million_prompt_tokens: 1.045,
-      per_million_completion_tokens: 4.4,
-      per_million_cached_prompt_tokens: 0.176,
+      per_million_prompt_tokens: 0.495,
+      per_million_completion_tokens: 3.52,
+      per_million_cached_prompt_tokens: 0.055,
     )
   end
 
@@ -82,12 +82,35 @@ RSpec.describe CloudflareInferenceModel do
     expect(serialized[:price].values).to all(be_nil)
   end
 
-  it "prices new native models with separate discounted cached input" do
+  it "keeps Workers Paid models catalogued and priced while unavailable on the current free account" do
+    paid_only_names = %w[
+      @cf/moonshotai/kimi-k2.7-code
+      @cf/zai-org/glm-5.3
+      @cf/zai-org/glm-5.3-flash
+      @cf/moonshotai/kimi-k2.6
+      @cf/deepseek-ai/deepseek-v4-flash-0731
+      @cf/zai-org/glm-5.2
+      @cf/deepseek-ai/deepseek-v4-pro-0813
+    ]
+    paid_only_names.each do |name|
+      config = Option::AI_MODELS.find { it["model_name"] == name }
+      expect(config).to include("enabled" => true)
+      model = described_class.new(config)
+      expect(model.tags["billing_status"]).to eq("unavailable")
+      expect(PremiumAiUsageMeter.billable_model?(model)).to be(false)
+      serialized = Serializers::InferenceEndpoint.serialize(model)
+      expect(serialized[:available]).to be(false)
+      expect(serialized[:price].values).to all(be_nil)
+      expect(serialized[:catalog_prices]).not_to be_empty
+      expect(serialized[:catalog_prices].map { BigDecimal(it.fetch("price")) }).to all(be_positive)
+    end
+  end
+
+  it "retains configured input, output and cached rates when account permissions gate a native model" do
     model = described_class.new(Option::AI_MODELS.find { it["model_name"] == "@cf/deepseek-ai/deepseek-v4-flash-0731" })
     expect(model.tags).to include("api" => "run", "cache_usage_optional" => true)
-    expect(Serializers::InferenceEndpoint.serialize(model)).to include(
-      available: true,
-      price: {per_million_prompt_tokens: 0.484, per_million_completion_tokens: 1.452, per_million_cached_prompt_tokens: 0.0154},
-    )
+    expect(BillingRate.million_token_price(model.prompt_billing_resource)).to eq(0.484)
+    expect(BillingRate.million_token_price(model.completion_billing_resource)).to eq(1.452)
+    expect(BillingRate.million_token_price(model.cached_prompt_billing_resource)).to eq(0.0154)
   end
 end

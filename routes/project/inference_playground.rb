@@ -21,7 +21,7 @@ class Clover
 
       @inference_api_keys = inference_api_key_ds.all
       @has_valid_payment_method = @project.has_valid_inference_payment_method?
-      @default_inference_model = @inference_models.find { it.tags["capability"] == "Text Generation" && PremiumAiUsageMeter.billable_model?(it) } || @inference_models.first
+      @default_inference_model = @inference_models.find { it.tags["capability"] == "Text Generation" && PremiumAiUsageMeter.billable_model?(it) } || @inference_models.find { PremiumAiUsageMeter.billable_model?(it) }
       view "inference/endpoint/playground"
     end
   end

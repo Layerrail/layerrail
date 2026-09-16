@@ -1206,7 +1206,7 @@
   cached_prompt_billing_resource: cf-moonshotai-kimi-k2-6-cached-input
   tags:
     source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/kimi-k2.6.json"
-    billing_status: ready
+    billing_status: unavailable
     cache_usage_optional: true
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
@@ -1223,7 +1223,7 @@
   cached_prompt_billing_resource: cf-moonshotai-kimi-k2-7-code-cached-input
   tags:
     source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/kimi-k2.7-code.json"
-    billing_status: ready
+    billing_status: unavailable
     cache_usage_optional: true
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
@@ -1315,7 +1315,7 @@
   cached_prompt_billing_resource: cf-zai-org-glm-5-2-cached-input
   tags:
     source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/glm-5.2.json"
-    billing_status: ready
+    billing_status: unavailable
     cache_usage_optional: true
     pricing_verified_at: "2026-09-16"
     markup_percent: 10
@@ -1648,7 +1648,7 @@
   tags:
     display_name: "DeepSeek V4 Flash 0731"
     capability: "Text Generation"
-    billing_status: "ready"
+    billing_status: unavailable
     markup_percent: 10
     pricing_verified_at: "2026-09-16"
     source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/deepseek-v4-flash-0731.json"
@@ -1665,7 +1665,7 @@
   tags:
     display_name: "DeepSeek V4 Pro 0813"
     capability: "Text Generation"
-    billing_status: "ready"
+    billing_status: unavailable
     markup_percent: 10
     pricing_verified_at: "2026-09-16"
     source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/deepseek-v4-pro-0813.json"
@@ -1713,7 +1713,7 @@
   tags:
     display_name: "GLM 5.3"
     capability: "Text Generation"
-    billing_status: "ready"
+    billing_status: unavailable
     markup_percent: 10
     pricing_verified_at: "2026-09-16"
     source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/glm-5.3.json"
@@ -1730,7 +1730,7 @@
   tags:
     display_name: "GLM 5.3 Flash"
     capability: "Text Generation"
-    billing_status: "ready"
+    billing_status: unavailable
     markup_percent: 10
     pricing_verified_at: "2026-09-16"
     source: "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/63a072c88b9c6927c3263ff01f2a4dc8767691bf/src/content/workers-ai-models/glm-5.3-flash.json"

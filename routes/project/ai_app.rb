@@ -129,7 +129,9 @@ class Clover
   end
 
   def ai_app_text_models
-    @ai_app_text_models ||= all_inference_models.select { it.tags["capability"] == "Text Generation" }
+    @ai_app_text_models ||= all_inference_models.select do |model|
+      model.tags["capability"] == "Text Generation" && PremiumAiUsageMeter.billable_model?(model)
+    end
   end
 
   def ai_app_text_model_names

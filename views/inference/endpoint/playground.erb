@@ -25,6 +25,7 @@
           <%== render("components/form/select", locals: {
             name: "inference_endpoint", label: "Model", placeholder: "Choose a model",
             options: @inference_models.map { |ie|
+              billable = PremiumAiUsageMeter.billable_model?(ie)
               prompt_price = inference_model_million_token_price(ie, ie.prompt_billing_resource)
               completion_price = inference_model_million_token_price(ie, ie.completion_billing_resource)
               cached_prompt_resource = ie.respond_to?(:cached_prompt_billing_resource) ? ie.cached_prompt_billing_resource : nil
@@ -40,7 +41,8 @@
                 "data-context-length": ie.tags.fetch("context_length", "Not specified"),
                 "data-input-price": prompt_price, "data-output-price": completion_price,
                 "data-cached-input-price": cached_prompt_price,
-                "data-billable": PremiumAiUsageMeter.billable_model?(ie),
+                "data-billable": billable,
+                disabled: (billable ? nil : "disabled"),
                 "data-tags": ie.tags.to_json
               }.compact]
             }, selected: @default_inference_model&.model_name

@@ -57,6 +57,15 @@ RSpec.describe Clover, "paid inference API" do
       .to eq("input" => BigDecimal("0.00000005599"), "output" => BigDecimal("0.0000003685"))
   end
 
+  it "rejects a priced model unavailable on the account before calling or billing the provider" do
+    connect_billing
+    upstream = stub_request(:post, "https://api.cloudflare.com/client/v4/accounts/test-account/ai/run/@cf/moonshotai/kimi-k2.6")
+    post "/v1/run", {model: "@cf/moonshotai/kimi-k2.6", prompt: "Hello"}.to_json
+    expect(last_response.status).to eq(503)
+    expect(upstream).not_to have_been_requested
+    expect(BillingRecord.where(project_id: project.id)).to be_empty
+  end
+
   it "bills GPT OSS through Cloudflare Responses using provider usage" do
     connect_billing
     upstream = stub_request(:post, "https://api.cloudflare.com/client/v4/accounts/test-account/ai/v1/responses")
