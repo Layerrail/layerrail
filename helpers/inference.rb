@@ -176,7 +176,9 @@ class Clover
     end
 
     normalize_cloudflare_payload!(payload, path)
-    compact_cloudflare_payload!(payload)
+    # Responses tool schemas and items may contain meaningful empty objects,
+    # arrays, and false values; preserve them just as the native Azure path does.
+    compact_cloudflare_payload!(payload) unless path == "responses"
 
     if path == "chat/completions" && payload["stream"]
       stream_cloudflare_ai_request(api_key, model, payload)
@@ -754,6 +756,20 @@ class Clover
       end
 
       fail CloverError.new(400, "InvalidRequest", "input or messages is required") unless payload.key?("input")
+      if payload["input"].is_a?(Array)
+        message_roles = %w[user assistant system developer]
+        payload["input"].each do |item|
+          next unless item.is_a?(Hash) && item["type"].nil? && message_roles.include?(item["role"])
+
+          content = item["content"]
+          next unless content.is_a?(Array) && !content.empty?
+          next unless content.all? { it.is_a?(Hash) && it["type"] == "text" && it["text"].is_a?(String) }
+
+          # The playground keeps Chat Completions text parts in its history.
+          # Plain message content is also valid Responses input for every role.
+          item["content"] = content.map { it["text"] }.join("\n")
+        end
+      end
       payload["max_output_tokens"] ||= payload.delete("max_tokens") || payload.delete("max_completion_tokens") || 1024
       payload.delete("response_format")
       payload["stream"] = false

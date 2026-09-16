@@ -16,8 +16,19 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
 
   function announce(text) { $('#inference_status').text(text); }
 
+  function conciseErrorMessage(value, status) {
+    const text = String(value || 'The request failed.').trim();
+    const statusLabel = Number.isInteger(status) ? ` (HTTP ${status})` : '';
+    if (text.length > 1000 && /\bvalidation errors?\b/i.test(text)) {
+      return `The model rejected the request format${statusLabel}. Start a new chat or choose another model.`;
+    }
+    if (text.length <= 600) return text;
+    const summary = text.replace(/\s+/g, ' ');
+    return `${summary.slice(0, 599 - statusLabel.length).trimEnd()}…${statusLabel}`;
+  }
+
   function showError(text) {
-    $('#inference_error').text(text).prop('hidden', false);
+    $('#inference_error').text(conciseErrorMessage(text)).prop('hidden', false);
   }
 
   function setActivity(state, request) {
@@ -93,6 +104,10 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
 
   function selectedCapability() {
     return selectedEndpointOption().attr('data-capability') || "Text Generation";
+  }
+
+  function selectedCloudflareTextModel() {
+    return selectedEndpointOption().attr('data-provider') === 'cloudflare' && selectedCapability() === 'Text Generation';
   }
 
   function selectedEndpointApi() {
@@ -288,6 +303,9 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     }
     $('#inference_submit').prop('disabled', !activeRequest && !endpointIsAvailable(selectedEndpointOption()));
     const capability = selectedCapability();
+    const cloudflareTextModel = selectedCloudflareTextModel();
+    $('#inference_top_p').attr('min', cloudflareTextModel ? '0.05' : '0');
+    $('#inference_max_tokens').attr('placeholder', cloudflareTextModel ? 'Auto (2,048)' : 'Auto');
     update_file_input_state();
     updateSelectedModelDetails();
     updateUsagePanel();
@@ -622,7 +640,8 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     };
     const temperature = numericValue('#inference_temperature', 1);
     const top_p = numericValue('#inference_top_p', 1);
-    const max_tokens = parseInt($('#inference_max_tokens').val(), 10);
+    const output_limit = $('#inference_max_tokens').val();
+    const max_tokens = output_limit === '' && selectedCloudflareTextModel() ? 2048 : parseInt(output_limit, 10);
     const response_format = $('#inference_response_format').val();
     if (!endpointIsAvailable($selected_endpoint)) return showError('Choose an available model to start.');
     if (!api_key) return showError('Choose an inference API key to start.');
@@ -781,7 +800,9 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
           const body = await response.json();
           detail = body?.errors?.map((error) => error.message).join('; ') || body?.error?.message || (typeof body?.error === 'string' ? body.error : detail);
         } catch (_) { /* Keep the HTTP status for non-JSON error responses. */ }
-        throw new Error(detail);
+        const error = new Error(detail);
+        error.status = response.status;
+        throw error;
       }
       if (native_run || embeddings_request) {
         const parsed = await response.json();
@@ -827,8 +848,8 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     } catch (error) {
       if (activeRequest !== request) return;
       finalState = signal.aborted ? 'stopped' : 'error';
-      const message = signal.aborted ? 'Response stopped.' :
-        error instanceof TypeError && error.message === 'Failed to fetch' ? 'Could not reach the model. Check your connection and try again.' : error.message || String(error);
+      const message = conciseErrorMessage(signal.aborted ? 'Response stopped.' :
+        error instanceof TypeError && error.message === 'Failed to fetch' ? 'Could not reach the model. Check your connection and try again.' : error.message || String(error), error.status);
       if (request.messageId !== null) $(`#inference_message_info_${request.messageId}`).text(message);
       if (!signal.aborted) showError(message);
       announce(message);

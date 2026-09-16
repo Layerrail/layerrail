@@ -147,6 +147,60 @@ test('reasoning uses the orb, streamed answers render safely, usage counts once'
   assert.equal(f.$('#inference_orb_1').prop('hidden'), true);
 });
 
+for (const api of ['run', 'responses']) {
+  test(`Cloudflare text ${api} Auto uses 2048 output tokens and explicit limits take priority`, async (t) => {
+    const requests = [];
+    const f = fixture(t, { api, fetch: async (_, options) => {
+      requests.push(JSON.parse(options.body));
+      return jsonResponse({ response: 'Done', output_text: 'Done' });
+    } });
+    const field = api === 'responses' ? 'max_output_tokens' : 'max_tokens';
+    assert.equal(f.$('#inference_max_tokens').attr('placeholder'), 'Auto (2,048)');
+    await f.send();
+    assert.equal(requests[0][field], 2048);
+    f.$('#inference_max_tokens').val('512');
+    await f.send();
+    assert.equal(requests[1][field], 512);
+  });
+}
+
+test('Auto leaves non-Cloudflare output limits unchanged', async (t) => {
+  let sent;
+  const f = fixture(t, { api: 'responses', provider: 'azure_foundry', fetch: async (_, options) => {
+    sent = JSON.parse(options.body);
+    return jsonResponse({ output_text: 'Done' });
+  } });
+  await f.send();
+  assert.equal(f.$('#inference_max_tokens').attr('placeholder'), 'Auto');
+  assert.equal(sent.max_output_tokens, undefined);
+  assert.equal(sent.max_tokens, undefined);
+});
+
+test('Auto leaves Cloudflare non-text task limits unchanged', async (t) => {
+  let sent;
+  const f = fixture(t, { api: 'run', capability: 'Summarization', fetch: async (_, options) => {
+    sent = JSON.parse(options.body);
+    return jsonResponse({ summary: 'Done' });
+  } });
+  await f.send();
+  assert.equal(sent.max_length, undefined);
+  assert.equal(sent.max_tokens, undefined);
+  assert.equal(f.$('#inference_top_p').attr('min'), '0');
+});
+
+test('Cloudflare text Top P rejects zero and accepts the positive minimum', async (t) => {
+  let calls = 0;
+  const f = fixture(t, { api: 'run', fetch: async () => { calls++; return jsonResponse({ response: 'Done' }); } });
+  assert.equal(f.$('#inference_top_p').attr('min'), '0.05');
+  f.$('#inference_top_p').val('0');
+  await f.send();
+  assert.equal(calls, 0);
+  assert.equal(f.$('#inference_settings').prop('open'), true);
+  f.$('#inference_top_p').val('0.05');
+  await f.send();
+  assert.equal(calls, 1);
+});
+
 test('GPT-6 Astra Responses requests preserve zero settings and show paid usage', async (t) => {
   let sent;
   const f = fixture(t, { api: 'responses', provider: 'azure_foundry', fetch: async (url, options) => {
@@ -210,6 +264,31 @@ test('HTTP errors restore the draft and expose an accessible error', async (t) =
   assert.equal(f.$('#inference_error').text(), 'Rate limit reached.');
   assert.equal(f.$('#inference_prompt').val(), 'Please retry me');
   assert.equal(f.effects.isBusy, false);
+});
+
+test('large Cloudflare validation dumps become a short actionable error everywhere', async (t) => {
+  const dump = `AiError: AiError: ${JSON.stringify({ error: { message: '242 validation errors for ResponsesRequest\ninput.content.text\nInput should be a valid string\n' + 'PROVIDER_SCHEMA_DETAIL '.repeat(10000) } })}`;
+  const f = fixture(t, { api: 'responses', fetch: async () => jsonResponse({ errors: [{ message: dump }] }, 400) });
+  await f.send('Keep my question');
+  const message = 'The model rejected the request format (HTTP 400). Start a new chat or choose another model.';
+  assert.equal(f.$('#inference_error').text(), message);
+  assert.equal(f.$('#inference_message_info_1').text(), message);
+  assert.equal(f.$('#inference_status').text(), message);
+  assert.equal(f.$('#inference_prompt').val(), 'Keep my question');
+  assert.equal(f.state(), 'error');
+  assert.ok(!f.$('#inference_playground').text().includes('PROVIDER_SCHEMA_DETAIL'));
+});
+
+test('unknown oversized provider errors are capped while preserving the useful prefix and HTTP status', async (t) => {
+  const detail = 'This model is temporarily busy. ' + 'Provider diagnostic details\n'.repeat(10000);
+  const f = fixture(t, { api: 'responses', fetch: async () => jsonResponse({ error: { message: detail } }, 503) });
+  await f.send();
+  const message = f.$('#inference_error').text();
+  assert.ok(message.startsWith('This model is temporarily busy.'));
+  assert.ok(message.endsWith('… (HTTP 503)'));
+  assert.ok(message.length <= 600);
+  assert.equal(f.$('#inference_message_info_1').text(), message);
+  assert.equal(f.$('#inference_status').text(), message);
 });
 
 test('preparation errors unlock controls without creating empty messages', async (t) => {

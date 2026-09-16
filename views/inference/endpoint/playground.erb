@@ -161,6 +161,7 @@
                 step="<%= step %>"></div>
             <% end %>
           </div>
+          <p class="playground-muted">The output budget includes reasoning tokens.</p>
           <div class="playground-field"><label for="inference_response_format">Response format</label><select id="inference_response_format"><option value="">Auto</option><option value="json_object">JSON object</option></select></div>
           <div class="playground-parameter-grid">
             <% [["source_language", "Source language", "en"], ["target_language", "Target language", "fr"]].each do |name, label, placeholder| %>
