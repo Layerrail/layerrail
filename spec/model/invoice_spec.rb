@@ -13,7 +13,11 @@ RSpec.describe Invoice do
   let(:payment_intents_service) { instance_double(Stripe::PaymentIntentService) }
 
   before do
+    allow(DB).to receive(:after_commit).and_yield
+    allow(Config).to receive(:billing_checkout_provider).and_return("stripe")
     allow(Config).to receive(:stripe_secret_key).and_return("secret_key")
+    allow(Config).to receive_messages(invoices_blob_storage_endpoint: "https://invoices.example.com",
+      invoices_blob_storage_access_key: "test-access-key", invoices_blob_storage_secret_key: "test-secret-key")
     allow(StripeClient).to receive(:payment_intents).and_return(payment_intents_service)
     allow(Aws::S3::Client).to receive(:new).and_return(client)
   end
@@ -66,6 +70,15 @@ RSpec.describe Invoice do
   end
 
   describe ".send_success_email" do
+    it "uses authorized billing contacts when the saved billing email is blank" do
+      account = Account.create(email: "owner@example.com")
+      account.add_project(project)
+      AccessControlEntry.create(project_id: project.id, subject_id: account.id, action_id: ActionType::NAME_MAP["Project:billing"])
+      update_content(billing_info: {"email" => "  "})
+
+      expect(invoice.invoice_email_receivers(Serializers::Invoice.serialize(invoice))).to eq([account.email])
+    end
+
     it "sends email for waiting transfers" do
       invoice.update(status: "waiting_transfer")
       expect(client).to receive(:put_object).with(hash_including(bucket: Config.invoices_bucket_name, key: invoice.blob_key))
@@ -90,6 +103,17 @@ RSpec.describe Invoice do
   end
 
   describe ".charge" do
+    it "keeps the selected Bachs hosted flow when its API key is unavailable" do
+      allow(Config).to receive_messages(billing_checkout_provider: "bachs", bachs_api_key: nil, polar_access_token: "legacy-token")
+      expect(StripeClient).not_to receive(:payment_intents)
+      expect(PolarClient).not_to receive(:create_checkout)
+      expect(BachsClient).not_to receive(:create_checkout)
+
+      expect(invoice.charge).to be(true)
+      expect(invoice.status).to eq("unpaid")
+      expect(Mail::TestMailer.deliveries.first.html_part.decoded).to include("ready for payment through Bachs")
+    end
+
     it "not charge if Stripe not enabled" do
       expect(Config).to receive(:stripe_secret_key).and_return(nil)
       expect(Clog).to receive(:emit).with("Billing is not enabled. Set STRIPE_SECRET_KEY to enable billing.").and_call_original
@@ -125,7 +149,7 @@ RSpec.describe Invoice do
     it "sends a Polar payment due email for payable invoices" do
       allow(Config).to receive(:polar_access_token).and_return("polar_test")
       update_content(billing_info: {"id" => billing_info.id, "email" => "customer@example.com", "country" => "NL", "name" => "Customer"}, cost: 10)
-      expect(Clog).to receive(:emit).with("Polar billing is enabled. Invoice payment is handled by Polar checkout.", instance_of(Hash)).and_call_original
+      expect(Clog).to receive(:emit).with("Invoice payment is handled by hosted checkout.", instance_of(Hash)).and_call_original
       expect(payment_intents_service).not_to receive(:create)
 
       expect(invoice.charge).to be true
@@ -241,13 +265,13 @@ RSpec.describe Invoice do
   describe ".persist" do
     it "uploads the invoice" do
       pdf = invoice.generate_pdf
-      expect(client).to receive(:put_object).with(bucket: Config.invoices_bucket_name, key: invoice.blob_key, content_type: "application/pdf", if_none_match: "*", body: pdf)
+      expect(client).to receive(:put_object).with({bucket: Config.invoices_bucket_name, key: invoice.blob_key, content_type: "application/pdf", if_none_match: "*", body: pdf})
       invoice.persist(pdf)
     end
 
     it "can overwrite an existing invoice PDF" do
       pdf = invoice.generate_pdf
-      expect(client).to receive(:put_object).with(bucket: Config.invoices_bucket_name, key: invoice.blob_key, content_type: "application/pdf", body: pdf)
+      expect(client).to receive(:put_object).with({bucket: Config.invoices_bucket_name, key: invoice.blob_key, content_type: "application/pdf", body: pdf})
       invoice.persist(pdf, overwrite: true)
     end
   end

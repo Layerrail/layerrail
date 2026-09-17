@@ -23,6 +23,8 @@ class PaymentMethod < Sequel::Model
         "wallet" => nil,
         "checks" => nil
       }
+    elsif Config.billing_checkout_provider == "bachs"
+      {"brand" => "Previous provider"}
     elsif Config.polar_access_token
       {
         "brand" => "Polar",

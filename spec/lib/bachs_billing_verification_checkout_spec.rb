@@ -55,13 +55,8 @@ RSpec.describe BachsBillingVerificationCheckout do
       "charge" => {"payment_id" => "pay_bachs_1", "status" => "succeeded", "is_refundable" => true},
     }
     allow(BachsClient).to receive(:get_checkout).with(checkout_id).and_return(checkout)
-    allow(PolarClient).to receive(:get_customer_by_external_id).with(project.ubid).and_raise(PolarAPIError.new(404, "not found"))
-    expect(PolarClient).to receive(:create_customer).with(
-      external_id: project.ubid,
-      email: account.email,
-      name: account.name,
-      metadata: {project_id: project.ubid, billing_provider: "bachs"},
-    ).and_return("id" => "polar_customer_1")
+    expect(PolarClient).not_to receive(:get_customer_by_external_id)
+    expect(PolarClient).not_to receive(:create_customer)
     refund_key = "layerrail-billing-verification-refund-#{checkout_id}"
     expect(BachsClient).to receive(:create_refund).with(
       {
@@ -77,7 +72,8 @@ RSpec.describe BachsBillingVerificationCheckout do
 
     expect(result).to include(status: "verified", refund_status: "processing")
     billing_info = project.refresh.billing_info
-    expect(billing_info.stripe_id).to eq("polar_customer_1")
+    expect(billing_info.stripe_id).to eq("bachs:#{project.ubid}")
+    expect(billing_info[:bachs_customer_id]).to eq("cust_bachs_1")
     expect(billing_info.payment_methods.first).to have_attributes(
       stripe_id: "bachs:payment:pay_bachs_1",
       card_fingerprint: "bachs:cust_bachs_1",

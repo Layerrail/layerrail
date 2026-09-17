@@ -78,9 +78,10 @@ class BachsInvoiceCheckout
     raise ArgumentError, "Bachs invoice checkout requires at least USD 1.00" unless amount.finite? && amount >= 1
 
     attempt = existing["attempt"].to_i + 1
+    customer_id = project.billing_info&.bachs_customer_id
     payload = {
       pricing: {price_type: "fixed", currency: "USD", amount: format("%.2f", amount)},
-      customer: {email: account.email, name: account.name || account.email},
+      customer: customer_id ? {customer_id:} : {email: account.email, name: account.name || account.email},
       billing_currency: "USD",
       success_url:,
       cancel_url:,

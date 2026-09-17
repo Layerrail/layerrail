@@ -4,6 +4,29 @@ require_relative "../../spec_helper"
 require_relative "../../../lib/resend_delivery"
 
 RSpec.describe Mail::ResendDelivery do
+  ["", "{}", "{\"id\":\"\"}"].each do |body|
+    it "does not treat HTTP success without a provider message ID as confirmed delivery (#{body.inspect})" do
+      stub_request(:post, "https://api.resend.com/emails").to_return(status: 200, body:)
+      mail = Mail.new(from: "billing@example.com", to: "customer@example.com", subject: "Invoice", body: "Statement")
+
+      expect { described_class.new(api_key: "re_test").deliver!(mail) }.to raise_error(ResendDeliveryError, /missing_delivery_confirmation/)
+      expect(mail["X-LayerRail-Delivery-Id"]).to be_nil
+    end
+  end
+
+  it "passes invoice idempotency keys to Resend and records its accepted message ID" do
+    request = stub_request(:post, "https://api.resend.com/emails")
+      .with(headers: {"Idempotency-Key" => "invoice-001-paid"})
+      .to_return(status: 200, body: JSON.generate({id: "email_invoice"}))
+    mail = Mail.new(from: "billing@example.com", to: "customer@example.com", subject: "Invoice", body: "Statement")
+    mail["X-LayerRail-Idempotency-Key"] = "invoice-001-paid"
+
+    described_class.new(api_key: "re_test").deliver!(mail)
+
+    expect(request).to have_been_requested.once
+    expect(mail["X-LayerRail-Delivery-Id"].value).to eq("email_invoice")
+  end
+
   it "sends rendered mail through Resend" do
     request = stub_request(:post, "https://api.resend.com/emails")
       .with(

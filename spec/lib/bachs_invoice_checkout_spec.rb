@@ -69,6 +69,32 @@ RSpec.describe BachsInvoiceCheckout do
     expect(second).to eq(first)
   end
 
+  it "keeps invoice payments on the project's Bachs billing profile when another admin pays" do
+    billing_info = BillingInfo.create(stripe_id: "legacy-project-#{project.ubid}", bachs_customer_id: "cust_projectpayer")
+    project.update(billing_info_id: billing_info.id)
+    expect(BachsClient).to receive(:create_checkout).with(
+      hash_including(customer: {customer_id: "cust_projectpayer"}),
+      idempotency_key: "layerrail-invoice-checkout-v2-#{invoice.ubid}-1",
+    ).and_return(create_checkout_response)
+
+    start_checkout(account: Struct.new(:email, :name).new("other-admin@example.com", "Other admin"))
+  end
+
+  it "does not change an existing checkout request when the billing profile is linked later" do
+    requests = []
+    allow(BachsClient).to receive(:create_checkout) do |payload, idempotency_key:|
+      requests << [payload, idempotency_key]
+      raise BachsAPIError.new(503, "response lost") if requests.length == 1
+
+      create_checkout_response
+    end
+    expect { start_checkout }.to raise_error(BachsAPIError)
+    billing_info = BillingInfo.create(stripe_id: "legacy-project-#{project.ubid}", bachs_customer_id: "cust_projectpayer")
+    project.update(billing_info_id: billing_info.id)
+    start_checkout
+    expect(requests.last).to eq(requests.first)
+  end
+
   it "retries a lost provider response with the same persisted body and key" do
     requests = []
     allow(BachsClient).to receive(:create_checkout) do |payload, idempotency_key:|

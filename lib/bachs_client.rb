@@ -67,6 +67,22 @@ class BachsClient
     request(:get, "/v1/checkout-sessions/#{id}")
   end
 
+  def self.get_customer(id)
+    request(:get, "/v1/customers/#{id}")
+  end
+
+  def self.list_customers(search:)
+    request(:get, "/v1/customers", query: {search:, limit: 100})
+  end
+
+  def self.create_customer(payload, idempotency_key: nil)
+    request(:post, "/v1/customers", body: payload, expected_status: 201, idempotency_key:)
+  end
+
+  def self.create_customer_portal_session(id)
+    request(:post, "/v1/customers/#{id}/portal-sessions")
+  end
+
   def self.get_subscription(id)
     request(:get, "/v1/subscriptions/#{id}")
   end

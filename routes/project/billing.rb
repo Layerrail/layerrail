@@ -40,6 +40,8 @@ class Clover
 
       r.post true do
         if (billing_info = @project.billing_info)
+          r.redirect "#{billing_path}/portal" if billing_info.bachs?
+
           handle_validation_failure("project/billing")
           current_tax_id = billing_info.billing_data["tax_id"].to_s
           tp = typecast_params
@@ -145,7 +147,7 @@ class Clover
 
         begin
           result = BachsBillingVerificationCheckout.reconcile!(checkout_id, project: @project)
-        rescue BachsAPIError, BachsBillingVerificationCheckout::VerificationError, PolarAPIError => e
+        rescue BachsAPIError, BachsBillingVerificationCheckout::VerificationError => e
           Clog.emit("invalid Bachs billing verification", {invalid_bachs_billing_verification: {project_id: @project.id, checkout_id:, message: e.message}})
           raise_web_error("We couldn't validate your Bachs checkout. If you think this is a mistake, please contact support@layerrail.com.")
         end
@@ -163,6 +165,8 @@ class Clover
       end
 
       r.get "success" do
+        r.redirect billing_path if Config.billing_checkout_provider == "bachs"
+
         handle_validation_failure("project/billing")
         checkout_id = typecast_params.nonempty_str("checkout_id") || typecast_params.nonempty_str("session_id")
         raise_web_error("Missing Polar checkout id") unless checkout_id
@@ -221,7 +225,35 @@ class Clover
       end
 
       r.get "portal" do
-        next unless @project.billing_info
+        next unless (billing_info = @project.billing_info)
+
+        if billing_info.bachs?
+          response["cache-control"] = "no-store"
+          response["referrer-policy"] = "no-referrer"
+          begin
+            raise BillingInfo::BachsCustomerError, "Bachs billing is temporarily unavailable. Please try again later." unless BachsClient.enabled?
+
+            customer_id = billing_info.ensure_bachs_customer!(account: current_account)
+            session = BachsClient.create_customer_portal_session(customer_id)
+            unless session.is_a?(Hash) && session["url"].is_a?(String)
+              raise BillingInfo::BachsCustomerError, "Bachs returned an invalid billing portal link. Please try again later."
+            end
+            portal_url = URI.parse(session.fetch("url"))
+            unless portal_url.is_a?(URI::HTTPS) && portal_url.host && !portal_url.userinfo
+              raise BillingInfo::BachsCustomerError, "Bachs returned an invalid billing portal link. Please try again later."
+            end
+
+            r.redirect portal_url.to_s, 303
+          rescue BachsAPIError => e
+            Clog.emit("Bachs billing portal unavailable", {bachs_portal_failed: {project_id: @project.id, status: e.status}})
+            flash["error"] = "We couldn't open Bachs billing. Please try again or contact support@layerrail.com."
+          rescue BillingInfo::BachsCustomerError => e
+            flash["error"] = e.message
+          rescue KeyError, URI::InvalidURIError, JSON::ParserError
+            flash["error"] = "We couldn't open Bachs billing. Please try again or contact support@layerrail.com."
+          end
+          r.redirect billing_path
+        end
 
         begin
           session = PolarClient.create_customer_session(
@@ -253,6 +285,11 @@ class Clover
         r.delete :ubid_uuid do |id|
           next unless (payment_method = @project.payment_methods_dataset.with_pk(id))
 
+          if payment_method.billing_info.bachs?
+            response.status = 400
+            next {error: {message: "Manage payment methods in your Bachs billing profile."}}
+          end
+
           unless payment_method.billing_info.payment_methods_dataset.count > 1
             response.status = 400
             next {error: {message: "You can't delete the last payment method of a project."}}
@@ -277,12 +314,7 @@ class Clover
             view "project/invoice"
           else
             response.attachment invoice.filename, "inline"
-            begin
-              Invoice.blob_storage_client.get_object(bucket: Config.invoices_bucket_name, key: invoice.blob_key).body.read
-            rescue Aws::S3::Errors::NoSuchKey
-              Clog.emit("Could not find the invoice", {not_found_invoice: {invoice_ubid: invoice.ubid}})
-              invoice.generate_pdf
-            end
+            invoice.pdf
           end
         end
 
@@ -306,6 +338,8 @@ class Clover
               raise_web_error("We couldn't start your invoice checkout. Please try again or contact support@layerrail.com")
             end
           end
+
+          raise_web_error("Bachs invoice checkout is temporarily unavailable. Please try again later.") if Config.billing_checkout_provider == "bachs"
 
           raise_web_error("Polar invoice checkout is not configured. Set POLAR_INVOICE_PRODUCT_ID.") unless Config.polar_invoice_product_id
 

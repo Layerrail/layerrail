@@ -1525,7 +1525,9 @@ class Clover < Roda
   after do |res|
     headers = res && res[1]
     unless edge? || !headers
+      suppress_referrer = headers["referrer-policy"] == "no-referrer"
       headers.merge!(RodaResponse::UNIVERSAL_SECURITY_HEADERS)
+      headers["referrer-policy"] = "no-referrer" if suppress_referrer
       headers["cache-control"] ||= "no-store" unless request.path_info.start_with?("/assets/", "/brand/")
     end
   end

@@ -49,9 +49,11 @@ class BachsBillingVerificationCheckout
       products.any? { it["product_id"] == product_id }
     return {status: "not_paid", checkout:} unless paid
 
-    polar_customer = ensure_polar_customer(project, checkout.fetch("customer"))
     payment_id = checkout.dig("charge", "payment_id") || checkout.dig("charge", "charge_id") || checkout_id
-    customer_id = checkout.dig("customer", "id") || project.ubid
+    customer_id = checkout.dig("customer", "customer_id") || checkout.dig("customer", "id")
+    unless BillingInfo.valid_bachs_customer_id?(customer_id)
+      raise VerificationError, "Bachs verification checkout did not include a valid customer id"
+    end
     refund_status = refund_verification_charge(checkout_id, checkout)
     changed = false
 
@@ -59,8 +61,13 @@ class BachsBillingVerificationCheckout
       locked_project = Project.where(id: project.id).for_update.first
       billing_info = locked_project.billing_info
       unless billing_info
-        billing_info = BillingInfo.create(stripe_id: polar_customer["id"] || "polar:#{project.ubid}")
+        billing_info = BillingInfo.create(stripe_id: "bachs:#{project.ubid}", bachs_customer_id: customer_id)
         locked_project.update(billing_info_id: billing_info.id)
+        changed = true
+      end
+
+      if billing_info[:bachs_customer_id] != customer_id
+        billing_info.update(bachs_customer_id: customer_id)
         changed = true
       end
 
@@ -97,26 +104,6 @@ class BachsBillingVerificationCheckout
     return {status: "project_not_found"} unless project
 
     reconcile!(checkout_id, project:)
-  end
-
-  def self.ensure_polar_customer(project, customer)
-    PolarClient.get_customer_by_external_id(project.ubid)
-  rescue PolarAPIError => ex
-    customer_missing = ex.status == 404 || (ex.status == 422 && ex.body.to_s.include?("Customer does not exist"))
-    raise unless customer_missing
-
-    begin
-      PolarClient.create_customer(
-        external_id: project.ubid,
-        email: customer.fetch("email"),
-        name: customer["name"],
-        metadata: {project_id: project.ubid, billing_provider: "bachs"},
-      )
-    rescue PolarAPIError => create_ex
-      raise unless create_ex.status == 409
-
-      PolarClient.get_customer_by_external_id(project.ubid)
-    end
   end
 
   def self.refund_verification_charge(checkout_id, checkout)

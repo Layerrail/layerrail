@@ -87,7 +87,7 @@ class Invoice < Sequel::Model
       return true
     end
 
-    if Config.polar_access_token || BachsClient.enabled?
+    if Config.billing_checkout_provider == "bachs" || Config.polar_access_token || BachsClient.enabled?
       Clog.emit("Invoice payment is handled by hosted checkout.", {invoice_payment_pending: {ubid:, cost: amount, provider: invoice_checkout_provider_name}})
       send_payment_due_email
       return true
@@ -154,6 +154,8 @@ class Invoice < Sequel::Model
   end
 
   def send_payment_due_email
+    return true if InvoiceEmailDelivery.sent?(invoice: self, notification_type: "payment_due")
+
     data = Serializers::Invoice.serialize(self)
     pdf = generate_pdf(data)
     receivers = invoice_email_receivers(data)
@@ -162,7 +164,8 @@ class Invoice < Sequel::Model
       return
     end
 
-    Util.send_email(receivers, "LayerRail #{data.name} Invoice ##{data.invoice_number}",
+    InvoiceEmailDelivery.deliver!(invoice: self, notification_type: "payment_due", receivers:,
+      subject: "LayerRail #{data.name} Invoice ##{data.invoice_number}",
       greeting: invoice_email_greeting(data),
       body: ["Please find your current invoice ##{data.invoice_number} below.",
         "The invoice amount of #{data.total} is ready for payment through #{invoice_checkout_provider_name}.",
@@ -174,6 +177,8 @@ class Invoice < Sequel::Model
   end
 
   def send_success_email
+    return true if InvoiceEmailDelivery.sent?(invoice: self, notification_type: status)
+
     data = Serializers::Invoice.serialize(self)
     pdf = generate_pdf(data)
     receivers = invoice_email_receivers(data)
@@ -181,7 +186,7 @@ class Invoice < Sequel::Model
       Clog.emit("Couldn't send the invoice because it has no billing information", {invoice_no_billing_info: {ubid:}})
       return
     end
-    persist(pdf)
+    archive_pdf(pdf)
     messages = case status
     when "below_minimum_threshold"
       ["Since the invoice total of #{data.total} is below our minimum charge threshold, there will be no charges for this month."]
@@ -204,7 +209,8 @@ class Invoice < Sequel::Model
       messages << "You saved $#{saved_amount.to_i} this month using managed LayerRail runners instead of GitHub hosted runners!"
     end
 
-    Util.send_email(receivers, "LayerRail #{data.name} Invoice ##{data.invoice_number}",
+    InvoiceEmailDelivery.deliver!(invoice: self, notification_type: status, receivers:,
+      subject: "LayerRail #{data.name} Invoice ##{data.invoice_number}",
       greeting: invoice_email_greeting(data),
       body: ["Please find your current invoice ##{data.invoice_number} below.",
         *messages,
@@ -217,10 +223,11 @@ class Invoice < Sequel::Model
   def send_failure_email(errors)
     data = Serializers::Invoice.serialize(self)
     receivers = invoice_email_receivers(data)
+    receivers.concat(Authorization.allowed_accounts_dataset(project.id, "Project:billing", project).select_map(:email))
     Util.send_email(receivers.uniq, "Urgent: Action Required to Prevent Service Disruption",
       greeting: invoice_email_greeting(data),
       body: ["We hope this message finds you well.",
-        "We couldn't complete your Polar invoice payment with the following errors:",
+        "We couldn't complete your invoice payment with the following errors:",
         *errors.map { "- #{it}" },
         "The invoice amount of #{data.total} still needs attention.",
         "To prevent service disruption, please update your billing information within the next two days.",
@@ -230,7 +237,7 @@ class Invoice < Sequel::Model
   end
 
   def invoice_checkout_provider_name
-    BachsClient.invoice_checkout_enabled? ? "Bachs" : "Polar"
+    Config.billing_checkout_provider == "bachs" ? "Bachs" : "Polar"
   end
 
   def invoice_billing_country
@@ -239,7 +246,8 @@ class Invoice < Sequel::Model
   end
 
   def invoice_email_receivers(data)
-    receivers = [data.billing_email].compact
+    email = data.billing_email.to_s.strip
+    receivers = email.empty? ? [] : [email]
     receivers.concat(Authorization.allowed_accounts_dataset(project.id, "Project:billing", project).select_map(:email)) if receivers.empty?
     receivers.uniq
   end
@@ -380,6 +388,17 @@ class Invoice < Sequel::Model
     pdf.render
   end
 
+  def pdf
+    return generate_pdf unless Invoice.blob_storage_configured?
+
+    begin
+      Invoice.blob_storage_client.get_object(bucket: Config.invoices_bucket_name, key: blob_key).body.read
+    rescue Aws::S3::Errors::ServiceError, Aws::Errors::MissingCredentialsError, Seahorse::Client::NetworkingError => e
+      Clog.emit("Could not retrieve stored invoice PDF", {invoice_pdf_storage_unavailable: {invoice_ubid: ubid, error_class: e.class.name}})
+      generate_pdf
+    end
+  end
+
   def persist(pdf, overwrite: false)
     payload = {
       bucket: Config.invoices_bucket_name,
@@ -391,6 +410,16 @@ class Invoice < Sequel::Model
     Invoice.blob_storage_client.put_object(payload)
   end
 
+  def archive_pdf(pdf)
+    return false unless Invoice.blob_storage_configured?
+
+    persist(pdf)
+    true
+  rescue Aws::S3::Errors::ServiceError, Aws::Errors::MissingCredentialsError, Seahorse::Client::NetworkingError => e
+    Clog.emit("Could not archive invoice PDF", {invoice_pdf_storage_unavailable: {invoice_ubid: ubid, error_class: e.class.name}})
+    false
+  end
+
   def generate_download_link
     Aws::S3::Presigner.new(client: Invoice.blob_storage_client).presigned_url(:get_object,
       bucket: Config.invoices_bucket_name,
@@ -400,12 +429,20 @@ class Invoice < Sequel::Model
     nil
   end
 
+  def self.blob_storage_configured?
+    [Config.invoices_blob_storage_endpoint, Config.invoices_blob_storage_access_key, Config.invoices_blob_storage_secret_key].all? { !it.to_s.strip.empty? }
+  end
+
   def self.blob_storage_client
     Aws::S3::Client.new(
       endpoint: Config.invoices_blob_storage_endpoint,
       access_key_id: Config.invoices_blob_storage_access_key,
       secret_access_key: Config.invoices_blob_storage_secret_key,
       region: "auto",
+      http_open_timeout: 5,
+      http_read_timeout: 10,
+      retry_mode: "standard",
+      max_attempts: 1,
       request_checksum_calculation: "when_required",
       response_checksum_validation: "when_required",
     )

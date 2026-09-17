@@ -10,8 +10,103 @@ class BillingInfo < Sequel::Model
 
   plugin ResourceMethods
 
+  class BachsCustomerError < StandardError; end
+
+  def bachs_customer_id
+    stored_id = self[:bachs_customer_id]
+    return stored_id if self.class.valid_bachs_customer_id?(stored_id)
+
+    ids = bachs_receipt_customer_ids
+    ids.first if ids.one?
+  end
+
+  # Older verified checkouts stored the provider customer on their receipt.
+  def bachs_receipt_customer_ids
+    payment_methods.filter_map do |payment_method|
+      next unless payment_method.stripe_id.start_with?("bachs:payment:")
+      next unless payment_method.card_fingerprint.to_s.start_with?("bachs:")
+
+      customer_id = payment_method.card_fingerprint.to_s.delete_prefix("bachs:")
+      customer_id if self.class.valid_bachs_customer_id?(customer_id)
+    end.uniq
+  end
+
+  def self.valid_bachs_customer_id?(id)
+    /\Acust_[a-zA-Z0-9_]+\z/.match?(id.to_s)
+  end
+
+  def bachs?
+    Config.billing_checkout_provider == "bachs" || stripe_id.start_with?("bachs:") || !bachs_customer_id.nil?
+  end
+
+  def ensure_bachs_customer!(account:)
+    DB.transaction do
+      lock!
+      if (customer_id = bachs_customer_id)
+        update(bachs_customer_id: customer_id) unless self[:bachs_customer_id] == customer_id
+        next customer_id
+      end
+
+      if self[:bachs_customer_id] || bachs_receipt_customer_ids.length > 1
+        raise BachsCustomerError, "We couldn't identify your Bachs billing profile. Contact support@layerrail.com."
+      end
+
+      # A billing form's email is editable and is not proof of customer identity.
+      raise BachsCustomerError, "Verify your account email before opening Bachs billing." unless account.status_id == 2
+
+      email = account.email.to_s.strip
+      raise BachsCustomerError, "Your account needs a verified email for Bachs billing." if email.empty?
+
+      result = BachsClient.list_customers(search: email)
+      unless result.is_a?(Hash) && result["items"].is_a?(Array) && result["items"].all? { it.is_a?(Hash) } && result.dig("pagination", "has_more") == false
+        raise BachsCustomerError, "We couldn't identify your Bachs billing profile. Contact support@layerrail.com."
+      end
+      customers = result["items"].select { it["email"].to_s.casecmp?(email) }
+      if customers.length > 1
+        raise BachsCustomerError, "We couldn't identify your Bachs billing profile. Contact support@layerrail.com."
+      end
+
+      # A lost provider response must not create another customer on retry.
+      customer = customers.first || BachsClient.create_customer(
+        {email:, name: account.name || email},
+        idempotency_key: "layerrail-billing-customer-#{id}"
+      )
+      customer_id = customer["customer_id"]
+      unless self.class.valid_bachs_customer_id?(customer_id) && customer["email"].to_s.casecmp?(email)
+        raise BachsCustomerError, "We couldn't verify your Bachs billing profile. Contact support@layerrail.com."
+      end
+
+      update(bachs_customer_id: customer_id)
+      customer_id
+    end
+  end
+
   def billing_data
-    if Config.polar_access_token
+    if bachs?
+      @billing_data ||= begin
+        return {} unless (customer_id = bachs_customer_id)
+
+        data = BachsClient.get_customer(customer_id)
+        address = data["billing_address"] || {}
+        metadata = data["metadata"] || {}
+        {
+          "name" => data["name"],
+          "email" => data["email"],
+          "address" => [address["line1"], address["line2"]].compact.join(" "),
+          "country" => address["country"],
+          "city" => address["city"],
+          "state" => address["state"],
+          "postal_code" => address["postal_code"],
+          "tax_id" => metadata["tax_id"],
+          "company_name" => metadata["company_name"],
+          "note" => metadata["note"]
+        }
+      rescue BachsAPIError => e
+        raise unless e.status == 404
+
+        {}
+      end
+    elsif Config.polar_access_token
       @billing_data ||= begin
         return {} unless project
 
@@ -64,6 +159,7 @@ class BillingInfo < Sequel::Model
   alias_method :stripe_data, :billing_data
 
   def polar_external_customer_id
+    return if bachs?
     return unless Config.polar_access_token
     return stripe_id.delete_prefix("polar:") if stripe_id.to_s.start_with?("polar:")
 
@@ -80,7 +176,7 @@ class BillingInfo < Sequel::Model
   end
 
   def after_destroy
-    if Config.stripe_secret_key && !Config.polar_access_token
+    if !bachs? && Config.stripe_secret_key && !Config.polar_access_token
       StripeClient.customers.delete(stripe_id)
     end
     super

@@ -26,6 +26,7 @@ workers = [
   {ubid: "stresolvee4block0dnsnamesz", prog: "ResolveGloballyBlockedDnsnames"},
   {ubid: "stcheckzvsagezalertszzzzza", prog: "CheckUsageAlerts"},
   {ubid: "stzzzzzzzz021gzz0a10vsage1", prog: "CollectInferenceUsage"},
+  {ubid: "stzzzzzzzz021gzzm0nth1y110", prog: "FinalizeMonthlyInvoices"},
   {ubid: "stexp1repr0ject1nv1tat10na", prog: "ExpireProjectInvitations"},
   {ubid: "st10g0vmh0st0vt111zat10nzz", prog: "LogVmHostUtilizations"},
   Config.domains_enabled ? {ubid: "stzzzzzzzz021gzz0dn0renew1", prog: "Domain::AutoRenewDomains"} : nil,

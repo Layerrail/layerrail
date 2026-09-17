@@ -37,17 +37,27 @@ module Mail
     end
 
     def deliver!(mail)
+      headers = {
+        "Accept" => "application/json",
+        "Authorization" => "Bearer #{@api_key}",
+        "Content-Type" => "application/json",
+      }
+      if (key = mail["X-LayerRail-Idempotency-Key"]&.value)
+        headers["Idempotency-Key"] = key
+      end
       response = Excon.post(
         "#{@api_base_url}/emails",
-        headers: {
-          "Accept" => "application/json",
-          "Authorization" => "Bearer #{@api_key}",
-          "Content-Type" => "application/json",
-        },
+        headers:,
         body: JSON.generate(payload_for(mail)),
         expects: [200, 201, 202],
+        connect_timeout: 5, read_timeout: 30, write_timeout: 30,
       )
-      response.body.to_s.empty? ? {} : JSON.parse(response.body)
+      result = response.body.to_s.empty? ? {} : JSON.parse(response.body)
+      unless result.is_a?(Hash) && result["id"].is_a?(String) && !result["id"].strip.empty?
+        raise ResendDeliveryError.new(response.status, JSON.generate({name: "missing_delivery_confirmation"}))
+      end
+      mail["X-LayerRail-Delivery-Id"] = result["id"]
+      result
     rescue Excon::Error => ex
       response = ex.response
       raise ResendDeliveryError.new(response&.status, response&.body)

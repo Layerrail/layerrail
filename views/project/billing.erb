@@ -73,6 +73,15 @@
       </div>
     </div>
     <div class="overflow-hidden rounded-lg shadow ring-1 ring-black ring-opacity-5 bg-white divide-y divide-gray-200">
+      <% if billing_info.bachs? %>
+        <div class="px-4 py-5 sm:p-6">
+          <% if billing_data["name"] || billing_data["email"] %>
+            <p class="text-sm font-medium text-gray-900"><%= billing_data["name"] %></p>
+            <p class="mt-1 text-sm text-gray-600"><%= billing_data["email"] %></p>
+          <% end %>
+          <p class="mt-2 text-sm text-gray-600">Manage your contact details, invoices, subscriptions and saved payment methods in your Bachs billing profile. Add a payment method there if you have not used Bachs before.</p>
+        </div>
+      <% else %>
       <% form(action: billing_path, method: :post) do %>
         <div class="px-4 py-5 sm:p-6">
           <div class="space-y-12">
@@ -182,13 +191,14 @@
           </div>
         </div>
       <% end %>
+      <% end %>
     </div>
     <!-- Payment Methods Card -->
     <%== part(
       "components/table_card",
       title: "Payment Methods",
       right_items: [
-        part("components/button", text: "Open Billing Profile", link: "#{billing_path}/portal")
+        part("components/button", text: billing_info.bachs? ? "Open Bachs Billing Profile" : "Open Billing Profile", link: "#{billing_path}/portal")
       ],
       rows:
         billing_info.payment_methods.map do |pm|
@@ -196,12 +206,14 @@
           payment_title = if payment_data["last4"]
             "#{payment_data["brand"].capitalize} ending in #{payment_data["last4"]}"
           else
-            "#{payment_data["brand"] || "Polar"} billing"
+            "#{payment_data["brand"] || (billing_info.bachs? ? "Previous provider" : "Polar")} billing"
           end
           payment_subtitle = if payment_data["exp_month"] && payment_data["exp_year"]
             "Expires #{payment_data["exp_month"]}/#{payment_data["exp_year"]}"
           elsif payment_data["brand"] == "Bachs"
             "Verified through Bachs hosted checkout"
+          elsif billing_info.bachs?
+            "Previous billing connection; manage new payments through Bachs"
           else
             "Managed in the Polar customer portal"
           end
@@ -210,7 +222,7 @@
               payment_title,
               payment_subtitle,
               "Added on #{pm.created_at.strftime("%B %d, %Y")}",
-              [
+              !billing_info.bachs? && [
                 "delete_button",
                 {
                   component: {
