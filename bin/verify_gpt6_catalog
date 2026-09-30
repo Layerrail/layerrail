@@ -1,0 +1,41 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Read-only deployed-application verification. Loads configuration and catalog
+# serializers; does not create customer usage or contact payment providers.
+require "json"
+require_relative "../loader"
+
+checks = {}
+begin
+  checks[:production] = Config.production?
+  checks[:inference_enabled] = Config.ai_inference_enabled
+  checks[:azure_selected] = Config.ai_inference_provider.to_s.split(",").map(&:strip).include?("azure_foundry")
+  checks[:azure_configured] = !Config.azure_foundry_endpoint.to_s.empty? && !Config.azure_foundry_api_key.to_s.empty?
+  app = Clover.allocate
+  entries = app.catalog_inference_models
+  expected = {"gpt-6.1-sol" => true, "gpt-6-sol" => false, "gpt-6-luna" => false, "gpt-6-astra" => true}
+  expected.each do |name, available|
+    model = entries.find { it.model_name == name }
+    checks["#{name}_catalog"] = model && entries.count { it.model_name == name } == 1
+    checks["#{name}_availability"] = model && PremiumAiUsageMeter.billable_model?(model) == available
+    checks["#{name}_api"] = model && app.openai_model_entry(model)["id"] == name
+    next unless model
+
+    {"input" => model.prompt_billing_resource, "output" => model.completion_billing_resource}.each do |kind, resource|
+      rate = BillingRate.from_resource_properties("InferenceTokens", resource, "global")
+      checks["#{name}_#{kind}_rate"] = rate && (rate["unit_price"] * 1_000_000 - model.tags.fetch("pricing").fetch(kind)).abs < 0.00001
+    end
+    if model.tags["long_context_threshold"]
+      {"input" => model.long_context_prompt_billing_resource, "output" => model.long_context_completion_billing_resource}.each do |kind, resource|
+        rate = BillingRate.from_resource_properties("InferenceTokens", resource, "global")
+        checks["#{name}_long_#{kind}_rate"] = rate && (rate["unit_price"] * 1_000_000 - model.tags.fetch("pricing").fetch("long_context").fetch(kind)).abs < 0.00001
+      end
+    end
+  end
+  puts "LAYER_RAIL_VERIFY #{JSON.generate(checks)}"
+  exit(checks.values.all? ? 0 : 1)
+rescue => error
+  puts "LAYER_RAIL_VERIFY #{JSON.generate(checks.merge(error_class: error.class.name))}"
+  exit 1
+end

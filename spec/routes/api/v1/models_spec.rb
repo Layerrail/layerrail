@@ -32,6 +32,9 @@ RSpec.describe Clover, "GET /v1/models" do
 
     expect(body["data"]).to include(
       include("id" => "gpt-6-astra", "object" => "model", "owned_by" => "azure_foundry"),
+      include("id" => "gpt-6.1-sol", "object" => "model", "owned_by" => "azure_foundry"),
+      include("id" => "gpt-6-sol", "object" => "model", "owned_by" => "azure_foundry"),
+      include("id" => "gpt-6-luna", "object" => "model", "owned_by" => "azure_foundry"),
     )
   end
 

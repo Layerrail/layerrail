@@ -93,6 +93,93 @@
     deployment: gpt-5.6-terra
     reasoning: true
     pricing: {input: 7.0, output: 56.0}
+- id: azure-openai-gpt-6-1-sol
+  model_name: gpt-6.1-sol
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-gpt-6-1-sol-input
+  completion_billing_resource: azure-gpt-6-1-sol-output
+  long_context_prompt_billing_resource: azure-gpt-6-1-sol-long-input
+  long_context_completion_billing_resource: azure-gpt-6-1-sol-long-output
+  tags:
+    display_name: GPT-6.1 Sol
+    capability: Text Generation
+    context_length: 1.05M
+    max_output_tokens: 128000
+    model_version: "2026-09-29"
+    api: chat
+    deployment: gpt-6.1-sol
+    reasoning: true
+    native_responses: true
+    pricing_source: https://developers.openai.com/api/docs/models/gpt-6.1-sol
+    catalog_pricing_source: https://developers.openai.com/api/docs/models/gpt-6.1-sol
+    long_context_threshold: 272000
+    pricing: {input: 2.8, output: 14.0, long_context: {input: 5.6, output: 21.0}}
+    catalog_prices:
+    - {label: "Input <=272K (per 1M tokens)", price: "2.8"}
+    - {label: "Output <=272K input (per 1M tokens)", price: "14.0"}
+    - {label: "Input >272K (per 1M tokens)", price: "5.6"}
+    - {label: "Output >272K input (per 1M tokens)", price: "21.0"}
+- id: azure-openai-gpt-6-sol
+  model_name: gpt-6-sol
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-gpt-6-sol-input
+  completion_billing_resource: azure-gpt-6-sol-output
+  long_context_prompt_billing_resource: azure-gpt-6-sol-long-input
+  long_context_completion_billing_resource: azure-gpt-6-sol-long-output
+  tags:
+    display_name: GPT-6 Sol
+    capability: Text Generation
+    context_length: 1.05M
+    max_output_tokens: 128000
+    model_version: "2026-09-22"
+    api: chat
+    deployment: gpt-6-sol
+    reasoning: true
+    native_responses: true
+    availability: unavailable
+    billing_status: catalog_only
+    unavailable_reason: This Azure deployment is not configured on LayerRail's Foundry resource.
+    pricing_source: https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/
+    catalog_pricing_source: https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/
+    long_context_threshold: 272000
+    pricing: {input: 2.8, output: 14.0, long_context: {input: 5.6, output: 21.0}}
+    catalog_prices:
+    - {label: "Input <=272K (per 1M tokens)", price: "2.8"}
+    - {label: "Output <=272K input (per 1M tokens)", price: "14.0"}
+    - {label: "Input >272K (per 1M tokens)", price: "5.6"}
+    - {label: "Output >272K input (per 1M tokens)", price: "21.0"}
+- id: azure-openai-gpt-6-luna
+  model_name: gpt-6-luna
+  enabled: true
+  provider: azure_foundry
+  prompt_billing_resource: azure-gpt-6-luna-input
+  completion_billing_resource: azure-gpt-6-luna-output
+  long_context_prompt_billing_resource: azure-gpt-6-luna-long-input
+  long_context_completion_billing_resource: azure-gpt-6-luna-long-output
+  tags:
+    display_name: GPT-6 Luna
+    capability: Text Generation
+    context_length: 1.05M
+    max_output_tokens: 128000
+    model_version: "2026-09-22"
+    api: chat
+    deployment: gpt-6-luna
+    reasoning: true
+    native_responses: true
+    availability: unavailable
+    billing_status: catalog_only
+    unavailable_reason: This Azure deployment is not configured on LayerRail's Foundry resource.
+    pricing_source: https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/
+    catalog_pricing_source: https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/
+    long_context_threshold: 272000
+    pricing: {input: 0.14, output: 0.7, long_context: {input: 0.28, output: 1.05}}
+    catalog_prices:
+    - {label: "Input <=272K (per 1M tokens)", price: "0.14"}
+    - {label: "Output <=272K input (per 1M tokens)", price: "0.7"}
+    - {label: "Input >272K (per 1M tokens)", price: "0.28"}
+    - {label: "Output >272K input (per 1M tokens)", price: "1.05"}
 - id: azure-openai-gpt-6-astra
   model_name: gpt-6-astra
   enabled: true

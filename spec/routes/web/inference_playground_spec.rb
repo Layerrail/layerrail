@@ -88,6 +88,26 @@ RSpec.describe Clover, "inference-playground" do
       expect(page).to have_css('option[value="gpt-6-astra"][data-display-name="GPT-6 Astra"][data-context-length="1.05M"]', visible: :all)
     end
 
+    it "offers GPT-6.1 Sol with matching paid input and output prices" do
+      allow(Config).to receive(:ai_inference_provider).and_return("azure_foundry")
+
+      visit "#{project.path}/inference-playground"
+
+      expect(page).to have_select("inference_endpoint", with_options: ["gpt-6.1-sol"])
+      expect(page).to have_css('option[value="gpt-6.1-sol"][data-display-name="GPT-6.1 Sol"][data-context-length="1.05M"][data-input-price="2.8"][data-output-price="14.0"][data-billable="true"]', visible: :all)
+    end
+
+    it "lists undeployed GPT-6 Sol and Luna as unavailable options" do
+      allow(Config).to receive(:ai_inference_provider).and_return("azure_foundry")
+
+      visit "#{project.path}/inference-playground"
+
+      %w[gpt-6-sol gpt-6-luna].each do |name|
+        expect(page).to have_css("option[value='#{name}'][data-billable='false'][disabled]", visible: :all)
+        expect(page).to have_no_css("option[value='#{name}'][selected]", visible: :all)
+      end
+    end
+
     it "renders separate input and output billing prices for catalog models" do
       allow(Config).to receive(:ai_inference_provider).and_return("azure_foundry")
       allow(BillingRate).to receive(:million_token_price).and_call_original

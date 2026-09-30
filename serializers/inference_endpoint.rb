@@ -20,6 +20,7 @@ class Serializers::InferenceEndpoint < Serializers::Base
         "deprecated",
         "display_name",
         "hf_model",
+        "long_context_threshold",
         "multimodal",
         "pricing",
         "provider",

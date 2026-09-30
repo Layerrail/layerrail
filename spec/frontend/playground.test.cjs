@@ -113,6 +113,29 @@ test('cached input pricing appears only when its paid rate is configured', (t) =
   assert.equal(f.$('#inference_selected_price').text(), '$2.00 input / $4.00 output per 1M tokens');
 });
 
+for (const input_tokens of [272000, 272001]) {
+  test(`GPT-6 playground displays and estimates the correct full-request tier for ${input_tokens} input tokens`, async (t) => {
+    const f = fixture(t, { api: 'responses', provider: 'azure_foundry', fetch: async () => jsonResponse({
+      output_text: 'Done', usage: { input_tokens, output_tokens: 7, input_tokens_details: { cached_tokens: 100000 } }
+    }), configure(w) {
+      w.$('#inference_endpoint option').attr({ 'data-input-price': '2.8', 'data-output-price': '14',
+        'data-tags': JSON.stringify({ long_context_threshold: 272000, pricing: { long_context: { input: 5.6, output: 21 } } }) });
+    } });
+    assert.match(f.$('#inference_selected_price').text(), /Above 272,000 input tokens: \$5\.60 input \/ \$21\.00 output per 1M for the full request/);
+    await f.send();
+    const expected_cost = input_tokens > 272000 ? '$1.523353' : '$0.761698';
+    assert.equal(f.$('#inference_session_cost').text(), expected_cost);
+  });
+}
+
+test('a model without long-context pricing keeps its existing tariff for a large provider input count', async (t) => {
+  const f = fixture(t, { api: 'responses', provider: 'azure_foundry', fetch: async () => jsonResponse({
+    output_text: 'Done', usage: { input_tokens: 272001, output_tokens: 7 }
+  }) });
+  await f.send();
+  assert.equal(f.$('#inference_session_cost').text(), '$0.544030');
+});
+
 test('embedding pricing shows only its paid input rate', (t) => {
   const f = fixture(t, { capability: 'Embeddings' });
   f.$('#inference_endpoint option').attr({ 'data-billable': 'true', 'data-input-price': '0.01375', 'data-output-price': '0' });

@@ -184,8 +184,20 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     return `$${number.toFixed(6)}`;
   }
 
-  function estimateCost(prompt_tokens, completion_tokens, input_price = selectedEndpointNumber('data-input-price'), output_price = selectedEndpointNumber('data-output-price')) {
+  function estimateCost(prompt_tokens, completion_tokens, input_price = selectedEndpointNumber('data-input-price'), output_price = selectedEndpointNumber('data-output-price'), long_context_pricing = null) {
+    if (long_context_pricing && prompt_tokens > long_context_pricing.threshold) {
+      input_price = long_context_pricing.input;
+      output_price = long_context_pricing.output;
+    }
     return (prompt_tokens * input_price + completion_tokens * output_price) / 1_000_000;
+  }
+
+  function selectedLongContextPricing() {
+    const tags = selectedTags();
+    const threshold = Number(tags.long_context_threshold);
+    const input = Number(tags.pricing?.long_context?.input);
+    const output = Number(tags.pricing?.long_context?.output);
+    return Number.isInteger(threshold) && threshold > 0 && input > 0 && output > 0 ? { threshold, input, output } : null;
   }
 
   function estimateTokenCount(value) {
@@ -203,10 +215,10 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     $('#inference_session_cost').text(formatEstimatedCost(session_usage.cost));
   }
 
-  function recordUsage(prompt_tokens, completion_tokens, message_id, input_price, output_price) {
+  function recordUsage(prompt_tokens, completion_tokens, message_id, input_price, output_price, long_context_pricing) {
     prompt_tokens = Number(prompt_tokens || 0);
     completion_tokens = Number(completion_tokens || 0);
-    const cost = estimateCost(prompt_tokens, completion_tokens, input_price, output_price);
+    const cost = estimateCost(prompt_tokens, completion_tokens, input_price, output_price, long_context_pricing);
     const summary = `Usage: ${formatTokenCount(prompt_tokens)} input tokens and ${formatTokenCount(completion_tokens)} output tokens. Estimated cost: ${formatEstimatedCost(cost)}.`;
 
     $(`#inference_message_info_${message_id}`).text(summary);
@@ -242,6 +254,10 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
       const cached_input_price = selectedEndpointNumber('data-cached-input-price');
       const cached_input = cached_input_price > 0 ? ` / ${formatPrice(cached_input_price)} cached input` : '';
       price = `${formatPrice(input_price)} input${output}${cached_input} per 1M tokens`;
+      const long_context_pricing = selectedLongContextPricing();
+      if (long_context_pricing) {
+        price += `. Above ${formatTokenCount(long_context_pricing.threshold)} input tokens: ${formatPrice(long_context_pricing.input)} input / ${formatPrice(long_context_pricing.output)} output per 1M for the full request`;
+      }
     }
     $('#inference_selected_price').text(price);
     $('#inference_selected_url').text($option.attr('data-url') || "-");
@@ -669,6 +685,7 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
     const streams_response = !native_run && !embeddings_request && endpoint_api === 'chat' && endpoint_provider !== 'azure_foundry';
     const request_input_price = selectedEndpointNumber('data-input-price');
     const request_output_price = selectedEndpointNumber('data-output-price');
+    const request_long_context_pricing = selectedLongContextPricing();
     const history = previous_messages.filter((message) => message.role === 'user' || message.content[0].text);
     const request = { controller: new AbortController(), orb: null, messageId: null };
     activeRequest = request;
@@ -847,7 +864,7 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
       ensureCurrent();
       const prompt_tokens = usage?.prompt_tokens ?? usage?.input_tokens ?? estimateTokenCount(request_payload);
       const completion_tokens = usage?.completion_tokens ?? usage?.output_tokens ?? (['Text-to-Image', 'Text-to-Speech', 'Embeddings'].includes(capability) ? 1 : estimateTokenCount(content));
-      recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price);
+      recordUsage(prompt_tokens, completion_tokens, assistant_message_id, request_input_price, request_output_price, request_long_context_pricing);
       if (!usage) $(`#inference_message_info_${assistant_message_id}`).prepend('Estimated tokens. ');
       if (!assistant_message.content[0].text) $(`#inference_message_info_${assistant_message_id}`).prepend('The model returned no answer. Try again or raise the output limit. ');
       finalState = 'complete';

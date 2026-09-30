@@ -204,6 +204,7 @@ class Clover
     if model.tags["native_responses"]
       validate_azure_foundry_synchronous_request!(payload)
       fail CloverError.new(400, "InvalidRequest", "messages must be an array") unless payload["messages"].is_a?(Array)
+      normalize_azure_gpt6_parameters!(payload, model, "chat/completions")
     else
       normalize_cloudflare_payload!(payload, path)
     end
@@ -225,6 +226,7 @@ class Clover
 
   def handle_azure_foundry_native_responses_request(api_key, model, payload)
     validate_azure_foundry_synchronous_request!(payload)
+    normalize_azure_gpt6_parameters!(payload, model, "responses")
     payload["model"] = model.tags["deployment"] || model.model_name
     payload["max_output_tokens"] ||= payload.delete("max_completion_tokens") || payload.delete("max_tokens")
     payload.delete("max_tokens")
@@ -436,13 +438,55 @@ class Clover
 
   def normalize_azure_foundry_payload!(payload, model)
     deployment = (model.tags["deployment"] || model.model_name).to_s
-    if model.model_name == "gpt-6-astra" || deployment.start_with?("gpt-5", "gpt-6", "o")
+    if azure_gpt6_model?(model) || deployment.start_with?("gpt-5", "gpt-6", "o")
       payload["max_completion_tokens"] ||= payload.delete("max_tokens")
       payload.delete("max_tokens")
       payload.delete("max_completion_tokens") if payload["max_completion_tokens"].nil?
     end
     Array(model.tags["unsupported_parameters"]).each { payload.delete(it) }
     payload.delete("model")
+  end
+
+  def azure_gpt6_model?(model)
+    %w[gpt-6-astra gpt-6.1-sol gpt-6-sol gpt-6-luna].include?(model.model_name)
+  end
+
+  def normalize_azure_gpt6_parameters!(payload, model, path)
+    return unless azure_gpt6_model?(model)
+
+    if path == "responses" && !payload["reasoning"].nil? && !payload["reasoning"].is_a?(Hash)
+      fail CloverError.new(400, "InvalidRequest", "reasoning must be an object containing an effort.")
+    end
+    effort = (path == "responses") ? payload.dig("reasoning", "effort") : payload["reasoning_effort"]
+    supported_efforts = %w[low medium high xhigh max]
+    supports_none = %w[gpt-6-sol gpt-6-luna].include?(model.model_name)
+    supported_efforts << "none" if supports_none
+    if effort && !supported_efforts.include?(effort)
+      fail CloverError.new(400, "InvalidRequest", "#{model.tags["display_name"]} supports reasoning effort #{supported_efforts.join(", ")}.")
+    end
+    if path == "chat/completions" && effort == "max"
+      fail CloverError.new(400, "InvalidRequest", "#{model.tags["display_name"]} max reasoning requires /v1/responses on Azure. Use reasoning: {effort: max} with a Responses request.")
+    end
+
+    tool_choice = payload["tool_choice"] || payload["function_call"]
+    chat_tools = path == "chat/completions" && (
+      !Array(payload["tools"]).empty? || !Array(payload["functions"]).empty? || (tool_choice && tool_choice != "none")
+    )
+    if chat_tools && !supports_none
+      fail CloverError.new(400, "InvalidRequest", "#{model.tags["display_name"]} tool calling requires /v1/responses. Send tools with a Responses request.")
+    end
+    if chat_tools && effort != "none"
+      fail CloverError.new(400, "InvalidRequest", "#{model.tags["display_name"]} chat function calling requires reasoning_effort: none. Use /v1/responses for reasoning with tools.")
+    end
+
+    return if effort == "none"
+
+    %w[temperature top_p top_logprobs].each { payload.delete(it) }
+    if path == "chat/completions"
+      payload.delete("logprobs")
+    elsif payload["include"].is_a?(Array)
+      payload["include"] = payload["include"].reject { it == "message.output_text.logprobs" }
+    end
   end
 
   def handle_cloudflare_ai_run_request
@@ -944,10 +988,20 @@ class Clover
       PremiumAiUsageMeter.validate_rate!(cached_resource)
     end
 
+    prompt_resource = model.prompt_billing_resource
+    completion_resource = model.completion_billing_resource
+    threshold = model.tags["long_context_threshold"]
+    # The provider's inclusive input total determines the tier for the entire
+    # request, including output. Estimated text lengths cannot select a rate.
+    if threshold.is_a?(Integer) && threshold.positive? && prompt_tokens > threshold
+      prompt_resource = model.long_context_prompt_billing_resource
+      completion_resource = model.long_context_completion_billing_resource
+    end
+
     DB.transaction do
-      record_inference_tokens(api_key, model, "input", model.prompt_billing_resource, prompt_tokens - cached_tokens)
+      record_inference_tokens(api_key, model, "input", prompt_resource, prompt_tokens - cached_tokens)
       record_inference_tokens(api_key, model, "cached_input", cached_resource, cached_tokens)
-      record_inference_tokens(api_key, model, "output", model.completion_billing_resource, completion_tokens)
+      record_inference_tokens(api_key, model, "output", completion_resource, completion_tokens)
     end
   end
 

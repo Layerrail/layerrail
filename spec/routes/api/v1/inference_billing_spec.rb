@@ -36,6 +36,47 @@ RSpec.describe Clover, "paid inference API" do
     expect(BillingRecord.where(project_id: project.id)).to be_empty
   end
 
+  it "meters GPT-6.1 Sol Responses input and output at its own prices" do
+    connect_billing
+    upstream = stub_request(:post, "https://example.services.ai.azure.com/openai/v1/responses")
+      .with(body: {"model" => "gpt-6.1-sol", "input" => "Hello", "reasoning" => {"effort" => "low"}})
+      .to_return(status: 200, body: {model: "gpt-6.1-sol", output: [], usage: {input_tokens: 20, output_tokens: 7}}.to_json)
+
+    post "/v1/responses", {model: "gpt-6.1-sol", input: "Hello", reasoning: {effort: "low"}}.to_json
+
+    expect(last_response.status).to eq(200)
+    expect(upstream).to have_been_requested.once
+    records = BillingRecord.where(project_id: project.id).all
+    expect(records.to_h { [it.resource_tags["token_kind"], it.amount] }).to eq("input" => 20, "output" => 7)
+    expect(records.to_h { [it.resource_tags["token_kind"], BigDecimal(it.resource_tags["unit_price"])] })
+      .to eq("input" => BigDecimal("0.0000028"), "output" => BigDecimal("0.000014"))
+  end
+
+  it "rejects GPT-6.1 Sol chat tools with an actionable Responses instruction before calling or billing Azure" do
+    connect_billing
+    upstream = stub_request(:post, "https://example.services.ai.azure.com/openai/v1/chat/completions")
+
+    post "/v1/chat/completions", {model: "gpt-6.1-sol", messages: [], tools: [{type: "function", function: {name: "get_status"}}]}.to_json
+
+    expect(last_response.status).to eq(400)
+    expect(last_response.body).to include("tool calling requires /v1/responses")
+    expect(upstream).not_to have_been_requested
+    expect(BillingRecord.where(project_id: project.id)).to be_empty
+  end
+
+  %w[gpt-6-sol gpt-6-luna].each do |name|
+    it "keeps #{name} unavailable before calling or billing Azure" do
+      connect_billing
+      upstream = stub_request(:post, "https://example.services.ai.azure.com/openai/v1/responses")
+
+      post "/v1/responses", {model: name, input: "Hello"}.to_json
+
+      expect(last_response.status).to eq(503)
+      expect(upstream).not_to have_been_requested
+      expect(BillingRecord.where(project_id: project.id)).to be_empty
+    end
+  end
+
   it "rejects unpriced Cloudflare calls even after billing is connected" do
     connect_billing
     post "/v1/run", {model: "@cf/meta/llama-3.1-8b-instruct-fast", prompt: "Hello"}.to_json

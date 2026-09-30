@@ -1,0 +1,68 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Small live checks against the configured Azure resource. Does not create
+# customer billing records, invoices, payments, or Azure deployments.
+require "yaml"
+require_relative "../lib/clover_error"
+require_relative "../lib/azure_foundry_client"
+
+endpoint = ENV["AZURE_FOUNDRY_ENDPOINT"] || ENV["AZURE_OPENAI_ENDPOINT"]
+api_key = ENV["AZURE_FOUNDRY_API_KEY"] || ENV["AZURE_OPENAI_API_KEY"]
+abort "Set AZURE_FOUNDRY_ENDPOINT and AZURE_FOUNDRY_API_KEY before running this live test." if endpoint.to_s.empty? || api_key.to_s.empty?
+
+catalog = YAML.load_file(File.expand_path("../config/ai_models.yml", __dir__))
+family = catalog.select { it["provider"] == "azure_foundry" && it["model_name"].start_with?("gpt-6") }
+requested = ARGV.empty? ? family.select { it["enabled"] && it.dig("tags", "availability") != "unavailable" }.map { it["model_name"] } : ARGV
+abort "Select at least one configured GPT-6 model." if requested.empty?
+abort "Unknown GPT-6 model requested." unless (requested - family.map { it["model_name"] }).empty?
+client = AzureFoundryClient.new(endpoint:, api_key:, api_version: ENV.fetch("AZURE_FOUNDRY_API_VERSION", "2025-01-01-preview"))
+
+verify = lambda do |config, label, path, payload, &valid_response|
+  name = config.fetch("model_name")
+  deployment = config.fetch("tags").fetch("deployment")
+  status, body = client.openai_request(path, payload.merge("model" => deployment))
+  code = body.dig("error", "code").to_s.gsub(/[^a-zA-Z0-9_.-]/, "").slice(0, 100)
+  abort "FAIL #{name} #{label}: Azure HTTP #{status} (#{code})." unless status == 200 && !body["error"]
+  identity = /\A#{Regexp.escape(name)}(?:-\d{4}-\d{2}-\d{2})?\z/
+  abort "FAIL #{name} #{label}: Azure served a different model." unless identity.match?(body["model"].to_s)
+  abort "FAIL #{name} #{label}: expected answer/tool call missing." unless valid_response.call(body)
+  usage = body.fetch("usage", {})
+  input = usage["prompt_tokens"] || usage["input_tokens"]
+  output = usage["completion_tokens"] || usage["output_tokens"]
+  abort "FAIL #{name} #{label}: positive token usage missing." unless input.is_a?(Integer) && input.positive? && output.is_a?(Integer) && output.positive?
+  puts "PASS #{name} #{label}: input=#{input}, output=#{output} tokens"
+end
+
+begin
+  requested.each do |name|
+    config = family.find { it["model_name"] == name }
+    verify.call(config, "chat", "chat/completions", {
+      "messages" => [{"role" => "user", "content" => "Reply with exactly LAYERRAIL_OK."}],
+      "reasoning_effort" => "low", "max_completion_tokens" => 512,
+    }) { it.dig("choices", 0, "message", "content").to_s.strip == "LAYERRAIL_OK" }
+
+    verify.call(config, "responses", "responses", {
+      "input" => "Reply with exactly LAYERRAIL_OK.",
+      "reasoning" => {"effort" => "low"}, "max_output_tokens" => 512, "store" => false,
+    }) do |body|
+      body.fetch("output", []).flat_map { it.fetch("content", []) }
+        .select { it["type"] == "output_text" }.map { it["text"] }.join.strip == "LAYERRAIL_OK"
+    end
+
+    verify.call(config, "function calling", "responses", {
+      "input" => "Call layerrail_smoke_check with ok=true.",
+      "tools" => [{"type" => "function", "name" => "layerrail_smoke_check", "strict" => true,
+                   "parameters" => {"type" => "object", "properties" => {"ok" => {"type" => "boolean"}}, "required" => ["ok"], "additionalProperties" => false}}],
+      "tool_choice" => {"type" => "function", "name" => "layerrail_smoke_check"},
+      "reasoning" => {"effort" => "low"}, "max_output_tokens" => 512, "store" => false,
+    }) do |body|
+      call = body.fetch("output", []).find { it["type"] == "function_call" && it["name"] == "layerrail_smoke_check" }
+      call && JSON.parse(call.fetch("arguments")) == {"ok" => true}
+    end
+  end
+rescue Excon::Error => ex
+  abort "FAIL Azure connection: #{ex.class}. Check endpoint access and deployment."
+rescue JSON::ParserError
+  abort "FAIL Azure returned an invalid JSON tool argument."
+end

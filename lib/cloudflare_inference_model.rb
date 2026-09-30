@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 class CloudflareInferenceModel
-  attr_reader :model_name, :tags, :prompt_billing_resource, :completion_billing_resource, :cached_prompt_billing_resource
+  attr_reader :model_name, :tags, :prompt_billing_resource, :completion_billing_resource, :cached_prompt_billing_resource,
+    :long_context_prompt_billing_resource, :long_context_completion_billing_resource
 
   def initialize(config)
     @model_name = config.fetch("model_name")
@@ -21,6 +22,8 @@ class CloudflareInferenceModel
     @prompt_billing_resource = config.fetch("prompt_billing_resource", "preview-input")
     @completion_billing_resource = config.fetch("completion_billing_resource", "preview-output")
     @cached_prompt_billing_resource = config["cached_prompt_billing_resource"]
+    @long_context_prompt_billing_resource = config["long_context_prompt_billing_resource"]
+    @long_context_completion_billing_resource = config["long_context_completion_billing_resource"]
   end
 
   def ubid
