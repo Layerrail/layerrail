@@ -1,0 +1,59 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Read-only verification; does not create usage, invoices, or payments.
+require "json"
+require_relative "../loader"
+
+effective_at = Time.utc(2026, 9, 30, 18, 35)
+checks = {}
+begin
+  checks[:promotion_active] = Time.now > effective_at
+  azure_rates = BillingRate.rates.select { it["resource_family"].start_with?("azure-") }
+  families = azure_rates.map { it["resource_family"] }.uniq
+  checks[:premium_resource_count] = families.size == 76
+  checks[:all_premium_rates_halved] = families.all? do |family|
+    before = BillingRate.from_resource_properties("InferenceTokens", family, "global", false, effective_at)
+    current = BillingRate.from_resource_properties("InferenceTokens", family, "global")
+    before && current && before["id"] != current["id"] &&
+      current["active_from"] == effective_at &&
+      (current["unit_price"] * 2 - before["unit_price"]).abs < 1e-14 &&
+      BillingRate.from_id(before["id"]) == before
+  end
+
+  models = YAML.load_file("config/ai_models.yml")
+  premium = models.select { it["provider"] == "azure_foundry" }
+  checks[:premium_catalog_count] = premium.size == 36
+  checks[:premium_prices_match] = premium.all? do |model|
+    tags = model.fetch("tags")
+    next false unless tags["discount_percent"] == 50
+
+    price_pairs = {"input" => "prompt_billing_resource", "output" => "completion_billing_resource"}
+    base_matches = price_pairs.all? do |kind, attribute|
+      price = tags.fetch("pricing").fetch(kind)
+      standard = tags.fetch("standard_pricing").fetch(kind)
+      rate = BillingRate.from_resource_properties("InferenceTokens", model[attribute], "global")
+      (price * 2 - standard).abs < 1e-8 && (!rate || (rate["unit_price"] * 1_000_000 - price).abs < 1e-8)
+    end
+    long_matches = !tags["long_context_threshold"] || price_pairs.all? do |kind, attribute|
+      price = tags.fetch("pricing").fetch("long_context").fetch(kind)
+      standard = tags.fetch("standard_pricing").fetch("long_context").fetch(kind)
+      rate = BillingRate.from_resource_properties("InferenceTokens", model["long_context_#{attribute}"], "global")
+      rate && (price * 2 - standard).abs < 1e-8 && (rate["unit_price"] * 1_000_000 - price).abs < 1e-8
+    end
+    base_matches && long_matches
+  end
+  checks[:cloudflare_unchanged] = models.select { it["provider"] == "cloudflare" }.all? do |model|
+    !model.fetch("tags").key?("discount_percent") &&
+      [model["prompt_billing_resource"], model["completion_billing_resource"], model["cached_prompt_billing_resource"]].compact.all? do |family|
+        BillingRate.from_resource_properties("InferenceTokens", family, "global", false, effective_at) ==
+          BillingRate.from_resource_properties("InferenceTokens", family, "global")
+      end
+  end
+  checks[:rate_ids_unique] = BillingRate.rates.map { it["id"] }.uniq.size == BillingRate.rates.size
+  puts "LAYER_RAIL_VERIFY #{JSON.generate(checks)}"
+  exit(checks.values.all? ? 0 : 1)
+rescue => error
+  puts "LAYER_RAIL_VERIFY #{JSON.generate(checks.merge(error_class: error.class.name))}"
+  exit 1
+end

@@ -39,13 +39,21 @@ RSpec.describe Clover, "azure foundry inference" do
   end
 
   it "has active billing rates matching the displayed prices" do
-    now = Time.utc(2026, 9, 4, 12)
+    now = Time.utc(2026, 10, 1)
     {"input" => model.prompt_billing_resource, "output" => model.completion_billing_resource}.each do |kind, resource|
       rate = BillingRate.from_resource_properties("InferenceTokens", resource, "global", false, now)
       expect(rate).to include("billed_by" => "amount")
       expect(rate["unit_price"] * 1_000_000).to be_within(0.00001).of(model.tags["pricing"][kind])
     end
     expect(BillingRate.rates.map { it["id"] }.uniq.length).to eq(BillingRate.rates.length)
+  end
+
+  it "retains Astra's original billing tariff for historical usage" do
+    historical = Time.utc(2026, 9, 4, 12)
+    {"input" => model.prompt_billing_resource, "output" => model.completion_billing_resource}.each do |kind, resource|
+      rate = BillingRate.from_resource_properties("InferenceTokens", resource, "global", false, historical)
+      expect(rate["unit_price"] * 1_000_000).to be_within(0.00001).of(model.tags["standard_pricing"][kind])
+    end
   end
 
   it "handles playground chat parameters, keeps images, and meters actual tokens" do

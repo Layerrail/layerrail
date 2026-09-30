@@ -49,7 +49,7 @@ RSpec.describe Clover, "paid inference API" do
     records = BillingRecord.where(project_id: project.id).all
     expect(records.to_h { [it.resource_tags["token_kind"], it.amount] }).to eq("input" => 20, "output" => 7)
     expect(records.to_h { [it.resource_tags["token_kind"], BigDecimal(it.resource_tags["unit_price"])] })
-      .to eq("input" => BigDecimal("0.0000028"), "output" => BigDecimal("0.000014"))
+      .to eq("input" => BigDecimal("0.0000014"), "output" => BigDecimal("0.000007"))
   end
 
   it "rejects GPT-6.1 Sol chat tools with an actionable Responses instruction before calling or billing Azure" do

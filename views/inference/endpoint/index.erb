@@ -181,6 +181,12 @@ MSG
     completion_price = inference_model_million_token_price(ie, ie.completion_billing_resource)
     cached_prompt_resource = ie.respond_to?(:cached_prompt_billing_resource) ? ie.cached_prompt_billing_resource : nil
     cached_prompt_price = cached_prompt_resource ? inference_model_million_token_price(ie, cached_prompt_resource) : nil
+    standard_pricing = ie.tags["standard_pricing"].is_a?(Hash) ? ie.tags["standard_pricing"] : {}
+    discount_percent = ie.tags["discount_percent"]
+    discounted = billable && discount_percent.is_a?(Numeric) && discount_percent.positive? && discount_percent < 100 &&
+      standard_pricing["input"].to_f.positive? && (prompt_price - standard_pricing["input"].to_f * (1 - discount_percent / 100.0)).abs < 0.00000001 &&
+      (ie.tags["capability"] == "Embeddings" || (standard_pricing["output"].to_f.positive? &&
+        (completion_price - standard_pricing["output"].to_f * (1 - discount_percent / 100.0)).abs < 0.00000001))
     catalog_prices = Array(ie.tags["catalog_prices"]).select { it.is_a?(Hash) && !it["label"].to_s.empty? }
     if billable
       catalog_prices = catalog_prices.reject { it["label"].to_s.match?(/\A(?:(?:Input|Output|Cached input)(?: tokens)? \(per 1M(?: tokens)?\)|per M (?:cached )?(?:input|output) tokens)\z/i) }
@@ -261,15 +267,24 @@ curl #{ie.load_balancer.health_check_url(path:)} \\
       </div>
       <div>
         <h3 class="text-sm font-semibold text-gray-900">Price</h3>
+        <% if discounted %>
+          <span class="mt-1 inline-flex rounded-full bg-layerrail-50 px-2 py-1 text-xs font-semibold text-layerrail-700"><%= discount_percent %>% off premium usage</span>
+        <% end %>
         <% unless billable %>
           <span class="mt-1 inline-flex rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">Unavailable</span>
         <% end %>
         <% if billable %>
           <p class="text-gray-500">
             Input: $<%= format_token_price.call(prompt_price) %> / 1M tokens
+            <% if discounted %>
+              <span class="block text-xs text-gray-500">Standard input: <del>$<%= format_token_price.call(standard_pricing["input"]) %></del> / 1M tokens</span>
+            <% end %>
             <% unless capability == "Embeddings" %>
               <br>
               Output: $<%= format_token_price.call(completion_price) %> / 1M tokens
+              <% if discounted %>
+                <span class="block text-xs text-gray-500">Standard output: <del>$<%= format_token_price.call(standard_pricing["output"]) %></del> / 1M tokens</span>
+              <% end %>
             <% end %>
             <% if cached_prompt_price.to_f.positive? %>
               <br>

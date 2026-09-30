@@ -11,7 +11,9 @@
     context_length: 400K
     api: chat
     deployment: gpt-5
-    pricing: {input: 1.75, output: 14.0}
+    discount_percent: 50
+    standard_pricing: {input: 1.75, output: 14.0}
+    pricing: {input: 0.875, output: 7.0}
 - id: azure-openai-gpt-5-mini
   model_name: gpt-5-mini
   enabled: true
@@ -24,7 +26,9 @@
     context_length: 400K
     api: chat
     deployment: gpt-5-mini
-    pricing: {input: 0.35, output: 2.8}
+    discount_percent: 50
+    standard_pricing: {input: 0.35, output: 2.8}
+    pricing: {input: 0.175, output: 1.4}
 - id: azure-openai-gpt-5-nano
   model_name: gpt-5-nano
   enabled: true
@@ -37,7 +41,9 @@
     context_length: 400K
     api: chat
     deployment: gpt-5-nano
-    pricing: {input: 0.08, output: 0.6}
+    discount_percent: 50
+    standard_pricing: {input: 0.08, output: 0.6}
+    pricing: {input: 0.04, output: 0.3}
 - id: azure-openai-gpt-5-5
   model_name: gpt-5.5
   enabled: true
@@ -50,7 +56,9 @@
     context_length: 400K
     api: chat
     deployment: gpt-5.5
-    pricing: {input: 2.5, output: 20.0}
+    discount_percent: 50
+    standard_pricing: {input: 2.5, output: 20.0}
+    pricing: {input: 1.25, output: 10.0}
 - id: azure-openai-gpt-5-6-luna
   model_name: gpt-5.6-luna
   enabled: true
@@ -64,7 +72,9 @@
     api: chat
     deployment: gpt-5.6-luna
     reasoning: true
-    pricing: {input: 2.5, output: 20.0}
+    discount_percent: 50
+    standard_pricing: {input: 2.5, output: 20.0}
+    pricing: {input: 1.25, output: 10.0}
 - id: azure-openai-gpt-5-6-sol
   model_name: gpt-5.6-sol
   enabled: true
@@ -78,7 +88,9 @@
     api: chat
     deployment: gpt-5.6-sol
     reasoning: true
-    pricing: {input: 4.0, output: 32.0}
+    discount_percent: 50
+    standard_pricing: {input: 4.0, output: 32.0}
+    pricing: {input: 2.0, output: 16.0}
 - id: azure-openai-gpt-5-6-terra
   model_name: gpt-5.6-terra
   enabled: true
@@ -92,7 +104,9 @@
     api: chat
     deployment: gpt-5.6-terra
     reasoning: true
-    pricing: {input: 7.0, output: 56.0}
+    discount_percent: 50
+    standard_pricing: {input: 7.0, output: 56.0}
+    pricing: {input: 3.5, output: 28.0}
 - id: azure-openai-gpt-6-1-sol
   model_name: gpt-6.1-sol
   enabled: true
@@ -114,12 +128,14 @@
     pricing_source: https://developers.openai.com/api/docs/models/gpt-6.1-sol
     catalog_pricing_source: https://developers.openai.com/api/docs/models/gpt-6.1-sol
     long_context_threshold: 272000
-    pricing: {input: 2.8, output: 14.0, long_context: {input: 5.6, output: 21.0}}
+    discount_percent: 50
+    standard_pricing: {input: 2.8, output: 14.0, long_context: {input: 5.6, output: 21.0}}
+    pricing: {input: 1.4, output: 7.0, long_context: {input: 2.8, output: 10.5}}
     catalog_prices:
-    - {label: "Input <=272K (per 1M tokens)", price: "2.8"}
-    - {label: "Output <=272K input (per 1M tokens)", price: "14.0"}
-    - {label: "Input >272K (per 1M tokens)", price: "5.6"}
-    - {label: "Output >272K input (per 1M tokens)", price: "21.0"}
+    - {label: "Input <=272K (per 1M tokens)", price: "1.4"}
+    - {label: "Output <=272K input (per 1M tokens)", price: "7.0"}
+    - {label: "Input >272K (per 1M tokens)", price: "2.8"}
+    - {label: "Output >272K input (per 1M tokens)", price: "10.5"}
 - id: azure-openai-gpt-6-sol
   model_name: gpt-6-sol
   enabled: true
@@ -144,12 +160,14 @@
     pricing_source: https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/
     catalog_pricing_source: https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/
     long_context_threshold: 272000
-    pricing: {input: 2.8, output: 14.0, long_context: {input: 5.6, output: 21.0}}
+    discount_percent: 50
+    standard_pricing: {input: 2.8, output: 14.0, long_context: {input: 5.6, output: 21.0}}
+    pricing: {input: 1.4, output: 7.0, long_context: {input: 2.8, output: 10.5}}
     catalog_prices:
-    - {label: "Input <=272K (per 1M tokens)", price: "2.8"}
-    - {label: "Output <=272K input (per 1M tokens)", price: "14.0"}
-    - {label: "Input >272K (per 1M tokens)", price: "5.6"}
-    - {label: "Output >272K input (per 1M tokens)", price: "21.0"}
+    - {label: "Input <=272K (per 1M tokens)", price: "1.4"}
+    - {label: "Output <=272K input (per 1M tokens)", price: "7.0"}
+    - {label: "Input >272K (per 1M tokens)", price: "2.8"}
+    - {label: "Output >272K input (per 1M tokens)", price: "10.5"}
 - id: azure-openai-gpt-6-luna
   model_name: gpt-6-luna
   enabled: true
@@ -174,12 +192,14 @@
     pricing_source: https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/
     catalog_pricing_source: https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/
     long_context_threshold: 272000
-    pricing: {input: 0.14, output: 0.7, long_context: {input: 0.28, output: 1.05}}
+    discount_percent: 50
+    standard_pricing: {input: 0.14, output: 0.7, long_context: {input: 0.28, output: 1.05}}
+    pricing: {input: 0.07, output: 0.35, long_context: {input: 0.14, output: 0.525}}
     catalog_prices:
-    - {label: "Input <=272K (per 1M tokens)", price: "0.14"}
-    - {label: "Output <=272K input (per 1M tokens)", price: "0.7"}
-    - {label: "Input >272K (per 1M tokens)", price: "0.28"}
-    - {label: "Output >272K input (per 1M tokens)", price: "1.05"}
+    - {label: "Input <=272K (per 1M tokens)", price: "0.07"}
+    - {label: "Output <=272K input (per 1M tokens)", price: "0.35"}
+    - {label: "Input >272K (per 1M tokens)", price: "0.14"}
+    - {label: "Output >272K input (per 1M tokens)", price: "0.525"}
 - id: azure-openai-gpt-6-astra
   model_name: gpt-6-astra
   enabled: true
@@ -195,7 +215,9 @@
     reasoning: true
     native_responses: true
     unsupported_parameters: [temperature, top_p]
-    pricing: {input: 10.0, output: 50.0}
+    discount_percent: 50
+    standard_pricing: {input: 10.0, output: 50.0}
+    pricing: {input: 5.0, output: 25.0}
 - id: azure-openai-gpt-5-4
   model_name: gpt-5.4
   enabled: true
@@ -208,7 +230,9 @@
     context_length: 400K
     api: chat
     deployment: gpt-5.4
-    pricing: {input: 2.0, output: 16.0}
+    discount_percent: 50
+    standard_pricing: {input: 2.0, output: 16.0}
+    pricing: {input: 1.0, output: 8.0}
 - id: azure-openai-gpt-5-4-mini
   model_name: gpt-5.4-mini
   enabled: true
@@ -221,7 +245,9 @@
     context_length: 400K
     api: chat
     deployment: gpt-5.4-mini
-    pricing: {input: 0.45, output: 3.6}
+    discount_percent: 50
+    standard_pricing: {input: 0.45, output: 3.6}
+    pricing: {input: 0.225, output: 1.8}
 - id: azure-openai-gpt-5-4-nano
   model_name: gpt-5.4-nano
   enabled: true
@@ -234,7 +260,9 @@
     context_length: 400K
     api: chat
     deployment: gpt-5.4-nano
-    pricing: {input: 0.12, output: 0.9}
+    discount_percent: 50
+    standard_pricing: {input: 0.12, output: 0.9}
+    pricing: {input: 0.06, output: 0.45}
 - id: azure-openai-gpt-5-2
   model_name: gpt-5.2
   enabled: true
@@ -247,7 +275,9 @@
     context_length: 400K
     api: chat
     deployment: gpt-5.2
-    pricing: {input: 1.8, output: 14.4}
+    discount_percent: 50
+    standard_pricing: {input: 1.8, output: 14.4}
+    pricing: {input: 0.9, output: 7.2}
 - id: azure-openai-o3
   model_name: o3
   enabled: true
@@ -261,7 +291,9 @@
     api: chat
     deployment: o3
     reasoning: true
-    pricing: {input: 2.8, output: 11.2}
+    discount_percent: 50
+    standard_pricing: {input: 2.8, output: 11.2}
+    pricing: {input: 1.4, output: 5.6}
 - id: azure-openai-o4-mini
   model_name: o4-mini
   enabled: true
@@ -275,7 +307,9 @@
     api: chat
     deployment: o4-mini
     reasoning: true
-    pricing: {input: 0.55, output: 2.2}
+    discount_percent: 50
+    standard_pricing: {input: 0.55, output: 2.2}
+    pricing: {input: 0.275, output: 1.1}
 - id: azure-openai-gpt-4-1
   model_name: gpt-4.1
   enabled: false
@@ -288,7 +322,9 @@
     context_length: 1M
     api: chat
     deployment: gpt-4.1
-    pricing: {input: 2.8, output: 11.2}
+    discount_percent: 50
+    standard_pricing: {input: 2.8, output: 11.2}
+    pricing: {input: 1.4, output: 5.6}
 - id: azure-openai-gpt-4-1-mini
   model_name: gpt-4.1-mini
   enabled: false
@@ -301,7 +337,9 @@
     context_length: 1M
     api: chat
     deployment: gpt-4.1-mini
-    pricing: {input: 0.55, output: 2.2}
+    discount_percent: 50
+    standard_pricing: {input: 0.55, output: 2.2}
+    pricing: {input: 0.275, output: 1.1}
 - id: azure-openai-gpt-4o
   model_name: gpt-4o
   enabled: false
@@ -315,7 +353,9 @@
     api: chat
     deployment: gpt-4o
     multimodal: true
-    pricing: {input: 3.5, output: 14.0}
+    discount_percent: 50
+    standard_pricing: {input: 3.5, output: 14.0}
+    pricing: {input: 1.75, output: 7.0}
 - id: azure-openai-gpt-4o-mini
   model_name: gpt-4o-mini
   enabled: false
@@ -329,7 +369,9 @@
     api: chat
     deployment: gpt-4o-mini
     multimodal: true
-    pricing: {input: 0.21, output: 0.84}
+    discount_percent: 50
+    standard_pricing: {input: 0.21, output: 0.84}
+    pricing: {input: 0.105, output: 0.42}
 - id: azure-anthropic-claude-opus-4-8
   model_name: claude-opus-4-8
   enabled: true
@@ -343,7 +385,9 @@
     api: anthropic
     deployment: claude-opus-4-8
     multimodal: true
-    pricing: {input: 7.0, output: 35.0}
+    discount_percent: 50
+    standard_pricing: {input: 7.0, output: 35.0}
+    pricing: {input: 3.5, output: 17.5}
 - id: azure-anthropic-claude-opus-5
   model_name: claude-opus-5
   enabled: true
@@ -358,7 +402,9 @@
     deployment: claude-opus-5
     multimodal: true
     reasoning: true
-    pricing: {input: 7.0, output: 35.0}
+    discount_percent: 50
+    standard_pricing: {input: 7.0, output: 35.0}
+    pricing: {input: 3.5, output: 17.5}
 - id: azure-anthropic-claude-fable-5
   model_name: claude-fable-5
   enabled: true
@@ -374,7 +420,9 @@
     multimodal: true
     reasoning: true
     preview: true
-    pricing: {input: 21.0, output: 105.0}
+    discount_percent: 50
+    standard_pricing: {input: 21.0, output: 105.0}
+    pricing: {input: 10.5, output: 52.5}
 - id: azure-anthropic-claude-sonnet-5
   model_name: claude-sonnet-5
   enabled: true
@@ -389,7 +437,9 @@
     deployment: claude-sonnet-5
     multimodal: true
     reasoning: true
-    pricing: {input: 4.2, output: 21.0}
+    discount_percent: 50
+    standard_pricing: {input: 4.2, output: 21.0}
+    pricing: {input: 2.1, output: 10.5}
 - id: azure-anthropic-claude-sonnet-4-6
   model_name: claude-sonnet-4-6
   enabled: true
@@ -403,7 +453,9 @@
     api: anthropic
     deployment: claude-sonnet-4-6
     multimodal: true
-    pricing: {input: 4.2, output: 21.0}
+    discount_percent: 50
+    standard_pricing: {input: 4.2, output: 21.0}
+    pricing: {input: 2.1, output: 10.5}
 - id: azure-anthropic-claude-sonnet-4-5
   model_name: claude-sonnet-4-5
   enabled: false
@@ -419,7 +471,9 @@
     multimodal: true
     reasoning: true
     unavailable_reason: Azure Foundry lists this model, but this resource currently rejects deployment as unsupported.
-    pricing: {input: 4.2, output: 21.0}
+    discount_percent: 50
+    standard_pricing: {input: 4.2, output: 21.0}
+    pricing: {input: 2.1, output: 10.5}
 - id: azure-anthropic-claude-haiku-4-5
   model_name: claude-haiku-4-5
   enabled: true
@@ -434,7 +488,9 @@
     deployment: claude-haiku-4-5
     multimodal: true
     reasoning: true
-    pricing: {input: 1.4, output: 7.0}
+    discount_percent: 50
+    standard_pricing: {input: 1.4, output: 7.0}
+    pricing: {input: 0.7, output: 3.5}
 - id: azure-anthropic-claude-opus-4-1
   model_name: claude-opus-4-1
   enabled: false
@@ -450,7 +506,9 @@
     multimodal: true
     reasoning: true
     unavailable_reason: Azure Foundry lists this model, but this resource currently rejects deployment as unsupported.
-    pricing: {input: 21.0, output: 105.0}
+    discount_percent: 50
+    standard_pricing: {input: 21.0, output: 105.0}
+    pricing: {input: 10.5, output: 52.5}
 - id: azure-anthropic-claude-mythos-5
   model_name: claude-mythos-5
   enabled: false
@@ -468,7 +526,9 @@
     gated: true
     preview: true
     unavailable_reason: Azure Foundry does not list this model as deployable for the current resource yet.
-    pricing: {input: 35.0, output: 175.0}
+    discount_percent: 50
+    standard_pricing: {input: 35.0, output: 175.0}
+    pricing: {input: 17.5, output: 87.5}
 - id: azure-deepseek-r1
   model_name: DeepSeek-V4-Flash
   enabled: true
@@ -481,7 +541,9 @@
     context_length: 128K
     api: chat
     deployment: DeepSeek-V4-Flash
-    pricing: {input: 0.4, output: 1.6}
+    discount_percent: 50
+    standard_pricing: {input: 0.4, output: 1.6}
+    pricing: {input: 0.2, output: 0.8}
 - id: azure-deepseek-v4-pro
   model_name: DeepSeek-V4-Pro
   enabled: true
@@ -494,7 +556,9 @@
     context_length: 128K
     api: chat
     deployment: DeepSeek-V4-Pro
-    pricing: {input: 0.8, output: 3.2}
+    discount_percent: 50
+    standard_pricing: {input: 0.8, output: 3.2}
+    pricing: {input: 0.4, output: 1.6}
 - id: azure-mistral-large
   model_name: Mistral-Large-3
   enabled: true
@@ -507,7 +571,9 @@
     context_length: 128K
     api: chat
     deployment: Mistral-Large-3
-    pricing: {input: 2.8, output: 8.4}
+    discount_percent: 50
+    standard_pricing: {input: 2.8, output: 8.4}
+    pricing: {input: 1.4, output: 4.2}
 - id: azure-xai-grok-4
   model_name: grok-4
   enabled: true
@@ -520,7 +586,9 @@
     context_length: 256K
     api: chat
     deployment: grok-4
-    pricing: {input: 3.0, output: 15.0}
+    discount_percent: 50
+    standard_pricing: {input: 3.0, output: 15.0}
+    pricing: {input: 1.5, output: 7.5}
 - id: azure-meta-llama-4-scout
   model_name: Llama-4-Scout-17B-16E-Instruct
   enabled: true
@@ -533,7 +601,9 @@
     context_length: 128K
     api: chat
     deployment: Llama-4-Scout-17B-16E-Instruct
-    pricing: {input: 0.3, output: 0.9}
+    discount_percent: 50
+    standard_pricing: {input: 0.3, output: 0.9}
+    pricing: {input: 0.15, output: 0.45}
 - id: azure-microsoft-phi-4-mini
   model_name: Phi-4-mini-instruct
   enabled: true
@@ -546,7 +616,9 @@
     context_length: 128K
     api: chat
     deployment: Phi-4-mini-instruct
-    pricing: {input: 0.1, output: 0.4}
+    discount_percent: 50
+    standard_pricing: {input: 0.1, output: 0.4}
+    pricing: {input: 0.05, output: 0.2}
 - id: cf-meta-llama-3-2-3b-instruct
   model_name: "@cf/meta/llama-3.2-3b-instruct"
   enabled: true

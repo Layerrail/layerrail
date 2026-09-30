@@ -147,6 +147,22 @@ RSpec.describe Clover, "inference-endpoint" do
       expect(page).to have_content("meta-llama/Llama-3.2-1B-Instruct")
     end
 
+    it "shows active premium discounts and original prices without advertising unavailable models as usable" do
+      allow(Config).to receive(:ai_inference_provider).and_return("azure_foundry")
+      visit "#{project.path}/inference-endpoint"
+
+      model_card = page.find("[data-inference-model-card]", text: "GPT-6.1 Sol")
+      expect(model_card).to have_content("50% off premium usage")
+      expect(model_card).to have_content("Input: $1.40 / 1M tokens")
+      expect(model_card).to have_content("Output: $7.00 / 1M tokens")
+      expect(model_card).to have_css("del", exact_text: "$2.80")
+      expect(model_card).to have_css("del", exact_text: "$14.00")
+
+      unavailable_card = page.find("[data-inference-model-card]", text: "GPT-6 Sol")
+      expect(unavailable_card).to have_content("Unavailable")
+      expect(unavailable_card).to have_no_content("50% off premium usage")
+    end
+
     describe "Cloudflare catalog pricing" do
       let(:capability) { "Text Generation" }
       let(:input_price) { 0.0000000297 }

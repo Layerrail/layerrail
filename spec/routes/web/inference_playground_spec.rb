@@ -94,7 +94,9 @@ RSpec.describe Clover, "inference-playground" do
       visit "#{project.path}/inference-playground"
 
       expect(page).to have_select("inference_endpoint", with_options: ["gpt-6.1-sol"])
-      expect(page).to have_css('option[value="gpt-6.1-sol"][data-display-name="GPT-6.1 Sol"][data-context-length="1.05M"][data-input-price="2.8"][data-output-price="14.0"][data-billable="true"]', visible: :all)
+      expect(page).to have_css('option[value="gpt-6.1-sol"][data-display-name="GPT-6.1 Sol"][data-context-length="1.05M"][data-input-price="1.4"][data-output-price="7.0"][data-billable="true"]', visible: :all)
+      expect(JSON.parse(page.find('option[value="gpt-6.1-sol"]', visible: :all)["data-tags"]))
+        .to include("discount_percent" => 50, "standard_pricing" => include("input" => 2.8, "output" => 14.0))
     end
 
     it "lists undeployed GPT-6 Sol and Luna as unavailable options" do

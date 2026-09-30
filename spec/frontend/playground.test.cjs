@@ -56,6 +56,26 @@ test('model pricing preserves small paid rates and normal currency precision', (
   assert.equal(f.$('#inference_selected_price').text(), '$0.0297 input / $0.003421 output per 1M tokens');
 });
 
+test('premium model pricing shows the discount and original rates without discounting the estimate twice', async (t) => {
+  const f = fixture(t, { api: 'responses', provider: 'azure_foundry', fetch: async () => jsonResponse({
+    output_text: 'Done', usage: { input_tokens: 1000000, output_tokens: 1000000 }
+  }), configure(w) {
+    w.$('#inference_endpoint option').attr({ 'data-input-price': '1.4', 'data-output-price': '7',
+      'data-tags': JSON.stringify({ discount_percent: 50, standard_pricing: { input: 2.8, output: 14 } }) });
+  } });
+  assert.equal(f.$('#inference_selected_price').text(), '50% off premium usage. $1.40 input / $7.00 output per 1M tokens. Standard: $2.80 input / $14.00 output per 1M tokens');
+  await f.send();
+  assert.equal(f.$('#inference_session_cost').text(), '$8.400000');
+});
+
+test('discount metadata cannot advertise a reduction before matching billing prices become active', (t) => {
+  const f = fixture(t, { provider: 'azure_foundry', configure(w) {
+    w.$('#inference_endpoint option').attr({ 'data-input-price': '2.8', 'data-output-price': '14',
+      'data-tags': JSON.stringify({ discount_percent: 50, standard_pricing: { input: 2.8, output: 14 } }) });
+  } });
+  assert.equal(f.$('#inference_selected_price').text(), '$2.80 input / $14.00 output per 1M tokens');
+});
+
 test('unconfigured models cannot stay selected or enable Send', (t) => {
   const f = fixture(t);
   f.$('#inference_endpoint option').attr({ 'data-billable': 'false', 'data-input-price': '0', 'data-output-price': '0', 'data-cached-input-price': '0.011' });
@@ -118,12 +138,14 @@ for (const input_tokens of [272000, 272001]) {
     const f = fixture(t, { api: 'responses', provider: 'azure_foundry', fetch: async () => jsonResponse({
       output_text: 'Done', usage: { input_tokens, output_tokens: 7, input_tokens_details: { cached_tokens: 100000 } }
     }), configure(w) {
-      w.$('#inference_endpoint option').attr({ 'data-input-price': '2.8', 'data-output-price': '14',
-        'data-tags': JSON.stringify({ long_context_threshold: 272000, pricing: { long_context: { input: 5.6, output: 21 } } }) });
+      w.$('#inference_endpoint option').attr({ 'data-input-price': '1.4', 'data-output-price': '7',
+        'data-tags': JSON.stringify({ discount_percent: 50, standard_pricing: { input: 2.8, output: 14, long_context: { input: 5.6, output: 21 } },
+          long_context_threshold: 272000, pricing: { long_context: { input: 2.8, output: 10.5 } } }) });
     } });
-    assert.match(f.$('#inference_selected_price').text(), /Above 272,000 input tokens: \$5\.60 input \/ \$21\.00 output per 1M for the full request/);
+    assert.match(f.$('#inference_selected_price').text(), /50% off premium usage/);
+    assert.match(f.$('#inference_selected_price').text(), /Above 272,000 input tokens: \$2\.80 input \/ \$10\.50 output per 1M for the full request/);
     await f.send();
-    const expected_cost = input_tokens > 272000 ? '$1.523353' : '$0.761698';
+    const expected_cost = input_tokens > 272000 ? '$0.761676' : '$0.380849';
     assert.equal(f.$('#inference_session_cost').text(), expected_cost);
   });
 }

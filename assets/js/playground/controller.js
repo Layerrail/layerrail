@@ -254,6 +254,17 @@ export function setupPlayground(effects = { orb() {}, busy() {} }) {
       const cached_input_price = selectedEndpointNumber('data-cached-input-price');
       const cached_input = cached_input_price > 0 ? ` / ${formatPrice(cached_input_price)} cached input` : '';
       price = `${formatPrice(input_price)} input${output}${cached_input} per 1M tokens`;
+      const tags = selectedTags();
+      const discount_percent = Number(tags.discount_percent);
+      const standard_input = Number(tags.standard_pricing?.input);
+      const standard_output = Number(tags.standard_pricing?.output);
+      const discount_factor = 1 - discount_percent / 100;
+      const matchesDiscount = (current, standard) => standard > 0 && Math.abs(current - standard * discount_factor) < 0.00000001;
+      if (discount_percent > 0 && discount_percent < 100 && matchesDiscount(input_price, standard_input) &&
+          ($option.attr('data-capability') === 'Embeddings' || matchesDiscount(output_price, standard_output))) {
+        const standard_output_text = $option.attr('data-capability') === 'Embeddings' ? '' : ` / ${formatPrice(standard_output)} output`;
+        price = `${discount_percent}% off premium usage. ${price}. Standard: ${formatPrice(standard_input)} input${standard_output_text} per 1M tokens`;
+      }
       const long_context_pricing = selectedLongContextPricing();
       if (long_context_pricing) {
         price += `. Above ${formatTokenCount(long_context_pricing.threshold)} input tokens: ${formatPrice(long_context_pricing.input)} input / ${formatPrice(long_context_pricing.output)} output per 1M for the full request`;

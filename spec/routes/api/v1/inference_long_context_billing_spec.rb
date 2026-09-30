@@ -42,8 +42,8 @@ RSpec.describe Clover, "GPT-6 long-context billing" do
         records = BillingRecord.where(project_id: project.id).all
         expect(records.to_h { [it.resource_tags["token_kind"], it.amount] }).to eq("input" => input_tokens, "output" => 7)
         long_context = input_tokens > 272_000
-        expected_prices = long_context ? {"input" => BigDecimal("0.0000056"), "output" => BigDecimal("0.000021")} :
-          {"input" => BigDecimal("0.0000028"), "output" => BigDecimal("0.000014")}
+        expected_prices = long_context ? {"input" => BigDecimal("0.0000028"), "output" => BigDecimal("0.0000105")} :
+          {"input" => BigDecimal("0.0000014"), "output" => BigDecimal("0.000007")}
         expect(records.to_h { [it.resource_tags["token_kind"], BigDecimal(it.resource_tags["unit_price"])] }).to eq(expected_prices)
         expect(records.map { BillingRate.from_id(it.billing_rate_id).fetch("resource_family") })
           .to match_array(long_context ? [model.long_context_prompt_billing_resource, model.long_context_completion_billing_resource] :
@@ -65,7 +65,7 @@ RSpec.describe Clover, "GPT-6 long-context billing" do
     end
   end
 
-  it "leaves the existing Astra tariff unchanged above the new models' threshold" do
+  it "uses Astra's discounted base tariff above the new models' threshold" do
     stub_request(:post, "https://example.services.ai.azure.com/openai/v1/responses")
       .to_return(status: 200, body: {model: "gpt-6-astra", usage: {input_tokens: 272_001, output_tokens: 7}}.to_json)
     post "/v1/responses", {model: "gpt-6-astra", input: "Hello"}.to_json
@@ -73,7 +73,7 @@ RSpec.describe Clover, "GPT-6 long-context billing" do
     expect(last_response.status).to eq(200)
     records = BillingRecord.where(project_id: project.id).all
     expect(records.to_h { [it.resource_tags["token_kind"], BigDecimal(it.resource_tags["unit_price"])] })
-      .to eq("input" => BigDecimal("0.00001"), "output" => BigDecimal("0.00005"))
+      .to eq("input" => BigDecimal("0.000005"), "output" => BigDecimal("0.000025"))
   end
 
   %w[gpt-6.1-sol gpt-6-sol gpt-6-luna].each do |name|

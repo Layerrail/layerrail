@@ -5,6 +5,21 @@ RSpec.describe BillingRate do
     expect(described_class.rates.map { it["id"] }.size).to eq(described_class.rates.map { it["id"] }.uniq.size)
   end
 
+  it "halves every priced premium model resource while preserving its historical rate ID and amount" do
+    effective_at = Time.utc(2026, 9, 30, 18, 35)
+    discounted_rates = described_class.rates.select { it["resource_family"].start_with?("azure-") && it["active_from"] == effective_at }
+    expect(discounted_rates.length).to eq(76)
+
+    discounted_rates.each do |discounted|
+      previous = described_class.from_resource_properties("InferenceTokens", discounted.fetch("resource_family"), "global", false, effective_at)
+      current = described_class.from_resource_properties("InferenceTokens", discounted.fetch("resource_family"), "global", false, effective_at + 1)
+      expect(current.fetch("id")).to eq(discounted.fetch("id"))
+      expect(current.fetch("id")).not_to eq(previous.fetch("id"))
+      expect(BigDecimal(current.fetch("unit_price").to_s)).to eq(BigDecimal(previous.fetch("unit_price").to_s) / 2)
+      expect(described_class.from_id(previous.fetch("id"))).to eq(previous)
+    end
+  end
+
   it "preserves sub-cent prices per million tokens" do
     expect(described_class.million_token_price("cf-baai-bge-reranker-base-input")).to eq(0.003421)
     expect(described_class.million_token_price("cf-meta-llama-3-2-3b-instruct-input")).to eq(0.05599)

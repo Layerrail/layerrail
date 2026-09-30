@@ -222,6 +222,33 @@ RSpec.describe Clover, "inference billing" do
     expect(paid.first.amount).to eq(30)
   end
 
+  it "keeps same-day usage before and after the premium discount separate and invoices each at its recorded price" do
+    effective_at = Time.utc(2026, 9, 30, 18, 35)
+    resource = model.prompt_billing_resource
+    previous_rate = BillingRate.from_resource_properties("InferenceTokens", resource, "global", false, effective_at)
+    discounted_rate = BillingRate.from_resource_properties("InferenceTokens", resource, "global", false, effective_at + 1)
+    allow(Time).to receive(:now).and_return(effective_at - 1)
+    inference_app.record_inference_tokens(api_key, model, "input", resource, 4_000_000)
+    historical = BillingRecord.where(project_id: project.id, billing_rate_id: previous_rate.fetch("id")).first
+    expect(historical.resource_tags["unit_price"]).to eq(previous_rate.fetch("unit_price").to_s)
+
+    allow(Time).to receive(:now).and_return(effective_at + 1)
+    inference_app.record_inference_tokens(api_key, model, "input", resource, 2_000_000)
+    inference_app.record_inference_tokens(api_key, model, "input", resource, 2_000_000)
+    expect(historical.reload.amount).to eq(4_000_000)
+    records = BillingRecord.where(project_id: project.id).all
+    expect(records.length).to eq(2)
+    expect(records.find { it.billing_rate_id == discounted_rate.fetch("id") }.amount).to eq(4_000_000)
+    expect(InferenceUsageBilling.unbilled_cost(project)).to eq(BigDecimal("10.5"))
+
+    invoice = InferenceUsageBilling.settle!(project:, eur_rate: 0.9, now: effective_at + 60)
+    expect(invoice.cost).to eq(10.5)
+    expect(invoice.content.fetch("resources").flat_map { it.fetch("line_items") }.map { it.fetch("unit_price") })
+      .to contain_exactly(previous_rate.fetch("unit_price"), discounted_rate.fetch("unit_price"))
+    expect(invoice.content.fetch("usage_allocations").sum { BigDecimal(it.fetch("cost")) }).to eq(BigDecimal("10.5"))
+    expect(historical.reload.inference_invoiced_amount).to eq(4_000_000)
+  end
+
   it "does not record positive usage against a zero-priced resource" do
     expect {
       inference_app.record_inference_tokens(api_key, model, "input", "preview-input", 10)

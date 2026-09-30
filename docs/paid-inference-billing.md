@@ -6,6 +6,11 @@ non-fraudulent payment method is required; models without positive configured
 rates are unavailable. Existing monetary project credits remain usable. Percentage
 plan discounts do not apply to new inference usage.
 
+Premium Azure Foundry usage receives the active 50% model-rate promotion.
+The discount is already reflected in token prices; it is not another invoice
+or subscription-plan discount. Original rate IDs and price snapshots preserve
+historical usage. See [premium model discount](premium-model-discount.md).
+
 Cloudflare SSE responses retain their event format, but are buffered until the
 provider finishes and its final token counts are recorded. This delays the first
 output and prevents a client disconnect from discarding billable usage. Responses

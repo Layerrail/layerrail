@@ -2,7 +2,8 @@
 
 LayerRail exposes `gpt-6-astra` in its model catalog, playground, and authenticated
 `GET /v1/models` response when the Azure Foundry provider is enabled. The existing
-default model and premium trial offer remain unchanged.
+default model remains unchanged. All inference is paid from the first token;
+there is no premium trial token allowance.
 
 ## Azure configuration
 
@@ -47,12 +48,16 @@ request, since LayerRail does not yet proxy Azure streaming or background pollin
 
 The model has a 1,050,000-token context window, up to 922,000 input tokens and
 128,000 output tokens, subject to the shared context budget. LayerRail's initial
-retail rates are $10 per million input tokens and $50 per million output tokens.
-Both the catalog and billing registry use these rates, including output reasoning
+retail rates were $10 per million input tokens and $50 per million output tokens.
+The active premium promotion halves them to $5 input / $25 output. Both the
+catalog and billing registry use discounted rates, including output reasoning
 tokens reported by Azure. The existing flat-rate meter does not separately price
 cached tokens or long-context requests. OpenAI documents higher upstream rates
 above 272,000 input tokens; account for the Azure deployment's actual rates when
 setting LayerRail's retail pricing.
+
+See [premium model discount](premium-model-discount.md) for historical rate
+preservation and [GPT-6 catalog](gpt-6-catalog.md) for the complete family.
 
 ## Verification
 

@@ -19,19 +19,24 @@ calling Azure or recording customer usage. Listing a model in Azure's public
 ## LayerRail retail prices
 
 USD per million tokens, billed from actual provider-reported input/output usage.
-The new models follow LayerRail's existing 40% Azure markup. The Cloudflare
-10% markup is a separate pricing policy.
+All premium Azure models now receive an automatic 50% discount from LayerRail's
+standard retail rates. The standard baseline uses the existing 40% Azure markup;
+the Cloudflare 10% markup is a separate pricing policy. The promotion applies to
+new usage and has no scheduled expiry. Historical usage keeps its saved price.
 
 | Model | Input | Output | Input above 272,000 tokens | Output on those requests |
 | --- | ---: | ---: | ---: | ---: |
-| GPT-6.1 Sol | $2.80 | $14.00 | $5.60 | $21.00 |
-| GPT-6 Sol | $2.80 | $14.00 | $5.60 | $21.00 |
-| GPT-6 Luna | $0.14 | $0.70 | $0.28 | $1.05 |
+| GPT-6.1 Sol | $1.40 | $7.00 | $2.80 | $10.50 |
+| GPT-6 Sol (unavailable) | $1.40 | $7.00 | $2.80 | $10.50 |
+| GPT-6 Luna (unavailable) | $0.07 | $0.35 | $0.14 | $0.525 |
+| GPT-6 Astra | $5.00 | $25.00 | $5.00 | $25.00 |
 
 The larger-context rates apply to the **entire request** when actual input
 exceeds 272,000 tokens, including requests with cached input. Exactly 272,000
-uses the standard rate. GPT-6 Astra's existing $10 input / $50 output rates are
-unchanged by this catalog addition.
+uses the base rate. GPT-6 Astra retains a flat tariff for large requests; the
+promotion halves its previous $10 input / $50 output rate. Original retail
+prices remain in `tags.standard_pricing` for comparison. See
+[premium model discount](premium-model-discount.md) for the billing cutover.
 
 Sol and Luna's upstream baseline is Azure Global Standard pricing. Azure has
 not yet published GPT-6.1 Sol on its pricing page; its provisional upstream
