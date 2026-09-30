@@ -14,7 +14,7 @@ begin
   checks[:azure_configured] = !Config.azure_foundry_endpoint.to_s.empty? && !Config.azure_foundry_api_key.to_s.empty?
   app = Clover.allocate
   entries = app.catalog_inference_models
-  expected = {"gpt-6.1-sol" => true, "gpt-6-sol" => false, "gpt-6-luna" => false, "gpt-6-astra" => true}
+  expected = {"gpt-6.1-sol" => true, "gpt-6-sol" => true, "gpt-6-luna" => true, "gpt-6-astra" => true}
   expected.each do |name, available|
     model = entries.find { it.model_name == name }
     checks["#{name}_catalog"] = model && entries.count { it.model_name == name } == 1

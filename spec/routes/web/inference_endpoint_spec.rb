@@ -147,20 +147,38 @@ RSpec.describe Clover, "inference-endpoint" do
       expect(page).to have_content("meta-llama/Llama-3.2-1B-Instruct")
     end
 
-    it "shows active premium discounts and original prices without advertising unavailable models as usable" do
+    it "shows GPT-6 premium discounts, original prices, and usable playground links" do
       allow(Config).to receive(:ai_inference_provider).and_return("azure_foundry")
       visit "#{project.path}/inference-endpoint"
 
-      model_card = page.find("[data-inference-model-card]", text: "GPT-6.1 Sol")
-      expect(model_card).to have_content("50% off premium usage")
-      expect(model_card).to have_content("Input: $1.40 / 1M tokens")
-      expect(model_card).to have_content("Output: $7.00 / 1M tokens")
-      expect(model_card).to have_css("del", exact_text: "$2.80")
-      expect(model_card).to have_css("del", exact_text: "$14.00")
+      {"GPT-6.1 Sol" => ["1.40", "7.00", "2.80", "14.00"], "GPT-6 Sol" => ["1.40", "7.00", "2.80", "14.00"],
+       "GPT-6 Luna" => ["0.07", "0.35", "0.14", "0.70"]}.each do |name, prices|
+        model_card = page.find("[data-inference-model-card]", text: name)
+        expect(model_card).to have_content("50% off premium usage")
+        expect(model_card).to have_content("Input: $#{prices[0]} / 1M tokens")
+        expect(model_card).to have_content("Output: $#{prices[1]} / 1M tokens")
+        expect(model_card).to have_css("del", exact_text: "$#{prices[2]}")
+        expect(model_card).to have_css("del", exact_text: "$#{prices[3]}")
+        expect(model_card).to have_link("Try in Playground")
+        expect(model_card).to have_no_content("Unavailable")
+      end
+    end
 
-      unavailable_card = page.find("[data-inference-model-card]", text: "GPT-6 Sol")
+    it "keeps an unavailable Azure deployment unusable despite its premium discount metadata" do
+      allow(Config).to receive(:ai_inference_provider).and_return("azure_foundry")
+      source = Option::AI_MODELS.find { it["model_name"] == "gpt-6.1-sol" }
+      unavailable = source.merge("id" => "azure-unavailable-catalog-test", "model_name" => "unavailable-azure-model",
+        "tags" => source.fetch("tags").merge("deployment" => "unavailable-azure-model", "availability" => "unavailable",
+          "billing_status" => "catalog_only", "display_name" => "Unavailable Azure test model"))
+      stub_const("Option::AI_MODELS", [unavailable])
+
+      visit "#{project.path}/inference-endpoint"
+
+      unavailable_card = page.find("[data-inference-model-card]", text: "Unavailable Azure test model")
       expect(unavailable_card).to have_content("Unavailable")
       expect(unavailable_card).to have_no_content("50% off premium usage")
+      expect(unavailable_card).to have_no_link("Try in Playground")
+      expect(unavailable_card).to have_button("Unavailable", disabled: true)
     end
 
     describe "Cloudflare catalog pricing" do

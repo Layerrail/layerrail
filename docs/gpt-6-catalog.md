@@ -7,13 +7,14 @@ LayerRail's configured Azure endpoint.
 | --- | --- | --- | --- |
 | GPT-6.1 Sol (`gpt-6.1-sol`) | 2026-09-29 | Live; chat, Responses, and function calling verified | 1,050,000 / 128,000 |
 | GPT-6 Astra (`gpt-6-astra`) | 2026-09-03 | Existing live deployment; Responses verified | 1,050,000 / 128,000 |
-| GPT-6 Sol (`gpt-6-sol`) | 2026-09-22 | Catalog entry; deployment not yet available | 1,050,000 / 128,000 |
-| GPT-6 Luna (`gpt-6-luna`) | 2026-09-22 | Catalog entry; deployment not yet available | 1,050,000 / 128,000 |
+| GPT-6 Sol (`gpt-6-sol`) | 2026-09-22 | Live Azure deployment; chat, Responses, and tools verified | 1,050,000 / 128,000 |
+| GPT-6 Luna (`gpt-6-luna`) | 2026-09-22 | Live Azure deployment; chat, Responses, and tools verified | 1,050,000 / 128,000 |
 
 Input and output share the context budget. Azure states a 922,000 input limit
-when reserving the full 128,000 output budget. Catalog-only entries remain
-visible with an unavailable state; inference requests are rejected before
-calling Azure or recording customer usage. Listing a model in Azure's public
+when reserving the full 128,000 output budget. All four GPT-6 entries have
+working Azure deployments. Any future catalog-only entry remains visible
+with an unavailable state; inference requests are rejected before calling
+Azure or recording customer usage. Listing a model in Azure's public
 `/openai/v1/models` response does not create an Azure deployment.
 
 ## LayerRail retail prices
@@ -27,8 +28,8 @@ new usage and has no scheduled expiry. Historical usage keeps its saved price.
 | Model | Input | Output | Input above 272,000 tokens | Output on those requests |
 | --- | ---: | ---: | ---: | ---: |
 | GPT-6.1 Sol | $1.40 | $7.00 | $2.80 | $10.50 |
-| GPT-6 Sol (unavailable) | $1.40 | $7.00 | $2.80 | $10.50 |
-| GPT-6 Luna (unavailable) | $0.07 | $0.35 | $0.14 | $0.525 |
+| GPT-6 Sol | $1.40 | $7.00 | $2.80 | $10.50 |
+| GPT-6 Luna | $0.07 | $0.35 | $0.14 | $0.525 |
 | GPT-6 Astra | $5.00 | $25.00 | $5.00 | $25.00 |
 
 The larger-context rates apply to the **entire request** when actual input
@@ -92,12 +93,13 @@ token usage. These requests incur small Azure usage costs but do not create
 customer billing records, invoices, or payments. Explicit model arguments can
 be used when activating a newly created deployment.
 
-The production endpoint already has GPT-6.1 Sol and Astra. The existing ARM
-credentials do not expose the Foundry resource's Cognitive Services account,
-so provisioning Sol/Luna requires management access to that resource. Create
-deployments with the exact names/versions above, run the live checker, then
-remove their unavailable metadata. Existing Foundry endpoint/key variables
-remain suitable for GPT-6.1 Sol.
+On 2026-09-30, the production endpoint's deployment list confirmed GPT-6.1 Sol,
+Astra, Sol, and Luna. Sol and Luna each passed direct Azure chat, Responses,
+and Responses function-calling checks with matching model identity and positive
+token usage. Their earlier catalog-only restrictions have been removed.
+Existing Foundry endpoint/key variables serve the complete family. The Azure
+management credentials still do not expose the resource's Cognitive Services
+account; that does not prevent inference through its configured endpoint/key.
 
 ## Sources
 

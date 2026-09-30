@@ -64,14 +64,45 @@ RSpec.describe Clover, "paid inference API" do
     expect(BillingRecord.where(project_id: project.id)).to be_empty
   end
 
-  %w[gpt-6-sol gpt-6-luna].each do |name|
-    it "keeps #{name} unavailable before calling or billing Azure" do
-      connect_billing
-      upstream = stub_request(:post, "https://example.services.ai.azure.com/openai/v1/responses")
+  gpt6_paths = %w[responses chat/completions].freeze
+  {"gpt-6-sol" => ["0.0000014", "0.000007"], "gpt-6-luna" => ["0.00000007", "0.00000035"]}.each do |name, prices|
+    gpt6_paths.each do |path|
+      it "meters #{name} #{path} usage at its discounted input and output prices" do
+        connect_billing
+        payload = (path == "responses") ? {input: "Hello", reasoning: {effort: "low"}} :
+          {messages: [{role: "user", content: "Hello"}], reasoning_effort: "low"}
+        usage = (path == "responses") ? {input_tokens: 20, output_tokens: 7} : {prompt_tokens: 20, completion_tokens: 7}
+        upstream = stub_request(:post, "https://example.services.ai.azure.com/openai/v1/#{path}")
+          .with(body: payload.merge(model: name))
+          .to_return(status: 200, body: {model: name, output: [], usage:}.to_json)
 
-      post "/v1/responses", {model: name, input: "Hello"}.to_json
+        post "/v1/#{path}", payload.merge(model: name).to_json
+
+        expect(last_response.status).to eq(200)
+        expect(upstream).to have_been_requested.once
+        records = BillingRecord.where(project_id: project.id).all
+        expect(records.to_h { [it.resource_tags["token_kind"], it.amount] }).to eq("input" => 20, "output" => 7)
+        expect(records.to_h { [it.resource_tags["token_kind"], BigDecimal(it.resource_tags["unit_price"])] })
+          .to eq("input" => BigDecimal(prices[0]), "output" => BigDecimal(prices[1]))
+      end
+    end
+  end
+
+  gpt6_paths.each do |path|
+    it "rejects an unavailable Azure #{path} model before calling or billing the provider" do
+      connect_billing
+      source = Option::AI_MODELS.find { it["model_name"] == "gpt-6.1-sol" }
+      unavailable = source.merge("id" => "azure-unavailable-api-test", "model_name" => "unavailable-azure-model",
+        "tags" => source.fetch("tags").merge("deployment" => "unavailable-azure-model", "availability" => "unavailable",
+          "billing_status" => "catalog_only", "unavailable_reason" => "The test Azure deployment is unavailable."))
+      stub_const("Option::AI_MODELS", [unavailable])
+      upstream = stub_request(:post, "https://example.services.ai.azure.com/openai/v1/#{path}")
+      payload = (path == "responses") ? {input: "Hello"} : {messages: [{role: "user", content: "Hello"}]}
+
+      post "/v1/#{path}", payload.merge(model: "unavailable-azure-model").to_json
 
       expect(last_response.status).to eq(503)
+      expect(last_response.body).to include("The test Azure deployment is unavailable.")
       expect(upstream).not_to have_been_requested
       expect(BillingRecord.where(project_id: project.id)).to be_empty
     end

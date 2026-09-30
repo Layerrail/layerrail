@@ -23,31 +23,41 @@ RSpec.describe Clover, "GPT-6 long-context billing" do
   end
 
   input_token_counts = [272_000, 272_001].freeze
-  %w[responses chat/completions].each do |path|
-    input_token_counts.each do |input_tokens|
-      it "bills the full #{path} request at the correct tier for #{input_tokens} provider input tokens" do
-        usage = if path == "responses"
-          {input_tokens:, output_tokens: 7, input_tokens_details: {cached_tokens: 100_000}}
-        else
-          {prompt_tokens: input_tokens, completion_tokens: 7, prompt_tokens_details: {cached_tokens: 100_000}}
-        end
-        upstream = stub_request(:post, "https://example.services.ai.azure.com/openai/v1/#{path}")
-          .to_return(status: 200, body: {model: "gpt-6.1-sol", output: [], usage:}.to_json)
-        payload = (path == "responses") ? {input: "Short request"} : {messages: [{role: "user", content: "Short request"}]}
-        # A caller-supplied usage object must never select its own billing tier.
-        post "/v1/#{path}", payload.merge(model: "gpt-6.1-sol", usage: {input_tokens: 1}).to_json
+  gpt6_paths = %w[responses chat/completions].freeze
+  model_prices = {
+    "gpt-6.1-sol" => {base: ["0.0000014", "0.000007"], long: ["0.0000028", "0.0000105"]},
+    "gpt-6-sol" => {base: ["0.0000014", "0.000007"], long: ["0.0000028", "0.0000105"]},
+    "gpt-6-luna" => {base: ["0.00000007", "0.00000035"], long: ["0.00000014", "0.000000525"]},
+  }.freeze
+  model_prices.each do |name, prices|
+    gpt6_paths.each do |path|
+      input_token_counts.each do |input_tokens|
+        it "bills the full #{name} #{path} request at the correct tier for #{input_tokens} provider input tokens" do
+          family_model = CloudflareInferenceModel.new(Option::AI_MODELS.find { it["model_name"] == name })
+          usage = if path == "responses"
+            {input_tokens:, output_tokens: 7, input_tokens_details: {cached_tokens: 100_000}}
+          else
+            {prompt_tokens: input_tokens, completion_tokens: 7, prompt_tokens_details: {cached_tokens: 100_000}}
+          end
+          upstream = stub_request(:post, "https://example.services.ai.azure.com/openai/v1/#{path}")
+            .with(body: hash_including("model" => name))
+            .to_return(status: 200, body: {model: name, output: [], usage:}.to_json)
+          payload = (path == "responses") ? {input: "Short request"} : {messages: [{role: "user", content: "Short request"}]}
+          # A caller-supplied usage object must never select its own billing tier.
+          post "/v1/#{path}", payload.merge(model: name, usage: {input_tokens: 1}).to_json
 
-        expect(last_response.status).to eq(200)
-        expect(upstream).to have_been_requested.once
-        records = BillingRecord.where(project_id: project.id).all
-        expect(records.to_h { [it.resource_tags["token_kind"], it.amount] }).to eq("input" => input_tokens, "output" => 7)
-        long_context = input_tokens > 272_000
-        expected_prices = long_context ? {"input" => BigDecimal("0.0000028"), "output" => BigDecimal("0.0000105")} :
-          {"input" => BigDecimal("0.0000014"), "output" => BigDecimal("0.000007")}
-        expect(records.to_h { [it.resource_tags["token_kind"], BigDecimal(it.resource_tags["unit_price"])] }).to eq(expected_prices)
-        expect(records.map { BillingRate.from_id(it.billing_rate_id).fetch("resource_family") })
-          .to match_array(long_context ? [model.long_context_prompt_billing_resource, model.long_context_completion_billing_resource] :
-            [model.prompt_billing_resource, model.completion_billing_resource])
+          expect(last_response.status).to eq(200)
+          expect(upstream).to have_been_requested.once
+          records = BillingRecord.where(project_id: project.id).all
+          expect(records.to_h { [it.resource_tags["token_kind"], it.amount] }).to eq("input" => input_tokens, "output" => 7)
+          long_context = input_tokens > 272_000
+          input_price, output_price = prices.fetch(long_context ? :long : :base)
+          expected_prices = {"input" => BigDecimal(input_price), "output" => BigDecimal(output_price)}
+          expect(records.to_h { [it.resource_tags["token_kind"], BigDecimal(it.resource_tags["unit_price"])] }).to eq(expected_prices)
+          expect(records.map { BillingRate.from_id(it.billing_rate_id).fetch("resource_family") })
+            .to match_array(long_context ? [family_model.long_context_prompt_billing_resource, family_model.long_context_completion_billing_resource] :
+              [family_model.prompt_billing_resource, family_model.completion_billing_resource])
+        end
       end
     end
   end
@@ -80,6 +90,7 @@ RSpec.describe Clover, "GPT-6 long-context billing" do
     it "shows every #{name} billing tier in the catalog and uses matching active rates" do
       family_model = CloudflareInferenceModel.new(Option::AI_MODELS.find { it["model_name"] == name })
       serialized = Serializers::InferenceEndpoint.serialize(family_model)
+      expect(serialized[:available]).to be(true)
       expect(serialized[:tags]).to include("long_context_threshold" => 272_000)
       expect(serialized[:catalog_prices]).to include(include("label" => "Input >272K (per 1M tokens)"),
         include("label" => "Output >272K input (per 1M tokens)"))

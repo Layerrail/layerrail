@@ -154,9 +154,7 @@
     deployment: gpt-6-sol
     reasoning: true
     native_responses: true
-    availability: unavailable
-    billing_status: catalog_only
-    unavailable_reason: This Azure deployment is not configured on LayerRail's Foundry resource.
+    billing_status: ready
     pricing_source: https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/
     catalog_pricing_source: https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/
     long_context_threshold: 272000
@@ -186,9 +184,7 @@
     deployment: gpt-6-luna
     reasoning: true
     native_responses: true
-    availability: unavailable
-    billing_status: catalog_only
-    unavailable_reason: This Azure deployment is not configured on LayerRail's Foundry resource.
+    billing_status: ready
     pricing_source: https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/
     catalog_pricing_source: https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/
     long_context_threshold: 272000

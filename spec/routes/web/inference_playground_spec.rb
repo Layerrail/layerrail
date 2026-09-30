@@ -99,15 +99,33 @@ RSpec.describe Clover, "inference-playground" do
         .to include("discount_percent" => 50, "standard_pricing" => include("input" => 2.8, "output" => 14.0))
     end
 
-    it "lists undeployed GPT-6 Sol and Luna as unavailable options" do
+    it "offers GPT-6 Sol and Luna with matching discounted prices" do
       allow(Config).to receive(:ai_inference_provider).and_return("azure_foundry")
 
       visit "#{project.path}/inference-playground"
 
-      %w[gpt-6-sol gpt-6-luna].each do |name|
-        expect(page).to have_css("option[value='#{name}'][data-billable='false'][disabled]", visible: :all)
-        expect(page).to have_no_css("option[value='#{name}'][selected]", visible: :all)
+      {"gpt-6-sol" => [1.4, 7.0], "gpt-6-luna" => [0.07, 0.35]}.each do |name, prices|
+        expect(page).to have_css("option[value='#{name}'][data-billable='true'][data-input-price='#{prices[0]}'][data-output-price='#{prices[1]}']", visible: :all)
+        expect(page).to have_no_css("option[value='#{name}'][disabled]", visible: :all)
+        expect(JSON.parse(page.find("option[value='#{name}']", visible: :all)["data-tags"]))
+          .to include("discount_percent" => 50, "standard_pricing" => include("input" => prices[0] * 2, "output" => prices[1] * 2))
       end
+    end
+
+    it "keeps an unavailable Azure deployment disabled and unselected despite its configured prices" do
+      allow(Config).to receive(:ai_inference_provider).and_return("azure_foundry")
+      source = Option::AI_MODELS.find { it["model_name"] == "gpt-6.1-sol" }
+      unavailable = source.merge("id" => "azure-unavailable-playground-test", "model_name" => "unavailable-azure-model",
+        "tags" => source.fetch("tags").merge("deployment" => "unavailable-azure-model", "availability" => "unavailable",
+          "billing_status" => "catalog_only", "display_name" => "Unavailable Azure test model"))
+      stub_const("Option::AI_MODELS", [unavailable, source])
+
+      visit "#{project.path}/inference-playground"
+
+      expect(page).to have_css("option[value='unavailable-azure-model'][data-billable='false'][disabled]", visible: :all)
+      expect(page).to have_no_css("option[value='unavailable-azure-model'][selected]", visible: :all)
+      expect(page).to have_no_css("option[value='unavailable-azure-model'][data-input-price]", visible: :all)
+      expect(page).to have_css("option[value='gpt-6.1-sol'][data-billable='true']", visible: :all)
     end
 
     it "renders separate input and output billing prices for catalog models" do
