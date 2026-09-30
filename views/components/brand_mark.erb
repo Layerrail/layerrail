@@ -1,0 +1,14 @@
+<%# locals: (variant: "primary", compact: false) %>
+<%
+src = if compact
+  "/brand/layerrail/layerrail-console-mark.png"
+else
+  tone = variant == "white" ? "dark" : "light"
+  "/brand/layerrail/lockups/layerrail-microsoft-startups-#{tone}.svg"
+end
+
+classes = compact ? "block h-9 w-9" : "block w-[208px] max-w-full h-auto"
+alt = compact ? "LayerRail" : "LayerRail — Backed by Microsoft for Startups"
+%>
+
+<img src="<%= src %>" alt="<%= alt %>" class="<%= classes %> object-contain">

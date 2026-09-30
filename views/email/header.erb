@@ -1,7 +1,7 @@
 <tr>
   <td class="header">
-    <a href="<%= Config.base_url %>/logo-primary.png" style="display: inline-block;">
-      <img src="<%= Config.base_url %>/logo-primary.png" class="logo" alt="Ubicloud">
+    <a href="<%= Config.base_url %>" style="display: inline-block; text-decoration: none;">
+      <img src="<%= Config.base_url.to_s.sub(%r{/+\z}, '') %>/brand/layerrail/lockups/layerrail-microsoft-startups-light@2x.png" width="320" height="84" alt="LayerRail — Backed by Microsoft for Startups" class="logo" style="display: block; width: 320px; max-width: 100%; height: auto; border: 0;">
     </a>
   </td>
 </tr>
