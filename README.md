@@ -1,327 +1,159 @@
-# LayerRail
+<p align="center">
+  <img src=".github/media/layerrail-hero.png" alt="LayerRail — cloud infrastructure, with the whole picture" width="100%">
+</p>
 
-LayerRail is an open cloud control plane for teams that need infrastructure with
-clear ownership, budget rails, and deployment evidence. It brings compute,
-networking, managed services, billing context, and operational records into one
-project-centered console.
+<h1 align="center">LayerRail</h1>
 
-LayerRail is built on the Ubicloud open source infrastructure foundation and
-keeps the upstream AGPL-3.0 license and attribution intact. This repository is
-the LayerRail product fork: LayerRail-specific workflows, provider integrations,
-and product surfaces live here, while Ubicloud remains available as an upstream
-source for selected infrastructure improvements.
+<p align="center"><strong>One project. Your infrastructure. A clearer way to build.</strong></p>
 
-## Why LayerRail
+<p align="center">
+  <a href="https://console.layerrail.com">Open the dashboard</a> ·
+  <a href="https://docs.layerrail.com">Documentation</a> ·
+  <a href="openapi/openapi.yml">API reference</a> ·
+  <a href="docs/getting-started.md">Run locally</a>
+</p>
 
-Modern teams can launch cloud resources quickly, but the evidence around those
-resources often becomes scattered: who created them, where they run, what they
-cost, which project owns them, and what proof is needed for finance, compliance,
-or grant reporting.
+LayerRail is an open source cloud control plane for developers and teams. Manage
+virtual machines, networking, PostgreSQL, Kubernetes, GitHub runners, and AI
+inference through a project-centered dashboard and API, with access controls,
+resource state, and usage close at hand.
 
-LayerRail is designed for developers, research teams, sponsored builders, and
-operators who need cloud infrastructure that stays explainable after it has been
-deployed.
+This repository contains the **API, dashboard, and provisioning workers** behind
+LayerRail. Use the hosted platform to build, or explore the code and run the
+control plane yourself.
 
-LayerRail focuses on:
+## See LayerRail in motion
 
-- **Project-centered infrastructure**: resources are grouped around workspaces,
-  projects, owners, regions, and runtime context.
-- **Budget-aware operations**: usage and pricing records are kept close to the
-  resources they describe.
-- **Deployment evidence**: runtime, region, owner, provider, and resource state
-  can be carried into review, finance, and reporting workflows.
-- **Open control plane ownership**: the core control plane remains auditable,
-  self-hostable, and source-available under AGPL-3.0 obligations.
+[![Watch the LayerRail launch film](.github/media/layerrail-launch-preview.gif)](docs/launch.md)
 
-## What LayerRail Provides
+**[Watch the launch film and open the interactive preview →](docs/launch.md)**
 
-LayerRail is moving toward a practical PaaS/IaaS control plane with:
+An introduction to the API, dashboard, and project workflow. The preview uses an
+illustrative workspace; it contains no customer data.
 
-- Virtual machines
-- Private networking
-- Firewalls
-- Load balancers
-- Managed PostgreSQL
-- Kubernetes
-- GitHub runners
-- AI inference routing surfaces
-- Workspace budget controls
-- Deployment passports and reporting-friendly infrastructure records
+## From an API request to a running project
 
-The control plane is a Ruby application backed by Postgres. It uses the same
-general architectural model as Ubicloud: a control plane manages cloud resources
-and worker processes perform long-running provisioning and reconciliation work.
+| Build with | What you can do |
+| --- | --- |
+| **Compute** | Create Linux virtual machines and inspect their state, sizing, networking, and backups. |
+| **Networking** | Organize private subnets, control traffic with firewalls, and route requests through load balancers. |
+| **PostgreSQL** | Manage databases, backup and restore workflows, configuration, and monitoring. |
+| **Kubernetes** | Manage clusters, node pools, kubeconfigs, resizing, and upgrades. |
+| **GitHub Actions** | Connect repositories to managed runners from the same project. |
+| **AI inference** | Explore models in the playground and call supported chat, Responses, and embedding APIs. |
+| **Project operations** | Manage team access, personal access tokens, audit logs, usage, credits, and invoices. |
 
-## Quick Start
+Service availability depends on the deployment's enabled features, configured
+providers, and model catalog. The hosted dashboard shows the options available
+to your project.
 
-Clone the repository and start the local demo stack:
+### Automate through the API
+
+Create a **personal access token** in your project's dashboard, copy the project
+ID, and list its virtual machines:
 
 ```sh
-git clone git@github.com:layerrail/layerrail.git
+export LR_TOKEN="pat-YOUR_PERSONAL_ACCESS_TOKEN"
+export PROJECT_ID="YOUR_PROJECT_ID"
+
+curl --fail-with-body \
+  "https://api.console.layerrail.com/project/${PROJECT_ID}/vm" \
+  -H "Authorization: Bearer ${LR_TOKEN}"
+```
+
+Requests respect your account and token permissions. The
+[OpenAPI specification](openapi/openapi.yml) documents infrastructure endpoints,
+request bodies, and pagination. For terminal workflows, see the [`lr` CLI](cli/README.md).
+
+### Bring AI into the same workflow
+
+Create a separate **inference API key** in your project, then make a supported
+Responses request:
+
+```sh
+export LAYERRAIL_AI_KEY="YOUR_INFERENCE_API_KEY"
+
+curl --fail-with-body https://api.console.layerrail.com/v1/responses \
+  -H "Authorization: Bearer ${LAYERRAIL_AI_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-6.1-sol",
+    "input": "Explain what a cloud control plane does in one paragraph.",
+    "reasoning": {"effort": "low"},
+    "max_output_tokens": 1024,
+    "store": false
+  }'
+```
+
+AI requests require an available model and verified project billing. Usage is
+paid; model prices and supported request formats are shown in the catalog. See
+the [GPT-6 API notes](docs/gpt-6-catalog.md) and [usage billing guide](docs/paid-inference-billing.md).
+
+## Try the dashboard locally
+
+With Git, Docker Compose, and a POSIX shell installed:
+
+```sh
+git clone https://github.com/layerrail/layerrail.git
 cd layerrail
 
 ./demo/generate_env
-docker compose -f demo/docker-compose.yml up
+docker compose -f demo/docker-compose.yml up --build
 ```
 
-Open the local console:
+Open **[localhost:3000](http://localhost:3000)**. The demo starts a PostgreSQL
+database, applies migrations, and runs the web service and background workers.
+On Windows, run these commands from WSL or another POSIX shell.
 
-```text
-http://localhost:3000
+The demo provides a local control plane. Configure provider credentials and
+service prerequisites before provisioning cloud resources. Follow the
+[getting started guide](docs/getting-started.md) for account setup, API access,
+and deployment configuration.
+
+## How it fits together
+
+```mermaid
+flowchart LR
+    Developer[Developers and teams] --> Dashboard[Dashboard]
+    Developer --> API[API and CLI]
+    Dashboard --> Control[Control plane]
+    API --> Control
+    Control <--> State[(PostgreSQL state)]
+    State <--> Workers[Provisioning and monitoring workers]
+    Workers --> Providers[Configured providers]
+    Providers --> Resources[Project infrastructure]
+    Control --> Inference[AI provider APIs]
 ```
 
-The demo stack starts:
+The Ruby control plane uses **Roda**, **Sequel**, and **Rodauth**. The dashboard
+uses server-rendered views with Tailwind CSS and a React-based AI playground.
+Background workers provision and reconcile infrastructure; PostgreSQL stores
+control-plane state.
 
-- `layerrail-postgres`: local control-plane database
-- `layerrail-db-migrator`: database migration process
-- `layerrail-app`: web process and background workers for the demo environment
-
-For deeper development setup notes, see [DEVELOPERS.md](DEVELOPERS.md).
-
-## Architecture
-
-LayerRail has three main operating surfaces:
-
-### Control Plane
-
-The control plane stores state, serves the console, authenticates users, manages
-projects and resources, and coordinates provider operations.
-
-Core technologies include:
-
-- Ruby
-- Roda for HTTP routing
-- Sequel for database access
-- Rodauth for authentication
-- Postgres for control-plane state
-- RSpec for tests
-- Tailwind CSS for server-rendered console views
-
-### Workers
-
-Provisioning is not handled by the web process alone. Long-running operations
-are performed by worker processes that share the same database as the web
-service.
-
-Production deployments should run:
-
-```sh
-bundle exec puma -C puma_config.rb
-bin/restarter bin/respirate
-bin/monitor
-```
-
-If the worker processes are not running against the same production database as
-the web service, resources can remain in `creating` and provider-side resources
-may never be created.
-
-### Provider Layer
-
-LayerRail integrates with infrastructure providers to create the underlying
-resources. The first public-cloud compute path is Linode.
-
-With `COMPUTE_PROVIDER=linode`, LayerRail can provision VM-backed services using
-the configured Linode account and service project settings.
-
-## Production Deployment
-
-LayerRail production deployments need:
-
-- A Postgres database for control-plane state
-- A web process running Puma
-- Background worker processes for provisioning and monitoring
-- Email delivery credentials
-- Billing credentials
-- Provider credentials for any enabled compute or managed service path
-- Public DNS records for the console and generated service endpoints
-
-Run production migrations with:
-
-```sh
-RACK_ENV=production bundle exec rake prod_up
-```
-
-On Render or any similar platform, create separate services from the same repo
-and branch:
-
-| Service | Command |
+| Explore the source | Start here |
 | --- | --- |
-| Web | `bundle exec puma -C puma_config.rb` |
-| Respirate worker | `bin/restarter bin/respirate` |
-| Monitor worker | `bin/monitor` |
+| HTTP routing and API behavior | [`clover.rb`](clover.rb), [`routes/`](routes/), [`openapi/`](openapi/) |
+| Dashboard and playground | [`views/`](views/), [`assets/js/playground/`](assets/js/playground/) |
+| Domain models and database changes | [`model/`](model/), [`migrate/`](migrate/) |
+| Provisioning and reconciliation | [`prog/`](prog/), [`rhizome/`](rhizome/) |
+| Command line workflows | [`cli/`](cli/), [`cli-commands/`](cli-commands/) |
+| Verification | [`spec/`](spec/) |
 
-## Environment Configuration
+## Build with us
 
-Important environment groups include:
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request, and
+[DEVELOPERS.md](DEVELOPERS.md) for the development environment and test suite.
+We welcome focused improvements to provider integrations, reliability,
+documentation, and the developer experience.
 
-### Database
+- **Bugs and feature requests:** [GitHub issues](https://github.com/layerrail/layerrail/issues)
+- **Product support:** [support@layerrail.com](mailto:support@layerrail.com)
+- **Security reports:** follow [SECURITY.md](SECURITY.md)
 
-- `CLOVER_DATABASE_URL`
+## Open source foundation
 
-### Security
-
-- `CLOVER_SESSION_SECRET`
-- `CLOVER_COLUMN_ENCRYPTION_KEY`
-- `CLOVER_RUNTIME_TOKEN_SECRET`
-
-### Public URLs
-
-- `BASE_URL`
-
-The console app publishes AI-readable discovery files at `/llms.txt` and
-`/llms-full.txt`. It also serves the same files from subpath aliases such as
-`/docs/llms.txt` so directory-style crawlers can discover the LayerRail context.
-After deployment, run `bin/publish-llms-directories` to verify the public file
-URLs and prepare directory submissions.
-
-### Email
-
-- `RESEND_API_KEY`
-- `RESEND_FROM_EMAIL`
-- `RESEND_WEBHOOK_SECRET`
-
-### Billing
-
-- `BACHS_API_KEY`
-- `BACHS_WEBHOOK_SECRET`
-- `BACHS_VERIFICATION_PRODUCT_ID` identifies the one-time $1 Bachs product used
-  to verify billing before paid resources are created
-- `BACHS_GAME_VPS_PRODUCT_IDS` is a JSON object mapping each Game VPS plan to
-  its recurring Bachs product ID
-- `GAME_VPS_CHECKOUT_PROVIDER` and `BILLING_CHECKOUT_PROVIDER` default to
-  `bachs` for new Game VPS subscriptions and invoice payments
-- `POLAR_ACCESS_TOKEN`
-- `POLAR_ORGANIZATION_ID`
-- `POLAR_VERIFICATION_PRODUCT_ID`
-- `POLAR_VERIFICATION_AMOUNT_CENTS` defaults to `100` for the one-time billing
-  verification checkout
-- `bin/configure-polar-metered-usage` enables Polar's customer portal usage
-  view for the organization and reports whether active Polar meters exist.
-  The portal view does not create meters by itself; usage appears only after
-  meters are attached to subscription products and matching events are ingested.
-- `bin/finalize-monthly-invoices` finalizes the previous month's LayerRail
-  invoices, applies project credits, and marks credit-covered invoices as no
-  charge. Set `EUR_RATE` before running it; use `INVOICE_MONTH=YYYY-MM` to
-  backfill a missed month.
-- `bin/republish-invoice-pdfs` regenerates and uploads existing invoice PDFs
-  after branding or invoice template changes. Use `INVOICE_UBIDS=...` for a
-  precise refresh or `INVOICE_MONTH=YYYY-MM` for a full month.
-
-### Compute
-
-- `COMPUTE_PROVIDER`
-- `LINODE_ACCESS_TOKEN`
-- `LINODE_API_BASE_URL`
-
-### DNS Automation
-
-- `CLOUDFLARE_DNS_API_TOKEN`
-- `CLOUDFLARE_DNS_ZONE_ID`
-- `CLOUDFLARE_DNS_PROXIED`
-
-### AI Inference
-
-- `AI_INFERENCE_ENABLED`
-- `RUNPOD_API_KEY`
-- `HUGGINGFACE_TOKEN`
-- `INFERENCE_DNS_ZONE`
-- `INFERENCE_ROUTER_ACCESS_TOKEN`
-
-Provider-specific credentials are required for whichever infrastructure provider
-is enabled in a given deployment.
-
-## Linode Launch Profile
-
-LayerRail currently supports Linode as the first public-cloud compute provider
-for VM provisioning.
-
-```sh
-COMPUTE_PROVIDER=linode
-LINODE_ACCESS_TOKEN=...
-```
-
-The launch catalog is intentionally narrow:
-
-- Locations: Frankfurt, Newark, Los Angeles, and Seattle
-- Images: Ubuntu 24.04, Debian 12, AlmaLinux 9, and Rocky Linux 9
-- VM sizes: Linode shared 2GB/4GB, dedicated 4GB/8GB/16GB/32GB, and one RTX
-  4000 Ada GPU plan
-- Pricing: VM and GPU rates use a 30% LayerRail markup
-
-Linode-included root storage and public IPv4 are shown as included rather than
-billed separately.
-
-When `POSTGRES_ENABLED=true` or `KUBERNETES_ENABLED=true`, the corresponding
-LayerRail-managed services use VM-backed infrastructure under the hood. The
-production worker processes must be running before these services can provision
-real resources.
-
-## DNS And Service Endpoints
-
-LayerRail distinguishes between the console host and generated customer service
-hostnames.
-
-Production should also use a separate API host. Set `BASE_URL` to the console
-URL (for example, `https://console.layerrail.com`), set `API_URL` to the API
-URL (for example, `https://api.console.layerrail.com`), and map both custom domains to
-the application. This keeps browser navigation on the console host and keeps
-machine API paths on the API host.
-
-Example generated endpoint zones include:
-
-- `lb.layerrail.com`
-- `postgres.layerrail.com`
-- `k8s.layerrail.com`
-
-These are product DNS zones for generated customer endpoints. They are separate
-from the console host, such as `console.layerrail.com`, and should be managed in
-Cloudflare DNS rather than deployed as separate web applications.
-
-## CLI Surface
-
-The `/cli` page is the built-in LayerRail CLI web shell for project commands. It
-is not a browser SSH terminal into customer virtual machines.
-
-## Development
-
-Common development commands:
-
-```sh
-bundle install
-npm install
-bundle exec rake
-bundle exec rspec
-```
-
-The repository includes:
-
-- `routes/`: web and API route handlers
-- `model/`: domain models
-- `migrate/`: database migrations
-- `views/`: server-rendered console views
-- `cli-commands/`: LayerRail CLI command handlers
-- `spec/`: test suite
-- `demo/`: local demo environment
-
-## Upstream Strategy
-
-LayerRail is intended to stand as its own product repository while keeping a
-clean path to reuse selected Ubicloud changes.
-
-Recommended remotes:
-
-```text
-origin   https://github.com/layerrail/layerrail.git
-upstream https://github.com/ubicloud/ubicloud.git
-```
-
-Use `origin` for LayerRail product work. Use `upstream` to review, cherry-pick,
-or merge Ubicloud infrastructure changes when they are useful to LayerRail.
-
-## License And Attribution
-
-LayerRail is based on Ubicloud and keeps the upstream AGPL-3.0 license. Keep the
-original license and notices intact, and publish source for network-accessible
-modifications as required by AGPL-3.0.
-
-See [LAYERRAIL.md](LAYERRAIL.md) for fork notes and upstream remote guidance.
+LayerRail is built on the [Ubicloud](https://github.com/ubicloud/ubicloud) open
+source infrastructure foundation. This product fork retains the upstream
+**[AGPL-3.0 license](LICENSE)** and attribution. Preserve the original notices
+and meet the license's source-sharing requirements when modifying or operating
+the software over a network.
