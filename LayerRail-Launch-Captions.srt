@@ -1,0 +1,59 @@
+1
+00:00:00,360 --> 00:00:01,343
+Every great product
+
+2
+00:00:01,402 --> 00:00:03,218
+starts with a first request.
+
+3
+00:00:06,360 --> 00:00:08,041
+LayerRail gives you an API
+
+4
+00:00:08,066 --> 00:00:08,997
+to build with,
+
+5
+00:00:09,342 --> 00:00:11,458
+and a dashboard to see the whole picture.
+
+6
+00:00:13,360 --> 00:00:14,812
+Bring virtual machines,
+
+7
+00:00:14,883 --> 00:00:18,022
+Postgres, Kubernetes, and AI
+
+8
+00:00:18,047 --> 00:00:19,057
+into your project.
+
+9
+00:00:21,360 --> 00:00:22,708
+Connect the pieces.
+
+10
+00:00:22,975 --> 00:00:24,505
+Keep your infrastructure in view.
+
+11
+00:00:28,360 --> 00:00:30,867
+See usage as your application grows,
+
+12
+00:00:31,107 --> 00:00:33,627
+so your next decision starts with clarity.
+
+13
+00:00:35,360 --> 00:00:36,799
+Open source at the core.
+
+14
+00:00:37,079 --> 00:00:38,375
+Build what comes next.
+
+15
+00:00:38,641 --> 00:00:40,106
+This is LayerRail.
