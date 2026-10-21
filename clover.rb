@@ -1201,6 +1201,31 @@ class Clover < Roda
   end
 
   route do |r|
+    admin_maintenance_exempt = r.admin? && env["HTTP_HOST"].to_s.split(":", 2).first.downcase == URI(Config.admin_url).host&.downcase
+    if Config.customer_maintenance_enabled? && !admin_maintenance_exempt
+      if request.get? || request.head?
+        r.public
+        r.assets
+        if request.path_info == "/up" || request.path_info == "/ready"
+          next health_check_response(api? ? "api" : "console", database: request.path_info == "/ready")
+        elsif request.head? && request.path_info == "/"
+          next 200
+        end
+      end
+
+      response.status = 503
+      response["cache-control"] = "no-store"
+      response["retry-after"] = "3600"
+      if api? || runtime? || !request.get? || request.path_info.start_with?("/ai/", "/webhook/", "/edge-runtime/")
+        response.json = true
+        response.skip_content_security_policy!
+        next({status: "maintenance", error: {code: 503, type: "ScheduledMaintenance", message: "LayerRail is undergoing scheduled maintenance. Please try again later.", details: nil}, status_page: "https://status.layerrail.com"})
+      end
+
+      response["content-type"] = "text/html; charset=utf-8"
+      next render("maintenance", layout: false)
+    end
+
     if request.get? && web?
       enable_intercom_content_security_policy if intercom_messenger_enabled?
       content_security_policy.add_connect_src(Config.api_url) if Config.api_url
