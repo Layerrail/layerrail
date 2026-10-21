@@ -12,6 +12,7 @@ RSpec.describe Clover, "customer maintenance" do
 
     expect(page.status_code).to eq(503)
     expect(page.body).to include("Undergoing scheduled maintenance", "https://status.layerrail.com")
+    expect(page).to have_css('link[rel="stylesheet"][href*="app.css"]', visible: :all)
     expect(page.response_headers).to include("cache-control" => "no-store", "retry-after" => "3600")
   end
 
